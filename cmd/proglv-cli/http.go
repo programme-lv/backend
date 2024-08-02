@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"time"
 
-	cli "github.com/programme-lv/backend/gen/http/cli/programme_lv"
+	cli "github.com/programme-lv/backend/gen/http/cli/proglv"
 	goahttp "goa.design/goa/v3/http"
 	goa "goa.design/goa/v3/pkg"
 )

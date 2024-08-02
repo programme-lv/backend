@@ -11,7 +11,7 @@ import (
 	"sync"
 	"syscall"
 
-	programmelv "github.com/programme-lv/backend"
+	proglv "github.com/programme-lv/backend"
 	users "github.com/programme-lv/backend/gen/users"
 	"goa.design/clue/debug"
 	"goa.design/clue/log"
@@ -46,7 +46,7 @@ func main() {
 		usersSvc users.Service
 	)
 	{
-		usersSvc = programmelv.NewUsers()
+		usersSvc = proglv.NewUsers()
 	}
 
 	// Wrap the services in endpoints that can be invoked from other services

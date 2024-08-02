@@ -389,10 +389,10 @@ definitions:
         properties:
             conflict_value:
                 type: string
-                example: Architecto dolorum et libero.
+                example: Ducimus est laboriosam rem eum.
         description: Insertion conflict (default view)
         example:
-            conflict_value: Rem fuga delectus ut laborum.
+            conflict_value: Velit praesentium.
         required:
             - conflict_value
     UsersCreateUserRequestBody:
@@ -477,10 +477,10 @@ definitions:
         properties:
             conflict_value:
                 type: string
-                example: Nesciunt laboriosam ducimus accusantium non.
+                example: Et dolores quas dolorum voluptas.
         description: Insertion conflict (default view)
         example:
-            conflict_value: Similique laudantium.
+            conflict_value: Nam rerum excepturi alias et aut enim.
         required:
             - conflict_value
     UsersGetUserInsertConflictResponseBody:
@@ -489,10 +489,10 @@ definitions:
         properties:
             conflict_value:
                 type: string
-                example: Vel dolor.
+                example: Nihil consequuntur modi quis.
         description: Insertion conflict (default view)
         example:
-            conflict_value: Reprehenderit atque sit asperiores.
+            conflict_value: Illo enim laboriosam dignissimos id libero.
         required:
             - conflict_value
     UsersGetUserResponseBody:
@@ -538,10 +538,10 @@ definitions:
         properties:
             conflict_value:
                 type: string
-                example: Magni deserunt.
+                example: Quibusdam ut.
         description: Insertion conflict (default view)
         example:
-            conflict_value: Laboriosam eos ut sint.
+            conflict_value: Est harum.
         required:
             - conflict_value
     UsersLoginInsertConflictResponseBody:
@@ -550,10 +550,10 @@ definitions:
         properties:
             conflict_value:
                 type: string
-                example: Temporibus maxime et laborum.
+                example: Hic quam.
         description: Insertion conflict (default view)
         example:
-            conflict_value: Placeat et.
+            conflict_value: Consequatur eveniet nostrum blanditiis dignissimos.
         required:
             - conflict_value
     UsersLoginRequestBody:
@@ -582,10 +582,10 @@ definitions:
         properties:
             conflict_value:
                 type: string
-                example: Et et consequatur incidunt vitae blanditiis.
+                example: Vitae eius.
         description: Insertion conflict (default view)
         example:
-            conflict_value: Ipsam dolorem dolor rerum.
+            conflict_value: Quod accusantium.
         required:
             - conflict_value
     UsersUpdateUserBadRequestResponseBody:
@@ -631,10 +631,10 @@ definitions:
         properties:
             conflict_value:
                 type: string
-                example: Consectetur aliquam aut praesentium qui quia.
+                example: Asperiores nemo architecto temporibus.
         description: Insertion conflict (default view)
         example:
-            conflict_value: Autem quisquam error quasi consequatur dolore.
+            conflict_value: Dicta aspernatur est quia ea sequi architecto.
         required:
             - conflict_value
     UsersUpdateUserOKResponseBody:
