@@ -35,6 +35,7 @@ var User = dsl.Type("User", func() {
 var UserPayload = dsl.Type("UserPayload", func() {
 	dsl.Description("Payload for creating and updating a user")
 	dsl.Attribute("username", dsl.String, "Username of the user", func() {
+		dsl.MinLength(1)
 		dsl.Example("johndoe")
 	})
 	dsl.Attribute("email", dsl.String, "Email of the user", func() {
@@ -48,6 +49,7 @@ var UserPayload = dsl.Type("UserPayload", func() {
 		dsl.Example("Doe")
 	})
 	dsl.Attribute("password", dsl.String, "Password of the user", func() {
+		dsl.MinLength(8)
 		dsl.Example("password123")
 	})
 	dsl.Required("username", "email", "firstname", "lastname", "password")
@@ -61,26 +63,72 @@ var LoginPayload = dsl.Type("LoginPayload", func() {
 		dsl.Example("johndoe@example.com")
 	})
 	dsl.Attribute("password", dsl.String, "Password of the user", func() {
+		dsl.MinLength(8)
 		dsl.Example("password123")
 	})
 	dsl.Required("email", "password")
 })
 
+// SecurePayload defines a payload with a JWT token for secure endpoints.
+var SecurePayload = dsl.Type("SecurePayload", func() {
+	dsl.Token("token", dsl.String, "JWT token used for authentication", func() {
+		dsl.Example("jwt_token")
+	})
+})
+
+// SecureUUIDPayload defines a payload with a JWT token and UUID.
+var SecureUUIDPayload = dsl.Type("SecureUUIDPayload", func() {
+	dsl.Token("token", dsl.String, "JWT token used for authentication", func() {
+		dsl.Example("jwt_token")
+	})
+	dsl.Attribute("uuid", dsl.String, "UUID of the user", func() {
+		dsl.Example("550e8400-e29b-41d4-a716-446655440000")
+	})
+	dsl.Required("token", "uuid")
+})
+
+// InsertConflict error type
+var InsertConflict = dsl.ResultType("application/vnd.service.insertconflict", func() {
+	dsl.Description("InsertConflict is the type of the error values returned when insertion fails because of a conflict")
+	dsl.Attributes(func() {
+		dsl.Attribute("conflict_value", dsl.String)
+		dsl.Attribute("name", dsl.String, "Name of error used by goa to encode response", func() {
+			dsl.Meta("struct:error:name")
+		})
+		dsl.Required("conflict_value", "name")
+	})
+	dsl.View("default", func() {
+		dsl.Attribute("conflict_value")
+		// Note: name is omitted from the default view.
+	})
+})
+
 var _ = dsl.Service("users", func() {
 	dsl.Description("Service to manage users")
+
+	dsl.Error("InvalidCredentials", dsl.String, "Invalid credentials")
+	dsl.Error("InvalidUserDetails", dsl.String, "Invalid user details")
+	dsl.Error("NotFound", dsl.String, "User not found")
+	dsl.Error("InsertConflict", InsertConflict, "Insertion conflict")
+
+	dsl.HTTP(func() {
+		dsl.Response("InvalidCredentials", dsl.StatusUnauthorized)
+		dsl.Response("InvalidUserDetails", dsl.StatusBadRequest)
+		dsl.Response("NotFound", dsl.StatusNotFound)
+		dsl.Response("InsertConflict", dsl.StatusConflict)
+	})
 
 	dsl.Method("listUsers", func() {
 		dsl.Description("List all users")
 		dsl.Security(JWTAuth, func() {
 			dsl.Scope("api:access")
 		})
+		dsl.Payload(SecurePayload)
 		dsl.Result(dsl.ArrayOf(User))
 		dsl.HTTP(func() {
 			dsl.GET("/users")
+			dsl.Param("token:Authorization")
 			dsl.Response(dsl.StatusOK)
-		})
-		dsl.GRPC(func() {
-			dsl.Response(dsl.CodeOK)
 		})
 	})
 
@@ -89,23 +137,12 @@ var _ = dsl.Service("users", func() {
 		dsl.Security(JWTAuth, func() {
 			dsl.Scope("api:access")
 		})
-		dsl.Payload(func() {
-			dsl.Attribute("uuid", dsl.String, "UUID of the user", func() {
-				dsl.Example("550e8400-e29b-41d4-a716-446655440000")
-			})
-			dsl.Required("uuid")
-		})
+		dsl.Payload(SecureUUIDPayload)
 		dsl.Result(User)
 		dsl.HTTP(func() {
 			dsl.GET("/users/{uuid}")
+			dsl.Param("token:Authorization")
 			dsl.Response(dsl.StatusOK)
-			dsl.Response(dsl.StatusNotFound, func() {
-				dsl.Description("User not found")
-			})
-		})
-		dsl.GRPC(func() {
-			dsl.Response(dsl.CodeOK)
-			dsl.Response(dsl.CodeNotFound)
 		})
 	})
 
@@ -117,9 +154,8 @@ var _ = dsl.Service("users", func() {
 			dsl.POST("/users")
 			dsl.Response(dsl.StatusCreated)
 		})
-		dsl.GRPC(func() {
-			dsl.Response(dsl.CodeOK)
-		})
+		dsl.Error("InvalidUserDetails")
+		dsl.Error("InsertConflict")
 	})
 
 	dsl.Method("updateUser", func() {
@@ -128,10 +164,14 @@ var _ = dsl.Service("users", func() {
 			dsl.Scope("api:access")
 		})
 		dsl.Payload(func() {
+			dsl.Token("token", dsl.String, "JWT token used for authentication", func() {
+				dsl.Example("jwt_token")
+			})
 			dsl.Attribute("uuid", dsl.String, "UUID of the user", func() {
 				dsl.Example("550e8400-e29b-41d4-a716-446655440000")
 			})
 			dsl.Attribute("username", dsl.String, "Username of the user", func() {
+				dsl.MinLength(1)
 				dsl.Example("johndoe")
 			})
 			dsl.Attribute("email", dsl.String, "Email of the user", func() {
@@ -145,22 +185,20 @@ var _ = dsl.Service("users", func() {
 				dsl.Example("Doe")
 			})
 			dsl.Attribute("password", dsl.String, "Password of the user", func() {
+				dsl.MinLength(8)
 				dsl.Example("password123")
 			})
-			dsl.Required("uuid", "username", "email", "firstname", "lastname")
+			dsl.Required("token", "uuid", "username", "email", "firstname", "lastname")
 		})
 		dsl.Result(User)
 		dsl.HTTP(func() {
 			dsl.PUT("/users/{uuid}")
+			dsl.Param("token:Authorization")
 			dsl.Response(dsl.StatusOK)
-			dsl.Response(dsl.StatusNotFound, func() {
-				dsl.Description("User not found")
-			})
+			dsl.Response(dsl.StatusBadRequest)
 		})
-		dsl.GRPC(func() {
-			dsl.Response(dsl.CodeOK)
-			dsl.Response(dsl.CodeNotFound)
-		})
+		dsl.Error("InvalidUserDetails")
+		dsl.Error("InsertConflict")
 	})
 
 	dsl.Method("deleteUser", func() {
@@ -168,23 +206,13 @@ var _ = dsl.Service("users", func() {
 		dsl.Security(JWTAuth, func() {
 			dsl.Scope("api:access")
 		})
-		dsl.Payload(func() {
-			dsl.Attribute("uuid", dsl.String, "UUID of the user", func() {
-				dsl.Example("550e8400-e29b-41d4-a716-446655440000")
-			})
-			dsl.Required("uuid")
-		})
+		dsl.Payload(SecureUUIDPayload)
 		dsl.HTTP(func() {
 			dsl.DELETE("/users/{uuid}")
+			dsl.Param("token:Authorization")
 			dsl.Response(dsl.StatusNoContent)
-			dsl.Response(dsl.StatusNotFound, func() {
-				dsl.Description("User not found")
-			})
 		})
-		dsl.GRPC(func() {
-			dsl.Response(dsl.CodeOK)
-			dsl.Response(dsl.CodeNotFound)
-		})
+		dsl.Error("NotFound")
 	})
 
 	dsl.Method("login", func() {
@@ -196,14 +224,11 @@ var _ = dsl.Service("users", func() {
 		dsl.HTTP(func() {
 			dsl.POST("/auth/login")
 			dsl.Response(dsl.StatusOK)
-			dsl.Response(dsl.StatusUnauthorized, func() {
-				dsl.Description("Invalid email or password")
-			})
+			dsl.Response(dsl.StatusUnauthorized)
+			dsl.Response(dsl.StatusBadRequest)
 		})
-		dsl.GRPC(func() {
-			dsl.Response(dsl.CodeOK)
-			dsl.Response(dsl.CodeUnauthenticated)
-		})
+		dsl.Error("InvalidCredentials")
+		dsl.Error("InvalidUserDetails")
 	})
 
 	dsl.Method("queryCurrentJWT", func() {
@@ -211,15 +236,14 @@ var _ = dsl.Service("users", func() {
 		dsl.Security(JWTAuth, func() {
 			dsl.Scope("api:access")
 		})
+		dsl.Payload(SecurePayload)
 		dsl.Result(dsl.String, func() {
 			dsl.Example("current_jwt_token")
 		})
 		dsl.HTTP(func() {
 			dsl.GET("/auth/current/jwt")
+			dsl.Param("token:Authorization")
 			dsl.Response(dsl.StatusOK)
-		})
-		dsl.GRPC(func() {
-			dsl.Response(dsl.CodeOK)
 		})
 	})
 })

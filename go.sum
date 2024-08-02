@@ -2,8 +2,12 @@ github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/dimfeld/httppath v0.0.0-20170720192232-ee938bf73598 h1:MGKhKyiYrvMDZsmLR/+RGffQSXwEkXgfLSA08qDn9AI=
 github.com/dimfeld/httppath v0.0.0-20170720192232-ee938bf73598/go.mod h1:0FpDmbrt36utu8jEmeU05dPC9AB5tsLYVVi+ZHfyuwI=
+github.com/go-chi/chi/v5 v5.1.0 h1:acVI1TYaD+hhedDJ3r54HyA6sExp3HfXq7QWEEY/xMw=
+github.com/go-chi/chi/v5 v5.1.0/go.mod h1:DslCQbL2OYiznFReuXYUmQ2hGd1aDpCnlMNITLSKoi8=
 github.com/google/uuid v1.6.0 h1:NIvaJDMOsjHA8n1jAhLSgzrAzy1Hgr+hNrb57e+94F0=
 github.com/google/uuid v1.6.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
+github.com/gorilla/websocket v1.5.3 h1:saDtZ6Pbx/0u+bgYQ3q96pZgCzfhKXGPqt7kZ72aNNg=
+github.com/gorilla/websocket v1.5.3/go.mod h1:YR8l580nyteQvAITg2hZ9XVh4b55+EU/adAjf1fMHhE=
 github.com/manveru/faker v0.0.0-20171103152722-9fbc68a78c4d h1:Zj+PHjnhRYWBK6RqCDBcAhLXoi3TzC27Zad/Vn+gnVQ=
 github.com/manveru/faker v0.0.0-20171103152722-9fbc68a78c4d/go.mod h1:WZy8Q5coAB1zhY9AOBJP0O6J4BuDfbupUDavKY+I3+s=
 github.com/manveru/gobdd v0.0.0-20131210092515-f1a17fdd710b h1:3E44bLeN8uKYdfQqVQycPnaVviZdBLbizFhU49mtbe4=
