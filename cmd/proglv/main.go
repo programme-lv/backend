@@ -79,7 +79,7 @@ func main() {
 	switch *hostF {
 	case "localhost":
 		{
-			addr := "http://localhost:80"
+			addr := "http://localhost:8080"
 			u, err := url.Parse(addr)
 			if err != nil {
 				log.Fatalf(ctx, err, "invalid URL %#v\n", addr)
@@ -97,7 +97,7 @@ func main() {
 				}
 				u.Host = net.JoinHostPort(h, *httpPortF)
 			} else if u.Port() == "" {
-				u.Host = net.JoinHostPort(u.Host, "80")
+				u.Host = net.JoinHostPort(u.Host, "8080")
 			}
 			handleHTTPServer(ctx, u, usersEndpoints, &wg, errc, *dbgF)
 		}

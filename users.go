@@ -35,6 +35,7 @@ func (s *userssrvc) JWTAuth(ctx context.Context, token string, scheme *security.
 	//
 	//    return ctx, goa.PermanentError("unauthorized", "invalid token")
 	//
+	log.Printf(ctx, "%+v", scheme)
 	return ctx, fmt.Errorf("not implemented")
 }
 
