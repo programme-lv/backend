@@ -80,6 +80,21 @@ var SecureUUIDPayload = dsl.Type("SecureUUIDPayload", func() {
 	dsl.Required("token", "uuid")
 })
 
+var JwtClaims = dsl.Type("JwtClaims", func() {
+	dsl.Attribute("username", dsl.String)
+	dsl.Attribute("firstname", dsl.String)
+	dsl.Attribute("lastname", dsl.String)
+	dsl.Attribute("email", dsl.String)
+	dsl.Attribute("uuid", dsl.String)
+	dsl.Attribute("scopes", dsl.ArrayOf(dsl.String))
+	dsl.Attribute("issuer", dsl.String)
+	dsl.Attribute("subject", dsl.String)
+	dsl.Attribute("audience", dsl.ArrayOf(dsl.String))
+	dsl.Attribute("expires_at", dsl.String)
+	dsl.Attribute("issued_at", dsl.String)
+	dsl.Attribute("not_before", dsl.String)
+})
+
 var _ = dsl.Service("users", func() {
 	dsl.Description("Service to manage users")
 
@@ -226,9 +241,45 @@ var _ = dsl.Service("users", func() {
 		dsl.Result(dsl.String, func() {
 			dsl.Example("current_jwt_token")
 		})
+		dsl.Result(JwtClaims)
 		dsl.HTTP(func() {
 			dsl.GET("/auth/current/jwt")
 			dsl.Response(dsl.StatusOK)
 		})
 	})
 })
+
+/*
+
+type Claims struct {
+	Username  string   `json:"username,omitempty"`
+	Firstname *string  `json:"firstname,omitempty"`
+	Lastname  *string  `json:"lastname,omitempty"`
+	Email     string   `json:"email,omitempty"`
+	UUID      string   `json:"uuid,omitempty"`
+	Scopes    []string `json:"scopes,omitempty"`
+	jwt.RegisteredClaims
+}
+
+	// the `iss` (Issuer) claim. See https://datatracker.ietf.org/doc/html/rfc7519#section-4.1.1
+	Issuer string `json:"iss,omitempty"`
+
+	// the `sub` (Subject) claim. See https://datatracker.ietf.org/doc/html/rfc7519#section-4.1.2
+	Subject string `json:"sub,omitempty"`
+
+	// the `aud` (Audience) claim. See https://datatracker.ietf.org/doc/html/rfc7519#section-4.1.3
+	Audience ClaimStrings `json:"aud,omitempty"`
+
+	// the `exp` (Expiration Time) claim. See https://datatracker.ietf.org/doc/html/rfc7519#section-4.1.4
+	ExpiresAt *NumericDate `json:"exp,omitempty"`
+
+	// the `nbf` (Not Before) claim. See https://datatracker.ietf.org/doc/html/rfc7519#section-4.1.5
+	NotBefore *NumericDate `json:"nbf,omitempty"`
+
+	// the `iat` (Issued At) claim. See https://datatracker.ietf.org/doc/html/rfc7519#section-4.1.6
+	IssuedAt *NumericDate `json:"iat,omitempty"`
+
+	// the `jti` (JWT ID) claim. See https://datatracker.ietf.org/doc/html/rfc7519#section-4.1.7
+	ID string `json:"jti,omitempty"`
+
+*/

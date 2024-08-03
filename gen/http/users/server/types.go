@@ -102,6 +102,23 @@ type UpdateUserOKResponseBody struct {
 	Lastname string `form:"lastname" json:"lastname" xml:"lastname"`
 }
 
+// QueryCurrentJWTResponseBody is the type of the "users" service
+// "queryCurrentJWT" endpoint HTTP response body.
+type QueryCurrentJWTResponseBody struct {
+	Username  *string  `form:"username,omitempty" json:"username,omitempty" xml:"username,omitempty"`
+	Firstname *string  `form:"firstname,omitempty" json:"firstname,omitempty" xml:"firstname,omitempty"`
+	Lastname  *string  `form:"lastname,omitempty" json:"lastname,omitempty" xml:"lastname,omitempty"`
+	Email     *string  `form:"email,omitempty" json:"email,omitempty" xml:"email,omitempty"`
+	UUID      *string  `form:"uuid,omitempty" json:"uuid,omitempty" xml:"uuid,omitempty"`
+	Scopes    []string `form:"scopes,omitempty" json:"scopes,omitempty" xml:"scopes,omitempty"`
+	Issuer    *string  `form:"issuer,omitempty" json:"issuer,omitempty" xml:"issuer,omitempty"`
+	Subject   *string  `form:"subject,omitempty" json:"subject,omitempty" xml:"subject,omitempty"`
+	Audience  []string `form:"audience,omitempty" json:"audience,omitempty" xml:"audience,omitempty"`
+	ExpiresAt *string  `form:"expires_at,omitempty" json:"expires_at,omitempty" xml:"expires_at,omitempty"`
+	IssuedAt  *string  `form:"issued_at,omitempty" json:"issued_at,omitempty" xml:"issued_at,omitempty"`
+	NotBefore *string  `form:"not_before,omitempty" json:"not_before,omitempty" xml:"not_before,omitempty"`
+}
+
 // UserResponse is used to define fields on response body types.
 type UserResponse struct {
 	// Unique user UUID
@@ -161,6 +178,36 @@ func NewUpdateUserOKResponseBody(res *users.User) *UpdateUserOKResponseBody {
 		Email:     res.Email,
 		Firstname: res.Firstname,
 		Lastname:  res.Lastname,
+	}
+	return body
+}
+
+// NewQueryCurrentJWTResponseBody builds the HTTP response body from the result
+// of the "queryCurrentJWT" endpoint of the "users" service.
+func NewQueryCurrentJWTResponseBody(res *users.JWTClaims) *QueryCurrentJWTResponseBody {
+	body := &QueryCurrentJWTResponseBody{
+		Username:  res.Username,
+		Firstname: res.Firstname,
+		Lastname:  res.Lastname,
+		Email:     res.Email,
+		UUID:      res.UUID,
+		Issuer:    res.Issuer,
+		Subject:   res.Subject,
+		ExpiresAt: res.ExpiresAt,
+		IssuedAt:  res.IssuedAt,
+		NotBefore: res.NotBefore,
+	}
+	if res.Scopes != nil {
+		body.Scopes = make([]string, len(res.Scopes))
+		for i, val := range res.Scopes {
+			body.Scopes[i] = val
+		}
+	}
+	if res.Audience != nil {
+		body.Audience = make([]string, len(res.Audience))
+		for i, val := range res.Audience {
+			body.Audience[i] = val
+		}
 	}
 	return body
 }

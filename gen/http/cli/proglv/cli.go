@@ -300,6 +300,6 @@ Query current JWT
     -token STRING: 
 
 Example:
-    %[1]s users query-current-jwt --token "Illo enim laboriosam dignissimos id libero."
+    %[1]s users query-current-jwt --token "Occaecati et et non."
 `, os.Args[0])
 }

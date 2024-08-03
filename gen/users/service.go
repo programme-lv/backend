@@ -29,7 +29,7 @@ type Service interface {
 	// User login
 	Login(context.Context, *LoginPayload) (res string, err error)
 	// Query current JWT
-	QueryCurrentJWT(context.Context, *QueryCurrentJWTPayload) (res string, err error)
+	QueryCurrentJWT(context.Context, *QueryCurrentJWTPayload) (res *JWTClaims, err error)
 }
 
 // Auther defines the authorization functions to be implemented by the service.
@@ -62,6 +62,22 @@ type InvalidCredentials string
 
 // Invalid user details
 type InvalidUserDetails string
+
+// JWTClaims is the result type of the users service queryCurrentJWT method.
+type JWTClaims struct {
+	Username  *string
+	Firstname *string
+	Lastname  *string
+	Email     *string
+	UUID      *string
+	Scopes    []string
+	Issuer    *string
+	Subject   *string
+	Audience  []string
+	ExpiresAt *string
+	IssuedAt  *string
+	NotBefore *string
+}
 
 // ListUsersPayload is the payload type of the users service listUsers method.
 type ListUsersPayload struct {

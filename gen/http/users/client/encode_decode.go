@@ -912,14 +912,15 @@ func DecodeQueryCurrentJWTResponse(decoder func(*http.Response) goahttp.Decoder,
 		switch resp.StatusCode {
 		case http.StatusOK:
 			var (
-				body string
+				body QueryCurrentJWTResponseBody
 				err  error
 			)
 			err = decoder(resp).Decode(&body)
 			if err != nil {
 				return nil, goahttp.ErrDecodingError("users", "queryCurrentJWT", err)
 			}
-			return body, nil
+			res := NewQueryCurrentJWTJWTClaimsOK(&body)
+			return res, nil
 		case http.StatusConflict:
 			en := resp.Header.Get("goa-error")
 			switch en {

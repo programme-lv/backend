@@ -597,9 +597,9 @@ func EncodeLoginError(encoder func(context.Context, http.ResponseWriter) goahttp
 // the users queryCurrentJWT endpoint.
 func EncodeQueryCurrentJWTResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
 	return func(ctx context.Context, w http.ResponseWriter, v any) error {
-		res, _ := v.(string)
+		res, _ := v.(*users.JWTClaims)
 		enc := encoder(ctx, w)
-		body := res
+		body := NewQueryCurrentJWTResponseBody(res)
 		w.WriteHeader(http.StatusOK)
 		return enc.Encode(body)
 	}

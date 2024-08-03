@@ -30,7 +30,7 @@ paths:
                 "200":
                     description: OK response.
                     schema:
-                        type: string
+                        $ref: '#/definitions/UsersQueryCurrentJWTResponseBody'
                 "400":
                     description: Bad Request response.
                     schema:
@@ -511,6 +511,75 @@ definitions:
         required:
             - username
             - password
+    UsersQueryCurrentJWTResponseBody:
+        title: UsersQueryCurrentJWTResponseBody
+        type: object
+        properties:
+            audience:
+                type: array
+                items:
+                    type: string
+                    example: Error facere quis iure assumenda numquam officia.
+                example:
+                    - Ut id.
+                    - Illo perferendis quos aut consequatur eveniet.
+                    - Doloremque excepturi deserunt.
+            email:
+                type: string
+                example: Ut nam est sit repellendus.
+            expires_at:
+                type: string
+                example: Reprehenderit suscipit quibusdam qui sunt.
+            firstname:
+                type: string
+                example: Dolorum commodi.
+            issued_at:
+                type: string
+                example: Ut voluptas velit autem praesentium nihil.
+            issuer:
+                type: string
+                example: Est ullam aut odit amet molestiae.
+            lastname:
+                type: string
+                example: Enim et voluptatem consequatur laboriosam.
+            not_before:
+                type: string
+                example: Velit inventore assumenda.
+            scopes:
+                type: array
+                items:
+                    type: string
+                    example: Delectus vero.
+                example:
+                    - Quisquam aspernatur repellat.
+                    - Perspiciatis hic occaecati voluptas quaerat modi.
+                    - Rerum aut dicta molestiae fugiat et.
+            subject:
+                type: string
+                example: Deleniti sit consequatur et molestias officiis omnis.
+            username:
+                type: string
+                example: Voluptates beatae.
+            uuid:
+                type: string
+                example: Maiores deleniti.
+        example:
+            audience:
+                - Qui non consectetur et nisi et.
+                - Sed error.
+            email: Assumenda et voluptatem doloribus.
+            expires_at: Est asperiores et velit voluptas.
+            firstname: Illo sunt deleniti nihil ad optio.
+            issued_at: Aut doloribus numquam in.
+            issuer: Minus accusantium nulla dolor.
+            lastname: Dolorum omnis eos quisquam qui sint.
+            not_before: Molestiae ut odit.
+            scopes:
+                - Minus libero fugiat error rerum soluta.
+                - Dolorem dolorem fugit hic.
+            subject: Rerum cupiditate dolores qui fugit necessitatibus ut.
+            username: Soluta quia maxime possimus.
+            uuid: Dolore molestiae voluptas qui nostrum.
     UsersUpdateUserBadRequestResponseBody:
         title: UsersUpdateUserBadRequestResponseBody
         type: object

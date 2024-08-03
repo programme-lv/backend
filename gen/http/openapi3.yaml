@@ -20,41 +20,58 @@ paths:
                     content:
                         application/json:
                             schema:
-                                type: string
-                                example: current_jwt_token
-                            example: current_jwt_token
+                                $ref: '#/components/schemas/JWTClaims'
+                            example:
+                                audience:
+                                    - Eligendi adipisci quia tenetur sed.
+                                    - Tenetur enim corporis modi rerum aut iste.
+                                    - Laudantium repellat non mollitia nemo veniam.
+                                    - Quia maxime nisi.
+                                email: A architecto minima.
+                                expires_at: Quos totam adipisci provident.
+                                firstname: Et ducimus vitae.
+                                issued_at: Ipsa minima sint.
+                                issuer: Ea dolor amet.
+                                lastname: Expedita quae dicta aut iusto ut.
+                                not_before: Reprehenderit itaque quia facilis odio.
+                                scopes:
+                                    - Omnis dignissimos laborum saepe et exercitationem ducimus.
+                                    - Ipsam sint veritatis et porro officiis.
+                                subject: Laboriosam natus vitae animi.
+                                username: Porro minus sed voluptatum voluptas amet.
+                                uuid: Dolorem autem repudiandae.
                 "400":
                     description: 'InvalidUserDetails: Bad Request response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Maiores ea repellendus non.
-                            example: Autem pariatur ea asperiores.
+                                example: Qui voluptatibus et dolorum suscipit accusantium.
+                            example: Placeat velit eum ut libero fugiat.
                 "401":
                     description: 'InvalidCredentials: Unauthorized response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Ipsam sed nemo vero nostrum.
-                            example: Natus qui est in et placeat accusantium.
+                                example: Debitis ea est dolorum.
+                            example: Atque enim consequatur aperiam quis.
                 "404":
                     description: 'NotFound: Not Found response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Quo ut eos non consequatur.
-                            example: Ea pariatur qui reiciendis dolorem.
+                                example: Modi tenetur.
+                            example: Consequatur aut nostrum enim molestiae doloremque iusto.
                 "409":
                     description: 'EmailExists: Conflict response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Voluptates beatae.
-                            example: Est sunt sunt.
+                                example: Possimus voluptates ea dolores sequi.
+                            example: Dolorem illo eum sit nobis incidunt aliquam.
             security:
                 - jwt_header_Authorization: []
     /auth/login:
@@ -89,7 +106,7 @@ paths:
                             schema:
                                 type: string
                                 example: jwt_token
-                            example: Perferendis est asperiores et velit voluptas labore.
+                            example: Aut quos aspernatur officiis blanditiis.
                 "401":
                     description: 'InvalidCredentials: Unauthorized response.'
                     content:
@@ -97,23 +114,23 @@ paths:
                             schema:
                                 type: string
                                 example: jwt_token
-                            example: Consectetur et nisi et earum sed.
+                            example: Sequi eveniet non non.
                 "404":
                     description: 'NotFound: Not Found response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Id modi voluptatibus eos.
-                            example: Doloribus numquam in ut molestiae ut odit.
+                                example: Ipsa exercitationem.
+                            example: Unde voluptas.
                 "409":
                     description: 'EmailExists: Conflict response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Non esse incidunt quo eveniet cum consectetur.
-                            example: Optio enim reprehenderit similique.
+                                example: Omnis voluptatem et.
+                            example: Autem fuga quibusdam sunt.
     /users:
         get:
             tags:
@@ -156,11 +173,6 @@ paths:
                                       lastname: Doe
                                       username: johndoe
                                       uuid: 550e8400-e29b-41d4-a716-446655440000
-                                    - email: johndoe@example.com
-                                      firstname: John
-                                      lastname: Doe
-                                      username: johndoe
-                                      uuid: 550e8400-e29b-41d4-a716-446655440000
                             example:
                                 - email: johndoe@example.com
                                   firstname: John
@@ -183,32 +195,32 @@ paths:
                         application/json:
                             schema:
                                 type: string
-                                example: Autem et.
-                            example: Est sit.
+                                example: Reprehenderit similique dolorem natus qui est.
+                            example: Ut eaque sunt amet voluptatem est harum.
                 "401":
                     description: 'InvalidCredentials: Unauthorized response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Inventore reiciendis impedit voluptatem.
-                            example: Et voluptatem consequatur laboriosam alias ut.
+                                example: Velit quas aliquid incidunt deleniti optio.
+                            example: Ut similique fugiat harum corporis voluptas quasi.
                 "404":
                     description: 'NotFound: Not Found response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Quia occaecati qui assumenda.
-                            example: Autem maiores deleniti delectus delectus.
+                                example: Et placeat.
+                            example: Voluptate recusandae et perferendis modi.
                 "409":
                     description: 'EmailExists: Conflict response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Necessitatibus debitis illo ex et similique.
-                            example: Perspiciatis hic occaecati voluptas quaerat modi.
+                                example: Nobis autem pariatur ea asperiores.
+                            example: Consequatur a et qui.
             security:
                 - jwt_query_Authorization:
                     - users:read
@@ -249,32 +261,32 @@ paths:
                         application/json:
                             schema:
                                 type: string
-                                example: Dolorem autem repudiandae.
-                            example: Quos aut.
+                                example: Cumque dolor similique iste.
+                            example: Exercitationem sequi quasi ex et ut.
                 "401":
                     description: 'InvalidCredentials: Unauthorized response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Veritatis et porro officiis.
-                            example: Nihil ut voluptas.
+                                example: Necessitatibus nam et eum repudiandae tempora.
+                            example: Voluptatem iure ab.
                 "404":
                     description: 'NotFound: Not Found response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Ea dolor amet.
-                            example: Autem praesentium nihil eveniet velit inventore.
+                                example: Maxime labore.
+                            example: Autem repudiandae ut nostrum quod corporis repellendus.
                 "409":
                     description: 'EmailExists: Conflict response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Sint omnis dignissimos laborum.
-                            example: Suscipit quibusdam qui.
+                                example: Est ad cupiditate sint asperiores.
+                            example: Quia et dolor voluptatem.
     /users/{uuid}:
         delete:
             tags:
@@ -311,32 +323,32 @@ paths:
                         application/json:
                             schema:
                                 type: string
-                                example: Reprehenderit itaque quia facilis odio.
-                            example: Minus accusantium nulla dolor.
+                                example: Dolores sint et aliquid dolores.
+                            example: Quam illo id.
                 "401":
                     description: 'InvalidCredentials: Unauthorized response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Ipsa minima sint.
-                            example: Dolorem dolorem fugit hic.
+                                example: Ut similique voluptate.
+                            example: Beatae similique.
                 "404":
                     description: 'NotFound: Not Found response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Quos totam adipisci provident.
-                            example: Voluptatem minus libero fugiat error rerum soluta.
+                                example: Sint consequatur maiores et.
+                            example: Animi aut eligendi.
                 "409":
                     description: 'EmailExists: Conflict response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Velit rerum quisquam omnis et delectus.
-                            example: Natus qui.
+                                example: Doloremque ex.
+                            example: Delectus a.
             security:
                 - jwt_query_Authorization:
                     - users:write
@@ -385,32 +397,32 @@ paths:
                         application/json:
                             schema:
                                 type: string
-                                example: Porro minus sed voluptatum voluptas amet.
-                            example: Est ullam aut odit amet molestiae.
+                                example: Est sunt sunt.
+                            example: Officia voluptatem dignissimos.
                 "401":
                     description: 'InvalidCredentials: Unauthorized response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Occaecati et et non.
-                            example: Rerum aut dicta molestiae fugiat et.
+                                example: Vero nihil natus.
+                            example: Laudantium saepe omnis asperiores ut ipsa consequatur.
                 "404":
                     description: 'NotFound: Not Found response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Et ducimus vitae.
-                            example: Deleniti sit consequatur et molestias officiis omnis.
+                                example: Est voluptatum illo et sit.
+                            example: Tempora unde.
                 "409":
                     description: 'EmailExists: Conflict response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Expedita quae dicta aut iusto ut.
-                            example: Id ut id molestiae illo.
+                                example: Facere rerum et quaerat.
+                            example: Eum facere delectus ullam sit unde.
             security:
                 - jwt_query_Authorization:
                     - users:read
@@ -471,31 +483,31 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/User'
-                            example: Quasi soluta quia maxime.
+                            example: Architecto et.
                 "401":
                     description: 'InvalidCredentials: Unauthorized response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Cum eligendi adipisci quia tenetur.
-                            example: Sed illo sunt deleniti nihil ad optio.
+                                example: Voluptates repellendus sit quibusdam.
+                            example: Sint sed itaque.
                 "404":
                     description: 'NotFound: Not Found response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Aperiam tenetur enim corporis modi rerum.
-                            example: Dolorum omnis eos quisquam qui sint.
+                                example: Quo delectus rerum necessitatibus delectus et.
+                            example: Soluta architecto.
                 "409":
                     description: 'EmailExists: Conflict response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Iste enim laudantium repellat non.
-                            example: Dolore molestiae voluptas qui nostrum.
+                                example: Et aspernatur fugit.
+                            example: Delectus iste autem.
             security:
                 - jwt_query_Authorization:
                     - users:write
@@ -539,6 +551,79 @@ components:
                 - firstname
                 - lastname
                 - password
+        JWTClaims:
+            type: object
+            properties:
+                audience:
+                    type: array
+                    items:
+                        type: string
+                        example: Voluptatem reiciendis incidunt.
+                    example:
+                        - Fugiat aut sint reiciendis.
+                        - Vitae voluptate eum est.
+                        - Quod est laudantium et aliquid quo magni.
+                        - Mollitia explicabo occaecati aperiam.
+                email:
+                    type: string
+                    example: Soluta id quasi accusamus quod repellendus et.
+                expires_at:
+                    type: string
+                    example: Et consectetur iure quibusdam.
+                firstname:
+                    type: string
+                    example: Aut voluptatibus quae autem odio nostrum modi.
+                issued_at:
+                    type: string
+                    example: Molestias explicabo odio quasi est.
+                issuer:
+                    type: string
+                    example: Repudiandae accusamus voluptas.
+                lastname:
+                    type: string
+                    example: Et illo.
+                not_before:
+                    type: string
+                    example: Quos et occaecati rem eius a.
+                scopes:
+                    type: array
+                    items:
+                        type: string
+                        example: Voluptate quisquam laboriosam optio qui.
+                    example:
+                        - Nostrum perspiciatis saepe eos.
+                        - Ratione tempora ipsa vel.
+                        - Est accusamus animi et sapiente quis repellat.
+                        - Soluta nulla aut dolorum.
+                subject:
+                    type: string
+                    example: Atque est.
+                username:
+                    type: string
+                    example: Architecto qui.
+                uuid:
+                    type: string
+                    example: Rem eum quia et et.
+            example:
+                audience:
+                    - Quibusdam qui.
+                    - Inventore ut iste alias.
+                    - Nobis doloremque dolorem ut.
+                    - Quo labore aut voluptatum molestiae.
+                email: Laudantium qui labore corrupti.
+                expires_at: Amet quod enim ipsum et quod.
+                firstname: Eveniet omnis aut a nihil blanditiis deserunt.
+                issued_at: Sed aliquam et sunt.
+                issuer: Consequuntur quidem quo explicabo.
+                lastname: Laborum quia repellat voluptatem quia voluptas.
+                not_before: Consequatur quia cum ipsam.
+                scopes:
+                    - Reiciendis porro magni quod distinctio.
+                    - Nesciunt exercitationem neque numquam.
+                    - Laudantium minus earum fugiat quam molestiae ea.
+                subject: Reprehenderit reiciendis necessitatibus excepturi provident.
+                username: Totam praesentium dolor aspernatur doloremque est et.
+                uuid: Hic esse amet voluptatem quia cumque.
         LoginRequestBody:
             type: object
             properties:

@@ -100,6 +100,23 @@ type UpdateUserOKResponseBody struct {
 	Lastname *string `form:"lastname,omitempty" json:"lastname,omitempty" xml:"lastname,omitempty"`
 }
 
+// QueryCurrentJWTResponseBody is the type of the "users" service
+// "queryCurrentJWT" endpoint HTTP response body.
+type QueryCurrentJWTResponseBody struct {
+	Username  *string  `form:"username,omitempty" json:"username,omitempty" xml:"username,omitempty"`
+	Firstname *string  `form:"firstname,omitempty" json:"firstname,omitempty" xml:"firstname,omitempty"`
+	Lastname  *string  `form:"lastname,omitempty" json:"lastname,omitempty" xml:"lastname,omitempty"`
+	Email     *string  `form:"email,omitempty" json:"email,omitempty" xml:"email,omitempty"`
+	UUID      *string  `form:"uuid,omitempty" json:"uuid,omitempty" xml:"uuid,omitempty"`
+	Scopes    []string `form:"scopes,omitempty" json:"scopes,omitempty" xml:"scopes,omitempty"`
+	Issuer    *string  `form:"issuer,omitempty" json:"issuer,omitempty" xml:"issuer,omitempty"`
+	Subject   *string  `form:"subject,omitempty" json:"subject,omitempty" xml:"subject,omitempty"`
+	Audience  []string `form:"audience,omitempty" json:"audience,omitempty" xml:"audience,omitempty"`
+	ExpiresAt *string  `form:"expires_at,omitempty" json:"expires_at,omitempty" xml:"expires_at,omitempty"`
+	IssuedAt  *string  `form:"issued_at,omitempty" json:"issued_at,omitempty" xml:"issued_at,omitempty"`
+	NotBefore *string  `form:"not_before,omitempty" json:"not_before,omitempty" xml:"not_before,omitempty"`
+}
+
 // UserResponse is used to define fields on response body types.
 type UserResponse struct {
 	// Unique user UUID
@@ -451,6 +468,37 @@ func NewLoginInvalidUserDetails(body string) users.InvalidUserDetails {
 // NewLoginNotFound builds a users service login endpoint NotFound error.
 func NewLoginNotFound(body string) users.NotFound {
 	v := users.NotFound(body)
+
+	return v
+}
+
+// NewQueryCurrentJWTJWTClaimsOK builds a "users" service "queryCurrentJWT"
+// endpoint result from a HTTP "OK" response.
+func NewQueryCurrentJWTJWTClaimsOK(body *QueryCurrentJWTResponseBody) *users.JWTClaims {
+	v := &users.JWTClaims{
+		Username:  body.Username,
+		Firstname: body.Firstname,
+		Lastname:  body.Lastname,
+		Email:     body.Email,
+		UUID:      body.UUID,
+		Issuer:    body.Issuer,
+		Subject:   body.Subject,
+		ExpiresAt: body.ExpiresAt,
+		IssuedAt:  body.IssuedAt,
+		NotBefore: body.NotBefore,
+	}
+	if body.Scopes != nil {
+		v.Scopes = make([]string, len(body.Scopes))
+		for i, val := range body.Scopes {
+			v.Scopes[i] = val
+		}
+	}
+	if body.Audience != nil {
+		v.Audience = make([]string, len(body.Audience))
+		for i, val := range body.Audience {
+			v.Audience[i] = val
+		}
+	}
 
 	return v
 }

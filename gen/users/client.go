@@ -150,11 +150,11 @@ func (c *Client) Login(ctx context.Context, p *LoginPayload) (res string, err er
 //   - "UsernameExists" (type UsernameExists)
 //   - "EmailExists" (type EmailExists)
 //   - error: internal error
-func (c *Client) QueryCurrentJWT(ctx context.Context, p *QueryCurrentJWTPayload) (res string, err error) {
+func (c *Client) QueryCurrentJWT(ctx context.Context, p *QueryCurrentJWTPayload) (res *JWTClaims, err error) {
 	var ires any
 	ires, err = c.QueryCurrentJWTEndpoint(ctx, p)
 	if err != nil {
 		return
 	}
-	return ires.(string), nil
+	return ires.(*JWTClaims), nil
 }
