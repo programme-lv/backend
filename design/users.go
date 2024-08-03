@@ -104,12 +104,14 @@ var _ = dsl.Service("users", func() {
 	dsl.Error("InvalidUserDetails", dsl.String, "Invalid user details")
 	dsl.Error("NotFound", dsl.String, "User not found")
 	dsl.Error("InsertConflict", InsertConflict, "Insertion conflict")
+	dsl.Error("UsernameTooShort", dsl.String, "Username too short")
 
 	dsl.HTTP(func() {
 		dsl.Response("InvalidCredentials", dsl.StatusUnauthorized)
 		dsl.Response("InvalidUserDetails", dsl.StatusBadRequest)
 		dsl.Response("NotFound", dsl.StatusNotFound)
 		dsl.Response("InsertConflict", dsl.StatusConflict)
+		dsl.Response("UsernameTooShort", dsl.StatusBadRequest)
 	})
 
 	dsl.Method("listUsers", func() {

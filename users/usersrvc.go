@@ -3,20 +3,26 @@ package users
 import (
 	"context"
 	"errors"
+	"fmt"
+	"net/mail"
 	"os"
+	"time"
 
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/google/uuid"
 	"github.com/programme-lv/backend/auth"
-	"github.com/programme-lv/backend/gen/users"
 	usergen "github.com/programme-lv/backend/gen/users"
 	"goa.design/clue/log"
 	"goa.design/goa/v3/security"
+	"golang.org/x/crypto/bcrypt"
 )
 
 // users service example implementation.
 // The example methods log the requests and return zero values.
 type userssrvc struct {
-	jwtKey []byte
+	jwtKey       []byte
+	ddbUserTable *DynamoDbUserTable
 }
 
 // NewUsers returns the users service implementation.
@@ -28,8 +34,18 @@ func NewUsers(ctx context.Context) usergen.Service {
 			errors.New("JWT_KEY is not set"),
 			"cant read JWT_KEY from env in new user service contructor")
 	}
+
+	cfg, err := config.LoadDefaultConfig(context.TODO(),
+		config.WithRegion("eu-central-1"))
+	if err != nil {
+		panic(fmt.Sprintf("unable to load SDK config, %v", err))
+	}
+	dynamodbClient := dynamodb.NewFromConfig(cfg)
+
 	return &userssrvc{
 		jwtKey: []byte(jwtKey),
+		ddbUserTable: NewDynamoDbUsersTable(
+			dynamodbClient, "ProglvUsers"),
 	}
 }
 
@@ -74,41 +90,111 @@ func (s *userssrvc) GetUser(ctx context.Context, p *usergen.SecureUUIDPayload) (
 
 // Create a new user
 func (s *userssrvc) CreateUser(ctx context.Context, p *usergen.UserPayload) (res *usergen.User, err error) {
+	const maxFirstnameLastnameLength = len("pretpulkstenraditajvirziens")
+	const maxEmailLength = 320
+	const maxUsernameLength = 32
+	const minPasswordLength = 8
+	const minUsernameLength = 2
+
+	if len(p.Username) < minUsernameLength {
+		return nil, errors.New("username too short")
+	}
+
+	if len(p.Username) > maxUsernameLength {
+		return nil, errors.New("username too long")
+	}
+
+	if !validEmail(p.Email) {
+		return nil, errors.New("invalid email")
+	}
+
+	if len(p.Email) > maxEmailLength {
+		return nil, errors.New("email too long")
+	}
+
+	if len(p.Firstname) > maxFirstnameLastnameLength {
+		return nil, errors.New("firstname too long")
+	}
+
+	if len(p.Password) < minPasswordLength {
+		return nil, errors.New("password too short")
+	}
+
+	if len(p.Firstname) > len("pretpulkstenraditajvirziens") {
+		return nil, errors.New("firstname too long")
+	}
+
+	bcryptPwd, err := bcrypt.GenerateFromPassword([]byte(p.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return nil, errors.New("error hashing password")
+	}
+
 	uuid := uuid.New()
 
+	var firstname *string = nil
+	if p.Firstname != "" {
+		firstname = &p.Firstname
+	}
+
+	var lastname *string = nil
+	if p.Lastname != "" {
+		lastname = &p.Lastname
+	}
+
 	row := &UserRow{
-		Uuid:      uuid.New().String(),
+		Uuid:      uuid.String(),
 		Username:  p.Username,
 		Email:     p.Email,
-		BcryptPwd: "",
-		Firstname: &p.Firstname,
-		Lastname:  &p.Lastname,
+		BcryptPwd: bcryptPwd,
+		Firstname: firstname,
+		Lastname:  lastname,
 		Version:   0,
+		CreatedAt: time.Now(),
 	}
+
+	err = s.ddbUserTable.Save(ctx, row)
+	if err != nil {
+		log.Errorf(ctx, err, "error saving user")
+	}
+
+	res = &usergen.User{
+		UUID:      uuid.String(),
+		Username:  p.Username,
+		Email:     p.Email,
+		Firstname: p.Firstname,
+		Lastname:  p.Lastname,
+	}
+
+	return res, nil
 }
 
 // Update an existing user
-func (s *userssrvc) UpdateUser(ctx context.Context, p *users.UpdateUserPayload) (res *users.User, err error) {
-	res = &users.User{}
+func (s *userssrvc) UpdateUser(ctx context.Context, p *usergen.UpdateUserPayload) (res *usergen.User, err error) {
+	res = &usergen.User{}
 	log.Printf(ctx, "users.updateUser")
 	return
 }
 
 // Delete a user
-func (s *userssrvc) DeleteUser(ctx context.Context, p *users.SecureUUIDPayload) (err error) {
+func (s *userssrvc) DeleteUser(ctx context.Context, p *usergen.SecureUUIDPayload) (err error) {
 	log.Printf(ctx, "users.deleteUser")
 	return
 }
 
 // User login
-func (s *userssrvc) Login(ctx context.Context, p *users.LoginPayload) (res string, err error) {
+func (s *userssrvc) Login(ctx context.Context, p *usergen.LoginPayload) (res string, err error) {
 	// auth.GenerateJWT()
 	log.Printf(ctx, "payload: %+v", p)
 	return
 }
 
 // Query current JWT
-func (s *userssrvc) QueryCurrentJWT(ctx context.Context, p *users.QueryCurrentJWTPayload) (res string, err error) {
+func (s *userssrvc) QueryCurrentJWT(ctx context.Context, p *usergen.QueryCurrentJWTPayload) (res string, err error) {
 	log.Printf(ctx, "users.queryCurrentJWT")
 	return
+}
+
+func validEmail(email string) bool {
+	_, err := mail.ParseAddress(email)
+	return err == nil
 }
