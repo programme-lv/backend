@@ -22,9 +22,9 @@ paths:
             operationId: users#queryCurrentJWT
             parameters:
                 - name: Authorization
-                  in: query
+                  in: header
                   description: JWT token used for authentication
-                  required: false
+                  required: true
                   type: string
             responses:
                 "200":
@@ -50,7 +50,7 @@ paths:
             schemes:
                 - http
             security:
-                - jwt_query_Authorization: []
+                - jwt_header_Authorization: []
     /auth/login:
         post:
             tags:
@@ -624,6 +624,14 @@ definitions:
             - firstname
             - lastname
 securityDefinitions:
+    jwt_header_Authorization:
+        type: apiKey
+        description: |4-
+            **Security Scopes**:
+              * `users:read`: Read users
+              * `users:write`: Write users
+        name: Authorization
+        in: header
     jwt_query_Authorization:
         type: apiKey
         description: |4-

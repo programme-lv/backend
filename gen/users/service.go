@@ -84,7 +84,7 @@ type NotFound string
 // queryCurrentJWT method.
 type QueryCurrentJWTPayload struct {
 	// JWT token used for authentication
-	Token *string
+	Token string
 }
 
 // SecureUUIDPayload is the payload type of the users service getUser method.

@@ -13,6 +13,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 
 	users "github.com/programme-lv/backend/gen/users"
 	goahttp "goa.design/goa/v3/http"
@@ -872,11 +873,14 @@ func EncodeQueryCurrentJWTRequest(encoder func(*http.Request) goahttp.Encoder) f
 		if !ok {
 			return goahttp.ErrInvalidType("users", "queryCurrentJWT", "*users.QueryCurrentJWTPayload", v)
 		}
-		values := req.URL.Query()
-		if p.Token != nil {
-			values.Add("Authorization", *p.Token)
+		{
+			head := p.Token
+			if !strings.Contains(head, " ") {
+				req.Header.Set("Authorization", "Bearer "+head)
+			} else {
+				req.Header.Set("Authorization", head)
+			}
 		}
-		req.URL.RawQuery = values.Encode()
 		return nil
 	}
 }

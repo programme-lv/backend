@@ -12,6 +12,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"strings"
 
 	users "github.com/programme-lv/backend/gen/users"
 	goahttp "goa.design/goa/v3/http"
@@ -609,13 +610,22 @@ func EncodeQueryCurrentJWTResponse(encoder func(context.Context, http.ResponseWr
 func DecodeQueryCurrentJWTRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
 	return func(r *http.Request) (any, error) {
 		var (
-			token *string
+			token string
+			err   error
 		)
-		tokenRaw := r.URL.Query().Get("Authorization")
-		if tokenRaw != "" {
-			token = &tokenRaw
+		token = r.Header.Get("Authorization")
+		if token == "" {
+			err = goa.MergeErrors(err, goa.MissingFieldError("token", "header"))
+		}
+		if err != nil {
+			return nil, err
 		}
 		payload := NewQueryCurrentJWTPayload(token)
+		if strings.Contains(payload.Token, " ") {
+			// Remove authorization scheme prefix (e.g. "Bearer")
+			cred := strings.SplitN(payload.Token, " ", 2)[1]
+			payload.Token = cred
+		}
 
 		return payload, nil
 	}

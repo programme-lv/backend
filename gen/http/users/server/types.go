@@ -232,7 +232,7 @@ func NewLoginPayload(body *LoginRequestBody) *users.LoginPayload {
 
 // NewQueryCurrentJWTPayload builds a users service queryCurrentJWT endpoint
 // payload.
-func NewQueryCurrentJWTPayload(token *string) *users.QueryCurrentJWTPayload {
+func NewQueryCurrentJWTPayload(token string) *users.QueryCurrentJWTPayload {
 	v := &users.QueryCurrentJWTPayload{}
 	v.Token = token
 

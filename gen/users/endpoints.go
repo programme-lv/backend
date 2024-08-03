@@ -160,11 +160,7 @@ func NewQueryCurrentJWTEndpoint(s Service, authJWTFn security.AuthJWTFunc) goa.E
 			Scopes:         []string{"users:read", "users:write"},
 			RequiredScopes: []string{},
 		}
-		var token string
-		if p.Token != nil {
-			token = *p.Token
-		}
-		ctx, err = authJWTFn(ctx, token, &sc)
+		ctx, err = authJWTFn(ctx, p.Token, &sc)
 		if err != nil {
 			return nil, err
 		}

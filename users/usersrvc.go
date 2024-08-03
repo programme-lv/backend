@@ -62,12 +62,14 @@ type ClaimsKey string
 func (s *userssrvc) JWTAuth(ctx context.Context, token string, scheme *security.JWTScheme) (context.Context, error) {
 	claims, err := auth.ValidateJWT(token, s.jwtKey)
 	if err != nil {
+		fmt.Println(err)
 		return ctx, ErrInvalidToken
 	}
 
 	scopesInToken := claims.Scopes
 
 	if err := scheme.Validate(scopesInToken); err != nil {
+		fmt.Println("invalid scopes in token")
 		return ctx, ErrMissingScope
 	}
 

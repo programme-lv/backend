@@ -171,11 +171,9 @@ func BuildLoginPayload(usersLoginBody string) (*users.LoginPayload, error) {
 // BuildQueryCurrentJWTPayload builds the payload for the users queryCurrentJWT
 // endpoint from CLI flags.
 func BuildQueryCurrentJWTPayload(usersQueryCurrentJWTToken string) (*users.QueryCurrentJWTPayload, error) {
-	var token *string
+	var token string
 	{
-		if usersQueryCurrentJWTToken != "" {
-			token = &usersQueryCurrentJWTToken
-		}
+		token = usersQueryCurrentJWTToken
 	}
 	v := &users.QueryCurrentJWTPayload{}
 	v.Token = token

@@ -220,16 +220,14 @@ var _ = dsl.Service("users", func() {
 		dsl.Security(JWTAuth, func() {
 		})
 		dsl.Payload(func() {
-			dsl.Token("token", dsl.String, "JWT token used for authentication", func() {
-				dsl.Example("jwt_token")
-			})
+			dsl.Token("token", dsl.String, "JWT token used for authentication")
+			dsl.Required("token")
 		})
 		dsl.Result(dsl.String, func() {
 			dsl.Example("current_jwt_token")
 		})
 		dsl.HTTP(func() {
 			dsl.GET("/auth/current/jwt")
-			dsl.Param("token:Authorization")
 			dsl.Response(dsl.StatusOK)
 		})
 	})

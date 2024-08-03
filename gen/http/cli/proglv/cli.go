@@ -67,7 +67,7 @@ func ParseEndpoint(
 		usersLoginBodyFlag = usersLoginFlags.String("body", "REQUIRED", "")
 
 		usersQueryCurrentJWTFlags     = flag.NewFlagSet("query-current-jwt", flag.ExitOnError)
-		usersQueryCurrentJWTTokenFlag = usersQueryCurrentJWTFlags.String("token", "", "")
+		usersQueryCurrentJWTTokenFlag = usersQueryCurrentJWTFlags.String("token", "REQUIRED", "")
 	)
 	usersFlags.Usage = usersUsage
 	usersListUsersFlags.Usage = usersListUsersUsage
@@ -300,6 +300,6 @@ Query current JWT
     -token STRING: 
 
 Example:
-    %[1]s users query-current-jwt --token "jwt_token"
+    %[1]s users query-current-jwt --token "Illo enim laboriosam dignissimos id libero."
 `, os.Args[0])
 }
