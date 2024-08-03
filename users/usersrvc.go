@@ -204,9 +204,32 @@ func (s *userssrvc) DeleteUser(ctx context.Context, p *usergen.SecureUUIDPayload
 
 // User login
 func (s *userssrvc) Login(ctx context.Context, p *usergen.LoginPayload) (res string, err error) {
-	// auth.GenerateJWT()
-	log.Printf(ctx, "payload: %+v", p)
-	return
+	allUsers, err := s.ddbUserTable.List(ctx)
+	if err != nil {
+		return "", fmt.Errorf("error listing users: %w", err)
+	}
+
+	for _, user := range allUsers {
+		if user.Username == p.Username {
+			err = bcrypt.CompareHashAndPassword(user.BcryptPwd, []byte(p.Password))
+			if err == nil {
+				token, err := auth.GenerateJWT(
+					user.Username,
+					user.Email, user.Uuid,
+					user.Firstname, user.Lastname,
+					s.jwtKey)
+				if err != nil {
+					return "", fmt.Errorf("error generating JWT: %w", err)
+				}
+				if token == "" {
+					return "", fmt.Errorf("error generating JWT")
+				}
+				return token, nil
+			}
+		}
+	}
+
+	return "", usergen.InvalidCredentials("lietotājvārds vai parole nav pareiza")
 }
 
 // Query current JWT

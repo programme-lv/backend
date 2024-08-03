@@ -29,14 +29,14 @@ Content-Type: application/json
 DELETE {{addr}}/users/{uuid}
 
 ### List Users
-GET {{addr}}/users/
+GET {{addr}}/users
 
 ### Login
 POST {{addr}}/auth/login
 Content-Type: application/json
 
 {
-  "username": "Eliaa",
+  "username": "Eliaa3aba",
   "password": "password123"
 }
 
