@@ -21,10 +21,10 @@ func TestCreateUser(t *testing.T) {
 
 	u := UserBody{
 		Email:     "johndoe@example.com",
-		Firstname: "Johnaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+		Firstname: "Johnaaaaaaaaaaaaaa",
 		Lastname:  "Doe",
 		Password:  "password123",
-		Username:  "johndoe",
+		Username:  "j",
 	}
 
 	b, err := json.Marshal(u)

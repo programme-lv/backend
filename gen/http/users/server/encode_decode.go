@@ -87,6 +87,14 @@ func EncodeListUsersError(encoder func(context.Context, http.ResponseWriter) goa
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusBadRequest)
 			return enc.Encode(body)
+		case "UsernameTooShort":
+			var res users.UsernameTooShort
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			body := res
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusBadRequest)
+			return enc.Encode(body)
 		case "NotFound":
 			var res users.NotFound
 			errors.As(v, &res)
@@ -172,6 +180,14 @@ func EncodeGetUserError(encoder func(context.Context, http.ResponseWriter) goaht
 			return enc.Encode(body)
 		case "InvalidUserDetails":
 			var res users.InvalidUserDetails
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			body := res
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusBadRequest)
+			return enc.Encode(body)
+		case "UsernameTooShort":
+			var res users.UsernameTooShort
 			errors.As(v, &res)
 			enc := encoder(ctx, w)
 			body := res
@@ -267,6 +283,14 @@ func EncodeCreateUserError(encoder func(context.Context, http.ResponseWriter) go
 			return enc.Encode(body)
 		case "InvalidUserDetails":
 			var res users.InvalidUserDetails
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			body := res
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusBadRequest)
+			return enc.Encode(body)
+		case "UsernameTooShort":
+			var res users.UsernameTooShort
 			errors.As(v, &res)
 			enc := encoder(ctx, w)
 			body := res
@@ -383,6 +407,14 @@ func EncodeUpdateUserError(encoder func(context.Context, http.ResponseWriter) go
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusBadRequest)
 			return enc.Encode(body)
+		case "UsernameTooShort":
+			var res users.UsernameTooShort
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			body := res
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusBadRequest)
+			return enc.Encode(body)
 		case "NotFound":
 			var res users.NotFound
 			errors.As(v, &res)
@@ -465,6 +497,14 @@ func EncodeDeleteUserError(encoder func(context.Context, http.ResponseWriter) go
 			return enc.Encode(body)
 		case "InvalidUserDetails":
 			var res users.InvalidUserDetails
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			body := res
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusBadRequest)
+			return enc.Encode(body)
+		case "UsernameTooShort":
+			var res users.UsernameTooShort
 			errors.As(v, &res)
 			enc := encoder(ctx, w)
 			body := res
@@ -566,6 +606,14 @@ func EncodeLoginError(encoder func(context.Context, http.ResponseWriter) goahttp
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusBadRequest)
 			return enc.Encode(body)
+		case "UsernameTooShort":
+			var res users.UsernameTooShort
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			body := res
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusBadRequest)
+			return enc.Encode(body)
 		case "NotFound":
 			var res users.NotFound
 			errors.As(v, &res)
@@ -643,6 +691,14 @@ func EncodeQueryCurrentJWTError(encoder func(context.Context, http.ResponseWrite
 			return enc.Encode(body)
 		case "InvalidUserDetails":
 			var res users.InvalidUserDetails
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			body := res
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusBadRequest)
+			return enc.Encode(body)
+		case "UsernameTooShort":
+			var res users.UsernameTooShort
 			errors.As(v, &res)
 			enc := encoder(ctx, w)
 			body := res

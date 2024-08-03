@@ -58,6 +58,7 @@ func EncodeListUsersRequest(encoder func(*http.Request) goahttp.Encoder) func(*h
 //   - "InsertConflict" (type *users.ServiceInsertconflict): http.StatusConflict
 //   - "InvalidCredentials" (type users.InvalidCredentials): http.StatusUnauthorized
 //   - "InvalidUserDetails" (type users.InvalidUserDetails): http.StatusBadRequest
+//   - "UsernameTooShort" (type users.UsernameTooShort): http.StatusBadRequest
 //   - "NotFound" (type users.NotFound): http.StatusNotFound
 //   - error: internal error
 func DecodeListUsersResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
@@ -121,15 +122,32 @@ func DecodeListUsersResponse(decoder func(*http.Response) goahttp.Decoder, resto
 			}
 			return nil, NewListUsersInvalidCredentials(body)
 		case http.StatusBadRequest:
-			var (
-				body string
-				err  error
-			)
-			err = decoder(resp).Decode(&body)
-			if err != nil {
-				return nil, goahttp.ErrDecodingError("users", "listUsers", err)
+			en := resp.Header.Get("goa-error")
+			switch en {
+			case "InvalidUserDetails":
+				var (
+					body string
+					err  error
+				)
+				err = decoder(resp).Decode(&body)
+				if err != nil {
+					return nil, goahttp.ErrDecodingError("users", "listUsers", err)
+				}
+				return nil, NewListUsersInvalidUserDetails(body)
+			case "UsernameTooShort":
+				var (
+					body string
+					err  error
+				)
+				err = decoder(resp).Decode(&body)
+				if err != nil {
+					return nil, goahttp.ErrDecodingError("users", "listUsers", err)
+				}
+				return nil, NewListUsersUsernameTooShort(body)
+			default:
+				body, _ := io.ReadAll(resp.Body)
+				return nil, goahttp.ErrInvalidResponse("users", "listUsers", resp.StatusCode, string(body))
 			}
-			return nil, NewListUsersInvalidUserDetails(body)
 		case http.StatusNotFound:
 			var (
 				body string
@@ -194,6 +212,7 @@ func EncodeGetUserRequest(encoder func(*http.Request) goahttp.Encoder) func(*htt
 //   - "InsertConflict" (type *users.ServiceInsertconflict): http.StatusConflict
 //   - "InvalidCredentials" (type users.InvalidCredentials): http.StatusUnauthorized
 //   - "InvalidUserDetails" (type users.InvalidUserDetails): http.StatusBadRequest
+//   - "UsernameTooShort" (type users.UsernameTooShort): http.StatusBadRequest
 //   - "NotFound" (type users.NotFound): http.StatusNotFound
 //   - error: internal error
 func DecodeGetUserResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
@@ -251,15 +270,32 @@ func DecodeGetUserResponse(decoder func(*http.Response) goahttp.Decoder, restore
 			}
 			return nil, NewGetUserInvalidCredentials(body)
 		case http.StatusBadRequest:
-			var (
-				body string
-				err  error
-			)
-			err = decoder(resp).Decode(&body)
-			if err != nil {
-				return nil, goahttp.ErrDecodingError("users", "getUser", err)
+			en := resp.Header.Get("goa-error")
+			switch en {
+			case "InvalidUserDetails":
+				var (
+					body string
+					err  error
+				)
+				err = decoder(resp).Decode(&body)
+				if err != nil {
+					return nil, goahttp.ErrDecodingError("users", "getUser", err)
+				}
+				return nil, NewGetUserInvalidUserDetails(body)
+			case "UsernameTooShort":
+				var (
+					body string
+					err  error
+				)
+				err = decoder(resp).Decode(&body)
+				if err != nil {
+					return nil, goahttp.ErrDecodingError("users", "getUser", err)
+				}
+				return nil, NewGetUserUsernameTooShort(body)
+			default:
+				body, _ := io.ReadAll(resp.Body)
+				return nil, goahttp.ErrInvalidResponse("users", "getUser", resp.StatusCode, string(body))
 			}
-			return nil, NewGetUserInvalidUserDetails(body)
 		case http.StatusNotFound:
 			var (
 				body string
@@ -315,6 +351,7 @@ func EncodeCreateUserRequest(encoder func(*http.Request) goahttp.Encoder) func(*
 //   - "InsertConflict" (type *users.ServiceInsertconflict): http.StatusConflict
 //   - "InvalidCredentials" (type users.InvalidCredentials): http.StatusUnauthorized
 //   - "InvalidUserDetails" (type users.InvalidUserDetails): http.StatusBadRequest
+//   - "UsernameTooShort" (type users.UsernameTooShort): http.StatusBadRequest
 //   - "NotFound" (type users.NotFound): http.StatusNotFound
 //   - error: internal error
 func DecodeCreateUserResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
@@ -372,15 +409,32 @@ func DecodeCreateUserResponse(decoder func(*http.Response) goahttp.Decoder, rest
 			}
 			return nil, NewCreateUserInvalidCredentials(body)
 		case http.StatusBadRequest:
-			var (
-				body string
-				err  error
-			)
-			err = decoder(resp).Decode(&body)
-			if err != nil {
-				return nil, goahttp.ErrDecodingError("users", "createUser", err)
+			en := resp.Header.Get("goa-error")
+			switch en {
+			case "InvalidUserDetails":
+				var (
+					body string
+					err  error
+				)
+				err = decoder(resp).Decode(&body)
+				if err != nil {
+					return nil, goahttp.ErrDecodingError("users", "createUser", err)
+				}
+				return nil, NewCreateUserInvalidUserDetails(body)
+			case "UsernameTooShort":
+				var (
+					body string
+					err  error
+				)
+				err = decoder(resp).Decode(&body)
+				if err != nil {
+					return nil, goahttp.ErrDecodingError("users", "createUser", err)
+				}
+				return nil, NewCreateUserUsernameTooShort(body)
+			default:
+				body, _ := io.ReadAll(resp.Body)
+				return nil, goahttp.ErrInvalidResponse("users", "createUser", resp.StatusCode, string(body))
 			}
-			return nil, NewCreateUserInvalidUserDetails(body)
 		case http.StatusNotFound:
 			var (
 				body string
@@ -449,6 +503,7 @@ func EncodeUpdateUserRequest(encoder func(*http.Request) goahttp.Encoder) func(*
 //   - "InsertConflict" (type *users.ServiceInsertconflict): http.StatusConflict
 //   - "InvalidCredentials" (type users.InvalidCredentials): http.StatusUnauthorized
 //   - "InvalidUserDetails" (type users.InvalidUserDetails): http.StatusBadRequest
+//   - "UsernameTooShort" (type users.UsernameTooShort): http.StatusBadRequest
 //   - "NotFound" (type users.NotFound): http.StatusNotFound
 //   - error: internal error
 func DecodeUpdateUserResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
@@ -506,15 +561,32 @@ func DecodeUpdateUserResponse(decoder func(*http.Response) goahttp.Decoder, rest
 			}
 			return nil, NewUpdateUserInvalidCredentials(body)
 		case http.StatusBadRequest:
-			var (
-				body string
-				err  error
-			)
-			err = decoder(resp).Decode(&body)
-			if err != nil {
-				return nil, goahttp.ErrDecodingError("users", "updateUser", err)
+			en := resp.Header.Get("goa-error")
+			switch en {
+			case "InvalidUserDetails":
+				var (
+					body string
+					err  error
+				)
+				err = decoder(resp).Decode(&body)
+				if err != nil {
+					return nil, goahttp.ErrDecodingError("users", "updateUser", err)
+				}
+				return nil, NewUpdateUserInvalidUserDetails(body)
+			case "UsernameTooShort":
+				var (
+					body string
+					err  error
+				)
+				err = decoder(resp).Decode(&body)
+				if err != nil {
+					return nil, goahttp.ErrDecodingError("users", "updateUser", err)
+				}
+				return nil, NewUpdateUserUsernameTooShort(body)
+			default:
+				body, _ := io.ReadAll(resp.Body)
+				return nil, goahttp.ErrInvalidResponse("users", "updateUser", resp.StatusCode, string(body))
 			}
-			return nil, NewUpdateUserInvalidUserDetails(body)
 		case http.StatusNotFound:
 			var (
 				body string
@@ -579,6 +651,7 @@ func EncodeDeleteUserRequest(encoder func(*http.Request) goahttp.Encoder) func(*
 //   - "InsertConflict" (type *users.ServiceInsertconflict): http.StatusConflict
 //   - "InvalidCredentials" (type users.InvalidCredentials): http.StatusUnauthorized
 //   - "InvalidUserDetails" (type users.InvalidUserDetails): http.StatusBadRequest
+//   - "UsernameTooShort" (type users.UsernameTooShort): http.StatusBadRequest
 //   - "NotFound" (type users.NotFound): http.StatusNotFound
 //   - error: internal error
 func DecodeDeleteUserResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
@@ -623,15 +696,32 @@ func DecodeDeleteUserResponse(decoder func(*http.Response) goahttp.Decoder, rest
 			}
 			return nil, NewDeleteUserInvalidCredentials(body)
 		case http.StatusBadRequest:
-			var (
-				body string
-				err  error
-			)
-			err = decoder(resp).Decode(&body)
-			if err != nil {
-				return nil, goahttp.ErrDecodingError("users", "deleteUser", err)
+			en := resp.Header.Get("goa-error")
+			switch en {
+			case "InvalidUserDetails":
+				var (
+					body string
+					err  error
+				)
+				err = decoder(resp).Decode(&body)
+				if err != nil {
+					return nil, goahttp.ErrDecodingError("users", "deleteUser", err)
+				}
+				return nil, NewDeleteUserInvalidUserDetails(body)
+			case "UsernameTooShort":
+				var (
+					body string
+					err  error
+				)
+				err = decoder(resp).Decode(&body)
+				if err != nil {
+					return nil, goahttp.ErrDecodingError("users", "deleteUser", err)
+				}
+				return nil, NewDeleteUserUsernameTooShort(body)
+			default:
+				body, _ := io.ReadAll(resp.Body)
+				return nil, goahttp.ErrInvalidResponse("users", "deleteUser", resp.StatusCode, string(body))
 			}
-			return nil, NewDeleteUserInvalidUserDetails(body)
 		case http.StatusNotFound:
 			var (
 				body string
@@ -687,6 +777,7 @@ func EncodeLoginRequest(encoder func(*http.Request) goahttp.Encoder) func(*http.
 //   - "InsertConflict" (type *users.ServiceInsertconflict): http.StatusConflict
 //   - "InvalidCredentials" (type users.InvalidCredentials): http.StatusUnauthorized
 //   - "InvalidUserDetails" (type users.InvalidUserDetails): http.StatusBadRequest
+//   - "UsernameTooShort" (type users.UsernameTooShort): http.StatusBadRequest
 //   - "NotFound" (type users.NotFound): http.StatusNotFound
 //   - error: internal error
 func DecodeLoginResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
@@ -739,15 +830,32 @@ func DecodeLoginResponse(decoder func(*http.Response) goahttp.Decoder, restoreBo
 			}
 			return nil, NewLoginInvalidCredentials(body)
 		case http.StatusBadRequest:
-			var (
-				body string
-				err  error
-			)
-			err = decoder(resp).Decode(&body)
-			if err != nil {
-				return nil, goahttp.ErrDecodingError("users", "login", err)
+			en := resp.Header.Get("goa-error")
+			switch en {
+			case "InvalidUserDetails":
+				var (
+					body string
+					err  error
+				)
+				err = decoder(resp).Decode(&body)
+				if err != nil {
+					return nil, goahttp.ErrDecodingError("users", "login", err)
+				}
+				return nil, NewLoginInvalidUserDetails(body)
+			case "UsernameTooShort":
+				var (
+					body string
+					err  error
+				)
+				err = decoder(resp).Decode(&body)
+				if err != nil {
+					return nil, goahttp.ErrDecodingError("users", "login", err)
+				}
+				return nil, NewLoginUsernameTooShort(body)
+			default:
+				body, _ := io.ReadAll(resp.Body)
+				return nil, goahttp.ErrInvalidResponse("users", "login", resp.StatusCode, string(body))
 			}
-			return nil, NewLoginInvalidUserDetails(body)
 		case http.StatusNotFound:
 			var (
 				body string
@@ -804,6 +912,7 @@ func EncodeQueryCurrentJWTRequest(encoder func(*http.Request) goahttp.Encoder) f
 //   - "InsertConflict" (type *users.ServiceInsertconflict): http.StatusConflict
 //   - "InvalidCredentials" (type users.InvalidCredentials): http.StatusUnauthorized
 //   - "InvalidUserDetails" (type users.InvalidUserDetails): http.StatusBadRequest
+//   - "UsernameTooShort" (type users.UsernameTooShort): http.StatusBadRequest
 //   - "NotFound" (type users.NotFound): http.StatusNotFound
 //   - error: internal error
 func DecodeQueryCurrentJWTResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
@@ -856,15 +965,32 @@ func DecodeQueryCurrentJWTResponse(decoder func(*http.Response) goahttp.Decoder,
 			}
 			return nil, NewQueryCurrentJWTInvalidCredentials(body)
 		case http.StatusBadRequest:
-			var (
-				body string
-				err  error
-			)
-			err = decoder(resp).Decode(&body)
-			if err != nil {
-				return nil, goahttp.ErrDecodingError("users", "queryCurrentJWT", err)
+			en := resp.Header.Get("goa-error")
+			switch en {
+			case "InvalidUserDetails":
+				var (
+					body string
+					err  error
+				)
+				err = decoder(resp).Decode(&body)
+				if err != nil {
+					return nil, goahttp.ErrDecodingError("users", "queryCurrentJWT", err)
+				}
+				return nil, NewQueryCurrentJWTInvalidUserDetails(body)
+			case "UsernameTooShort":
+				var (
+					body string
+					err  error
+				)
+				err = decoder(resp).Decode(&body)
+				if err != nil {
+					return nil, goahttp.ErrDecodingError("users", "queryCurrentJWT", err)
+				}
+				return nil, NewQueryCurrentJWTUsernameTooShort(body)
+			default:
+				body, _ := io.ReadAll(resp.Body)
+				return nil, goahttp.ErrInvalidResponse("users", "queryCurrentJWT", resp.StatusCode, string(body))
 			}
-			return nil, NewQueryCurrentJWTInvalidUserDetails(body)
 		case http.StatusNotFound:
 			var (
 				body string

@@ -259,6 +259,14 @@ func NewListUsersInvalidUserDetails(body string) users.InvalidUserDetails {
 	return v
 }
 
+// NewListUsersUsernameTooShort builds a users service listUsers endpoint
+// UsernameTooShort error.
+func NewListUsersUsernameTooShort(body string) users.UsernameTooShort {
+	v := users.UsernameTooShort(body)
+
+	return v
+}
+
 // NewListUsersNotFound builds a users service listUsers endpoint NotFound
 // error.
 func NewListUsersNotFound(body string) users.NotFound {
@@ -308,6 +316,14 @@ func NewGetUserInvalidUserDetails(body string) users.InvalidUserDetails {
 	return v
 }
 
+// NewGetUserUsernameTooShort builds a users service getUser endpoint
+// UsernameTooShort error.
+func NewGetUserUsernameTooShort(body string) users.UsernameTooShort {
+	v := users.UsernameTooShort(body)
+
+	return v
+}
+
 // NewGetUserNotFound builds a users service getUser endpoint NotFound error.
 func NewGetUserNotFound(body string) users.NotFound {
 	v := users.NotFound(body)
@@ -352,6 +368,14 @@ func NewCreateUserInvalidCredentials(body string) users.InvalidCredentials {
 // InvalidUserDetails error.
 func NewCreateUserInvalidUserDetails(body string) users.InvalidUserDetails {
 	v := users.InvalidUserDetails(body)
+
+	return v
+}
+
+// NewCreateUserUsernameTooShort builds a users service createUser endpoint
+// UsernameTooShort error.
+func NewCreateUserUsernameTooShort(body string) users.UsernameTooShort {
+	v := users.UsernameTooShort(body)
 
 	return v
 }
@@ -405,6 +429,14 @@ func NewUpdateUserInvalidUserDetails(body string) users.InvalidUserDetails {
 	return v
 }
 
+// NewUpdateUserUsernameTooShort builds a users service updateUser endpoint
+// UsernameTooShort error.
+func NewUpdateUserUsernameTooShort(body string) users.UsernameTooShort {
+	v := users.UsernameTooShort(body)
+
+	return v
+}
+
 // NewUpdateUserNotFound builds a users service updateUser endpoint NotFound
 // error.
 func NewUpdateUserNotFound(body string) users.NotFound {
@@ -436,6 +468,14 @@ func NewDeleteUserInvalidCredentials(body string) users.InvalidCredentials {
 // InvalidUserDetails error.
 func NewDeleteUserInvalidUserDetails(body string) users.InvalidUserDetails {
 	v := users.InvalidUserDetails(body)
+
+	return v
+}
+
+// NewDeleteUserUsernameTooShort builds a users service deleteUser endpoint
+// UsernameTooShort error.
+func NewDeleteUserUsernameTooShort(body string) users.UsernameTooShort {
+	v := users.UsernameTooShort(body)
 
 	return v
 }
@@ -475,6 +515,14 @@ func NewLoginInvalidUserDetails(body string) users.InvalidUserDetails {
 	return v
 }
 
+// NewLoginUsernameTooShort builds a users service login endpoint
+// UsernameTooShort error.
+func NewLoginUsernameTooShort(body string) users.UsernameTooShort {
+	v := users.UsernameTooShort(body)
+
+	return v
+}
+
 // NewLoginNotFound builds a users service login endpoint NotFound error.
 func NewLoginNotFound(body string) users.NotFound {
 	v := users.NotFound(body)
@@ -505,6 +553,14 @@ func NewQueryCurrentJWTInvalidCredentials(body string) users.InvalidCredentials 
 // endpoint InvalidUserDetails error.
 func NewQueryCurrentJWTInvalidUserDetails(body string) users.InvalidUserDetails {
 	v := users.InvalidUserDetails(body)
+
+	return v
+}
+
+// NewQueryCurrentJWTUsernameTooShort builds a users service queryCurrentJWT
+// endpoint UsernameTooShort error.
+func NewQueryCurrentJWTUsernameTooShort(body string) users.UsernameTooShort {
+	v := users.UsernameTooShort(body)
 
 	return v
 }

@@ -97,7 +97,7 @@ func (s *userssrvc) CreateUser(ctx context.Context, p *usergen.UserPayload) (res
 	const minUsernameLength = 2
 
 	if len(p.Username) < minUsernameLength {
-		return nil, errors.New("username too short")
+		return nil, usergen.UsernameTooShort("")
 	}
 
 	if len(p.Username) > maxUsernameLength {

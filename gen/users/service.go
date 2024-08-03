@@ -146,6 +146,9 @@ type UserPayload struct {
 	Password string
 }
 
+// Username too short
+type UsernameTooShort string
+
 // Credentials are invalid
 type Unauthorized string
 
@@ -215,6 +218,23 @@ func (e *ServiceInsertconflict) ErrorName() string {
 // GoaErrorName returns "ServiceInsertconflict".
 func (e *ServiceInsertconflict) GoaErrorName() string {
 	return e.Name
+}
+
+// Error returns an error description.
+func (e UsernameTooShort) Error() string {
+	return "Username too short"
+}
+
+// ErrorName returns "UsernameTooShort".
+//
+// Deprecated: Use GoaErrorName - https://github.com/goadesign/goa/issues/3105
+func (e UsernameTooShort) ErrorName() string {
+	return e.GoaErrorName()
+}
+
+// GoaErrorName returns "UsernameTooShort".
+func (e UsernameTooShort) GoaErrorName() string {
+	return "UsernameTooShort"
 }
 
 // Error returns an error description.
