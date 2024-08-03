@@ -59,15 +59,14 @@ var UserPayload = dsl.Type("UserPayload", func() {
 // LoginPayload represents the payload for the login method.
 var LoginPayload = dsl.Type("LoginPayload", func() {
 	dsl.Description("Payload for user login")
-	dsl.Attribute("email", dsl.String, "Email of the user", func() {
-		dsl.Format(dsl.FormatEmail)
-		dsl.Example("johndoe@example.com")
+	dsl.Attribute("username", dsl.String, "Username of the user", func() {
+		dsl.Example("johndoe")
 	})
 	dsl.Attribute("password", dsl.String, "Password of the user", func() {
 		dsl.MinLength(8)
 		dsl.Example("password123")
 	})
-	dsl.Required("email", "password")
+	dsl.Required("username", "password")
 })
 
 // SecureUUIDPayload defines a payload with a JWT token and UUID.

@@ -5,20 +5,31 @@ go 1.21.0
 toolchain go1.22.4
 
 require (
+	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.34.4
+	github.com/golang-jwt/jwt/v5 v5.2.1
+	github.com/google/uuid v1.6.0
+	github.com/guregu/dynamo/v2 v2.1.1
 	goa.design/clue v1.0.6
 	goa.design/goa/v3 v3.18.2
 )
 
 require (
+	github.com/aws/aws-sdk-go-v2 v1.30.3 // indirect
+	github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue v1.14.9 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.15 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.6.15 // indirect
+	github.com/aws/aws-sdk-go-v2/service/dynamodbstreams v1.22.3 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.11.3 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/endpoint-discovery v1.9.16 // indirect
 	github.com/aws/smithy-go v1.20.3 // indirect
+	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dimfeld/httppath v0.0.0-20170720192232-ee938bf73598 // indirect
 	github.com/go-chi/chi/v5 v5.1.0 // indirect
 	github.com/go-logfmt/logfmt v0.6.0 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
-	github.com/golang-jwt/jwt/v5 v5.2.1 // indirect
-	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect
+	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/manveru/faker v0.0.0-20171103152722-9fbc68a78c4d // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/stretchr/testify v1.9.0 // indirect

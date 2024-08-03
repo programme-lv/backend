@@ -47,8 +47,8 @@ type UpdateUserRequestBody struct {
 // LoginRequestBody is the type of the "users" service "login" endpoint HTTP
 // request body.
 type LoginRequestBody struct {
-	// Email of the user
-	Email *string `form:"email,omitempty" json:"email,omitempty" xml:"email,omitempty"`
+	// Username of the user
+	Username *string `form:"username,omitempty" json:"username,omitempty" xml:"username,omitempty"`
 	// Password of the user
 	Password *string `form:"password,omitempty" json:"password,omitempty" xml:"password,omitempty"`
 }
@@ -349,7 +349,7 @@ func NewDeleteUserSecureUUIDPayload(uuid string, token string) *users.SecureUUID
 // NewLoginPayload builds a users service login endpoint payload.
 func NewLoginPayload(body *LoginRequestBody) *users.LoginPayload {
 	v := &users.LoginPayload{
-		Email:    *body.Email,
+		Username: *body.Username,
 		Password: *body.Password,
 	}
 
@@ -432,14 +432,11 @@ func ValidateUpdateUserRequestBody(body *UpdateUserRequestBody) (err error) {
 
 // ValidateLoginRequestBody runs the validations defined on LoginRequestBody
 func ValidateLoginRequestBody(body *LoginRequestBody) (err error) {
-	if body.Email == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("email", "body"))
+	if body.Username == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("username", "body"))
 	}
 	if body.Password == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("password", "body"))
-	}
-	if body.Email != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.email", *body.Email, goa.FormatEmail))
 	}
 	if body.Password != nil {
 		if utf8.RuneCountInString(*body.Password) < 8 {

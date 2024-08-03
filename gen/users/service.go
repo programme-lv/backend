@@ -68,8 +68,8 @@ type ListUsersPayload struct {
 
 // LoginPayload is the payload type of the users service login method.
 type LoginPayload struct {
-	// Email of the user
-	Email string
+	// Username of the user
+	Username string
 	// Password of the user
 	Password string
 }

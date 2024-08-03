@@ -45,8 +45,8 @@ type UpdateUserRequestBody struct {
 // LoginRequestBody is the type of the "users" service "login" endpoint HTTP
 // request body.
 type LoginRequestBody struct {
-	// Email of the user
-	Email string `form:"email" json:"email" xml:"email"`
+	// Username of the user
+	Username string `form:"username" json:"username" xml:"username"`
 	// Password of the user
 	Password string `form:"password" json:"password" xml:"password"`
 }
@@ -215,7 +215,7 @@ func NewUpdateUserRequestBody(p *users.UpdateUserPayload) *UpdateUserRequestBody
 // "login" endpoint of the "users" service.
 func NewLoginRequestBody(p *users.LoginPayload) *LoginRequestBody {
 	body := &LoginRequestBody{
-		Email:    p.Email,
+		Username: p.Username,
 		Password: p.Password,
 	}
 	return body

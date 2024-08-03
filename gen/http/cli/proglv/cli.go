@@ -287,8 +287,8 @@ User login
 
 Example:
     %[1]s users login --body '{
-      "email": "johndoe@example.com",
-      "password": "password123"
+      "password": "password123",
+      "username": "johndoe"
    }'
 `, os.Args[0])
 }

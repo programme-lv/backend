@@ -11,8 +11,8 @@ import (
 	"sync"
 	"syscall"
 
-	proglv "github.com/programme-lv/backend"
-	users "github.com/programme-lv/backend/gen/users"
+	usergen "github.com/programme-lv/backend/gen/users"
+	usersrv "github.com/programme-lv/backend/users"
 	"goa.design/clue/debug"
 	"goa.design/clue/log"
 )
@@ -43,19 +43,19 @@ func main() {
 
 	// Initialize the services.
 	var (
-		usersSvc users.Service
+		usersSvc usergen.Service
 	)
 	{
-		usersSvc = proglv.NewUsers()
+		usersSvc = usersrv.NewUsers(ctx)
 	}
 
 	// Wrap the services in endpoints that can be invoked from other services
 	// potentially running in different processes.
 	var (
-		usersEndpoints *users.Endpoints
+		usersEndpoints *usergen.Endpoints
 	)
 	{
-		usersEndpoints = users.NewEndpoints(usersSvc)
+		usersEndpoints = usergen.NewEndpoints(usersSvc)
 		usersEndpoints.Use(debug.LogPayloads())
 		usersEndpoints.Use(log.Endpoint)
 	}

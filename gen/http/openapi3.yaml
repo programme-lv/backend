@@ -82,8 +82,8 @@ paths:
                         schema:
                             $ref: '#/components/schemas/LoginRequestBody'
                         example:
-                            email: johndoe@example.com
                             password: password123
+                            username: johndoe
             responses:
                 "200":
                     description: OK response.
@@ -554,21 +554,20 @@ components:
         LoginRequestBody:
             type: object
             properties:
-                email:
-                    type: string
-                    description: Email of the user
-                    example: johndoe@example.com
-                    format: email
                 password:
                     type: string
                     description: Password of the user
                     example: password123
                     minLength: 8
+                username:
+                    type: string
+                    description: Username of the user
+                    example: johndoe
             example:
-                email: johndoe@example.com
                 password: password123
+                username: johndoe
             required:
-                - email
+                - username
                 - password
         ServiceInsertconflict:
             type: object

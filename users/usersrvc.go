@@ -1,12 +1,14 @@
-package proglv
+package users
 
 import (
 	"context"
 	"errors"
 	"os"
 
+	"github.com/google/uuid"
 	"github.com/programme-lv/backend/auth"
-	users "github.com/programme-lv/backend/gen/users"
+	"github.com/programme-lv/backend/gen/users"
+	usergen "github.com/programme-lv/backend/gen/users"
 	"goa.design/clue/log"
 	"goa.design/goa/v3/security"
 )
@@ -18,13 +20,13 @@ type userssrvc struct {
 }
 
 // NewUsers returns the users service implementation.
-func NewUsers() users.Service {
+func NewUsers(ctx context.Context) usergen.Service {
 	// read jwt key from env
 	jwtKey := os.Getenv("JWT_KEY")
 	if jwtKey == "" {
-		log.Fatalf(context.Background(),
+		log.Fatalf(ctx,
 			errors.New("JWT_KEY is not set"),
-			"cant read JWT_KEY from env")
+			"cant read JWT_KEY from env in new user service contructor")
 	}
 	return &userssrvc{
 		jwtKey: []byte(jwtKey),
@@ -32,9 +34,9 @@ func NewUsers() users.Service {
 }
 
 var (
-	ErrInvalidToken       = users.Unauthorized("invalid token")
-	ErrInvalidTokenScopes = users.Unauthorized("invalid scopes in token")
-	ErrMissingScope       = users.Unauthorized("missing scope in token")
+	ErrInvalidToken       = usergen.Unauthorized("invalid token")
+	ErrInvalidTokenScopes = usergen.Unauthorized("invalid scopes in token")
+	ErrMissingScope       = usergen.Unauthorized("missing scope in token")
 )
 
 type ClaimsKey string
@@ -58,23 +60,31 @@ func (s *userssrvc) JWTAuth(ctx context.Context, token string, scheme *security.
 }
 
 // List all users
-func (s *userssrvc) ListUsers(ctx context.Context, p *users.ListUsersPayload) (res []*users.User, err error) {
+func (s *userssrvc) ListUsers(ctx context.Context, p *usergen.ListUsersPayload) (res []*usergen.User, err error) {
 	log.Printf(ctx, "users.listUsers")
 	return
 }
 
 // Get a user by UUID
-func (s *userssrvc) GetUser(ctx context.Context, p *users.SecureUUIDPayload) (res *users.User, err error) {
-	res = &users.User{}
+func (s *userssrvc) GetUser(ctx context.Context, p *usergen.SecureUUIDPayload) (res *usergen.User, err error) {
+	res = &usergen.User{}
 	log.Printf(ctx, "users.getUser")
 	return
 }
 
 // Create a new user
-func (s *userssrvc) CreateUser(ctx context.Context, p *users.UserPayload) (res *users.User, err error) {
-	res = &users.User{}
-	log.Printf(ctx, "users.createUser")
-	return
+func (s *userssrvc) CreateUser(ctx context.Context, p *usergen.UserPayload) (res *usergen.User, err error) {
+	uuid := uuid.New()
+
+	row := &UserRow{
+		Uuid:      uuid.New().String(),
+		Username:  p.Username,
+		Email:     p.Email,
+		BcryptPwd: "",
+		Firstname: &p.Firstname,
+		Lastname:  &p.Lastname,
+		Version:   0,
+	}
 }
 
 // Update an existing user
@@ -92,7 +102,8 @@ func (s *userssrvc) DeleteUser(ctx context.Context, p *users.SecureUUIDPayload) 
 
 // User login
 func (s *userssrvc) Login(ctx context.Context, p *users.LoginPayload) (res string, err error) {
-	log.Printf(ctx, "users.login")
+	// auth.GenerateJWT()
+	log.Printf(ctx, "payload: %+v", p)
 	return
 }
 
