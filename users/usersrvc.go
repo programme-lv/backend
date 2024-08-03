@@ -96,32 +96,53 @@ func (s *userssrvc) CreateUser(ctx context.Context, p *usergen.UserPayload) (res
 	const minPasswordLength = 8
 	const minUsernameLength = 2
 
+	allUsers, err := s.ddbUserTable.List(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	if len(p.Username) < minUsernameLength {
-		return nil, usergen.UsernameTooShort("")
+		return nil, usergen.InvalidUserDetails("lietotājvārds ir pārāk īss")
 	}
 
 	if len(p.Username) > maxUsernameLength {
-		return nil, errors.New("username too long")
+		return nil, usergen.InvalidUserDetails("lietotājvārds ir pārāk garšs")
+	}
+
+	for _, user := range allUsers {
+		if user.Username == p.Username {
+			return nil, usergen.UsernameExists(fmt.Sprintf(
+				"lietotājvārds %s jau eksistē", p.Username,
+			))
+		}
 	}
 
 	if !validEmail(p.Email) {
-		return nil, errors.New("invalid email")
+		return nil, usergen.InvalidUserDetails("nekorekts e-pasts")
 	}
 
 	if len(p.Email) > maxEmailLength {
-		return nil, errors.New("email too long")
+		return nil, usergen.InvalidUserDetails("epasts ir pārāk garšs")
+	}
+
+	for _, user := range allUsers {
+		if user.Email == p.Email {
+			return nil, usergen.EmailExists(fmt.Sprintf(
+				"epasts %s jau eksistē", p.Email,
+			))
+		}
 	}
 
 	if len(p.Firstname) > maxFirstnameLastnameLength {
-		return nil, errors.New("firstname too long")
+		return nil, usergen.InvalidUserDetails("vārds ir pārāk garšs")
+	}
+
+	if len(p.Lastname) > maxFirstnameLastnameLength {
+		return nil, usergen.InvalidUserDetails("uzvārds ir pārāk garšs")
 	}
 
 	if len(p.Password) < minPasswordLength {
-		return nil, errors.New("password too short")
-	}
-
-	if len(p.Firstname) > len("pretpulkstenraditajvirziens") {
-		return nil, errors.New("firstname too long")
+		return nil, usergen.InvalidUserDetails(fmt.Sprintf("parolei jābūt vismaz %d simbolus garai", minPasswordLength))
 	}
 
 	bcryptPwd, err := bcrypt.GenerateFromPassword([]byte(p.Password), bcrypt.DefaultCost)

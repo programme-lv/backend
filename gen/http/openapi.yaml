@@ -46,7 +46,7 @@ paths:
                 "409":
                     description: Conflict response.
                     schema:
-                        $ref: '#/definitions/UsersQueryCurrentJWTInsertConflictResponseBody'
+                        type: string
             schemes:
                 - http
             security:
@@ -87,7 +87,7 @@ paths:
                 "409":
                     description: Conflict response.
                     schema:
-                        $ref: '#/definitions/UsersLoginInsertConflictResponseBody'
+                        type: string
             schemes:
                 - http
     /users:
@@ -129,7 +129,7 @@ paths:
                 "409":
                     description: Conflict response.
                     schema:
-                        $ref: '#/definitions/UsersListUsersInsertConflictResponseBody'
+                        type: string
             schemes:
                 - http
             security:
@@ -178,7 +178,7 @@ paths:
                 "409":
                     description: Conflict response.
                     schema:
-                        $ref: '#/definitions/UsersCreateUserInsertConflictResponseBody'
+                        type: string
             schemes:
                 - http
     /users/{uuid}:
@@ -229,7 +229,7 @@ paths:
                 "409":
                     description: Conflict response.
                     schema:
-                        $ref: '#/definitions/UsersGetUserInsertConflictResponseBody'
+                        type: string
             schemes:
                 - http
             security:
@@ -291,7 +291,7 @@ paths:
                 "409":
                     description: Conflict response.
                     schema:
-                        $ref: '#/definitions/UsersUpdateUserInsertConflictResponseBody'
+                        type: string
             schemes:
                 - http
             security:
@@ -335,7 +335,7 @@ paths:
                 "409":
                     description: Conflict response.
                     schema:
-                        $ref: '#/definitions/UsersDeleteUserInsertConflictResponseBody'
+                        type: string
             schemes:
                 - http
             security:
@@ -379,18 +379,6 @@ definitions:
             - email
             - firstname
             - lastname
-    UsersCreateUserInsertConflictResponseBody:
-        title: 'Mediatype identifier: application/vnd.service.insertconflict; view=default'
-        type: object
-        properties:
-            conflict_value:
-                type: string
-                example: Beatae incidunt provident quis possimus et consequatur.
-        description: Insertion conflict (default view)
-        example:
-            conflict_value: Occaecati et et non.
-        required:
-            - conflict_value
     UsersCreateUserRequestBody:
         title: UsersCreateUserRequestBody
         type: object
@@ -467,30 +455,6 @@ definitions:
             - email
             - firstname
             - lastname
-    UsersDeleteUserInsertConflictResponseBody:
-        title: 'Mediatype identifier: application/vnd.service.insertconflict; view=default'
-        type: object
-        properties:
-            conflict_value:
-                type: string
-                example: Expedita quae dicta aut iusto ut.
-        description: Insertion conflict (default view)
-        example:
-            conflict_value: A architecto minima.
-        required:
-            - conflict_value
-    UsersGetUserInsertConflictResponseBody:
-        title: 'Mediatype identifier: application/vnd.service.insertconflict; view=default'
-        type: object
-        properties:
-            conflict_value:
-                type: string
-                example: Quia occaecati qui assumenda.
-        description: Insertion conflict (default view)
-        example:
-            conflict_value: Necessitatibus debitis illo ex et similique.
-        required:
-            - conflict_value
     UsersGetUserResponseBody:
         title: UsersGetUserResponseBody
         type: object
@@ -528,30 +492,6 @@ definitions:
             - email
             - firstname
             - lastname
-    UsersListUsersInsertConflictResponseBody:
-        title: 'Mediatype identifier: application/vnd.service.insertconflict; view=default'
-        type: object
-        properties:
-            conflict_value:
-                type: string
-                example: Voluptatem inventore reiciendis impedit voluptatem.
-        description: Insertion conflict (default view)
-        example:
-            conflict_value: Autem et.
-        required:
-            - conflict_value
-    UsersLoginInsertConflictResponseBody:
-        title: 'Mediatype identifier: application/vnd.service.insertconflict; view=default'
-        type: object
-        properties:
-            conflict_value:
-                type: string
-                example: Dolorem autem repudiandae.
-        description: Insertion conflict (default view)
-        example:
-            conflict_value: Sint omnis dignissimos laborum.
-        required:
-            - conflict_value
     UsersLoginRequestBody:
         title: UsersLoginRequestBody
         type: object
@@ -571,18 +511,6 @@ definitions:
         required:
             - username
             - password
-    UsersQueryCurrentJWTInsertConflictResponseBody:
-        title: 'Mediatype identifier: application/vnd.service.insertconflict; view=default'
-        type: object
-        properties:
-            conflict_value:
-                type: string
-                example: Et exercitationem ducimus qui ipsam.
-        description: Insertion conflict (default view)
-        example:
-            conflict_value: Veritatis et porro officiis.
-        required:
-            - conflict_value
     UsersUpdateUserBadRequestResponseBody:
         title: UsersUpdateUserBadRequestResponseBody
         type: object
@@ -620,18 +548,6 @@ definitions:
             - email
             - firstname
             - lastname
-    UsersUpdateUserInsertConflictResponseBody:
-        title: 'Mediatype identifier: application/vnd.service.insertconflict; view=default'
-        type: object
-        properties:
-            conflict_value:
-                type: string
-                example: Porro minus sed voluptatum voluptas amet.
-        description: Insertion conflict (default view)
-        example:
-            conflict_value: Et ducimus vitae.
-        required:
-            - conflict_value
     UsersUpdateUserOKResponseBody:
         title: UsersUpdateUserOKResponseBody
         type: object

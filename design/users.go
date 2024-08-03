@@ -80,22 +80,6 @@ var SecureUUIDPayload = dsl.Type("SecureUUIDPayload", func() {
 	dsl.Required("token", "uuid")
 })
 
-// InsertConflict error type
-var InsertConflict = dsl.ResultType("application/vnd.service.insertconflict", func() {
-	dsl.Description("InsertConflict is the type of the error values returned when insertion fails because of a conflict")
-	dsl.Attributes(func() {
-		dsl.Attribute("conflict_value", dsl.String)
-		dsl.Attribute("name", dsl.String, "Name of error used by goa to encode response", func() {
-			dsl.Meta("struct:error:name")
-		})
-		dsl.Required("conflict_value", "name")
-	})
-	dsl.View("default", func() {
-		dsl.Attribute("conflict_value")
-		// Note: name is omitted from the default view.
-	})
-})
-
 var _ = dsl.Service("users", func() {
 	dsl.Description("Service to manage users")
 
@@ -103,15 +87,15 @@ var _ = dsl.Service("users", func() {
 	dsl.Error("InvalidCredentials", dsl.String, "Invalid credentials")
 	dsl.Error("InvalidUserDetails", dsl.String, "Invalid user details")
 	dsl.Error("NotFound", dsl.String, "User not found")
-	dsl.Error("InsertConflict", InsertConflict, "Insertion conflict")
-	dsl.Error("UsernameTooShort", dsl.String, "Username too short")
+	dsl.Error("UsernameExists", dsl.String, "Username already exists")
+	dsl.Error("EmailExists", dsl.String, "Email already exists")
 
 	dsl.HTTP(func() {
 		dsl.Response("InvalidCredentials", dsl.StatusUnauthorized)
 		dsl.Response("InvalidUserDetails", dsl.StatusBadRequest)
 		dsl.Response("NotFound", dsl.StatusNotFound)
-		dsl.Response("InsertConflict", dsl.StatusConflict)
-		dsl.Response("UsernameTooShort", dsl.StatusBadRequest)
+		dsl.Response("UsernameExists", dsl.StatusConflict)
+		dsl.Response("EmailExists", dsl.StatusConflict)
 	})
 
 	dsl.Method("listUsers", func() {
@@ -155,7 +139,8 @@ var _ = dsl.Service("users", func() {
 			dsl.Response(dsl.StatusCreated)
 		})
 		dsl.Error("InvalidUserDetails")
-		dsl.Error("InsertConflict")
+		dsl.Error("UsernameExists", dsl.String, "Username already exists")
+		dsl.Error("EmailExists", dsl.String, "Email already exists")
 	})
 
 	dsl.Method("updateUser", func() {
@@ -198,7 +183,6 @@ var _ = dsl.Service("users", func() {
 			dsl.Response(dsl.StatusBadRequest)
 		})
 		dsl.Error("InvalidUserDetails")
-		dsl.Error("InsertConflict")
 	})
 
 	dsl.Method("deleteUser", func() {

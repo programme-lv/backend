@@ -102,62 +102,6 @@ type UpdateUserOKResponseBody struct {
 	Lastname string `form:"lastname" json:"lastname" xml:"lastname"`
 }
 
-// ListUsersInsertConflictResponseBody is the type of the "users" service
-// "listUsers" endpoint HTTP response body for the "InsertConflict" error.
-type ListUsersInsertConflictResponseBody struct {
-	ConflictValue string `form:"conflict_value" json:"conflict_value" xml:"conflict_value"`
-	// Name of error used by goa to encode response
-	Name string `form:"name" json:"name" xml:"name"`
-}
-
-// GetUserInsertConflictResponseBody is the type of the "users" service
-// "getUser" endpoint HTTP response body for the "InsertConflict" error.
-type GetUserInsertConflictResponseBody struct {
-	ConflictValue string `form:"conflict_value" json:"conflict_value" xml:"conflict_value"`
-	// Name of error used by goa to encode response
-	Name string `form:"name" json:"name" xml:"name"`
-}
-
-// CreateUserInsertConflictResponseBody is the type of the "users" service
-// "createUser" endpoint HTTP response body for the "InsertConflict" error.
-type CreateUserInsertConflictResponseBody struct {
-	ConflictValue string `form:"conflict_value" json:"conflict_value" xml:"conflict_value"`
-	// Name of error used by goa to encode response
-	Name string `form:"name" json:"name" xml:"name"`
-}
-
-// UpdateUserInsertConflictResponseBody is the type of the "users" service
-// "updateUser" endpoint HTTP response body for the "InsertConflict" error.
-type UpdateUserInsertConflictResponseBody struct {
-	ConflictValue string `form:"conflict_value" json:"conflict_value" xml:"conflict_value"`
-	// Name of error used by goa to encode response
-	Name string `form:"name" json:"name" xml:"name"`
-}
-
-// DeleteUserInsertConflictResponseBody is the type of the "users" service
-// "deleteUser" endpoint HTTP response body for the "InsertConflict" error.
-type DeleteUserInsertConflictResponseBody struct {
-	ConflictValue string `form:"conflict_value" json:"conflict_value" xml:"conflict_value"`
-	// Name of error used by goa to encode response
-	Name string `form:"name" json:"name" xml:"name"`
-}
-
-// LoginInsertConflictResponseBody is the type of the "users" service "login"
-// endpoint HTTP response body for the "InsertConflict" error.
-type LoginInsertConflictResponseBody struct {
-	ConflictValue string `form:"conflict_value" json:"conflict_value" xml:"conflict_value"`
-	// Name of error used by goa to encode response
-	Name string `form:"name" json:"name" xml:"name"`
-}
-
-// QueryCurrentJWTInsertConflictResponseBody is the type of the "users" service
-// "queryCurrentJWT" endpoint HTTP response body for the "InsertConflict" error.
-type QueryCurrentJWTInsertConflictResponseBody struct {
-	ConflictValue string `form:"conflict_value" json:"conflict_value" xml:"conflict_value"`
-	// Name of error used by goa to encode response
-	Name string `form:"name" json:"name" xml:"name"`
-}
-
 // UserResponse is used to define fields on response body types.
 type UserResponse struct {
 	// Unique user UUID
@@ -217,76 +161,6 @@ func NewUpdateUserOKResponseBody(res *users.User) *UpdateUserOKResponseBody {
 		Email:     res.Email,
 		Firstname: res.Firstname,
 		Lastname:  res.Lastname,
-	}
-	return body
-}
-
-// NewListUsersInsertConflictResponseBody builds the HTTP response body from
-// the result of the "listUsers" endpoint of the "users" service.
-func NewListUsersInsertConflictResponseBody(res *users.ServiceInsertconflict) *ListUsersInsertConflictResponseBody {
-	body := &ListUsersInsertConflictResponseBody{
-		ConflictValue: res.ConflictValue,
-		Name:          res.Name,
-	}
-	return body
-}
-
-// NewGetUserInsertConflictResponseBody builds the HTTP response body from the
-// result of the "getUser" endpoint of the "users" service.
-func NewGetUserInsertConflictResponseBody(res *users.ServiceInsertconflict) *GetUserInsertConflictResponseBody {
-	body := &GetUserInsertConflictResponseBody{
-		ConflictValue: res.ConflictValue,
-		Name:          res.Name,
-	}
-	return body
-}
-
-// NewCreateUserInsertConflictResponseBody builds the HTTP response body from
-// the result of the "createUser" endpoint of the "users" service.
-func NewCreateUserInsertConflictResponseBody(res *users.ServiceInsertconflict) *CreateUserInsertConflictResponseBody {
-	body := &CreateUserInsertConflictResponseBody{
-		ConflictValue: res.ConflictValue,
-		Name:          res.Name,
-	}
-	return body
-}
-
-// NewUpdateUserInsertConflictResponseBody builds the HTTP response body from
-// the result of the "updateUser" endpoint of the "users" service.
-func NewUpdateUserInsertConflictResponseBody(res *users.ServiceInsertconflict) *UpdateUserInsertConflictResponseBody {
-	body := &UpdateUserInsertConflictResponseBody{
-		ConflictValue: res.ConflictValue,
-		Name:          res.Name,
-	}
-	return body
-}
-
-// NewDeleteUserInsertConflictResponseBody builds the HTTP response body from
-// the result of the "deleteUser" endpoint of the "users" service.
-func NewDeleteUserInsertConflictResponseBody(res *users.ServiceInsertconflict) *DeleteUserInsertConflictResponseBody {
-	body := &DeleteUserInsertConflictResponseBody{
-		ConflictValue: res.ConflictValue,
-		Name:          res.Name,
-	}
-	return body
-}
-
-// NewLoginInsertConflictResponseBody builds the HTTP response body from the
-// result of the "login" endpoint of the "users" service.
-func NewLoginInsertConflictResponseBody(res *users.ServiceInsertconflict) *LoginInsertConflictResponseBody {
-	body := &LoginInsertConflictResponseBody{
-		ConflictValue: res.ConflictValue,
-		Name:          res.Name,
-	}
-	return body
-}
-
-// NewQueryCurrentJWTInsertConflictResponseBody builds the HTTP response body
-// from the result of the "queryCurrentJWT" endpoint of the "users" service.
-func NewQueryCurrentJWTInsertConflictResponseBody(res *users.ServiceInsertconflict) *QueryCurrentJWTInsertConflictResponseBody {
-	body := &QueryCurrentJWTInsertConflictResponseBody{
-		ConflictValue: res.ConflictValue,
-		Name:          res.Name,
 	}
 	return body
 }

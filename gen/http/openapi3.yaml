@@ -34,38 +34,37 @@ paths:
                                 example: current_jwt_token
                             example: current_jwt_token
                 "400":
-                    description: 'UsernameTooShort: Bad Request response.'
+                    description: 'InvalidUserDetails: Bad Request response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Molestiae quidem deleniti.
-                            example: Facere rerum et quaerat.
+                                example: Ipsam sed nemo vero nostrum.
+                            example: Autem pariatur ea asperiores.
                 "401":
                     description: 'InvalidCredentials: Unauthorized response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Velit est ullam aut odit.
-                            example: Vero nihil natus.
+                                example: Ea fuga omnis nihil et.
+                            example: Natus qui est in et placeat accusantium.
                 "404":
                     description: 'NotFound: Not Found response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Consequatur et molestias officiis omnis explicabo.
-                            example: Est voluptatum illo et sit.
+                                example: Maiores ea repellendus non.
+                            example: Ea pariatur qui reiciendis dolorem.
                 "409":
-                    description: 'InsertConflict: Insertion conflict'
+                    description: 'EmailExists: Conflict response.'
                     content:
-                        application/vnd.service.insertconflict:
+                        application/json:
                             schema:
-                                $ref: '#/components/schemas/ServiceInsertconflict'
-                            example:
-                                conflict_value: Hic quam.
-                                name: Consequatur eveniet nostrum blanditiis dignissimos.
+                                type: string
+                                example: Quo ut eos non consequatur.
+                            example: Est sunt sunt.
             security:
                 - jwt_query_Authorization: []
     /auth/login:
@@ -94,13 +93,13 @@ paths:
                                 example: jwt_token
                             example: jwt_token
                 "400":
-                    description: 'UsernameTooShort: Bad Request response.'
+                    description: 'InvalidUserDetails: Bad Request response.'
                     content:
                         application/json:
                             schema:
                                 type: string
                                 example: jwt_token
-                            example: Ea pariatur qui reiciendis dolorem.
+                            example: Perferendis est asperiores et velit voluptas labore.
                 "401":
                     description: 'InvalidCredentials: Unauthorized response.'
                     content:
@@ -108,24 +107,23 @@ paths:
                             schema:
                                 type: string
                                 example: jwt_token
-                            example: Optio enim reprehenderit similique.
+                            example: Consectetur et nisi et earum sed.
                 "404":
                     description: 'NotFound: Not Found response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Occaecati voluptas quaerat modi voluptas rerum aut.
-                            example: Autem pariatur ea asperiores.
+                                example: Nisi ad non expedita.
+                            example: Doloribus numquam in ut molestiae ut odit.
                 "409":
-                    description: 'InsertConflict: Insertion conflict'
+                    description: 'EmailExists: Conflict response.'
                     content:
-                        application/vnd.service.insertconflict:
+                        application/json:
                             schema:
-                                $ref: '#/components/schemas/ServiceInsertconflict'
-                            example:
-                                conflict_value: Quibusdam ut.
-                                name: Est harum.
+                                type: string
+                                example: Id modi voluptatibus eos.
+                            example: Optio enim reprehenderit similique.
     /users:
         get:
             tags:
@@ -163,12 +161,17 @@ paths:
                                       lastname: Doe
                                       username: johndoe
                                       uuid: 550e8400-e29b-41d4-a716-446655440000
+                                    - email: johndoe@example.com
+                                      firstname: John
+                                      lastname: Doe
+                                      username: johndoe
+                                      uuid: 550e8400-e29b-41d4-a716-446655440000
+                                    - email: johndoe@example.com
+                                      firstname: John
+                                      lastname: Doe
+                                      username: johndoe
+                                      uuid: 550e8400-e29b-41d4-a716-446655440000
                             example:
-                                - email: johndoe@example.com
-                                  firstname: John
-                                  lastname: Doe
-                                  username: johndoe
-                                  uuid: 550e8400-e29b-41d4-a716-446655440000
                                 - email: johndoe@example.com
                                   firstname: John
                                   lastname: Doe
@@ -180,38 +183,37 @@ paths:
                                   username: johndoe
                                   uuid: 550e8400-e29b-41d4-a716-446655440000
                 "400":
-                    description: 'UsernameTooShort: Bad Request response.'
+                    description: 'InvalidUserDetails: Bad Request response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Earum cum eligendi adipisci.
-                            example: Quibusdam qui sunt nihil.
+                                example: Voluptatem inventore reiciendis impedit voluptatem.
+                            example: Voluptatem consequatur laboriosam alias ut nam est.
                 "401":
                     description: 'InvalidCredentials: Unauthorized response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Dolor amet totam laboriosam natus vitae.
-                            example: Id molestiae illo perferendis quos aut consequatur.
+                                example: Eius sint quod accusantium.
+                            example: Commodi ipsam enim.
                 "404":
                     description: 'NotFound: Not Found response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Tenetur sed aperiam tenetur.
-                            example: Voluptas reprehenderit.
+                                example: Autem et.
+                            example: Repellendus autem maiores.
                 "409":
-                    description: 'InsertConflict: Insertion conflict'
+                    description: 'EmailExists: Conflict response.'
                     content:
-                        application/vnd.service.insertconflict:
+                        application/json:
                             schema:
-                                $ref: '#/components/schemas/ServiceInsertconflict'
-                            example:
-                                conflict_value: Asperiores perspiciatis voluptates voluptatibus sunt.
-                                name: Veritatis illo voluptatem.
+                                type: string
+                                example: Quia occaecati qui assumenda.
+                            example: Voluptates perspiciatis hic occaecati voluptas quaerat modi.
             security:
                 - jwt_query_Authorization:
                     - users:read
@@ -247,38 +249,37 @@ paths:
                                 username: johndoe
                                 uuid: 550e8400-e29b-41d4-a716-446655440000
                 "400":
-                    description: 'UsernameTooShort: Bad Request response.'
+                    description: 'InvalidUserDetails: Bad Request response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Nisi ad non expedita.
-                            example: Voluptatem minus libero fugiat error rerum soluta.
+                                example: A architecto minima.
+                            example: Quos aut.
                 "401":
                     description: 'InvalidCredentials: Unauthorized response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Id modi voluptatibus eos.
-                            example: Assumenda et voluptatem doloribus.
+                                example: Et exercitationem ducimus qui ipsam.
+                            example: Nihil ut voluptas.
                 "404":
                     description: 'NotFound: Not Found response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Non esse incidunt quo eveniet cum consectetur.
-                            example: Dolore molestiae voluptas qui nostrum.
+                                example: Veritatis et porro officiis.
+                            example: Autem praesentium nihil eveniet velit inventore.
                 "409":
-                    description: 'InsertConflict: Insertion conflict'
+                    description: 'EmailExists: Conflict response.'
                     content:
-                        application/vnd.service.insertconflict:
+                        application/json:
                             schema:
-                                $ref: '#/components/schemas/ServiceInsertconflict'
-                            example:
-                                conflict_value: Natus numquam tempore consequuntur et nulla.
-                                name: Sit neque ut quas.
+                                type: string
+                                example: Dolorem autem repudiandae.
+                            example: Suscipit quibusdam qui.
     /users/{uuid}:
         delete:
             tags:
@@ -310,38 +311,37 @@ paths:
                 "204":
                     description: No Content response.
                 "400":
-                    description: 'UsernameTooShort: Bad Request response.'
+                    description: 'InvalidUserDetails: Bad Request response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Ut nam est sit repellendus.
-                            example: Sit velit quas aliquid incidunt.
+                                example: Ipsa minima sint.
+                            example: Minus accusantium nulla dolor.
                 "401":
                     description: 'InvalidCredentials: Unauthorized response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Enim et voluptatem consequatur laboriosam.
-                            example: Perferendis est asperiores et velit voluptas labore.
+                                example: Quos totam adipisci provident.
+                            example: Dolorem dolorem fugit hic.
                 "404":
                     description: 'NotFound: Not Found response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Dolorum commodi.
-                            example: Consectetur et nisi et earum sed.
+                                example: Nemo veniam rerum quia maxime nisi.
+                            example: Voluptatem minus libero fugiat error rerum soluta.
                 "409":
-                    description: 'InsertConflict: Insertion conflict'
+                    description: 'EmailExists: Conflict response.'
                     content:
-                        application/vnd.service.insertconflict:
+                        application/json:
                             schema:
-                                $ref: '#/components/schemas/ServiceInsertconflict'
-                            example:
-                                conflict_value: Ea cupiditate et.
-                                name: Amet molestiae odio aperiam doloremque non.
+                                type: string
+                                example: Reprehenderit itaque quia facilis odio.
+                            example: Natus qui.
             security:
                 - jwt_query_Authorization:
                     - users:write
@@ -385,38 +385,37 @@ paths:
                                 username: johndoe
                                 uuid: 550e8400-e29b-41d4-a716-446655440000
                 "400":
-                    description: 'UsernameTooShort: Bad Request response.'
+                    description: 'InvalidUserDetails: Bad Request response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Odio natus velit rerum quisquam omnis.
-                            example: Sed illo sunt deleniti nihil ad optio.
+                                example: Occaecati et et non.
+                            example: Est ullam aut odit amet molestiae.
                 "401":
                     description: 'InvalidCredentials: Unauthorized response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Minima sint rerum reprehenderit itaque quia.
-                            example: Voluptas velit autem praesentium.
+                                example: Beatae incidunt provident quis possimus et consequatur.
+                            example: Rerum aut dicta molestiae fugiat et.
                 "404":
                     description: 'NotFound: Not Found response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Delectus sed placeat nostrum necessitatibus.
-                            example: Quasi soluta quia maxime.
+                                example: Porro minus sed voluptatum voluptas amet.
+                            example: Deleniti sit consequatur et molestias officiis omnis.
                 "409":
-                    description: 'InsertConflict: Insertion conflict'
+                    description: 'EmailExists: Conflict response.'
                     content:
-                        application/vnd.service.insertconflict:
+                        application/json:
                             schema:
-                                $ref: '#/components/schemas/ServiceInsertconflict'
-                            example:
-                                conflict_value: Sit quo ipsa quia vel odit.
-                                name: Eaque quis et incidunt et neque sint.
+                                type: string
+                                example: Et ducimus vitae.
+                            example: Id ut id molestiae illo.
             security:
                 - jwt_query_Authorization:
                     - users:read
@@ -472,37 +471,36 @@ paths:
                                 username: johndoe
                                 uuid: 550e8400-e29b-41d4-a716-446655440000
                 "400":
-                    description: 'UsernameTooShort: Bad Request response.'
+                    description: 'InvalidUserDetails: Bad Request response.'
                     content:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/User'
-                            example: Natus qui.
+                            example: Quasi soluta quia maxime.
                 "401":
                     description: 'InvalidCredentials: Unauthorized response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Maiores ea repellendus non.
-                            example: Minus accusantium nulla dolor.
+                                example: Laboriosam natus vitae animi.
+                            example: Sed illo sunt deleniti nihil ad optio.
                 "404":
                     description: 'NotFound: Not Found response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Quo ut eos non consequatur.
-                            example: Rerum cupiditate dolores qui fugit necessitatibus ut.
+                                example: Cum eligendi adipisci quia tenetur.
+                            example: Dolorum omnis eos quisquam qui sint.
                 "409":
-                    description: 'InsertConflict: Insertion conflict'
+                    description: 'EmailExists: Conflict response.'
                     content:
-                        application/vnd.service.insertconflict:
+                        application/json:
                             schema:
-                                $ref: '#/components/schemas/ServiceInsertconflict'
-                            example:
-                                conflict_value: Alias maxime ipsum quibusdam inventore alias.
-                                name: Corporis est nostrum.
+                                type: string
+                                example: Aperiam tenetur enim corporis modi rerum.
+                            example: Dolore molestiae voluptas qui nostrum.
             security:
                 - jwt_query_Authorization:
                     - users:write
@@ -564,23 +562,6 @@ components:
             required:
                 - username
                 - password
-        ServiceInsertconflict:
-            type: object
-            properties:
-                conflict_value:
-                    type: string
-                    example: Corporis modi rerum aut iste enim.
-                name:
-                    type: string
-                    description: Name of error used by goa to encode response
-                    example: Repellat non mollitia.
-            description: Insertion conflict
-            example:
-                conflict_value: Veniam rerum quia.
-                name: Nisi nobis quos totam.
-            required:
-                - conflict_value
-                - name
         UpdateUserRequestBody:
             type: object
             properties:

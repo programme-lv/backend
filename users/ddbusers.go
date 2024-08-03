@@ -59,6 +59,16 @@ func (ddb *DynamoDbUserTable) Get(ctx context.Context, uuid uuid.UUID) (*UserRow
 	return user, nil
 }
 
+func (ddb *DynamoDbUserTable) List(ctx context.Context) ([]*UserRow, error) {
+	var users []*UserRow
+	err := ddb.usersTable.Scan().All(ctx, &users)
+	if err != nil {
+		return nil, err
+	}
+
+	return users, nil
+}
+
 // Save saves a user to the DynamoDB table with optimistic locking.
 func (ddb *DynamoDbUserTable) Save(ctx context.Context, user *UserRow) error {
 	// Increment the version number for optimistic locking

@@ -57,17 +57,19 @@ func EncodeListUsersError(encoder func(context.Context, http.ResponseWriter) goa
 			return encodeError(ctx, w, v)
 		}
 		switch en.GoaErrorName() {
-		case "InsertConflict":
-			var res *users.ServiceInsertconflict
+		case "EmailExists":
+			var res users.EmailExists
 			errors.As(v, &res)
-			ctx = context.WithValue(ctx, goahttp.ContentTypeKey, "application/vnd.service.insertconflict")
 			enc := encoder(ctx, w)
-			var body any
-			if formatter != nil {
-				body = formatter(ctx, res)
-			} else {
-				body = NewListUsersInsertConflictResponseBody(res)
-			}
+			body := res
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusConflict)
+			return enc.Encode(body)
+		case "UsernameExists":
+			var res users.UsernameExists
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			body := res
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusConflict)
 			return enc.Encode(body)
@@ -81,14 +83,6 @@ func EncodeListUsersError(encoder func(context.Context, http.ResponseWriter) goa
 			return enc.Encode(body)
 		case "InvalidUserDetails":
 			var res users.InvalidUserDetails
-			errors.As(v, &res)
-			enc := encoder(ctx, w)
-			body := res
-			w.Header().Set("goa-error", res.GoaErrorName())
-			w.WriteHeader(http.StatusBadRequest)
-			return enc.Encode(body)
-		case "UsernameTooShort":
-			var res users.UsernameTooShort
 			errors.As(v, &res)
 			enc := encoder(ctx, w)
 			body := res
@@ -156,17 +150,19 @@ func EncodeGetUserError(encoder func(context.Context, http.ResponseWriter) goaht
 			return encodeError(ctx, w, v)
 		}
 		switch en.GoaErrorName() {
-		case "InsertConflict":
-			var res *users.ServiceInsertconflict
+		case "EmailExists":
+			var res users.EmailExists
 			errors.As(v, &res)
-			ctx = context.WithValue(ctx, goahttp.ContentTypeKey, "application/vnd.service.insertconflict")
 			enc := encoder(ctx, w)
-			var body any
-			if formatter != nil {
-				body = formatter(ctx, res)
-			} else {
-				body = NewGetUserInsertConflictResponseBody(res)
-			}
+			body := res
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusConflict)
+			return enc.Encode(body)
+		case "UsernameExists":
+			var res users.UsernameExists
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			body := res
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusConflict)
 			return enc.Encode(body)
@@ -180,14 +176,6 @@ func EncodeGetUserError(encoder func(context.Context, http.ResponseWriter) goaht
 			return enc.Encode(body)
 		case "InvalidUserDetails":
 			var res users.InvalidUserDetails
-			errors.As(v, &res)
-			enc := encoder(ctx, w)
-			body := res
-			w.Header().Set("goa-error", res.GoaErrorName())
-			w.WriteHeader(http.StatusBadRequest)
-			return enc.Encode(body)
-		case "UsernameTooShort":
-			var res users.UsernameTooShort
 			errors.As(v, &res)
 			enc := encoder(ctx, w)
 			body := res
@@ -259,17 +247,19 @@ func EncodeCreateUserError(encoder func(context.Context, http.ResponseWriter) go
 			return encodeError(ctx, w, v)
 		}
 		switch en.GoaErrorName() {
-		case "InsertConflict":
-			var res *users.ServiceInsertconflict
+		case "EmailExists":
+			var res users.EmailExists
 			errors.As(v, &res)
-			ctx = context.WithValue(ctx, goahttp.ContentTypeKey, "application/vnd.service.insertconflict")
 			enc := encoder(ctx, w)
-			var body any
-			if formatter != nil {
-				body = formatter(ctx, res)
-			} else {
-				body = NewCreateUserInsertConflictResponseBody(res)
-			}
+			body := res
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusConflict)
+			return enc.Encode(body)
+		case "UsernameExists":
+			var res users.UsernameExists
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			body := res
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusConflict)
 			return enc.Encode(body)
@@ -283,14 +273,6 @@ func EncodeCreateUserError(encoder func(context.Context, http.ResponseWriter) go
 			return enc.Encode(body)
 		case "InvalidUserDetails":
 			var res users.InvalidUserDetails
-			errors.As(v, &res)
-			enc := encoder(ctx, w)
-			body := res
-			w.Header().Set("goa-error", res.GoaErrorName())
-			w.WriteHeader(http.StatusBadRequest)
-			return enc.Encode(body)
-		case "UsernameTooShort":
-			var res users.UsernameTooShort
 			errors.As(v, &res)
 			enc := encoder(ctx, w)
 			body := res
@@ -377,17 +359,19 @@ func EncodeUpdateUserError(encoder func(context.Context, http.ResponseWriter) go
 			return encodeError(ctx, w, v)
 		}
 		switch en.GoaErrorName() {
-		case "InsertConflict":
-			var res *users.ServiceInsertconflict
+		case "EmailExists":
+			var res users.EmailExists
 			errors.As(v, &res)
-			ctx = context.WithValue(ctx, goahttp.ContentTypeKey, "application/vnd.service.insertconflict")
 			enc := encoder(ctx, w)
-			var body any
-			if formatter != nil {
-				body = formatter(ctx, res)
-			} else {
-				body = NewUpdateUserInsertConflictResponseBody(res)
-			}
+			body := res
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusConflict)
+			return enc.Encode(body)
+		case "UsernameExists":
+			var res users.UsernameExists
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			body := res
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusConflict)
 			return enc.Encode(body)
@@ -401,14 +385,6 @@ func EncodeUpdateUserError(encoder func(context.Context, http.ResponseWriter) go
 			return enc.Encode(body)
 		case "InvalidUserDetails":
 			var res users.InvalidUserDetails
-			errors.As(v, &res)
-			enc := encoder(ctx, w)
-			body := res
-			w.Header().Set("goa-error", res.GoaErrorName())
-			w.WriteHeader(http.StatusBadRequest)
-			return enc.Encode(body)
-		case "UsernameTooShort":
-			var res users.UsernameTooShort
 			errors.As(v, &res)
 			enc := encoder(ctx, w)
 			body := res
@@ -473,17 +449,19 @@ func EncodeDeleteUserError(encoder func(context.Context, http.ResponseWriter) go
 			return encodeError(ctx, w, v)
 		}
 		switch en.GoaErrorName() {
-		case "InsertConflict":
-			var res *users.ServiceInsertconflict
+		case "EmailExists":
+			var res users.EmailExists
 			errors.As(v, &res)
-			ctx = context.WithValue(ctx, goahttp.ContentTypeKey, "application/vnd.service.insertconflict")
 			enc := encoder(ctx, w)
-			var body any
-			if formatter != nil {
-				body = formatter(ctx, res)
-			} else {
-				body = NewDeleteUserInsertConflictResponseBody(res)
-			}
+			body := res
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusConflict)
+			return enc.Encode(body)
+		case "UsernameExists":
+			var res users.UsernameExists
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			body := res
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusConflict)
 			return enc.Encode(body)
@@ -497,14 +475,6 @@ func EncodeDeleteUserError(encoder func(context.Context, http.ResponseWriter) go
 			return enc.Encode(body)
 		case "InvalidUserDetails":
 			var res users.InvalidUserDetails
-			errors.As(v, &res)
-			enc := encoder(ctx, w)
-			body := res
-			w.Header().Set("goa-error", res.GoaErrorName())
-			w.WriteHeader(http.StatusBadRequest)
-			return enc.Encode(body)
-		case "UsernameTooShort":
-			var res users.UsernameTooShort
 			errors.As(v, &res)
 			enc := encoder(ctx, w)
 			body := res
@@ -576,17 +546,19 @@ func EncodeLoginError(encoder func(context.Context, http.ResponseWriter) goahttp
 			return encodeError(ctx, w, v)
 		}
 		switch en.GoaErrorName() {
-		case "InsertConflict":
-			var res *users.ServiceInsertconflict
+		case "EmailExists":
+			var res users.EmailExists
 			errors.As(v, &res)
-			ctx = context.WithValue(ctx, goahttp.ContentTypeKey, "application/vnd.service.insertconflict")
 			enc := encoder(ctx, w)
-			var body any
-			if formatter != nil {
-				body = formatter(ctx, res)
-			} else {
-				body = NewLoginInsertConflictResponseBody(res)
-			}
+			body := res
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusConflict)
+			return enc.Encode(body)
+		case "UsernameExists":
+			var res users.UsernameExists
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			body := res
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusConflict)
 			return enc.Encode(body)
@@ -600,14 +572,6 @@ func EncodeLoginError(encoder func(context.Context, http.ResponseWriter) goahttp
 			return enc.Encode(body)
 		case "InvalidUserDetails":
 			var res users.InvalidUserDetails
-			errors.As(v, &res)
-			enc := encoder(ctx, w)
-			body := res
-			w.Header().Set("goa-error", res.GoaErrorName())
-			w.WriteHeader(http.StatusBadRequest)
-			return enc.Encode(body)
-		case "UsernameTooShort":
-			var res users.UsernameTooShort
 			errors.As(v, &res)
 			enc := encoder(ctx, w)
 			body := res
@@ -667,17 +631,19 @@ func EncodeQueryCurrentJWTError(encoder func(context.Context, http.ResponseWrite
 			return encodeError(ctx, w, v)
 		}
 		switch en.GoaErrorName() {
-		case "InsertConflict":
-			var res *users.ServiceInsertconflict
+		case "EmailExists":
+			var res users.EmailExists
 			errors.As(v, &res)
-			ctx = context.WithValue(ctx, goahttp.ContentTypeKey, "application/vnd.service.insertconflict")
 			enc := encoder(ctx, w)
-			var body any
-			if formatter != nil {
-				body = formatter(ctx, res)
-			} else {
-				body = NewQueryCurrentJWTInsertConflictResponseBody(res)
-			}
+			body := res
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusConflict)
+			return enc.Encode(body)
+		case "UsernameExists":
+			var res users.UsernameExists
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			body := res
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusConflict)
 			return enc.Encode(body)
@@ -691,14 +657,6 @@ func EncodeQueryCurrentJWTError(encoder func(context.Context, http.ResponseWrite
 			return enc.Encode(body)
 		case "InvalidUserDetails":
 			var res users.InvalidUserDetails
-			errors.As(v, &res)
-			enc := encoder(ctx, w)
-			body := res
-			w.Header().Set("goa-error", res.GoaErrorName())
-			w.WriteHeader(http.StatusBadRequest)
-			return enc.Encode(body)
-		case "UsernameTooShort":
-			var res users.UsernameTooShort
 			errors.As(v, &res)
 			enc := encoder(ctx, w)
 			body := res

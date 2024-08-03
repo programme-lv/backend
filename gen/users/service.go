@@ -54,6 +54,9 @@ const ServiceName = "users"
 // MethodKey key.
 var MethodNames = [7]string{"listUsers", "getUser", "createUser", "updateUser", "deleteUser", "login", "queryCurrentJWT"}
 
+// Email already exists
+type EmailExists string
+
 // Invalid credentials
 type InvalidCredentials string
 
@@ -90,14 +93,6 @@ type SecureUUIDPayload struct {
 	Token string
 	// UUID of the user
 	UUID string
-}
-
-// InsertConflict is the type of the error values returned when insertion fails
-// because of a conflict
-type ServiceInsertconflict struct {
-	ConflictValue string
-	// Name of error used by goa to encode response
-	Name string
 }
 
 // UpdateUserPayload is the payload type of the users service updateUser method.
@@ -146,11 +141,28 @@ type UserPayload struct {
 	Password string
 }
 
-// Username too short
-type UsernameTooShort string
+// Username already exists
+type UsernameExists string
 
 // Credentials are invalid
 type Unauthorized string
+
+// Error returns an error description.
+func (e EmailExists) Error() string {
+	return "Email already exists"
+}
+
+// ErrorName returns "EmailExists".
+//
+// Deprecated: Use GoaErrorName - https://github.com/goadesign/goa/issues/3105
+func (e EmailExists) ErrorName() string {
+	return e.GoaErrorName()
+}
+
+// GoaErrorName returns "EmailExists".
+func (e EmailExists) GoaErrorName() string {
+	return "EmailExists"
+}
 
 // Error returns an error description.
 func (e InvalidCredentials) Error() string {
@@ -204,37 +216,20 @@ func (e NotFound) GoaErrorName() string {
 }
 
 // Error returns an error description.
-func (e *ServiceInsertconflict) Error() string {
-	return "InsertConflict is the type of the error values returned when insertion fails because of a conflict"
+func (e UsernameExists) Error() string {
+	return "Username already exists"
 }
 
-// ErrorName returns "ServiceInsertconflict".
+// ErrorName returns "UsernameExists".
 //
 // Deprecated: Use GoaErrorName - https://github.com/goadesign/goa/issues/3105
-func (e *ServiceInsertconflict) ErrorName() string {
+func (e UsernameExists) ErrorName() string {
 	return e.GoaErrorName()
 }
 
-// GoaErrorName returns "ServiceInsertconflict".
-func (e *ServiceInsertconflict) GoaErrorName() string {
-	return e.Name
-}
-
-// Error returns an error description.
-func (e UsernameTooShort) Error() string {
-	return "Username too short"
-}
-
-// ErrorName returns "UsernameTooShort".
-//
-// Deprecated: Use GoaErrorName - https://github.com/goadesign/goa/issues/3105
-func (e UsernameTooShort) ErrorName() string {
-	return e.GoaErrorName()
-}
-
-// GoaErrorName returns "UsernameTooShort".
-func (e UsernameTooShort) GoaErrorName() string {
-	return "UsernameTooShort"
+// GoaErrorName returns "UsernameExists".
+func (e UsernameExists) GoaErrorName() string {
+	return "UsernameExists"
 }
 
 // Error returns an error description.
@@ -257,11 +252,6 @@ func (e Unauthorized) GoaErrorName() string {
 // MakeInvalidUserDetails builds a goa.ServiceError from an error.
 func MakeInvalidUserDetails(err error) *goa.ServiceError {
 	return goa.NewServiceError(err, "InvalidUserDetails", false, false, false)
-}
-
-// MakeInsertConflict builds a goa.ServiceError from an error.
-func MakeInsertConflict(err error) *goa.ServiceError {
-	return goa.NewServiceError(err, "InsertConflict", false, false, false)
 }
 
 // MakeNotFound builds a goa.ServiceError from an error.

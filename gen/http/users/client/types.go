@@ -100,62 +100,6 @@ type UpdateUserOKResponseBody struct {
 	Lastname *string `form:"lastname,omitempty" json:"lastname,omitempty" xml:"lastname,omitempty"`
 }
 
-// ListUsersInsertConflictResponseBody is the type of the "users" service
-// "listUsers" endpoint HTTP response body for the "InsertConflict" error.
-type ListUsersInsertConflictResponseBody struct {
-	ConflictValue *string `form:"conflict_value,omitempty" json:"conflict_value,omitempty" xml:"conflict_value,omitempty"`
-	// Name of error used by goa to encode response
-	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
-}
-
-// GetUserInsertConflictResponseBody is the type of the "users" service
-// "getUser" endpoint HTTP response body for the "InsertConflict" error.
-type GetUserInsertConflictResponseBody struct {
-	ConflictValue *string `form:"conflict_value,omitempty" json:"conflict_value,omitempty" xml:"conflict_value,omitempty"`
-	// Name of error used by goa to encode response
-	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
-}
-
-// CreateUserInsertConflictResponseBody is the type of the "users" service
-// "createUser" endpoint HTTP response body for the "InsertConflict" error.
-type CreateUserInsertConflictResponseBody struct {
-	ConflictValue *string `form:"conflict_value,omitempty" json:"conflict_value,omitempty" xml:"conflict_value,omitempty"`
-	// Name of error used by goa to encode response
-	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
-}
-
-// UpdateUserInsertConflictResponseBody is the type of the "users" service
-// "updateUser" endpoint HTTP response body for the "InsertConflict" error.
-type UpdateUserInsertConflictResponseBody struct {
-	ConflictValue *string `form:"conflict_value,omitempty" json:"conflict_value,omitempty" xml:"conflict_value,omitempty"`
-	// Name of error used by goa to encode response
-	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
-}
-
-// DeleteUserInsertConflictResponseBody is the type of the "users" service
-// "deleteUser" endpoint HTTP response body for the "InsertConflict" error.
-type DeleteUserInsertConflictResponseBody struct {
-	ConflictValue *string `form:"conflict_value,omitempty" json:"conflict_value,omitempty" xml:"conflict_value,omitempty"`
-	// Name of error used by goa to encode response
-	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
-}
-
-// LoginInsertConflictResponseBody is the type of the "users" service "login"
-// endpoint HTTP response body for the "InsertConflict" error.
-type LoginInsertConflictResponseBody struct {
-	ConflictValue *string `form:"conflict_value,omitempty" json:"conflict_value,omitempty" xml:"conflict_value,omitempty"`
-	// Name of error used by goa to encode response
-	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
-}
-
-// QueryCurrentJWTInsertConflictResponseBody is the type of the "users" service
-// "queryCurrentJWT" endpoint HTTP response body for the "InsertConflict" error.
-type QueryCurrentJWTInsertConflictResponseBody struct {
-	ConflictValue *string `form:"conflict_value,omitempty" json:"conflict_value,omitempty" xml:"conflict_value,omitempty"`
-	// Name of error used by goa to encode response
-	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
-}
-
 // UserResponse is used to define fields on response body types.
 type UserResponse struct {
 	// Unique user UUID
@@ -232,13 +176,18 @@ func NewListUsersUserOK(body []*UserResponse) []*users.User {
 	return v
 }
 
-// NewListUsersInsertConflict builds a users service listUsers endpoint
-// InsertConflict error.
-func NewListUsersInsertConflict(body *ListUsersInsertConflictResponseBody) *users.ServiceInsertconflict {
-	v := &users.ServiceInsertconflict{
-		ConflictValue: *body.ConflictValue,
-		Name:          *body.Name,
-	}
+// NewListUsersEmailExists builds a users service listUsers endpoint
+// EmailExists error.
+func NewListUsersEmailExists(body string) users.EmailExists {
+	v := users.EmailExists(body)
+
+	return v
+}
+
+// NewListUsersUsernameExists builds a users service listUsers endpoint
+// UsernameExists error.
+func NewListUsersUsernameExists(body string) users.UsernameExists {
+	v := users.UsernameExists(body)
 
 	return v
 }
@@ -255,14 +204,6 @@ func NewListUsersInvalidCredentials(body string) users.InvalidCredentials {
 // InvalidUserDetails error.
 func NewListUsersInvalidUserDetails(body string) users.InvalidUserDetails {
 	v := users.InvalidUserDetails(body)
-
-	return v
-}
-
-// NewListUsersUsernameTooShort builds a users service listUsers endpoint
-// UsernameTooShort error.
-func NewListUsersUsernameTooShort(body string) users.UsernameTooShort {
-	v := users.UsernameTooShort(body)
 
 	return v
 }
@@ -289,13 +230,18 @@ func NewGetUserUserOK(body *GetUserResponseBody) *users.User {
 	return v
 }
 
-// NewGetUserInsertConflict builds a users service getUser endpoint
-// InsertConflict error.
-func NewGetUserInsertConflict(body *GetUserInsertConflictResponseBody) *users.ServiceInsertconflict {
-	v := &users.ServiceInsertconflict{
-		ConflictValue: *body.ConflictValue,
-		Name:          *body.Name,
-	}
+// NewGetUserEmailExists builds a users service getUser endpoint EmailExists
+// error.
+func NewGetUserEmailExists(body string) users.EmailExists {
+	v := users.EmailExists(body)
+
+	return v
+}
+
+// NewGetUserUsernameExists builds a users service getUser endpoint
+// UsernameExists error.
+func NewGetUserUsernameExists(body string) users.UsernameExists {
+	v := users.UsernameExists(body)
 
 	return v
 }
@@ -312,14 +258,6 @@ func NewGetUserInvalidCredentials(body string) users.InvalidCredentials {
 // InvalidUserDetails error.
 func NewGetUserInvalidUserDetails(body string) users.InvalidUserDetails {
 	v := users.InvalidUserDetails(body)
-
-	return v
-}
-
-// NewGetUserUsernameTooShort builds a users service getUser endpoint
-// UsernameTooShort error.
-func NewGetUserUsernameTooShort(body string) users.UsernameTooShort {
-	v := users.UsernameTooShort(body)
 
 	return v
 }
@@ -345,13 +283,18 @@ func NewCreateUserUserCreated(body *CreateUserResponseBody) *users.User {
 	return v
 }
 
-// NewCreateUserInsertConflict builds a users service createUser endpoint
-// InsertConflict error.
-func NewCreateUserInsertConflict(body *CreateUserInsertConflictResponseBody) *users.ServiceInsertconflict {
-	v := &users.ServiceInsertconflict{
-		ConflictValue: *body.ConflictValue,
-		Name:          *body.Name,
-	}
+// NewCreateUserEmailExists builds a users service createUser endpoint
+// EmailExists error.
+func NewCreateUserEmailExists(body string) users.EmailExists {
+	v := users.EmailExists(body)
+
+	return v
+}
+
+// NewCreateUserUsernameExists builds a users service createUser endpoint
+// UsernameExists error.
+func NewCreateUserUsernameExists(body string) users.UsernameExists {
+	v := users.UsernameExists(body)
 
 	return v
 }
@@ -368,14 +311,6 @@ func NewCreateUserInvalidCredentials(body string) users.InvalidCredentials {
 // InvalidUserDetails error.
 func NewCreateUserInvalidUserDetails(body string) users.InvalidUserDetails {
 	v := users.InvalidUserDetails(body)
-
-	return v
-}
-
-// NewCreateUserUsernameTooShort builds a users service createUser endpoint
-// UsernameTooShort error.
-func NewCreateUserUsernameTooShort(body string) users.UsernameTooShort {
-	v := users.UsernameTooShort(body)
 
 	return v
 }
@@ -402,13 +337,18 @@ func NewUpdateUserUserOK(body *UpdateUserOKResponseBody) *users.User {
 	return v
 }
 
-// NewUpdateUserInsertConflict builds a users service updateUser endpoint
-// InsertConflict error.
-func NewUpdateUserInsertConflict(body *UpdateUserInsertConflictResponseBody) *users.ServiceInsertconflict {
-	v := &users.ServiceInsertconflict{
-		ConflictValue: *body.ConflictValue,
-		Name:          *body.Name,
-	}
+// NewUpdateUserEmailExists builds a users service updateUser endpoint
+// EmailExists error.
+func NewUpdateUserEmailExists(body string) users.EmailExists {
+	v := users.EmailExists(body)
+
+	return v
+}
+
+// NewUpdateUserUsernameExists builds a users service updateUser endpoint
+// UsernameExists error.
+func NewUpdateUserUsernameExists(body string) users.UsernameExists {
+	v := users.UsernameExists(body)
 
 	return v
 }
@@ -429,14 +369,6 @@ func NewUpdateUserInvalidUserDetails(body string) users.InvalidUserDetails {
 	return v
 }
 
-// NewUpdateUserUsernameTooShort builds a users service updateUser endpoint
-// UsernameTooShort error.
-func NewUpdateUserUsernameTooShort(body string) users.UsernameTooShort {
-	v := users.UsernameTooShort(body)
-
-	return v
-}
-
 // NewUpdateUserNotFound builds a users service updateUser endpoint NotFound
 // error.
 func NewUpdateUserNotFound(body string) users.NotFound {
@@ -445,13 +377,18 @@ func NewUpdateUserNotFound(body string) users.NotFound {
 	return v
 }
 
-// NewDeleteUserInsertConflict builds a users service deleteUser endpoint
-// InsertConflict error.
-func NewDeleteUserInsertConflict(body *DeleteUserInsertConflictResponseBody) *users.ServiceInsertconflict {
-	v := &users.ServiceInsertconflict{
-		ConflictValue: *body.ConflictValue,
-		Name:          *body.Name,
-	}
+// NewDeleteUserEmailExists builds a users service deleteUser endpoint
+// EmailExists error.
+func NewDeleteUserEmailExists(body string) users.EmailExists {
+	v := users.EmailExists(body)
+
+	return v
+}
+
+// NewDeleteUserUsernameExists builds a users service deleteUser endpoint
+// UsernameExists error.
+func NewDeleteUserUsernameExists(body string) users.UsernameExists {
+	v := users.UsernameExists(body)
 
 	return v
 }
@@ -472,14 +409,6 @@ func NewDeleteUserInvalidUserDetails(body string) users.InvalidUserDetails {
 	return v
 }
 
-// NewDeleteUserUsernameTooShort builds a users service deleteUser endpoint
-// UsernameTooShort error.
-func NewDeleteUserUsernameTooShort(body string) users.UsernameTooShort {
-	v := users.UsernameTooShort(body)
-
-	return v
-}
-
 // NewDeleteUserNotFound builds a users service deleteUser endpoint NotFound
 // error.
 func NewDeleteUserNotFound(body string) users.NotFound {
@@ -488,13 +417,17 @@ func NewDeleteUserNotFound(body string) users.NotFound {
 	return v
 }
 
-// NewLoginInsertConflict builds a users service login endpoint InsertConflict
+// NewLoginEmailExists builds a users service login endpoint EmailExists error.
+func NewLoginEmailExists(body string) users.EmailExists {
+	v := users.EmailExists(body)
+
+	return v
+}
+
+// NewLoginUsernameExists builds a users service login endpoint UsernameExists
 // error.
-func NewLoginInsertConflict(body *LoginInsertConflictResponseBody) *users.ServiceInsertconflict {
-	v := &users.ServiceInsertconflict{
-		ConflictValue: *body.ConflictValue,
-		Name:          *body.Name,
-	}
+func NewLoginUsernameExists(body string) users.UsernameExists {
+	v := users.UsernameExists(body)
 
 	return v
 }
@@ -515,14 +448,6 @@ func NewLoginInvalidUserDetails(body string) users.InvalidUserDetails {
 	return v
 }
 
-// NewLoginUsernameTooShort builds a users service login endpoint
-// UsernameTooShort error.
-func NewLoginUsernameTooShort(body string) users.UsernameTooShort {
-	v := users.UsernameTooShort(body)
-
-	return v
-}
-
 // NewLoginNotFound builds a users service login endpoint NotFound error.
 func NewLoginNotFound(body string) users.NotFound {
 	v := users.NotFound(body)
@@ -530,13 +455,18 @@ func NewLoginNotFound(body string) users.NotFound {
 	return v
 }
 
-// NewQueryCurrentJWTInsertConflict builds a users service queryCurrentJWT
-// endpoint InsertConflict error.
-func NewQueryCurrentJWTInsertConflict(body *QueryCurrentJWTInsertConflictResponseBody) *users.ServiceInsertconflict {
-	v := &users.ServiceInsertconflict{
-		ConflictValue: *body.ConflictValue,
-		Name:          *body.Name,
-	}
+// NewQueryCurrentJWTEmailExists builds a users service queryCurrentJWT
+// endpoint EmailExists error.
+func NewQueryCurrentJWTEmailExists(body string) users.EmailExists {
+	v := users.EmailExists(body)
+
+	return v
+}
+
+// NewQueryCurrentJWTUsernameExists builds a users service queryCurrentJWT
+// endpoint UsernameExists error.
+func NewQueryCurrentJWTUsernameExists(body string) users.UsernameExists {
+	v := users.UsernameExists(body)
 
 	return v
 }
@@ -553,14 +483,6 @@ func NewQueryCurrentJWTInvalidCredentials(body string) users.InvalidCredentials 
 // endpoint InvalidUserDetails error.
 func NewQueryCurrentJWTInvalidUserDetails(body string) users.InvalidUserDetails {
 	v := users.InvalidUserDetails(body)
-
-	return v
-}
-
-// NewQueryCurrentJWTUsernameTooShort builds a users service queryCurrentJWT
-// endpoint UsernameTooShort error.
-func NewQueryCurrentJWTUsernameTooShort(body string) users.UsernameTooShort {
-	v := users.UsernameTooShort(body)
 
 	return v
 }
@@ -641,90 +563,6 @@ func ValidateUpdateUserOKResponseBody(body *UpdateUserOKResponseBody) (err error
 	}
 	if body.Email != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.email", *body.Email, goa.FormatEmail))
-	}
-	return
-}
-
-// ValidateListUsersInsertConflictResponseBody runs the validations defined on
-// listUsers_InsertConflict_response_body
-func ValidateListUsersInsertConflictResponseBody(body *ListUsersInsertConflictResponseBody) (err error) {
-	if body.ConflictValue == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("conflict_value", "body"))
-	}
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	return
-}
-
-// ValidateGetUserInsertConflictResponseBody runs the validations defined on
-// getUser_InsertConflict_response_body
-func ValidateGetUserInsertConflictResponseBody(body *GetUserInsertConflictResponseBody) (err error) {
-	if body.ConflictValue == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("conflict_value", "body"))
-	}
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	return
-}
-
-// ValidateCreateUserInsertConflictResponseBody runs the validations defined on
-// createUser_InsertConflict_response_body
-func ValidateCreateUserInsertConflictResponseBody(body *CreateUserInsertConflictResponseBody) (err error) {
-	if body.ConflictValue == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("conflict_value", "body"))
-	}
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	return
-}
-
-// ValidateUpdateUserInsertConflictResponseBody runs the validations defined on
-// updateUser_InsertConflict_response_body
-func ValidateUpdateUserInsertConflictResponseBody(body *UpdateUserInsertConflictResponseBody) (err error) {
-	if body.ConflictValue == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("conflict_value", "body"))
-	}
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	return
-}
-
-// ValidateDeleteUserInsertConflictResponseBody runs the validations defined on
-// deleteUser_InsertConflict_response_body
-func ValidateDeleteUserInsertConflictResponseBody(body *DeleteUserInsertConflictResponseBody) (err error) {
-	if body.ConflictValue == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("conflict_value", "body"))
-	}
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	return
-}
-
-// ValidateLoginInsertConflictResponseBody runs the validations defined on
-// login_InsertConflict_response_body
-func ValidateLoginInsertConflictResponseBody(body *LoginInsertConflictResponseBody) (err error) {
-	if body.ConflictValue == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("conflict_value", "body"))
-	}
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	return
-}
-
-// ValidateQueryCurrentJWTInsertConflictResponseBody runs the validations
-// defined on queryCurrentJWT_InsertConflict_response_body
-func ValidateQueryCurrentJWTInsertConflictResponseBody(body *QueryCurrentJWTInsertConflictResponseBody) (err error) {
-	if body.ConflictValue == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("conflict_value", "body"))
-	}
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
 	return
 }
