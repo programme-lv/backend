@@ -17,7 +17,7 @@ import (
 // Service to manage users
 type Service interface {
 	// List all users
-	ListUsers(context.Context, *SecurePayload) (res []*User, err error)
+	ListUsers(context.Context, *ListUsersPayload) (res []*User, err error)
 	// Get a user by UUID
 	GetUser(context.Context, *SecureUUIDPayload) (res *User, err error)
 	// Create a new user
@@ -29,7 +29,7 @@ type Service interface {
 	// User login
 	Login(context.Context, *LoginPayload) (res string, err error)
 	// Query current JWT
-	QueryCurrentJWT(context.Context, *SecurePayload) (res string, err error)
+	QueryCurrentJWT(context.Context, *QueryCurrentJWTPayload) (res string, err error)
 }
 
 // Auther defines the authorization functions to be implemented by the service.
@@ -60,6 +60,12 @@ type InvalidCredentials string
 // Invalid user details
 type InvalidUserDetails string
 
+// ListUsersPayload is the payload type of the users service listUsers method.
+type ListUsersPayload struct {
+	// JWT token used for authentication
+	Token *string
+}
+
 // LoginPayload is the payload type of the users service login method.
 type LoginPayload struct {
 	// Email of the user
@@ -71,8 +77,9 @@ type LoginPayload struct {
 // User not found
 type NotFound string
 
-// SecurePayload is the payload type of the users service listUsers method.
-type SecurePayload struct {
+// QueryCurrentJWTPayload is the payload type of the users service
+// queryCurrentJWT method.
+type QueryCurrentJWTPayload struct {
 	// JWT token used for authentication
 	Token *string
 }
@@ -138,6 +145,9 @@ type UserPayload struct {
 	// Password of the user
 	Password string
 }
+
+// Credentials are invalid
+type Unauthorized string
 
 // Error returns an error description.
 func (e InvalidCredentials) Error() string {
@@ -205,6 +215,23 @@ func (e *ServiceInsertconflict) ErrorName() string {
 // GoaErrorName returns "ServiceInsertconflict".
 func (e *ServiceInsertconflict) GoaErrorName() string {
 	return e.Name
+}
+
+// Error returns an error description.
+func (e Unauthorized) Error() string {
+	return "Credentials are invalid"
+}
+
+// ErrorName returns "unauthorized".
+//
+// Deprecated: Use GoaErrorName - https://github.com/goadesign/goa/issues/3105
+func (e Unauthorized) ErrorName() string {
+	return e.GoaErrorName()
+}
+
+// GoaErrorName returns "unauthorized".
+func (e Unauthorized) GoaErrorName() string {
+	return "unauthorized"
 }
 
 // MakeInvalidUserDetails builds a goa.ServiceError from an error.

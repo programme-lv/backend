@@ -18,14 +18,14 @@ import (
 
 // BuildListUsersPayload builds the payload for the users listUsers endpoint
 // from CLI flags.
-func BuildListUsersPayload(usersListUsersToken string) (*users.SecurePayload, error) {
+func BuildListUsersPayload(usersListUsersToken string) (*users.ListUsersPayload, error) {
 	var token *string
 	{
 		if usersListUsersToken != "" {
 			token = &usersListUsersToken
 		}
 	}
-	v := &users.SecurePayload{}
+	v := &users.ListUsersPayload{}
 	v.Token = token
 
 	return v, nil
@@ -171,14 +171,14 @@ func BuildLoginPayload(usersLoginBody string) (*users.LoginPayload, error) {
 
 // BuildQueryCurrentJWTPayload builds the payload for the users queryCurrentJWT
 // endpoint from CLI flags.
-func BuildQueryCurrentJWTPayload(usersQueryCurrentJWTToken string) (*users.SecurePayload, error) {
+func BuildQueryCurrentJWTPayload(usersQueryCurrentJWTToken string) (*users.QueryCurrentJWTPayload, error) {
 	var token *string
 	{
 		if usersQueryCurrentJWTToken != "" {
 			token = &usersQueryCurrentJWTToken
 		}
 	}
-	v := &users.SecurePayload{}
+	v := &users.QueryCurrentJWTPayload{}
 	v.Token = token
 
 	return v, nil

@@ -55,12 +55,12 @@ func (e *Endpoints) Use(m func(goa.Endpoint) goa.Endpoint) {
 // "listUsers" of service "users".
 func NewListUsersEndpoint(s Service, authJWTFn security.AuthJWTFunc) goa.Endpoint {
 	return func(ctx context.Context, req any) (any, error) {
-		p := req.(*SecurePayload)
+		p := req.(*ListUsersPayload)
 		var err error
 		sc := security.JWTScheme{
 			Name:           "jwt",
-			Scopes:         []string{"api:access"},
-			RequiredScopes: []string{"api:access"},
+			Scopes:         []string{"users:read", "users:write"},
+			RequiredScopes: []string{"users:read"},
 		}
 		var token string
 		if p.Token != nil {
@@ -82,8 +82,8 @@ func NewGetUserEndpoint(s Service, authJWTFn security.AuthJWTFunc) goa.Endpoint 
 		var err error
 		sc := security.JWTScheme{
 			Name:           "jwt",
-			Scopes:         []string{"api:access"},
-			RequiredScopes: []string{"api:access"},
+			Scopes:         []string{"users:read", "users:write"},
+			RequiredScopes: []string{"users:read"},
 		}
 		ctx, err = authJWTFn(ctx, p.Token, &sc)
 		if err != nil {
@@ -110,8 +110,8 @@ func NewUpdateUserEndpoint(s Service, authJWTFn security.AuthJWTFunc) goa.Endpoi
 		var err error
 		sc := security.JWTScheme{
 			Name:           "jwt",
-			Scopes:         []string{"api:access"},
-			RequiredScopes: []string{"api:access"},
+			Scopes:         []string{"users:read", "users:write"},
+			RequiredScopes: []string{"users:write"},
 		}
 		ctx, err = authJWTFn(ctx, p.Token, &sc)
 		if err != nil {
@@ -129,8 +129,8 @@ func NewDeleteUserEndpoint(s Service, authJWTFn security.AuthJWTFunc) goa.Endpoi
 		var err error
 		sc := security.JWTScheme{
 			Name:           "jwt",
-			Scopes:         []string{"api:access"},
-			RequiredScopes: []string{"api:access"},
+			Scopes:         []string{"users:read", "users:write"},
+			RequiredScopes: []string{"users:write"},
 		}
 		ctx, err = authJWTFn(ctx, p.Token, &sc)
 		if err != nil {
@@ -153,12 +153,12 @@ func NewLoginEndpoint(s Service) goa.Endpoint {
 // method "queryCurrentJWT" of service "users".
 func NewQueryCurrentJWTEndpoint(s Service, authJWTFn security.AuthJWTFunc) goa.Endpoint {
 	return func(ctx context.Context, req any) (any, error) {
-		p := req.(*SecurePayload)
+		p := req.(*QueryCurrentJWTPayload)
 		var err error
 		sc := security.JWTScheme{
 			Name:           "jwt",
-			Scopes:         []string{"api:access"},
-			RequiredScopes: []string{"api:access"},
+			Scopes:         []string{"users:read", "users:write"},
+			RequiredScopes: []string{},
 		}
 		var token string
 		if p.Token != nil {

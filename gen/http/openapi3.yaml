@@ -67,8 +67,7 @@ paths:
                                 conflict_value: Voluptas odio hic.
                                 name: Mollitia illo enim iure nesciunt minus est.
             security:
-                - jwt_query_Authorization:
-                    - api:access
+                - jwt_query_Authorization: []
     /auth/login:
         post:
             tags:
@@ -220,7 +219,7 @@ paths:
                                 name: Veritatis illo voluptatem.
             security:
                 - jwt_query_Authorization:
-                    - api:access
+                    - users:read
         post:
             tags:
                 - users
@@ -350,7 +349,7 @@ paths:
                                 name: Repudiandae ut suscipit.
             security:
                 - jwt_query_Authorization:
-                    - api:access
+                    - users:write
         get:
             tags:
                 - users
@@ -425,7 +424,7 @@ paths:
                                 name: Ipsum consequatur explicabo.
             security:
                 - jwt_query_Authorization:
-                    - api:access
+                    - users:read
         put:
             tags:
                 - users
@@ -511,7 +510,7 @@ paths:
                                 name: Quia dolore maxime aut reprehenderit.
             security:
                 - jwt_query_Authorization:
-                    - api:access
+                    - users:write
 components:
     schemas:
         CreateUserRequestBody:

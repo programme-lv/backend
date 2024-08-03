@@ -6,7 +6,8 @@ import (
 
 // JWTAuth defines a security scheme using JWT tokens.
 var JWTAuth = dsl.JWTSecurity("jwt", func() {
-	dsl.Scope("api:access", "API access")
+	dsl.Scope("users:read", "Read users")
+	dsl.Scope("users:write", "Write users")
 })
 
 // User represents a user.
@@ -69,13 +70,6 @@ var LoginPayload = dsl.Type("LoginPayload", func() {
 	dsl.Required("email", "password")
 })
 
-// SecurePayload defines a payload with a JWT token for secure endpoints.
-var SecurePayload = dsl.Type("SecurePayload", func() {
-	dsl.Token("token", dsl.String, "JWT token used for authentication", func() {
-		dsl.Example("jwt_token")
-	})
-})
-
 // SecureUUIDPayload defines a payload with a JWT token and UUID.
 var SecureUUIDPayload = dsl.Type("SecureUUIDPayload", func() {
 	dsl.Token("token", dsl.String, "JWT token used for authentication", func() {
@@ -106,6 +100,7 @@ var InsertConflict = dsl.ResultType("application/vnd.service.insertconflict", fu
 var _ = dsl.Service("users", func() {
 	dsl.Description("Service to manage users")
 
+	dsl.Error("unauthorized", dsl.String, "Credentials are invalid")
 	dsl.Error("InvalidCredentials", dsl.String, "Invalid credentials")
 	dsl.Error("InvalidUserDetails", dsl.String, "Invalid user details")
 	dsl.Error("NotFound", dsl.String, "User not found")
@@ -121,9 +116,13 @@ var _ = dsl.Service("users", func() {
 	dsl.Method("listUsers", func() {
 		dsl.Description("List all users")
 		dsl.Security(JWTAuth, func() {
-			dsl.Scope("api:access")
+			dsl.Scope("users:read")
 		})
-		dsl.Payload(SecurePayload)
+		dsl.Payload(func() {
+			dsl.Token("token", dsl.String, "JWT token used for authentication", func() {
+				dsl.Example("jwt_token")
+			})
+		})
 		dsl.Result(dsl.ArrayOf(User))
 		dsl.HTTP(func() {
 			dsl.GET("/users")
@@ -135,7 +134,7 @@ var _ = dsl.Service("users", func() {
 	dsl.Method("getUser", func() {
 		dsl.Description("Get a user by UUID")
 		dsl.Security(JWTAuth, func() {
-			dsl.Scope("api:access")
+			dsl.Scope("users:read")
 		})
 		dsl.Payload(SecureUUIDPayload)
 		dsl.Result(User)
@@ -161,7 +160,7 @@ var _ = dsl.Service("users", func() {
 	dsl.Method("updateUser", func() {
 		dsl.Description("Update an existing user")
 		dsl.Security(JWTAuth, func() {
-			dsl.Scope("api:access")
+			dsl.Scope("users:write")
 		})
 		dsl.Payload(func() {
 			dsl.Token("token", dsl.String, "JWT token used for authentication", func() {
@@ -204,7 +203,7 @@ var _ = dsl.Service("users", func() {
 	dsl.Method("deleteUser", func() {
 		dsl.Description("Delete a user")
 		dsl.Security(JWTAuth, func() {
-			dsl.Scope("api:access")
+			dsl.Scope("users:write")
 		})
 		dsl.Payload(SecureUUIDPayload)
 		dsl.HTTP(func() {
@@ -234,9 +233,12 @@ var _ = dsl.Service("users", func() {
 	dsl.Method("queryCurrentJWT", func() {
 		dsl.Description("Query current JWT")
 		dsl.Security(JWTAuth, func() {
-			dsl.Scope("api:access")
 		})
-		dsl.Payload(SecurePayload)
+		dsl.Payload(func() {
+			dsl.Token("token", dsl.String, "JWT token used for authentication", func() {
+				dsl.Example("jwt_token")
+			})
+		})
 		dsl.Result(dsl.String, func() {
 			dsl.Example("current_jwt_token")
 		})

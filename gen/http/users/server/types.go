@@ -291,9 +291,9 @@ func NewQueryCurrentJWTInsertConflictResponseBody(res *users.ServiceInsertconfli
 	return body
 }
 
-// NewListUsersSecurePayload builds a users service listUsers endpoint payload.
-func NewListUsersSecurePayload(token *string) *users.SecurePayload {
-	v := &users.SecurePayload{}
+// NewListUsersPayload builds a users service listUsers endpoint payload.
+func NewListUsersPayload(token *string) *users.ListUsersPayload {
+	v := &users.ListUsersPayload{}
 	v.Token = token
 
 	return v
@@ -356,10 +356,10 @@ func NewLoginPayload(body *LoginRequestBody) *users.LoginPayload {
 	return v
 }
 
-// NewQueryCurrentJWTSecurePayload builds a users service queryCurrentJWT
-// endpoint payload.
-func NewQueryCurrentJWTSecurePayload(token *string) *users.SecurePayload {
-	v := &users.SecurePayload{}
+// NewQueryCurrentJWTPayload builds a users service queryCurrentJWT endpoint
+// payload.
+func NewQueryCurrentJWTPayload(token *string) *users.QueryCurrentJWTPayload {
+	v := &users.QueryCurrentJWTPayload{}
 	v.Token = token
 
 	return v

@@ -39,12 +39,13 @@ func NewClient(listUsers, getUser, createUser, updateUser, deleteUser, login, qu
 
 // ListUsers calls the "listUsers" endpoint of the "users" service.
 // ListUsers may return the following errors:
+//   - "unauthorized" (type Unauthorized)
 //   - "InvalidCredentials" (type InvalidCredentials)
 //   - "InvalidUserDetails" (type InvalidUserDetails)
 //   - "NotFound" (type NotFound)
 //   - "InsertConflict" (type *ServiceInsertconflict): Insertion conflict
 //   - error: internal error
-func (c *Client) ListUsers(ctx context.Context, p *SecurePayload) (res []*User, err error) {
+func (c *Client) ListUsers(ctx context.Context, p *ListUsersPayload) (res []*User, err error) {
 	var ires any
 	ires, err = c.ListUsersEndpoint(ctx, p)
 	if err != nil {
@@ -55,6 +56,7 @@ func (c *Client) ListUsers(ctx context.Context, p *SecurePayload) (res []*User, 
 
 // GetUser calls the "getUser" endpoint of the "users" service.
 // GetUser may return the following errors:
+//   - "unauthorized" (type Unauthorized)
 //   - "InvalidCredentials" (type InvalidCredentials)
 //   - "InvalidUserDetails" (type InvalidUserDetails)
 //   - "NotFound" (type NotFound)
@@ -73,6 +75,7 @@ func (c *Client) GetUser(ctx context.Context, p *SecureUUIDPayload) (res *User, 
 // CreateUser may return the following errors:
 //   - "InvalidUserDetails" (type *goa.ServiceError)
 //   - "InsertConflict" (type *goa.ServiceError)
+//   - "unauthorized" (type Unauthorized)
 //   - "InvalidCredentials" (type InvalidCredentials)
 //   - "NotFound" (type NotFound)
 //   - error: internal error
@@ -89,6 +92,7 @@ func (c *Client) CreateUser(ctx context.Context, p *UserPayload) (res *User, err
 // UpdateUser may return the following errors:
 //   - "InvalidUserDetails" (type *goa.ServiceError)
 //   - "InsertConflict" (type *goa.ServiceError)
+//   - "unauthorized" (type Unauthorized)
 //   - "InvalidCredentials" (type InvalidCredentials)
 //   - "NotFound" (type NotFound)
 //   - error: internal error
@@ -104,6 +108,7 @@ func (c *Client) UpdateUser(ctx context.Context, p *UpdateUserPayload) (res *Use
 // DeleteUser calls the "deleteUser" endpoint of the "users" service.
 // DeleteUser may return the following errors:
 //   - "NotFound" (type *goa.ServiceError)
+//   - "unauthorized" (type Unauthorized)
 //   - "InvalidCredentials" (type InvalidCredentials)
 //   - "InvalidUserDetails" (type InvalidUserDetails)
 //   - "InsertConflict" (type *ServiceInsertconflict): Insertion conflict
@@ -117,6 +122,7 @@ func (c *Client) DeleteUser(ctx context.Context, p *SecureUUIDPayload) (err erro
 // Login may return the following errors:
 //   - "InvalidCredentials" (type *goa.ServiceError)
 //   - "InvalidUserDetails" (type *goa.ServiceError)
+//   - "unauthorized" (type Unauthorized)
 //   - "NotFound" (type NotFound)
 //   - "InsertConflict" (type *ServiceInsertconflict): Insertion conflict
 //   - error: internal error
@@ -131,12 +137,13 @@ func (c *Client) Login(ctx context.Context, p *LoginPayload) (res string, err er
 
 // QueryCurrentJWT calls the "queryCurrentJWT" endpoint of the "users" service.
 // QueryCurrentJWT may return the following errors:
+//   - "unauthorized" (type Unauthorized)
 //   - "InvalidCredentials" (type InvalidCredentials)
 //   - "InvalidUserDetails" (type InvalidUserDetails)
 //   - "NotFound" (type NotFound)
 //   - "InsertConflict" (type *ServiceInsertconflict): Insertion conflict
 //   - error: internal error
-func (c *Client) QueryCurrentJWT(ctx context.Context, p *SecurePayload) (res string, err error) {
+func (c *Client) QueryCurrentJWT(ctx context.Context, p *QueryCurrentJWTPayload) (res string, err error) {
 	var ires any
 	ires, err = c.QueryCurrentJWTEndpoint(ctx, p)
 	if err != nil {

@@ -41,7 +41,7 @@ func DecodeListUsersRequest(mux goahttp.Muxer, decoder func(*http.Request) goaht
 		if tokenRaw != "" {
 			token = &tokenRaw
 		}
-		payload := NewListUsersSecurePayload(token)
+		payload := NewListUsersPayload(token)
 
 		return payload, nil
 	}
@@ -603,7 +603,7 @@ func DecodeQueryCurrentJWTRequest(mux goahttp.Muxer, decoder func(*http.Request)
 		if tokenRaw != "" {
 			token = &tokenRaw
 		}
-		payload := NewQueryCurrentJWTSecurePayload(token)
+		payload := NewQueryCurrentJWTPayload(token)
 
 		return payload, nil
 	}

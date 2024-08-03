@@ -18,11 +18,7 @@ paths:
             tags:
                 - users
             summary: queryCurrentJWT users
-            description: |-
-                Query current JWT
-
-                **Required security scopes for jwt**:
-                  * `api:access`
+            description: Query current JWT
             operationId: users#queryCurrentJWT
             parameters:
                 - name: Authorization
@@ -103,7 +99,7 @@ paths:
                 List all users
 
                 **Required security scopes for jwt**:
-                  * `api:access`
+                  * `users:read`
             operationId: users#listUsers
             parameters:
                 - name: Authorization
@@ -194,7 +190,7 @@ paths:
                 Get a user by UUID
 
                 **Required security scopes for jwt**:
-                  * `api:access`
+                  * `users:read`
             operationId: users#getUser
             parameters:
                 - name: Authorization
@@ -246,7 +242,7 @@ paths:
                 Update an existing user
 
                 **Required security scopes for jwt**:
-                  * `api:access`
+                  * `users:write`
             operationId: users#updateUser
             parameters:
                 - name: Authorization
@@ -308,7 +304,7 @@ paths:
                 Delete a user
 
                 **Required security scopes for jwt**:
-                  * `api:access`
+                  * `users:write`
             operationId: users#deleteUser
             parameters:
                 - name: Authorization
@@ -717,6 +713,7 @@ securityDefinitions:
         type: apiKey
         description: |4-
             **Security Scopes**:
-              * `api:access`: API access
+              * `users:read`: Read users
+              * `users:write`: Write users
         name: Authorization
         in: query

@@ -2,8 +2,10 @@ package proglv
 
 import (
 	"context"
-	"fmt"
+	"errors"
+	"os"
 
+	"github.com/programme-lv/backend/auth"
 	users "github.com/programme-lv/backend/gen/users"
 	"goa.design/clue/log"
 	"goa.design/goa/v3/security"
@@ -11,36 +13,52 @@ import (
 
 // users service example implementation.
 // The example methods log the requests and return zero values.
-type userssrvc struct{}
+type userssrvc struct {
+	jwtKey []byte
+}
 
 // NewUsers returns the users service implementation.
 func NewUsers() users.Service {
-	return &userssrvc{}
+	// read jwt key from env
+	jwtKey := os.Getenv("JWT_KEY")
+	if jwtKey == "" {
+		log.Fatalf(context.Background(),
+			errors.New("JWT_KEY is not set"),
+			"cant read JWT_KEY from env")
+	}
+	return &userssrvc{
+		jwtKey: []byte(jwtKey),
+	}
 }
+
+var (
+	ErrInvalidToken       = users.Unauthorized("invalid token")
+	ErrInvalidTokenScopes = users.Unauthorized("invalid scopes in token")
+	ErrMissingScope       = users.Unauthorized("missing scope in token")
+)
+
+type ClaimsKey string
 
 // JWTAuth implements the authorization logic for service "users" for the "jwt"
 // security scheme.
 func (s *userssrvc) JWTAuth(ctx context.Context, token string, scheme *security.JWTScheme) (context.Context, error) {
-	//
-	// TBD: add authorization logic.
-	//
-	// In case of authorization failure this function should return
-	// one of the generated error structs, e.g.:
-	//
-	//    return ctx, myservice.MakeUnauthorizedError("invalid token")
-	//
-	// Alternatively this function may return an instance of
-	// goa.ServiceError with a Name field value that matches one of
-	// the design error names, e.g:
-	//
-	//    return ctx, goa.PermanentError("unauthorized", "invalid token")
-	//
-	log.Printf(ctx, "%+v", scheme)
-	return ctx, fmt.Errorf("not implemented")
+	claims, err := auth.ValidateJWT(token, s.jwtKey)
+	if err != nil {
+		return ctx, ErrInvalidToken
+	}
+
+	scopesInToken := claims.Scopes
+
+	if err := scheme.Validate(scopesInToken); err != nil {
+		return ctx, ErrMissingScope
+	}
+
+	ctx = context.WithValue(ctx, ClaimsKey("claims"), claims)
+	return ctx, nil
 }
 
 // List all users
-func (s *userssrvc) ListUsers(ctx context.Context, p *users.SecurePayload) (res []*users.User, err error) {
+func (s *userssrvc) ListUsers(ctx context.Context, p *users.ListUsersPayload) (res []*users.User, err error) {
 	log.Printf(ctx, "users.listUsers")
 	return
 }
@@ -79,7 +97,7 @@ func (s *userssrvc) Login(ctx context.Context, p *users.LoginPayload) (res strin
 }
 
 // Query current JWT
-func (s *userssrvc) QueryCurrentJWT(ctx context.Context, p *users.SecurePayload) (res string, err error) {
+func (s *userssrvc) QueryCurrentJWT(ctx context.Context, p *users.QueryCurrentJWTPayload) (res string, err error) {
 	log.Printf(ctx, "users.queryCurrentJWT")
 	return
 }

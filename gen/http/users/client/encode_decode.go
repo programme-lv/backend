@@ -38,9 +38,9 @@ func (c *Client) BuildListUsersRequest(ctx context.Context, v any) (*http.Reques
 // listUsers server.
 func EncodeListUsersRequest(encoder func(*http.Request) goahttp.Encoder) func(*http.Request, any) error {
 	return func(req *http.Request, v any) error {
-		p, ok := v.(*users.SecurePayload)
+		p, ok := v.(*users.ListUsersPayload)
 		if !ok {
-			return goahttp.ErrInvalidType("users", "listUsers", "*users.SecurePayload", v)
+			return goahttp.ErrInvalidType("users", "listUsers", "*users.ListUsersPayload", v)
 		}
 		values := req.URL.Query()
 		if p.Token != nil {
@@ -784,9 +784,9 @@ func (c *Client) BuildQueryCurrentJWTRequest(ctx context.Context, v any) (*http.
 // users queryCurrentJWT server.
 func EncodeQueryCurrentJWTRequest(encoder func(*http.Request) goahttp.Encoder) func(*http.Request, any) error {
 	return func(req *http.Request, v any) error {
-		p, ok := v.(*users.SecurePayload)
+		p, ok := v.(*users.QueryCurrentJWTPayload)
 		if !ok {
-			return goahttp.ErrInvalidType("users", "queryCurrentJWT", "*users.SecurePayload", v)
+			return goahttp.ErrInvalidType("users", "queryCurrentJWT", "*users.QueryCurrentJWTPayload", v)
 		}
 		values := req.URL.Query()
 		if p.Token != nil {
