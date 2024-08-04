@@ -57,6 +57,9 @@ var MethodNames = [7]string{"listUsers", "getUser", "createUser", "updateUser", 
 // Email already exists
 type EmailExists string
 
+// Internal server error
+type InternalError string
+
 // Invalid credentials
 type InvalidCredentials string
 
@@ -178,6 +181,23 @@ func (e EmailExists) ErrorName() string {
 // GoaErrorName returns "EmailExists".
 func (e EmailExists) GoaErrorName() string {
 	return "EmailExists"
+}
+
+// Error returns an error description.
+func (e InternalError) Error() string {
+	return "Internal server error"
+}
+
+// ErrorName returns "InternalError".
+//
+// Deprecated: Use GoaErrorName - https://github.com/goadesign/goa/issues/3105
+func (e InternalError) ErrorName() string {
+	return e.GoaErrorName()
+}
+
+// GoaErrorName returns "InternalError".
+func (e InternalError) GoaErrorName() string {
+	return "InternalError"
 }
 
 // Error returns an error description.

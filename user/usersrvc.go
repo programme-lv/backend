@@ -11,6 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/google/uuid"
+	"github.com/guregu/dynamo/v2"
 	"github.com/programme-lv/backend/auth"
 	usergen "github.com/programme-lv/backend/gen/users"
 	"goa.design/clue/log"
@@ -179,7 +180,13 @@ func (s *userssrvc) CreateUser(ctx context.Context, p *usergen.UserPayload) (res
 
 	err = s.ddbUserTable.Save(ctx, row)
 	if err != nil {
-		log.Errorf(ctx, err, "error saving user")
+		if dynamo.IsCondCheckFailed(err) {
+			log.Errorf(ctx, err, "version conflict saving user")
+			return nil, usergen.InternalError("version conflict saving user")
+		} else {
+			log.Errorf(ctx, err, "error saving user")
+			return nil, usergen.InternalError("error saving user")
+		}
 	}
 
 	res = &usergen.User{

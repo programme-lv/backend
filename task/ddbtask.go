@@ -1,103 +1,70 @@
 package task
 
-/*
-package ddbtaskrepo
-
 import (
 	"context"
-	"fmt"
+	"errors"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
-	"github.com/pelletier/go-toml/v2"
-	"github.com/programme-lv/tasks-microservice/internal/domain"
+	"github.com/guregu/dynamo/v2"
 )
 
-type dynamoDbTaskRepo struct {
-	db        *dynamodb.Client
-	taskTable string
+// TaskRow represents the user data structure.
+type TaskRow struct {
+	Id           string `dynamo:"PublishedId,hash"` // Primary key
+	TomlManifest string `dynamo:"Manifest"`
+	Version      int    `dynamo:"version"` // For optimistic locking
 }
 
-// ListTasks implements service.TaskRepo.
-func (r *dynamoDbTaskRepo) ListTasks() ([]domain.Task, error) {
-	response, err := r.db.Scan(context.Background(), &dynamodb.ScanInput{
-		TableName: aws.String(r.taskTable),
-	})
-
-	if err != nil {
-		return nil, fmt.Errorf("failed to list tasks: %v", err)
-	}
-
-	tasks := []domain.Task{}
-	for _, item := range response.Items {
-		type TaskRow struct {
-			PublishedID string `dynamodbav:"PublishedID"`
-			Manifest    string `dynamodbav:"Manifest"`
-		}
-		row := TaskRow{}
-		err = attributevalue.UnmarshalMap(item, &row)
-		if err != nil {
-			return nil, fmt.Errorf("failed to unmarshal task: %v", err)
-		}
-
-		tomlManifest := TaskTomlManifest{}
-		err = toml.Unmarshal([]byte(row.Manifest), &tomlManifest)
-		if err != nil {
-			return nil, fmt.Errorf("failed to unmarshal task manifest: %v", err)
-		}
-
-		task, err := constructTaskFromManifest(row.PublishedID, &tomlManifest)
-		if err != nil {
-			return nil, fmt.Errorf("failed to construct task: %v", err)
-		}
-
-		tasks = append(tasks, *task)
-	}
-
-	return tasks, nil
+// DynamoDbTaskTable represents the DynamoDB table.
+type DynamoDbTaskTable struct {
+	ddbClient *dynamodb.Client
+	tableName string
+	taskTable *dynamo.Table
 }
 
-func NewDynamoDbTaskRepo(db *dynamodb.Client, taskTable string) *dynamoDbTaskRepo {
-	return &dynamoDbTaskRepo{
-		db:        db,
-		taskTable: taskTable,
+// NewDynamoDbTaskTable initializes a new DynamoDbUsersTable.
+func NewDynamoDbTaskTable(ddbClient *dynamodb.Client, tableName string) *DynamoDbTaskTable {
+	ddb := &DynamoDbTaskTable{
+		ddbClient: ddbClient,
+		tableName: tableName,
 	}
+	db := dynamo.NewFromIface(ddb.ddbClient)
+	table := db.Table(ddb.tableName)
+	ddb.taskTable = &table
+
+	return ddb
 }
 
-func (r *dynamoDbTaskRepo) GetTask(id string) (*domain.Task, error) {
-	response, err := r.db.GetItem(context.Background(), &dynamodb.GetItemInput{
-		Key: map[string]types.AttributeValue{
-			"PublishedID": &types.AttributeValueMemberS{Value: id},
-		},
-		TableName: aws.String(r.taskTable),
-	})
+// Get retrieves a user by ID from the DynamoDB table.
+func (ddb *DynamoDbTaskTable) Get(ctx context.Context, id string) (*TaskRow, error) {
+	user := new(TaskRow)
+
+	err := ddb.taskTable.Get("PublishedID", id).One(ctx, user)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get task: %v", err)
+		if errors.Is(err, dynamo.ErrNotFound) {
+			return nil, nil // User not found
+		}
+		return nil, err
 	}
 
-	type TaskRow struct {
-		PublishedID string `dynamodbav:"PublishedID"`
-		Manifest    string `dynamodbav:"Manifest"`
-	}
-	row := TaskRow{}
-	err = attributevalue.UnmarshalMap(response.Item, &row)
-	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal task: %v", err)
-	}
-
-	tomlManifest := TaskTomlManifest{}
-	err = toml.Unmarshal([]byte(row.Manifest), &tomlManifest)
-	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal manifest: %v", err)
-	}
-
-	task, err := constructTaskFromManifest(row.PublishedID, &tomlManifest)
-	if err != nil {
-		return nil, fmt.Errorf("failed to construct task: %v", err)
-	}
-
-	return task, nil
+	return user, nil
 }
-*/
+
+func (ddb *DynamoDbTaskTable) List(ctx context.Context) ([]*TaskRow, error) {
+	var users []*TaskRow
+	err := ddb.taskTable.Scan().All(ctx, &users)
+	if err != nil {
+		return nil, err
+	}
+
+	return users, nil
+}
+
+// Save saves a user to the DynamoDB table with optimistic locking.
+func (ddb *DynamoDbTaskTable) Save(ctx context.Context, user *TaskRow) error {
+	// Increment the version number for optimistic locking
+	user.Version++
+
+	put := ddb.taskTable.Put(user).If("attribute_not_exists(version) OR version = ?", user.Version-1)
+	return put.Run(ctx)
+}

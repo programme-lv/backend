@@ -45,6 +45,7 @@ func NewClient(listUsers, getUser, createUser, updateUser, deleteUser, login, qu
 //   - "NotFound" (type NotFound)
 //   - "UsernameExists" (type UsernameExists)
 //   - "EmailExists" (type EmailExists)
+//   - "InternalError" (type InternalError)
 //   - error: internal error
 func (c *Client) ListUsers(ctx context.Context, p *ListUsersPayload) (res []*User, err error) {
 	var ires any
@@ -63,6 +64,7 @@ func (c *Client) ListUsers(ctx context.Context, p *ListUsersPayload) (res []*Use
 //   - "NotFound" (type NotFound)
 //   - "UsernameExists" (type UsernameExists)
 //   - "EmailExists" (type EmailExists)
+//   - "InternalError" (type InternalError)
 //   - error: internal error
 func (c *Client) GetUser(ctx context.Context, p *SecureUUIDPayload) (res *User, err error) {
 	var ires any
@@ -81,6 +83,7 @@ func (c *Client) GetUser(ctx context.Context, p *SecureUUIDPayload) (res *User, 
 //   - "unauthorized" (type Unauthorized)
 //   - "InvalidCredentials" (type InvalidCredentials)
 //   - "NotFound" (type NotFound)
+//   - "InternalError" (type InternalError)
 //   - error: internal error
 func (c *Client) CreateUser(ctx context.Context, p *UserPayload) (res *User, err error) {
 	var ires any
@@ -99,6 +102,7 @@ func (c *Client) CreateUser(ctx context.Context, p *UserPayload) (res *User, err
 //   - "NotFound" (type NotFound)
 //   - "UsernameExists" (type UsernameExists)
 //   - "EmailExists" (type EmailExists)
+//   - "InternalError" (type InternalError)
 //   - error: internal error
 func (c *Client) UpdateUser(ctx context.Context, p *UpdateUserPayload) (res *User, err error) {
 	var ires any
@@ -117,6 +121,7 @@ func (c *Client) UpdateUser(ctx context.Context, p *UpdateUserPayload) (res *Use
 //   - "InvalidUserDetails" (type InvalidUserDetails)
 //   - "UsernameExists" (type UsernameExists)
 //   - "EmailExists" (type EmailExists)
+//   - "InternalError" (type InternalError)
 //   - error: internal error
 func (c *Client) DeleteUser(ctx context.Context, p *SecureUUIDPayload) (err error) {
 	_, err = c.DeleteUserEndpoint(ctx, p)
@@ -131,6 +136,7 @@ func (c *Client) DeleteUser(ctx context.Context, p *SecureUUIDPayload) (err erro
 //   - "NotFound" (type NotFound)
 //   - "UsernameExists" (type UsernameExists)
 //   - "EmailExists" (type EmailExists)
+//   - "InternalError" (type InternalError)
 //   - error: internal error
 func (c *Client) Login(ctx context.Context, p *LoginPayload) (res string, err error) {
 	var ires any
@@ -149,6 +155,7 @@ func (c *Client) Login(ctx context.Context, p *LoginPayload) (res string, err er
 //   - "NotFound" (type NotFound)
 //   - "UsernameExists" (type UsernameExists)
 //   - "EmailExists" (type EmailExists)
+//   - "InternalError" (type InternalError)
 //   - error: internal error
 func (c *Client) QueryCurrentJWT(ctx context.Context, p *QueryCurrentJWTPayload) (res *JWTClaims, err error) {
 	var ires any

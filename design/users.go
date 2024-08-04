@@ -104,6 +104,7 @@ var _ = dsl.Service("users", func() {
 	dsl.Error("NotFound", dsl.String, "User not found")
 	dsl.Error("UsernameExists", dsl.String, "Username already exists")
 	dsl.Error("EmailExists", dsl.String, "Email already exists")
+	dsl.Error("InternalError", dsl.String, "Internal server error")
 
 	dsl.HTTP(func() {
 		dsl.Response("InvalidCredentials", dsl.StatusUnauthorized)
