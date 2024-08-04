@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"os"
 
+	tasksc "github.com/programme-lv/backend/gen/http/tasks/client"
 	usersc "github.com/programme-lv/backend/gen/http/users/client"
 	goahttp "goa.design/goa/v3/http"
 	goa "goa.design/goa/v3/pkg"
@@ -22,13 +23,15 @@ import (
 //
 //	command (subcommand1|subcommand2|...)
 func UsageCommands() string {
-	return `users (list-users|get-user|create-user|update-user|delete-user|login|query-current-jwt)
+	return `tasks (list-tasks|get-task)
+users (list-users|get-user|create-user|update-user|delete-user|login|query-current-jwt)
 `
 }
 
 // UsageExamples produces an example of a valid invocation of the CLI tool.
 func UsageExamples() string {
-	return os.Args[0] + ` users list-users --token "jwt_token"` + "\n" +
+	return os.Args[0] + ` tasks list-tasks` + "\n" +
+		os.Args[0] + ` users list-users --token "jwt_token"` + "\n" +
 		""
 }
 
@@ -42,6 +45,13 @@ func ParseEndpoint(
 	restore bool,
 ) (goa.Endpoint, any, error) {
 	var (
+		tasksFlags = flag.NewFlagSet("tasks", flag.ContinueOnError)
+
+		tasksListTasksFlags = flag.NewFlagSet("list-tasks", flag.ExitOnError)
+
+		tasksGetTaskFlags      = flag.NewFlagSet("get-task", flag.ExitOnError)
+		tasksGetTaskTaskIDFlag = tasksGetTaskFlags.String("task-id", "REQUIRED", "ID of the task")
+
 		usersFlags = flag.NewFlagSet("users", flag.ContinueOnError)
 
 		usersListUsersFlags     = flag.NewFlagSet("list-users", flag.ExitOnError)
@@ -69,6 +79,10 @@ func ParseEndpoint(
 		usersQueryCurrentJWTFlags     = flag.NewFlagSet("query-current-jwt", flag.ExitOnError)
 		usersQueryCurrentJWTTokenFlag = usersQueryCurrentJWTFlags.String("token", "REQUIRED", "")
 	)
+	tasksFlags.Usage = tasksUsage
+	tasksListTasksFlags.Usage = tasksListTasksUsage
+	tasksGetTaskFlags.Usage = tasksGetTaskUsage
+
 	usersFlags.Usage = usersUsage
 	usersListUsersFlags.Usage = usersListUsersUsage
 	usersGetUserFlags.Usage = usersGetUserUsage
@@ -93,6 +107,8 @@ func ParseEndpoint(
 	{
 		svcn = flag.Arg(0)
 		switch svcn {
+		case "tasks":
+			svcf = tasksFlags
 		case "users":
 			svcf = usersFlags
 		default:
@@ -110,6 +126,16 @@ func ParseEndpoint(
 	{
 		epn = svcf.Arg(0)
 		switch svcn {
+		case "tasks":
+			switch epn {
+			case "list-tasks":
+				epf = tasksListTasksFlags
+
+			case "get-task":
+				epf = tasksGetTaskFlags
+
+			}
+
 		case "users":
 			switch epn {
 			case "list-users":
@@ -155,6 +181,15 @@ func ParseEndpoint(
 	)
 	{
 		switch svcn {
+		case "tasks":
+			c := tasksc.NewClient(scheme, host, doer, enc, dec, restore)
+			switch epn {
+			case "list-tasks":
+				endpoint = c.ListTasks()
+			case "get-task":
+				endpoint = c.GetTask()
+				data, err = tasksc.BuildGetTaskPayload(*tasksGetTaskTaskIDFlag)
+			}
 		case "users":
 			c := usersc.NewClient(scheme, host, doer, enc, dec, restore)
 			switch epn {
@@ -187,6 +222,41 @@ func ParseEndpoint(
 	}
 
 	return endpoint, data, nil
+}
+
+// tasksUsage displays the usage of the tasks command and its subcommands.
+func tasksUsage() {
+	fmt.Fprintf(os.Stderr, `Service for managing tasks in the online judge
+Usage:
+    %[1]s [globalflags] tasks COMMAND [flags]
+
+COMMAND:
+    list-tasks: List all tasks
+    get-task: Get a task by its ID
+
+Additional help:
+    %[1]s tasks COMMAND --help
+`, os.Args[0])
+}
+func tasksListTasksUsage() {
+	fmt.Fprintf(os.Stderr, `%[1]s [flags] tasks list-tasks
+
+List all tasks
+
+Example:
+    %[1]s tasks list-tasks
+`, os.Args[0])
+}
+
+func tasksGetTaskUsage() {
+	fmt.Fprintf(os.Stderr, `%[1]s [flags] tasks get-task -task-id STRING
+
+Get a task by its ID
+    -task-id STRING: ID of the task
+
+Example:
+    %[1]s tasks get-task --task-id "kvadrputekl"
+`, os.Args[0])
 }
 
 // usersUsage displays the usage of the users command and its subcommands.
@@ -300,6 +370,6 @@ Query current JWT
     -token STRING: 
 
 Example:
-    %[1]s users query-current-jwt --token "Occaecati et et non."
+    %[1]s users query-current-jwt --token "Sint omnis dignissimos laborum."
 `, os.Args[0])
 }

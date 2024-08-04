@@ -90,6 +90,49 @@ paths:
                         type: string
             schemes:
                 - http
+    /tasks:
+        get:
+            tags:
+                - tasks
+            summary: listTasks tasks
+            description: List all tasks
+            operationId: tasks#listTasks
+            responses:
+                "200":
+                    description: OK response.
+                    schema:
+                        type: array
+                        items:
+                            $ref: '#/definitions/TaskResponse'
+            schemes:
+                - http
+    /tasks/{task_id}:
+        get:
+            tags:
+                - tasks
+            summary: getTask tasks
+            description: Get a task by its ID
+            operationId: tasks#getTask
+            parameters:
+                - name: task_id
+                  in: path
+                  description: ID of the task
+                  required: true
+                  type: string
+            responses:
+                "200":
+                    description: OK response.
+                    schema:
+                        $ref: '#/definitions/TasksGetTaskResponseBody'
+                        required:
+                            - published_task_id
+                            - task_full_name
+                            - memory_limit_megabytes
+                            - cpu_time_limit_seconds
+                            - origin_olympiad
+                            - difficulty_rating
+            schemes:
+                - http
     /users:
         get:
             tags:
@@ -341,6 +384,837 @@ paths:
             security:
                 - jwt_query_Authorization: []
 definitions:
+    ExampleResponse:
+        title: ExampleResponse
+        type: object
+        properties:
+            input:
+                type: string
+                description: Example input
+                example: |
+                    5 9 3
+                    A....X..B
+                    ..X..X.X.
+                    .XXX.XX..
+                    X.X.X..X.
+                    ...XX....
+            md_note:
+                type: string
+                description: Markdown note for the example
+                example: Perspiciatis dolor.
+            output:
+                type: string
+                description: Example output
+                example: |
+                    10
+        description: Represents an example for a task
+        example:
+            input: |
+                5 9 3
+                A....X..B
+                ..X..X.X.
+                .XXX.XX..
+                X.X.X..X.
+                ...XX....
+            md_note: Voluptates repellendus sit quibusdam.
+            output: |
+                10
+        required:
+            - input
+            - output
+    ExampleResponseBody:
+        title: ExampleResponseBody
+        type: object
+        properties:
+            input:
+                type: string
+                description: Example input
+                example: |
+                    5 9 3
+                    A....X..B
+                    ..X..X.X.
+                    .XXX.XX..
+                    X.X.X..X.
+                    ...XX....
+            md_note:
+                type: string
+                description: Markdown note for the example
+                example: Quo at.
+            output:
+                type: string
+                description: Example output
+                example: |
+                    10
+        description: Represents an example for a task
+        example:
+            input: |
+                5 9 3
+                A....X..B
+                ..X..X.X.
+                .XXX.XX..
+                X.X.X..X.
+                ...XX....
+            md_note: Tenetur temporibus harum assumenda.
+            output: |
+                10
+        required:
+            - input
+            - output
+    MarkdownStatementResponse:
+        title: MarkdownStatementResponse
+        type: object
+        properties:
+            input:
+                type: string
+                description: Input section of the markdown statement
+                example: Ievaddatu pirmajā rindā dotas trīs naturālu skaitļu...
+            notes:
+                type: string
+                description: Notes section of the markdown statement
+                example: Est ad cupiditate sint asperiores.
+            output:
+                type: string
+                description: Output section of the markdown statement
+                example: Izvaddatu vienīgajā rindā jābūt veselam skaitlim...
+            scoring:
+                type: string
+                description: Scoring section of the markdown statement
+                example: Ducimus alias ab ut nobis.
+            story:
+                type: string
+                description: Story section of the markdown statement
+                example: Krišjānis ir uzkonstruējis kvadrātveida putekļsūcēju (saīsināti – KP), kas ir neaizstājams palīgs viņa darbnīcas uzkopšanā...
+        description: Represents a markdown statement for a task
+        example:
+            input: Ievaddatu pirmajā rindā dotas trīs naturālu skaitļu...
+            notes: Necessitatibus nam et eum repudiandae tempora.
+            output: Izvaddatu vienīgajā rindā jābūt veselam skaitlim...
+            scoring: Maxime labore.
+            story: Krišjānis ir uzkonstruējis kvadrātveida putekļsūcēju (saīsināti – KP), kas ir neaizstājams palīgs viņa darbnīcas uzkopšanā...
+        required:
+            - story
+            - input
+            - output
+    MarkdownStatementResponseBody:
+        title: MarkdownStatementResponseBody
+        type: object
+        properties:
+            input:
+                type: string
+                description: Input section of the markdown statement
+                example: Ievaddatu pirmajā rindā dotas trīs naturālu skaitļu...
+            notes:
+                type: string
+                description: Notes section of the markdown statement
+                example: Velit quia ea impedit sint consequatur.
+            output:
+                type: string
+                description: Output section of the markdown statement
+                example: Izvaddatu vienīgajā rindā jābūt veselam skaitlim...
+            scoring:
+                type: string
+                description: Scoring section of the markdown statement
+                example: Et doloremque ut similique voluptate similique dolores.
+            story:
+                type: string
+                description: Story section of the markdown statement
+                example: Krišjānis ir uzkonstruējis kvadrātveida putekļsūcēju (saīsināti – KP), kas ir neaizstājams palīgs viņa darbnīcas uzkopšanā...
+        description: Represents a markdown statement for a task
+        example:
+            input: Ievaddatu pirmajā rindā dotas trīs naturālu skaitļu...
+            notes: Et aliquid dolores et doloremque.
+            output: Izvaddatu vienīgajā rindā jābūt veselam skaitlim...
+            scoring: Quam est repudiandae.
+            story: Krišjānis ir uzkonstruējis kvadrātveida putekļsūcēju (saīsināti – KP), kas ir neaizstājams palīgs viņa darbnīcas uzkopšanā...
+        required:
+            - story
+            - input
+            - output
+    StInputsResponse:
+        title: StInputsResponse
+        type: object
+        properties:
+            inputs:
+                type: array
+                items:
+                    type: string
+                    example: Et aspernatur fugit.
+                description: Inputs for the subtask
+                example:
+                    - |
+                      5 5 3
+                      A.X..
+                      X.B.X
+                      ....X
+                      XX...
+                      X.XXX
+                    - |
+                      6 3 1
+                      ...
+                      XA.
+                      .X.
+                      X..
+                      B..
+                      ...
+                    - |
+                      6 4 2
+                      X...
+                      .AXX
+                      X..X
+                      .X.X
+                      XXXX
+                      X.BX
+            subtask:
+                type: integer
+                description: Subtask number
+                example: 1
+                format: int64
+        description: Represents subtask inputs for a task
+        example:
+            inputs:
+                - |
+                  5 5 3
+                  A.X..
+                  X.B.X
+                  ....X
+                  XX...
+                  X.XXX
+                - |
+                  6 3 1
+                  ...
+                  XA.
+                  .X.
+                  X..
+                  B..
+                  ...
+                - |
+                  6 4 2
+                  X...
+                  .AXX
+                  X..X
+                  .X.X
+                  XXXX
+                  X.BX
+            subtask: 1
+        required:
+            - subtask
+            - inputs
+    StInputsResponseBody:
+        title: StInputsResponseBody
+        type: object
+        properties:
+            inputs:
+                type: array
+                items:
+                    type: string
+                    example: Ipsa exercitationem.
+                description: Inputs for the subtask
+                example:
+                    - |
+                      5 5 3
+                      A.X..
+                      X.B.X
+                      ....X
+                      XX...
+                      X.XXX
+                    - |
+                      6 3 1
+                      ...
+                      XA.
+                      .X.
+                      X..
+                      B..
+                      ...
+                    - |
+                      6 4 2
+                      X...
+                      .AXX
+                      X..X
+                      .X.X
+                      XXXX
+                      X.BX
+            subtask:
+                type: integer
+                description: Subtask number
+                example: 1
+                format: int64
+        description: Represents subtask inputs for a task
+        example:
+            inputs:
+                - |
+                  5 5 3
+                  A.X..
+                  X.B.X
+                  ....X
+                  XX...
+                  X.XXX
+                - |
+                  6 3 1
+                  ...
+                  XA.
+                  .X.
+                  X..
+                  B..
+                  ...
+                - |
+                  6 4 2
+                  X...
+                  .AXX
+                  X..X
+                  .X.X
+                  XXXX
+                  X.BX
+            subtask: 1
+        required:
+            - subtask
+            - inputs
+    TaskResponse:
+        title: TaskResponse
+        type: object
+        properties:
+            cpu_time_limit_seconds:
+                type: number
+                description: CPU time limit in seconds
+                example: 0.5
+                format: double
+            default_md_statement:
+                $ref: '#/definitions/MarkdownStatementResponse'
+            default_pdf_statement_url:
+                type: string
+                description: URL of the default PDF statement
+                example: https://dvhk4hiwp1rmf.cloudfront.net/task-pdf-statements/f27386f1b69f3c020335fe7c84316c5da099933832043e6a5820bcdb0cd66a81.pdf
+            difficulty_rating:
+                type: integer
+                description: Difficulty rating of the task
+                example: 3
+                enum:
+                    - 1
+                    - 2
+                    - 3
+                    - 4
+                    - 5
+                format: int64
+            examples:
+                type: array
+                items:
+                    $ref: '#/definitions/ExampleResponse'
+                description: Examples for the task
+                example:
+                    - input: |
+                        5 9 3
+                        A....X..B
+                        ..X..X.X.
+                        .XXX.XX..
+                        X.X.X..X.
+                        ...XX....
+                      md_note: Voluptas quaerat.
+                      output: |
+                        10
+                    - input: |
+                        5 9 3
+                        A....X..B
+                        ..X..X.X.
+                        .XXX.XX..
+                        X.X.X..X.
+                        ...XX....
+                      md_note: Voluptas quaerat.
+                      output: |
+                        10
+                    - input: |
+                        5 9 3
+                        A....X..B
+                        ..X..X.X.
+                        .XXX.XX..
+                        X.X.X..X.
+                        ...XX....
+                      md_note: Voluptas quaerat.
+                      output: |
+                        10
+            illustration_img_url:
+                type: string
+                description: URL of the illustration image
+                example: https://dvhk4hiwp1rmf.cloudfront.net/task-illustrations/bafcc0aa1b4c56faa44f5f3b2a5abd9529af941eb9a9b10f541b436762d4948a.png
+            memory_limit_megabytes:
+                type: integer
+                description: Memory limit in megabytes
+                example: 256
+                format: int64
+            origin_notes:
+                type: object
+                description: Origin notes for the task
+                example:
+                    lv: Uzdevums parādījās Latvijas 37. informātikas olimpiādes (2023./2024. gads) skolas kārtā.
+                additionalProperties:
+                    type: string
+                    example: Delectus rerum necessitatibus delectus et.
+            origin_olympiad:
+                type: string
+                description: Origin olympiad of the task
+                example: LIO
+            published_task_id:
+                type: string
+                description: ID of the published task
+                example: kvadrputekl
+            task_full_name:
+                type: string
+                description: Full name of the task
+                example: Kvadrātveida putekļsūcējs
+            visible_input_subtasks:
+                type: array
+                items:
+                    $ref: '#/definitions/StInputsResponse'
+                description: Visible input subtasks
+                example:
+                    - inputs:
+                        - |
+                          5 5 3
+                          A.X..
+                          X.B.X
+                          ....X
+                          XX...
+                          X.XXX
+                        - |
+                          6 3 1
+                          ...
+                          XA.
+                          .X.
+                          X..
+                          B..
+                          ...
+                        - |
+                          6 4 2
+                          X...
+                          .AXX
+                          X..X
+                          .X.X
+                          XXXX
+                          X.BX
+                      subtask: 1
+                    - inputs:
+                        - |
+                          5 5 3
+                          A.X..
+                          X.B.X
+                          ....X
+                          XX...
+                          X.XXX
+                        - |
+                          6 3 1
+                          ...
+                          XA.
+                          .X.
+                          X..
+                          B..
+                          ...
+                        - |
+                          6 4 2
+                          X...
+                          .AXX
+                          X..X
+                          .X.X
+                          XXXX
+                          X.BX
+                      subtask: 1
+        description: Represents a competitive programming task
+        example:
+            cpu_time_limit_seconds: 0.5
+            default_md_statement:
+                input: Ievaddatu pirmajā rindā dotas trīs naturālu skaitļu...
+                notes: Delectus vero.
+                output: Izvaddatu vienīgajā rindā jābūt veselam skaitlim...
+                scoring: Doloremque quisquam aspernatur repellat voluptates perspiciatis.
+                story: Krišjānis ir uzkonstruējis kvadrātveida putekļsūcēju (saīsināti – KP), kas ir neaizstājams palīgs viņa darbnīcas uzkopšanā...
+            default_pdf_statement_url: https://dvhk4hiwp1rmf.cloudfront.net/task-pdf-statements/f27386f1b69f3c020335fe7c84316c5da099933832043e6a5820bcdb0cd66a81.pdf
+            difficulty_rating: 3
+            examples:
+                - input: |
+                    5 9 3
+                    A....X..B
+                    ..X..X.X.
+                    .XXX.XX..
+                    X.X.X..X.
+                    ...XX....
+                  md_note: Voluptas quaerat.
+                  output: |
+                    10
+                - input: |
+                    5 9 3
+                    A....X..B
+                    ..X..X.X.
+                    .XXX.XX..
+                    X.X.X..X.
+                    ...XX....
+                  md_note: Voluptas quaerat.
+                  output: |
+                    10
+                - input: |
+                    5 9 3
+                    A....X..B
+                    ..X..X.X.
+                    .XXX.XX..
+                    X.X.X..X.
+                    ...XX....
+                  md_note: Voluptas quaerat.
+                  output: |
+                    10
+            illustration_img_url: https://dvhk4hiwp1rmf.cloudfront.net/task-illustrations/bafcc0aa1b4c56faa44f5f3b2a5abd9529af941eb9a9b10f541b436762d4948a.png
+            memory_limit_megabytes: 256
+            origin_notes:
+                lv: Uzdevums parādījās Latvijas 37. informātikas olimpiādes (2023./2024. gads) skolas kārtā.
+            origin_olympiad: LIO
+            published_task_id: kvadrputekl
+            task_full_name: Kvadrātveida putekļsūcējs
+            visible_input_subtasks:
+                - inputs:
+                    - |
+                      5 5 3
+                      A.X..
+                      X.B.X
+                      ....X
+                      XX...
+                      X.XXX
+                    - |
+                      6 3 1
+                      ...
+                      XA.
+                      .X.
+                      X..
+                      B..
+                      ...
+                    - |
+                      6 4 2
+                      X...
+                      .AXX
+                      X..X
+                      .X.X
+                      XXXX
+                      X.BX
+                  subtask: 1
+                - inputs:
+                    - |
+                      5 5 3
+                      A.X..
+                      X.B.X
+                      ....X
+                      XX...
+                      X.XXX
+                    - |
+                      6 3 1
+                      ...
+                      XA.
+                      .X.
+                      X..
+                      B..
+                      ...
+                    - |
+                      6 4 2
+                      X...
+                      .AXX
+                      X..X
+                      .X.X
+                      XXXX
+                      X.BX
+                  subtask: 1
+        required:
+            - published_task_id
+            - task_full_name
+            - memory_limit_megabytes
+            - cpu_time_limit_seconds
+            - origin_olympiad
+            - difficulty_rating
+    TasksGetTaskResponseBody:
+        title: TasksGetTaskResponseBody
+        type: object
+        properties:
+            cpu_time_limit_seconds:
+                type: number
+                description: CPU time limit in seconds
+                example: 0.5
+                format: double
+            default_md_statement:
+                $ref: '#/definitions/MarkdownStatementResponseBody'
+            default_pdf_statement_url:
+                type: string
+                description: URL of the default PDF statement
+                example: https://dvhk4hiwp1rmf.cloudfront.net/task-pdf-statements/f27386f1b69f3c020335fe7c84316c5da099933832043e6a5820bcdb0cd66a81.pdf
+            difficulty_rating:
+                type: integer
+                description: Difficulty rating of the task
+                example: 3
+                enum:
+                    - 1
+                    - 2
+                    - 3
+                    - 4
+                    - 5
+                format: int64
+            examples:
+                type: array
+                items:
+                    $ref: '#/definitions/ExampleResponseBody'
+                description: Examples for the task
+                example:
+                    - input: |
+                        5 9 3
+                        A....X..B
+                        ..X..X.X.
+                        .XXX.XX..
+                        X.X.X..X.
+                        ...XX....
+                      md_note: Molestiae quidem deleniti.
+                      output: |
+                        10
+                    - input: |
+                        5 9 3
+                        A....X..B
+                        ..X..X.X.
+                        .XXX.XX..
+                        X.X.X..X.
+                        ...XX....
+                      md_note: Molestiae quidem deleniti.
+                      output: |
+                        10
+            illustration_img_url:
+                type: string
+                description: URL of the illustration image
+                example: https://dvhk4hiwp1rmf.cloudfront.net/task-illustrations/bafcc0aa1b4c56faa44f5f3b2a5abd9529af941eb9a9b10f541b436762d4948a.png
+            memory_limit_megabytes:
+                type: integer
+                description: Memory limit in megabytes
+                example: 256
+                format: int64
+            origin_notes:
+                type: object
+                description: Origin notes for the task
+                example:
+                    lv: Uzdevums parādījās Latvijas 37. informātikas olimpiādes (2023./2024. gads) skolas kārtā.
+                additionalProperties:
+                    type: string
+                    example: Laboriosam est hic.
+            origin_olympiad:
+                type: string
+                description: Origin olympiad of the task
+                example: LIO
+            published_task_id:
+                type: string
+                description: ID of the published task
+                example: kvadrputekl
+            task_full_name:
+                type: string
+                description: Full name of the task
+                example: Kvadrātveida putekļsūcējs
+            visible_input_subtasks:
+                type: array
+                items:
+                    $ref: '#/definitions/StInputsResponseBody'
+                description: Visible input subtasks
+                example:
+                    - inputs:
+                        - |
+                          5 5 3
+                          A.X..
+                          X.B.X
+                          ....X
+                          XX...
+                          X.XXX
+                        - |
+                          6 3 1
+                          ...
+                          XA.
+                          .X.
+                          X..
+                          B..
+                          ...
+                        - |
+                          6 4 2
+                          X...
+                          .AXX
+                          X..X
+                          .X.X
+                          XXXX
+                          X.BX
+                      subtask: 1
+                    - inputs:
+                        - |
+                          5 5 3
+                          A.X..
+                          X.B.X
+                          ....X
+                          XX...
+                          X.XXX
+                        - |
+                          6 3 1
+                          ...
+                          XA.
+                          .X.
+                          X..
+                          B..
+                          ...
+                        - |
+                          6 4 2
+                          X...
+                          .AXX
+                          X..X
+                          .X.X
+                          XXXX
+                          X.BX
+                      subtask: 1
+        example:
+            cpu_time_limit_seconds: 0.5
+            default_md_statement:
+                input: Ievaddatu pirmajā rindā dotas trīs naturālu skaitļu...
+                notes: Molestiae fugiat.
+                output: Izvaddatu vienīgajā rindā jābūt veselam skaitlim...
+                scoring: Velit est ullam aut odit.
+                story: Krišjānis ir uzkonstruējis kvadrātveida putekļsūcēju (saīsināti – KP), kas ir neaizstājams palīgs viņa darbnīcas uzkopšanā...
+            default_pdf_statement_url: https://dvhk4hiwp1rmf.cloudfront.net/task-pdf-statements/f27386f1b69f3c020335fe7c84316c5da099933832043e6a5820bcdb0cd66a81.pdf
+            difficulty_rating: 3
+            examples:
+                - input: |
+                    5 9 3
+                    A....X..B
+                    ..X..X.X.
+                    .XXX.XX..
+                    X.X.X..X.
+                    ...XX....
+                  md_note: Molestiae quidem deleniti.
+                  output: |
+                    10
+                - input: |
+                    5 9 3
+                    A....X..B
+                    ..X..X.X.
+                    .XXX.XX..
+                    X.X.X..X.
+                    ...XX....
+                  md_note: Molestiae quidem deleniti.
+                  output: |
+                    10
+                - input: |
+                    5 9 3
+                    A....X..B
+                    ..X..X.X.
+                    .XXX.XX..
+                    X.X.X..X.
+                    ...XX....
+                  md_note: Molestiae quidem deleniti.
+                  output: |
+                    10
+            illustration_img_url: https://dvhk4hiwp1rmf.cloudfront.net/task-illustrations/bafcc0aa1b4c56faa44f5f3b2a5abd9529af941eb9a9b10f541b436762d4948a.png
+            memory_limit_megabytes: 256
+            origin_notes:
+                lv: Uzdevums parādījās Latvijas 37. informātikas olimpiādes (2023./2024. gads) skolas kārtā.
+            origin_olympiad: LIO
+            published_task_id: kvadrputekl
+            task_full_name: Kvadrātveida putekļsūcējs
+            visible_input_subtasks:
+                - inputs:
+                    - |
+                      5 5 3
+                      A.X..
+                      X.B.X
+                      ....X
+                      XX...
+                      X.XXX
+                    - |
+                      6 3 1
+                      ...
+                      XA.
+                      .X.
+                      X..
+                      B..
+                      ...
+                    - |
+                      6 4 2
+                      X...
+                      .AXX
+                      X..X
+                      .X.X
+                      XXXX
+                      X.BX
+                  subtask: 1
+                - inputs:
+                    - |
+                      5 5 3
+                      A.X..
+                      X.B.X
+                      ....X
+                      XX...
+                      X.XXX
+                    - |
+                      6 3 1
+                      ...
+                      XA.
+                      .X.
+                      X..
+                      B..
+                      ...
+                    - |
+                      6 4 2
+                      X...
+                      .AXX
+                      X..X
+                      .X.X
+                      XXXX
+                      X.BX
+                  subtask: 1
+                - inputs:
+                    - |
+                      5 5 3
+                      A.X..
+                      X.B.X
+                      ....X
+                      XX...
+                      X.XXX
+                    - |
+                      6 3 1
+                      ...
+                      XA.
+                      .X.
+                      X..
+                      B..
+                      ...
+                    - |
+                      6 4 2
+                      X...
+                      .AXX
+                      X..X
+                      .X.X
+                      XXXX
+                      X.BX
+                  subtask: 1
+                - inputs:
+                    - |
+                      5 5 3
+                      A.X..
+                      X.B.X
+                      ....X
+                      XX...
+                      X.XXX
+                    - |
+                      6 3 1
+                      ...
+                      XA.
+                      .X.
+                      X..
+                      B..
+                      ...
+                    - |
+                      6 4 2
+                      X...
+                      .AXX
+                      X..X
+                      .X.X
+                      XXXX
+                      X.BX
+                  subtask: 1
+        required:
+            - published_task_id
+            - task_full_name
+            - memory_limit_megabytes
+            - cpu_time_limit_seconds
+            - origin_olympiad
+            - difficulty_rating
     UserResponse:
         title: UserResponse
         type: object
@@ -519,67 +1393,69 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Error facere quis iure assumenda numquam officia.
+                    example: Dolorum omnis eos quisquam qui sint.
                 example:
-                    - Ut id.
-                    - Illo perferendis quos aut consequatur eveniet.
-                    - Doloremque excepturi deserunt.
+                    - Et voluptatem doloribus velit.
+                    - Molestiae voluptas qui.
+                    - Illum voluptatem.
+                    - Libero fugiat error rerum.
             email:
                 type: string
-                example: Ut nam est sit repellendus.
+                example: Dolores id ut id.
             expires_at:
                 type: string
-                example: Reprehenderit suscipit quibusdam qui sunt.
+                example: At dolorem dolorem fugit hic impedit.
             firstname:
                 type: string
-                example: Dolorum commodi.
+                example: Explicabo error facere quis.
             issued_at:
                 type: string
-                example: Ut voluptas velit autem praesentium nihil.
+                example: Accusantium nulla dolor quae rerum cupiditate dolores.
             issuer:
                 type: string
-                example: Est ullam aut odit amet molestiae.
+                example: Quasi soluta quia maxime.
             lastname:
                 type: string
-                example: Enim et voluptatem consequatur laboriosam.
+                example: Assumenda numquam.
             not_before:
                 type: string
-                example: Velit inventore assumenda.
+                example: Fugit necessitatibus ut similique natus qui non.
             scopes:
                 type: array
                 items:
                     type: string
-                    example: Delectus vero.
+                    example: Doloremque excepturi deserunt.
                 example:
-                    - Quisquam aspernatur repellat.
-                    - Perspiciatis hic occaecati voluptas quaerat modi.
-                    - Rerum aut dicta molestiae fugiat et.
+                    - Suscipit quibusdam qui.
+                    - Nihil ut voluptas.
+                    - Autem praesentium nihil eveniet velit inventore.
             subject:
                 type: string
-                example: Deleniti sit consequatur et molestias officiis omnis.
+                example: Sed illo sunt deleniti nihil ad optio.
             username:
                 type: string
-                example: Voluptates beatae.
+                example: Molestias officiis.
             uuid:
                 type: string
-                example: Maiores deleniti.
+                example: Illo perferendis quos aut consequatur eveniet.
         example:
             audience:
-                - Qui non consectetur et nisi et.
-                - Sed error.
-            email: Assumenda et voluptatem doloribus.
-            expires_at: Est asperiores et velit voluptas.
-            firstname: Illo sunt deleniti nihil ad optio.
-            issued_at: Aut doloribus numquam in.
-            issuer: Minus accusantium nulla dolor.
-            lastname: Dolorum omnis eos quisquam qui sint.
-            not_before: Molestiae ut odit.
+                - Nihil natus velit est sunt.
+                - Reiciendis est voluptatum illo et sit.
+            email: Numquam in.
+            expires_at: Facere rerum et quaerat.
+            firstname: Asperiores et.
+            issued_at: Error debitis iste sequi.
+            issuer: Nobis autem pariatur ea asperiores.
+            lastname: Voluptas labore aut.
+            not_before: Cumque dolor similique iste.
             scopes:
-                - Minus libero fugiat error rerum soluta.
-                - Dolorem dolorem fugit hic.
-            subject: Rerum cupiditate dolores qui fugit necessitatibus ut.
-            username: Soluta quia maxime possimus.
-            uuid: Dolore molestiae voluptas qui nostrum.
+                - Velit quas aliquid incidunt deleniti optio.
+                - Reprehenderit similique dolorem natus qui est.
+                - Et placeat.
+            subject: Ea pariatur qui reiciendis dolorem.
+            username: Et nisi et earum sed error perferendis.
+            uuid: Molestiae ut odit.
     UsersUpdateUserBadRequestResponseBody:
         title: UsersUpdateUserBadRequestResponseBody
         type: object

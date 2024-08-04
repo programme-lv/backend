@@ -21,9 +21,6 @@ var Task = dsl.Type("Task", func() {
 	dsl.Attribute("origin_olympiad", dsl.String, "Origin olympiad of the task", func() {
 		dsl.Example("LIO")
 	})
-	dsl.Attribute("lv_pdf_statement_sha", dsl.String, "SHA of the PDF statement", func() {
-		dsl.Example("f27386f1b69f3c020335fe7c84316c5da099933832043e6a5820bcdb0cd66a81")
-	})
 	dsl.Attribute("illustration_img_url", dsl.String, "URL of the illustration image", func() {
 		dsl.Example("https://dvhk4hiwp1rmf.cloudfront.net/task-illustrations/bafcc0aa1b4c56faa44f5f3b2a5abd9529af941eb9a9b10f541b436762d4948a.png")
 	})
@@ -42,7 +39,7 @@ var Task = dsl.Type("Task", func() {
 		})
 	})
 	dsl.Attribute("visible_input_subtasks", dsl.ArrayOf(StInputs), "Visible input subtasks")
-	dsl.Required("published_task_id", "task_full_name", "memory_limit_megabytes", "cpu_time_limit_seconds", "origin_olympiad", "lv_pdf_statement_sha", "difficulty_rating")
+	dsl.Required("published_task_id", "task_full_name", "memory_limit_megabytes", "cpu_time_limit_seconds", "origin_olympiad", "difficulty_rating")
 })
 
 var MarkdownStatement = dsl.Type("MarkdownStatement", func() {
