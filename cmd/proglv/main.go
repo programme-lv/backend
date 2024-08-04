@@ -12,7 +12,7 @@ import (
 	"syscall"
 
 	usergen "github.com/programme-lv/backend/gen/users"
-	usersrv "github.com/programme-lv/backend/users"
+	usersrv "github.com/programme-lv/backend/user"
 	"goa.design/clue/debug"
 	"goa.design/clue/log"
 )
