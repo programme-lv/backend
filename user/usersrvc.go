@@ -2,14 +2,20 @@ package user
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
-	"net/mail"
 	"os"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/go-playground/locales/en"
+	"github.com/go-playground/locales/lv"
+	ut "github.com/go-playground/universal-translator"
+	"github.com/go-playground/validator/v10"
+	en_translations "github.com/go-playground/validator/v10/translations/en"
+	lv_translations "github.com/go-playground/validator/v10/translations/lv" // assuming custom Latvian translations
 	"github.com/google/uuid"
 	"github.com/guregu/dynamo/v2"
 	"github.com/programme-lv/backend/auth"
@@ -19,21 +25,20 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// users service example implementation.
-// The example methods log the requests and return zero values.
 type userssrvc struct {
 	jwtKey       []byte
 	ddbUserTable *DynamoDbUserTable
+	validate     *validator.Validate
+	uni          *ut.UniversalTranslator
 }
 
-// NewUsers returns the users service implementation.
 func NewUsers(ctx context.Context) usergen.Service {
 	// read jwt key from env
 	jwtKey := os.Getenv("JWT_KEY")
 	if jwtKey == "" {
 		log.Fatalf(ctx,
 			errors.New("JWT_KEY is not set"),
-			"cant read JWT_KEY from env in new user service contructor")
+			"cant read JWT_KEY from env in new user service constructor")
 	}
 
 	cfg, err := config.LoadDefaultConfig(context.TODO(),
@@ -45,23 +50,31 @@ func NewUsers(ctx context.Context) usergen.Service {
 	}
 	dynamodbClient := dynamodb.NewFromConfig(cfg)
 
+	// Initialize validator and translator
+	validate := validator.New()
+
+	// Set up translation for English and Latvian
+	en := en.New()
+	lv := lv.New()
+	uni := ut.New(lv, lv, en)
+
+	transEn, _ := uni.GetTranslator("en")
+	transLv, _ := uni.GetTranslator("lv")
+
+	en_translations.RegisterDefaultTranslations(validate, transEn)
+	lv_translations.RegisterDefaultTranslations(validate, transLv)
+
 	return &userssrvc{
 		jwtKey: []byte(jwtKey),
 		ddbUserTable: NewDynamoDbUsersTable(
 			dynamodbClient, "ProglvUsers"),
+		validate: validate,
+		uni:      uni,
 	}
 }
 
-var (
-	ErrInvalidToken       = usergen.Unauthorized("invalid token")
-	ErrInvalidTokenScopes = usergen.Unauthorized("invalid scopes in token")
-	ErrMissingScope       = usergen.Unauthorized("missing scope in token")
-)
-
 type ClaimsKey string
 
-// JWTAuth implements the authorization logic for service "users" for the "jwt"
-// security scheme.
 func (s *userssrvc) JWTAuth(ctx context.Context, token string, scheme *security.JWTScheme) (context.Context, error) {
 	claims, err := auth.ValidateJWT(token, s.jwtKey)
 	if err != nil {
@@ -80,74 +93,57 @@ func (s *userssrvc) JWTAuth(ctx context.Context, token string, scheme *security.
 	return ctx, nil
 }
 
-// List all users
-func (s *userssrvc) ListUsers(ctx context.Context, p *usergen.ListUsersPayload) (res []*usergen.User, err error) {
-	log.Printf(ctx, "users.listUsers")
-	return
+func mustToJson(x any) string {
+	b, _ := json.Marshal(x)
+	return string(b)
 }
 
-// Get a user by UUID
-func (s *userssrvc) GetUser(ctx context.Context, p *usergen.SecureUUIDPayload) (res *usergen.User, err error) {
-	res = &usergen.User{}
-	log.Printf(ctx, "users.getUser")
-	return
-}
-
-// Create a new user
 func (s *userssrvc) CreateUser(ctx context.Context, p *usergen.UserPayload) (res *usergen.User, err error) {
-	const maxFirstnameLastnameLength = len("pretpulkstenraditajvirziens")
-	const maxEmailLength = 320
-	const maxUsernameLength = 32
-	const minPasswordLength = 8
-	const minUsernameLength = 2
+	uni := s.uni
+	// en, _ := uni.GetTranslator("en")
+	lv, _ := uni.GetTranslator("lv")
+	lv.Add("Username", "lietotājvārds", true)
+	input := struct {
+		Username  string  `validate:"required,min=2,max=32"`
+		Email     string  `validate:"required,email,max=320"`
+		Firstname *string `validate:"omitempty,max=25"`
+		Lastname  *string `validate:"omitempty,max=25"`
+		Password  string  `validate:"required,min=8"`
+	}{
+		Username: p.Username,
+		Email:    p.Email,
+		Password: p.Password,
+	}
+	if p.Firstname != "" {
+		input.Firstname = &p.Firstname
+	}
+	if p.Lastname != "" {
+		input.Lastname = &p.Lastname
+	}
+
+	err = s.validate.Struct(input)
+	if err != nil {
+		validationErrs := err.(validator.ValidationErrors)
+		return nil, usergen.InvalidUserDetails(mustToJson(validationErrs.Translate(lv)))
+	}
 
 	allUsers, err := s.ddbUserTable.List(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	if len(p.Username) < minUsernameLength {
-		return nil, usergen.InvalidUserDetails("lietotājvārds ir pārāk īss")
-	}
-
-	if len(p.Username) > maxUsernameLength {
-		return nil, usergen.InvalidUserDetails("lietotājvārds ir pārāk garšs")
-	}
-
 	for _, user := range allUsers {
 		if user.Username == p.Username {
 			return nil, usergen.UsernameExists(fmt.Sprintf(
-				"lietotājvārds %s jau eksistē", p.Username,
+				"lietotājvārds %s jau eksistē / username %s already exists", p.Username, p.Username,
 			))
 		}
-	}
 
-	if !validEmail(p.Email) {
-		return nil, usergen.InvalidUserDetails("nekorekts e-pasts")
-	}
-
-	if len(p.Email) > maxEmailLength {
-		return nil, usergen.InvalidUserDetails("epasts ir pārāk garšs")
-	}
-
-	for _, user := range allUsers {
 		if user.Email == p.Email {
 			return nil, usergen.EmailExists(fmt.Sprintf(
-				"epasts %s jau eksistē", p.Email,
+				"epasts %s jau eksistē / email %s already exists", p.Email, p.Email,
 			))
 		}
-	}
-
-	if len(p.Firstname) > maxFirstnameLastnameLength {
-		return nil, usergen.InvalidUserDetails("vārds ir pārāk garšs")
-	}
-
-	if len(p.Lastname) > maxFirstnameLastnameLength {
-		return nil, usergen.InvalidUserDetails("uzvārds ir pārāk garšs")
-	}
-
-	if len(p.Password) < minPasswordLength {
-		return nil, usergen.InvalidUserDetails(fmt.Sprintf("parolei jābūt vismaz %d simbolus garai", minPasswordLength))
 	}
 
 	bcryptPwd, err := bcrypt.GenerateFromPassword([]byte(p.Password), bcrypt.DefaultCost)
@@ -198,19 +194,6 @@ func (s *userssrvc) CreateUser(ctx context.Context, p *usergen.UserPayload) (res
 	}
 
 	return res, nil
-}
-
-// Update an existing user
-func (s *userssrvc) UpdateUser(ctx context.Context, p *usergen.UpdateUserPayload) (res *usergen.User, err error) {
-	res = &usergen.User{}
-	log.Printf(ctx, "users.updateUser")
-	return
-}
-
-// Delete a user
-func (s *userssrvc) DeleteUser(ctx context.Context, p *usergen.SecureUUIDPayload) (err error) {
-	log.Printf(ctx, "users.deleteUser")
-	return
 }
 
 // User login
@@ -286,9 +269,4 @@ func (s *userssrvc) QueryCurrentJWT(ctx context.Context, p *usergen.QueryCurrent
 	}
 
 	return res, nil
-}
-
-func validEmail(email string) bool {
-	_, err := mail.ParseAddress(email)
-	return err == nil
 }
