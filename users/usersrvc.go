@@ -36,7 +36,9 @@ func NewUsers(ctx context.Context) usergen.Service {
 	}
 
 	cfg, err := config.LoadDefaultConfig(context.TODO(),
-		config.WithRegion("eu-central-1"))
+		config.WithRegion("eu-central-1"),
+		config.WithSharedConfigProfile("kp"),
+		config.WithLogger(log.AsAWSLogger(ctx)))
 	if err != nil {
 		panic(fmt.Sprintf("unable to load SDK config, %v", err))
 	}
