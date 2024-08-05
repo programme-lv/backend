@@ -56,8 +56,8 @@ func EncodeListUsersRequest(encoder func(*http.Request) goahttp.Encoder) func(*h
 // users listUsers endpoint. restoreBody controls whether the response body
 // should be restored after having been read.
 // DecodeListUsersResponse may return the following errors:
-//   - "EmailExists" (type users.EmailExists): http.StatusConflict
-//   - "UsernameExists" (type users.UsernameExists): http.StatusConflict
+//   - "EmailExistsConflict" (type users.EmailExistsConflict): http.StatusConflict
+//   - "UsernameExistsConflict" (type users.UsernameExistsConflict): http.StatusConflict
 //   - "InvalidCredentials" (type users.InvalidCredentials): http.StatusUnauthorized
 //   - "InvalidUserDetails" (type users.InvalidUserDetails): http.StatusBadRequest
 //   - "NotFound" (type users.NotFound): http.StatusNotFound
@@ -101,7 +101,7 @@ func DecodeListUsersResponse(decoder func(*http.Response) goahttp.Decoder, resto
 		case http.StatusConflict:
 			en := resp.Header.Get("goa-error")
 			switch en {
-			case "EmailExists":
+			case "EmailExistsConflict":
 				var (
 					body string
 					err  error
@@ -110,8 +110,8 @@ func DecodeListUsersResponse(decoder func(*http.Response) goahttp.Decoder, resto
 				if err != nil {
 					return nil, goahttp.ErrDecodingError("users", "listUsers", err)
 				}
-				return nil, NewListUsersEmailExists(body)
-			case "UsernameExists":
+				return nil, NewListUsersEmailExistsConflict(body)
+			case "UsernameExistsConflict":
 				var (
 					body string
 					err  error
@@ -120,7 +120,7 @@ func DecodeListUsersResponse(decoder func(*http.Response) goahttp.Decoder, resto
 				if err != nil {
 					return nil, goahttp.ErrDecodingError("users", "listUsers", err)
 				}
-				return nil, NewListUsersUsernameExists(body)
+				return nil, NewListUsersUsernameExistsConflict(body)
 			default:
 				body, _ := io.ReadAll(resp.Body)
 				return nil, goahttp.ErrInvalidResponse("users", "listUsers", resp.StatusCode, string(body))
@@ -206,8 +206,8 @@ func EncodeGetUserRequest(encoder func(*http.Request) goahttp.Encoder) func(*htt
 // getUser endpoint. restoreBody controls whether the response body should be
 // restored after having been read.
 // DecodeGetUserResponse may return the following errors:
-//   - "EmailExists" (type users.EmailExists): http.StatusConflict
-//   - "UsernameExists" (type users.UsernameExists): http.StatusConflict
+//   - "EmailExistsConflict" (type users.EmailExistsConflict): http.StatusConflict
+//   - "UsernameExistsConflict" (type users.UsernameExistsConflict): http.StatusConflict
 //   - "InvalidCredentials" (type users.InvalidCredentials): http.StatusUnauthorized
 //   - "InvalidUserDetails" (type users.InvalidUserDetails): http.StatusBadRequest
 //   - "NotFound" (type users.NotFound): http.StatusNotFound
@@ -245,7 +245,7 @@ func DecodeGetUserResponse(decoder func(*http.Response) goahttp.Decoder, restore
 		case http.StatusConflict:
 			en := resp.Header.Get("goa-error")
 			switch en {
-			case "EmailExists":
+			case "EmailExistsConflict":
 				var (
 					body string
 					err  error
@@ -254,8 +254,8 @@ func DecodeGetUserResponse(decoder func(*http.Response) goahttp.Decoder, restore
 				if err != nil {
 					return nil, goahttp.ErrDecodingError("users", "getUser", err)
 				}
-				return nil, NewGetUserEmailExists(body)
-			case "UsernameExists":
+				return nil, NewGetUserEmailExistsConflict(body)
+			case "UsernameExistsConflict":
 				var (
 					body string
 					err  error
@@ -264,7 +264,7 @@ func DecodeGetUserResponse(decoder func(*http.Response) goahttp.Decoder, restore
 				if err != nil {
 					return nil, goahttp.ErrDecodingError("users", "getUser", err)
 				}
-				return nil, NewGetUserUsernameExists(body)
+				return nil, NewGetUserUsernameExistsConflict(body)
 			default:
 				body, _ := io.ReadAll(resp.Body)
 				return nil, goahttp.ErrInvalidResponse("users", "getUser", resp.StatusCode, string(body))
@@ -341,8 +341,8 @@ func EncodeCreateUserRequest(encoder func(*http.Request) goahttp.Encoder) func(*
 // users createUser endpoint. restoreBody controls whether the response body
 // should be restored after having been read.
 // DecodeCreateUserResponse may return the following errors:
-//   - "EmailExists" (type users.EmailExists): http.StatusConflict
-//   - "UsernameExists" (type users.UsernameExists): http.StatusConflict
+//   - "EmailExistsConflict" (type users.EmailExistsConflict): http.StatusConflict
+//   - "UsernameExistsConflict" (type users.UsernameExistsConflict): http.StatusConflict
 //   - "InvalidCredentials" (type users.InvalidCredentials): http.StatusUnauthorized
 //   - "InvalidUserDetails" (type users.InvalidUserDetails): http.StatusBadRequest
 //   - "NotFound" (type users.NotFound): http.StatusNotFound
@@ -380,7 +380,7 @@ func DecodeCreateUserResponse(decoder func(*http.Response) goahttp.Decoder, rest
 		case http.StatusConflict:
 			en := resp.Header.Get("goa-error")
 			switch en {
-			case "EmailExists":
+			case "EmailExistsConflict":
 				var (
 					body string
 					err  error
@@ -389,8 +389,8 @@ func DecodeCreateUserResponse(decoder func(*http.Response) goahttp.Decoder, rest
 				if err != nil {
 					return nil, goahttp.ErrDecodingError("users", "createUser", err)
 				}
-				return nil, NewCreateUserEmailExists(body)
-			case "UsernameExists":
+				return nil, NewCreateUserEmailExistsConflict(body)
+			case "UsernameExistsConflict":
 				var (
 					body string
 					err  error
@@ -399,7 +399,7 @@ func DecodeCreateUserResponse(decoder func(*http.Response) goahttp.Decoder, rest
 				if err != nil {
 					return nil, goahttp.ErrDecodingError("users", "createUser", err)
 				}
-				return nil, NewCreateUserUsernameExists(body)
+				return nil, NewCreateUserUsernameExistsConflict(body)
 			default:
 				body, _ := io.ReadAll(resp.Body)
 				return nil, goahttp.ErrInvalidResponse("users", "createUser", resp.StatusCode, string(body))
@@ -489,8 +489,8 @@ func EncodeUpdateUserRequest(encoder func(*http.Request) goahttp.Encoder) func(*
 // users updateUser endpoint. restoreBody controls whether the response body
 // should be restored after having been read.
 // DecodeUpdateUserResponse may return the following errors:
-//   - "EmailExists" (type users.EmailExists): http.StatusConflict
-//   - "UsernameExists" (type users.UsernameExists): http.StatusConflict
+//   - "EmailExistsConflict" (type users.EmailExistsConflict): http.StatusConflict
+//   - "UsernameExistsConflict" (type users.UsernameExistsConflict): http.StatusConflict
 //   - "InvalidCredentials" (type users.InvalidCredentials): http.StatusUnauthorized
 //   - "InvalidUserDetails" (type users.InvalidUserDetails): http.StatusBadRequest
 //   - "NotFound" (type users.NotFound): http.StatusNotFound
@@ -528,7 +528,7 @@ func DecodeUpdateUserResponse(decoder func(*http.Response) goahttp.Decoder, rest
 		case http.StatusConflict:
 			en := resp.Header.Get("goa-error")
 			switch en {
-			case "EmailExists":
+			case "EmailExistsConflict":
 				var (
 					body string
 					err  error
@@ -537,8 +537,8 @@ func DecodeUpdateUserResponse(decoder func(*http.Response) goahttp.Decoder, rest
 				if err != nil {
 					return nil, goahttp.ErrDecodingError("users", "updateUser", err)
 				}
-				return nil, NewUpdateUserEmailExists(body)
-			case "UsernameExists":
+				return nil, NewUpdateUserEmailExistsConflict(body)
+			case "UsernameExistsConflict":
 				var (
 					body string
 					err  error
@@ -547,7 +547,7 @@ func DecodeUpdateUserResponse(decoder func(*http.Response) goahttp.Decoder, rest
 				if err != nil {
 					return nil, goahttp.ErrDecodingError("users", "updateUser", err)
 				}
-				return nil, NewUpdateUserUsernameExists(body)
+				return nil, NewUpdateUserUsernameExistsConflict(body)
 			default:
 				body, _ := io.ReadAll(resp.Body)
 				return nil, goahttp.ErrInvalidResponse("users", "updateUser", resp.StatusCode, string(body))
@@ -633,8 +633,8 @@ func EncodeDeleteUserRequest(encoder func(*http.Request) goahttp.Encoder) func(*
 // users deleteUser endpoint. restoreBody controls whether the response body
 // should be restored after having been read.
 // DecodeDeleteUserResponse may return the following errors:
-//   - "EmailExists" (type users.EmailExists): http.StatusConflict
-//   - "UsernameExists" (type users.UsernameExists): http.StatusConflict
+//   - "EmailExistsConflict" (type users.EmailExistsConflict): http.StatusConflict
+//   - "UsernameExistsConflict" (type users.UsernameExistsConflict): http.StatusConflict
 //   - "InvalidCredentials" (type users.InvalidCredentials): http.StatusUnauthorized
 //   - "InvalidUserDetails" (type users.InvalidUserDetails): http.StatusBadRequest
 //   - "NotFound" (type users.NotFound): http.StatusNotFound
@@ -659,7 +659,7 @@ func DecodeDeleteUserResponse(decoder func(*http.Response) goahttp.Decoder, rest
 		case http.StatusConflict:
 			en := resp.Header.Get("goa-error")
 			switch en {
-			case "EmailExists":
+			case "EmailExistsConflict":
 				var (
 					body string
 					err  error
@@ -668,8 +668,8 @@ func DecodeDeleteUserResponse(decoder func(*http.Response) goahttp.Decoder, rest
 				if err != nil {
 					return nil, goahttp.ErrDecodingError("users", "deleteUser", err)
 				}
-				return nil, NewDeleteUserEmailExists(body)
-			case "UsernameExists":
+				return nil, NewDeleteUserEmailExistsConflict(body)
+			case "UsernameExistsConflict":
 				var (
 					body string
 					err  error
@@ -678,7 +678,7 @@ func DecodeDeleteUserResponse(decoder func(*http.Response) goahttp.Decoder, rest
 				if err != nil {
 					return nil, goahttp.ErrDecodingError("users", "deleteUser", err)
 				}
-				return nil, NewDeleteUserUsernameExists(body)
+				return nil, NewDeleteUserUsernameExistsConflict(body)
 			default:
 				body, _ := io.ReadAll(resp.Body)
 				return nil, goahttp.ErrInvalidResponse("users", "deleteUser", resp.StatusCode, string(body))
@@ -755,8 +755,8 @@ func EncodeLoginRequest(encoder func(*http.Request) goahttp.Encoder) func(*http.
 // login endpoint. restoreBody controls whether the response body should be
 // restored after having been read.
 // DecodeLoginResponse may return the following errors:
-//   - "EmailExists" (type users.EmailExists): http.StatusConflict
-//   - "UsernameExists" (type users.UsernameExists): http.StatusConflict
+//   - "EmailExistsConflict" (type users.EmailExistsConflict): http.StatusConflict
+//   - "UsernameExistsConflict" (type users.UsernameExistsConflict): http.StatusConflict
 //   - "InvalidCredentials" (type users.InvalidCredentials): http.StatusUnauthorized
 //   - "InvalidUserDetails" (type users.InvalidUserDetails): http.StatusBadRequest
 //   - "NotFound" (type users.NotFound): http.StatusNotFound
@@ -789,7 +789,7 @@ func DecodeLoginResponse(decoder func(*http.Response) goahttp.Decoder, restoreBo
 		case http.StatusConflict:
 			en := resp.Header.Get("goa-error")
 			switch en {
-			case "EmailExists":
+			case "EmailExistsConflict":
 				var (
 					body string
 					err  error
@@ -798,8 +798,8 @@ func DecodeLoginResponse(decoder func(*http.Response) goahttp.Decoder, restoreBo
 				if err != nil {
 					return nil, goahttp.ErrDecodingError("users", "login", err)
 				}
-				return nil, NewLoginEmailExists(body)
-			case "UsernameExists":
+				return nil, NewLoginEmailExistsConflict(body)
+			case "UsernameExistsConflict":
 				var (
 					body string
 					err  error
@@ -808,7 +808,7 @@ func DecodeLoginResponse(decoder func(*http.Response) goahttp.Decoder, restoreBo
 				if err != nil {
 					return nil, goahttp.ErrDecodingError("users", "login", err)
 				}
-				return nil, NewLoginUsernameExists(body)
+				return nil, NewLoginUsernameExistsConflict(body)
 			default:
 				body, _ := io.ReadAll(resp.Body)
 				return nil, goahttp.ErrInvalidResponse("users", "login", resp.StatusCode, string(body))
@@ -889,8 +889,8 @@ func EncodeQueryCurrentJWTRequest(encoder func(*http.Request) goahttp.Encoder) f
 // the users queryCurrentJWT endpoint. restoreBody controls whether the
 // response body should be restored after having been read.
 // DecodeQueryCurrentJWTResponse may return the following errors:
-//   - "EmailExists" (type users.EmailExists): http.StatusConflict
-//   - "UsernameExists" (type users.UsernameExists): http.StatusConflict
+//   - "EmailExistsConflict" (type users.EmailExistsConflict): http.StatusConflict
+//   - "UsernameExistsConflict" (type users.UsernameExistsConflict): http.StatusConflict
 //   - "InvalidCredentials" (type users.InvalidCredentials): http.StatusUnauthorized
 //   - "InvalidUserDetails" (type users.InvalidUserDetails): http.StatusBadRequest
 //   - "NotFound" (type users.NotFound): http.StatusNotFound
@@ -924,7 +924,7 @@ func DecodeQueryCurrentJWTResponse(decoder func(*http.Response) goahttp.Decoder,
 		case http.StatusConflict:
 			en := resp.Header.Get("goa-error")
 			switch en {
-			case "EmailExists":
+			case "EmailExistsConflict":
 				var (
 					body string
 					err  error
@@ -933,8 +933,8 @@ func DecodeQueryCurrentJWTResponse(decoder func(*http.Response) goahttp.Decoder,
 				if err != nil {
 					return nil, goahttp.ErrDecodingError("users", "queryCurrentJWT", err)
 				}
-				return nil, NewQueryCurrentJWTEmailExists(body)
-			case "UsernameExists":
+				return nil, NewQueryCurrentJWTEmailExistsConflict(body)
+			case "UsernameExistsConflict":
 				var (
 					body string
 					err  error
@@ -943,7 +943,7 @@ func DecodeQueryCurrentJWTResponse(decoder func(*http.Response) goahttp.Decoder,
 				if err != nil {
 					return nil, goahttp.ErrDecodingError("users", "queryCurrentJWT", err)
 				}
-				return nil, NewQueryCurrentJWTUsernameExists(body)
+				return nil, NewQueryCurrentJWTUsernameExistsConflict(body)
 			default:
 				body, _ := io.ReadAll(resp.Body)
 				return nil, goahttp.ErrInvalidResponse("users", "queryCurrentJWT", resp.StatusCode, string(body))

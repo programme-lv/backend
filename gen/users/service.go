@@ -55,7 +55,7 @@ const ServiceName = "users"
 var MethodNames = [7]string{"listUsers", "getUser", "createUser", "updateUser", "deleteUser", "login", "queryCurrentJWT"}
 
 // Email already exists
-type EmailExists string
+type EmailExistsConflict string
 
 // Internal server error
 type InternalError string
@@ -161,26 +161,26 @@ type UserPayload struct {
 }
 
 // Username already exists
-type UsernameExists string
+type UsernameExistsConflict string
 
 // Credentials are invalid
 type Unauthorized string
 
 // Error returns an error description.
-func (e EmailExists) Error() string {
+func (e EmailExistsConflict) Error() string {
 	return "Email already exists"
 }
 
-// ErrorName returns "EmailExists".
+// ErrorName returns "EmailExistsConflict".
 //
 // Deprecated: Use GoaErrorName - https://github.com/goadesign/goa/issues/3105
-func (e EmailExists) ErrorName() string {
+func (e EmailExistsConflict) ErrorName() string {
 	return e.GoaErrorName()
 }
 
-// GoaErrorName returns "EmailExists".
-func (e EmailExists) GoaErrorName() string {
-	return "EmailExists"
+// GoaErrorName returns "EmailExistsConflict".
+func (e EmailExistsConflict) GoaErrorName() string {
+	return "EmailExistsConflict"
 }
 
 // Error returns an error description.
@@ -252,20 +252,20 @@ func (e NotFound) GoaErrorName() string {
 }
 
 // Error returns an error description.
-func (e UsernameExists) Error() string {
+func (e UsernameExistsConflict) Error() string {
 	return "Username already exists"
 }
 
-// ErrorName returns "UsernameExists".
+// ErrorName returns "UsernameExistsConflict".
 //
 // Deprecated: Use GoaErrorName - https://github.com/goadesign/goa/issues/3105
-func (e UsernameExists) ErrorName() string {
+func (e UsernameExistsConflict) ErrorName() string {
 	return e.GoaErrorName()
 }
 
-// GoaErrorName returns "UsernameExists".
-func (e UsernameExists) GoaErrorName() string {
-	return "UsernameExists"
+// GoaErrorName returns "UsernameExistsConflict".
+func (e UsernameExistsConflict) GoaErrorName() string {
+	return "UsernameExistsConflict"
 }
 
 // Error returns an error description.

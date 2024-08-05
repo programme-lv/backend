@@ -2,11 +2,9 @@ package user
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
-	"time"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
@@ -16,8 +14,6 @@ import (
 	"github.com/go-playground/validator/v10"
 	en_translations "github.com/go-playground/validator/v10/translations/en"
 	lv_translations "github.com/go-playground/validator/v10/translations/lv" // assuming custom Latvian translations
-	"github.com/google/uuid"
-	"github.com/guregu/dynamo/v2"
 	"github.com/programme-lv/backend/auth"
 	usergen "github.com/programme-lv/backend/gen/users"
 	"goa.design/clue/log"
@@ -91,109 +87,6 @@ func (s *userssrvc) JWTAuth(ctx context.Context, token string, scheme *security.
 
 	ctx = context.WithValue(ctx, ClaimsKey("claims"), claims)
 	return ctx, nil
-}
-
-func mustToJson(x any) string {
-	b, _ := json.Marshal(x)
-	return string(b)
-}
-
-func (s *userssrvc) CreateUser(ctx context.Context, p *usergen.UserPayload) (res *usergen.User, err error) {
-	uni := s.uni
-	// en, _ := uni.GetTranslator("en")
-	lv, _ := uni.GetTranslator("lv")
-	lv.Add("Username", "lietotājvārds", true)
-	input := struct {
-		Username  string  `validate:"required,min=2,max=32"`
-		Email     string  `validate:"required,email,max=320"`
-		Firstname *string `validate:"omitempty,max=25"`
-		Lastname  *string `validate:"omitempty,max=25"`
-		Password  string  `validate:"required,min=8"`
-	}{
-		Username: p.Username,
-		Email:    p.Email,
-		Password: p.Password,
-	}
-	if p.Firstname != "" {
-		input.Firstname = &p.Firstname
-	}
-	if p.Lastname != "" {
-		input.Lastname = &p.Lastname
-	}
-
-	err = s.validate.Struct(input)
-	if err != nil {
-		validationErrs := err.(validator.ValidationErrors)
-		return nil, usergen.InvalidUserDetails(mustToJson(validationErrs.Translate(lv)))
-	}
-
-	allUsers, err := s.ddbUserTable.List(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, user := range allUsers {
-		if user.Username == p.Username {
-			return nil, usergen.UsernameExists(fmt.Sprintf(
-				"lietotājvārds %s jau eksistē / username %s already exists", p.Username, p.Username,
-			))
-		}
-
-		if user.Email == p.Email {
-			return nil, usergen.EmailExists(fmt.Sprintf(
-				"epasts %s jau eksistē / email %s already exists", p.Email, p.Email,
-			))
-		}
-	}
-
-	bcryptPwd, err := bcrypt.GenerateFromPassword([]byte(p.Password), bcrypt.DefaultCost)
-	if err != nil {
-		return nil, errors.New("error hashing password")
-	}
-
-	uuid := uuid.New()
-
-	var firstname *string = nil
-	if p.Firstname != "" {
-		firstname = &p.Firstname
-	}
-
-	var lastname *string = nil
-	if p.Lastname != "" {
-		lastname = &p.Lastname
-	}
-
-	row := &UserRow{
-		Uuid:      uuid.String(),
-		Username:  p.Username,
-		Email:     p.Email,
-		BcryptPwd: bcryptPwd,
-		Firstname: firstname,
-		Lastname:  lastname,
-		Version:   0,
-		CreatedAt: time.Now(),
-	}
-
-	err = s.ddbUserTable.Save(ctx, row)
-	if err != nil {
-		if dynamo.IsCondCheckFailed(err) {
-			log.Errorf(ctx, err, "version conflict saving user")
-			return nil, usergen.InternalError("version conflict saving user")
-		} else {
-			log.Errorf(ctx, err, "error saving user")
-			return nil, usergen.InternalError("error saving user")
-		}
-	}
-
-	res = &usergen.User{
-		UUID:      uuid.String(),
-		Username:  p.Username,
-		Email:     p.Email,
-		Firstname: p.Firstname,
-		Lastname:  p.Lastname,
-	}
-
-	return res, nil
 }
 
 // User login

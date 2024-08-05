@@ -193,18 +193,18 @@ func NewListUsersUserOK(body []*UserResponse) []*users.User {
 	return v
 }
 
-// NewListUsersEmailExists builds a users service listUsers endpoint
-// EmailExists error.
-func NewListUsersEmailExists(body string) users.EmailExists {
-	v := users.EmailExists(body)
+// NewListUsersEmailExistsConflict builds a users service listUsers endpoint
+// EmailExistsConflict error.
+func NewListUsersEmailExistsConflict(body string) users.EmailExistsConflict {
+	v := users.EmailExistsConflict(body)
 
 	return v
 }
 
-// NewListUsersUsernameExists builds a users service listUsers endpoint
-// UsernameExists error.
-func NewListUsersUsernameExists(body string) users.UsernameExists {
-	v := users.UsernameExists(body)
+// NewListUsersUsernameExistsConflict builds a users service listUsers endpoint
+// UsernameExistsConflict error.
+func NewListUsersUsernameExistsConflict(body string) users.UsernameExistsConflict {
+	v := users.UsernameExistsConflict(body)
 
 	return v
 }
@@ -247,18 +247,18 @@ func NewGetUserUserOK(body *GetUserResponseBody) *users.User {
 	return v
 }
 
-// NewGetUserEmailExists builds a users service getUser endpoint EmailExists
-// error.
-func NewGetUserEmailExists(body string) users.EmailExists {
-	v := users.EmailExists(body)
+// NewGetUserEmailExistsConflict builds a users service getUser endpoint
+// EmailExistsConflict error.
+func NewGetUserEmailExistsConflict(body string) users.EmailExistsConflict {
+	v := users.EmailExistsConflict(body)
 
 	return v
 }
 
-// NewGetUserUsernameExists builds a users service getUser endpoint
-// UsernameExists error.
-func NewGetUserUsernameExists(body string) users.UsernameExists {
-	v := users.UsernameExists(body)
+// NewGetUserUsernameExistsConflict builds a users service getUser endpoint
+// UsernameExistsConflict error.
+func NewGetUserUsernameExistsConflict(body string) users.UsernameExistsConflict {
+	v := users.UsernameExistsConflict(body)
 
 	return v
 }
@@ -300,18 +300,18 @@ func NewCreateUserUserCreated(body *CreateUserResponseBody) *users.User {
 	return v
 }
 
-// NewCreateUserEmailExists builds a users service createUser endpoint
-// EmailExists error.
-func NewCreateUserEmailExists(body string) users.EmailExists {
-	v := users.EmailExists(body)
+// NewCreateUserEmailExistsConflict builds a users service createUser endpoint
+// EmailExistsConflict error.
+func NewCreateUserEmailExistsConflict(body string) users.EmailExistsConflict {
+	v := users.EmailExistsConflict(body)
 
 	return v
 }
 
-// NewCreateUserUsernameExists builds a users service createUser endpoint
-// UsernameExists error.
-func NewCreateUserUsernameExists(body string) users.UsernameExists {
-	v := users.UsernameExists(body)
+// NewCreateUserUsernameExistsConflict builds a users service createUser
+// endpoint UsernameExistsConflict error.
+func NewCreateUserUsernameExistsConflict(body string) users.UsernameExistsConflict {
+	v := users.UsernameExistsConflict(body)
 
 	return v
 }
@@ -354,18 +354,18 @@ func NewUpdateUserUserOK(body *UpdateUserOKResponseBody) *users.User {
 	return v
 }
 
-// NewUpdateUserEmailExists builds a users service updateUser endpoint
-// EmailExists error.
-func NewUpdateUserEmailExists(body string) users.EmailExists {
-	v := users.EmailExists(body)
+// NewUpdateUserEmailExistsConflict builds a users service updateUser endpoint
+// EmailExistsConflict error.
+func NewUpdateUserEmailExistsConflict(body string) users.EmailExistsConflict {
+	v := users.EmailExistsConflict(body)
 
 	return v
 }
 
-// NewUpdateUserUsernameExists builds a users service updateUser endpoint
-// UsernameExists error.
-func NewUpdateUserUsernameExists(body string) users.UsernameExists {
-	v := users.UsernameExists(body)
+// NewUpdateUserUsernameExistsConflict builds a users service updateUser
+// endpoint UsernameExistsConflict error.
+func NewUpdateUserUsernameExistsConflict(body string) users.UsernameExistsConflict {
+	v := users.UsernameExistsConflict(body)
 
 	return v
 }
@@ -394,18 +394,18 @@ func NewUpdateUserNotFound(body string) users.NotFound {
 	return v
 }
 
-// NewDeleteUserEmailExists builds a users service deleteUser endpoint
-// EmailExists error.
-func NewDeleteUserEmailExists(body string) users.EmailExists {
-	v := users.EmailExists(body)
+// NewDeleteUserEmailExistsConflict builds a users service deleteUser endpoint
+// EmailExistsConflict error.
+func NewDeleteUserEmailExistsConflict(body string) users.EmailExistsConflict {
+	v := users.EmailExistsConflict(body)
 
 	return v
 }
 
-// NewDeleteUserUsernameExists builds a users service deleteUser endpoint
-// UsernameExists error.
-func NewDeleteUserUsernameExists(body string) users.UsernameExists {
-	v := users.UsernameExists(body)
+// NewDeleteUserUsernameExistsConflict builds a users service deleteUser
+// endpoint UsernameExistsConflict error.
+func NewDeleteUserUsernameExistsConflict(body string) users.UsernameExistsConflict {
+	v := users.UsernameExistsConflict(body)
 
 	return v
 }
@@ -434,17 +434,18 @@ func NewDeleteUserNotFound(body string) users.NotFound {
 	return v
 }
 
-// NewLoginEmailExists builds a users service login endpoint EmailExists error.
-func NewLoginEmailExists(body string) users.EmailExists {
-	v := users.EmailExists(body)
+// NewLoginEmailExistsConflict builds a users service login endpoint
+// EmailExistsConflict error.
+func NewLoginEmailExistsConflict(body string) users.EmailExistsConflict {
+	v := users.EmailExistsConflict(body)
 
 	return v
 }
 
-// NewLoginUsernameExists builds a users service login endpoint UsernameExists
-// error.
-func NewLoginUsernameExists(body string) users.UsernameExists {
-	v := users.UsernameExists(body)
+// NewLoginUsernameExistsConflict builds a users service login endpoint
+// UsernameExistsConflict error.
+func NewLoginUsernameExistsConflict(body string) users.UsernameExistsConflict {
+	v := users.UsernameExistsConflict(body)
 
 	return v
 }
@@ -503,18 +504,18 @@ func NewQueryCurrentJWTJWTClaimsOK(body *QueryCurrentJWTResponseBody) *users.JWT
 	return v
 }
 
-// NewQueryCurrentJWTEmailExists builds a users service queryCurrentJWT
-// endpoint EmailExists error.
-func NewQueryCurrentJWTEmailExists(body string) users.EmailExists {
-	v := users.EmailExists(body)
+// NewQueryCurrentJWTEmailExistsConflict builds a users service queryCurrentJWT
+// endpoint EmailExistsConflict error.
+func NewQueryCurrentJWTEmailExistsConflict(body string) users.EmailExistsConflict {
+	v := users.EmailExistsConflict(body)
 
 	return v
 }
 
-// NewQueryCurrentJWTUsernameExists builds a users service queryCurrentJWT
-// endpoint UsernameExists error.
-func NewQueryCurrentJWTUsernameExists(body string) users.UsernameExists {
-	v := users.UsernameExists(body)
+// NewQueryCurrentJWTUsernameExistsConflict builds a users service
+// queryCurrentJWT endpoint UsernameExistsConflict error.
+func NewQueryCurrentJWTUsernameExistsConflict(body string) users.UsernameExistsConflict {
+	v := users.UsernameExistsConflict(body)
 
 	return v
 }

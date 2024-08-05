@@ -43,8 +43,8 @@ func NewClient(listUsers, getUser, createUser, updateUser, deleteUser, login, qu
 //   - "InvalidCredentials" (type InvalidCredentials)
 //   - "InvalidUserDetails" (type InvalidUserDetails)
 //   - "NotFound" (type NotFound)
-//   - "UsernameExists" (type UsernameExists)
-//   - "EmailExists" (type EmailExists)
+//   - "UsernameExistsConflict" (type UsernameExistsConflict)
+//   - "EmailExistsConflict" (type EmailExistsConflict)
 //   - "InternalError" (type InternalError)
 //   - error: internal error
 func (c *Client) ListUsers(ctx context.Context, p *ListUsersPayload) (res []*User, err error) {
@@ -62,8 +62,8 @@ func (c *Client) ListUsers(ctx context.Context, p *ListUsersPayload) (res []*Use
 //   - "InvalidCredentials" (type InvalidCredentials)
 //   - "InvalidUserDetails" (type InvalidUserDetails)
 //   - "NotFound" (type NotFound)
-//   - "UsernameExists" (type UsernameExists)
-//   - "EmailExists" (type EmailExists)
+//   - "UsernameExistsConflict" (type UsernameExistsConflict)
+//   - "EmailExistsConflict" (type EmailExistsConflict)
 //   - "InternalError" (type InternalError)
 //   - error: internal error
 func (c *Client) GetUser(ctx context.Context, p *SecureUUIDPayload) (res *User, err error) {
@@ -78,8 +78,8 @@ func (c *Client) GetUser(ctx context.Context, p *SecureUUIDPayload) (res *User, 
 // CreateUser calls the "createUser" endpoint of the "users" service.
 // CreateUser may return the following errors:
 //   - "InvalidUserDetails" (type *goa.ServiceError)
-//   - "UsernameExists" (type UsernameExists)
-//   - "EmailExists" (type EmailExists)
+//   - "UsernameExistsConflict" (type UsernameExistsConflict)
+//   - "EmailExistsConflict" (type EmailExistsConflict)
 //   - "unauthorized" (type Unauthorized)
 //   - "InvalidCredentials" (type InvalidCredentials)
 //   - "NotFound" (type NotFound)
@@ -100,8 +100,8 @@ func (c *Client) CreateUser(ctx context.Context, p *UserPayload) (res *User, err
 //   - "unauthorized" (type Unauthorized)
 //   - "InvalidCredentials" (type InvalidCredentials)
 //   - "NotFound" (type NotFound)
-//   - "UsernameExists" (type UsernameExists)
-//   - "EmailExists" (type EmailExists)
+//   - "UsernameExistsConflict" (type UsernameExistsConflict)
+//   - "EmailExistsConflict" (type EmailExistsConflict)
 //   - "InternalError" (type InternalError)
 //   - error: internal error
 func (c *Client) UpdateUser(ctx context.Context, p *UpdateUserPayload) (res *User, err error) {
@@ -119,8 +119,8 @@ func (c *Client) UpdateUser(ctx context.Context, p *UpdateUserPayload) (res *Use
 //   - "unauthorized" (type Unauthorized)
 //   - "InvalidCredentials" (type InvalidCredentials)
 //   - "InvalidUserDetails" (type InvalidUserDetails)
-//   - "UsernameExists" (type UsernameExists)
-//   - "EmailExists" (type EmailExists)
+//   - "UsernameExistsConflict" (type UsernameExistsConflict)
+//   - "EmailExistsConflict" (type EmailExistsConflict)
 //   - "InternalError" (type InternalError)
 //   - error: internal error
 func (c *Client) DeleteUser(ctx context.Context, p *SecureUUIDPayload) (err error) {
@@ -134,8 +134,8 @@ func (c *Client) DeleteUser(ctx context.Context, p *SecureUUIDPayload) (err erro
 //   - "InvalidUserDetails" (type *goa.ServiceError)
 //   - "unauthorized" (type Unauthorized)
 //   - "NotFound" (type NotFound)
-//   - "UsernameExists" (type UsernameExists)
-//   - "EmailExists" (type EmailExists)
+//   - "UsernameExistsConflict" (type UsernameExistsConflict)
+//   - "EmailExistsConflict" (type EmailExistsConflict)
 //   - "InternalError" (type InternalError)
 //   - error: internal error
 func (c *Client) Login(ctx context.Context, p *LoginPayload) (res string, err error) {
@@ -153,8 +153,8 @@ func (c *Client) Login(ctx context.Context, p *LoginPayload) (res string, err er
 //   - "InvalidCredentials" (type InvalidCredentials)
 //   - "InvalidUserDetails" (type InvalidUserDetails)
 //   - "NotFound" (type NotFound)
-//   - "UsernameExists" (type UsernameExists)
-//   - "EmailExists" (type EmailExists)
+//   - "UsernameExistsConflict" (type UsernameExistsConflict)
+//   - "EmailExistsConflict" (type EmailExistsConflict)
 //   - "InternalError" (type InternalError)
 //   - error: internal error
 func (c *Client) QueryCurrentJWT(ctx context.Context, p *QueryCurrentJWTPayload) (res *JWTClaims, err error) {

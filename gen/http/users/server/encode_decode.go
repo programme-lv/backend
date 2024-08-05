@@ -58,16 +58,16 @@ func EncodeListUsersError(encoder func(context.Context, http.ResponseWriter) goa
 			return encodeError(ctx, w, v)
 		}
 		switch en.GoaErrorName() {
-		case "EmailExists":
-			var res users.EmailExists
+		case "EmailExistsConflict":
+			var res users.EmailExistsConflict
 			errors.As(v, &res)
 			enc := encoder(ctx, w)
 			body := res
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusConflict)
 			return enc.Encode(body)
-		case "UsernameExists":
-			var res users.UsernameExists
+		case "UsernameExistsConflict":
+			var res users.UsernameExistsConflict
 			errors.As(v, &res)
 			enc := encoder(ctx, w)
 			body := res
@@ -151,16 +151,16 @@ func EncodeGetUserError(encoder func(context.Context, http.ResponseWriter) goaht
 			return encodeError(ctx, w, v)
 		}
 		switch en.GoaErrorName() {
-		case "EmailExists":
-			var res users.EmailExists
+		case "EmailExistsConflict":
+			var res users.EmailExistsConflict
 			errors.As(v, &res)
 			enc := encoder(ctx, w)
 			body := res
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusConflict)
 			return enc.Encode(body)
-		case "UsernameExists":
-			var res users.UsernameExists
+		case "UsernameExistsConflict":
+			var res users.UsernameExistsConflict
 			errors.As(v, &res)
 			enc := encoder(ctx, w)
 			body := res
@@ -248,16 +248,16 @@ func EncodeCreateUserError(encoder func(context.Context, http.ResponseWriter) go
 			return encodeError(ctx, w, v)
 		}
 		switch en.GoaErrorName() {
-		case "EmailExists":
-			var res users.EmailExists
+		case "EmailExistsConflict":
+			var res users.EmailExistsConflict
 			errors.As(v, &res)
 			enc := encoder(ctx, w)
 			body := res
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusConflict)
 			return enc.Encode(body)
-		case "UsernameExists":
-			var res users.UsernameExists
+		case "UsernameExistsConflict":
+			var res users.UsernameExistsConflict
 			errors.As(v, &res)
 			enc := encoder(ctx, w)
 			body := res
@@ -360,16 +360,16 @@ func EncodeUpdateUserError(encoder func(context.Context, http.ResponseWriter) go
 			return encodeError(ctx, w, v)
 		}
 		switch en.GoaErrorName() {
-		case "EmailExists":
-			var res users.EmailExists
+		case "EmailExistsConflict":
+			var res users.EmailExistsConflict
 			errors.As(v, &res)
 			enc := encoder(ctx, w)
 			body := res
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusConflict)
 			return enc.Encode(body)
-		case "UsernameExists":
-			var res users.UsernameExists
+		case "UsernameExistsConflict":
+			var res users.UsernameExistsConflict
 			errors.As(v, &res)
 			enc := encoder(ctx, w)
 			body := res
@@ -450,16 +450,16 @@ func EncodeDeleteUserError(encoder func(context.Context, http.ResponseWriter) go
 			return encodeError(ctx, w, v)
 		}
 		switch en.GoaErrorName() {
-		case "EmailExists":
-			var res users.EmailExists
+		case "EmailExistsConflict":
+			var res users.EmailExistsConflict
 			errors.As(v, &res)
 			enc := encoder(ctx, w)
 			body := res
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusConflict)
 			return enc.Encode(body)
-		case "UsernameExists":
-			var res users.UsernameExists
+		case "UsernameExistsConflict":
+			var res users.UsernameExistsConflict
 			errors.As(v, &res)
 			enc := encoder(ctx, w)
 			body := res
@@ -547,16 +547,16 @@ func EncodeLoginError(encoder func(context.Context, http.ResponseWriter) goahttp
 			return encodeError(ctx, w, v)
 		}
 		switch en.GoaErrorName() {
-		case "EmailExists":
-			var res users.EmailExists
+		case "EmailExistsConflict":
+			var res users.EmailExistsConflict
 			errors.As(v, &res)
 			enc := encoder(ctx, w)
 			body := res
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusConflict)
 			return enc.Encode(body)
-		case "UsernameExists":
-			var res users.UsernameExists
+		case "UsernameExistsConflict":
+			var res users.UsernameExistsConflict
 			errors.As(v, &res)
 			enc := encoder(ctx, w)
 			body := res
@@ -641,16 +641,16 @@ func EncodeQueryCurrentJWTError(encoder func(context.Context, http.ResponseWrite
 			return encodeError(ctx, w, v)
 		}
 		switch en.GoaErrorName() {
-		case "EmailExists":
-			var res users.EmailExists
+		case "EmailExistsConflict":
+			var res users.EmailExistsConflict
 			errors.As(v, &res)
 			enc := encoder(ctx, w)
 			body := res
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusConflict)
 			return enc.Encode(body)
-		case "UsernameExists":
-			var res users.UsernameExists
+		case "UsernameExistsConflict":
+			var res users.UsernameExistsConflict
 			errors.As(v, &res)
 			enc := encoder(ctx, w)
 			body := res

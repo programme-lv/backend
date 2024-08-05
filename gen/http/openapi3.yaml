@@ -66,7 +66,7 @@ paths:
                                 example: Quam illo id.
                             example: Similique aut rem non dolorem expedita.
                 "409":
-                    description: 'EmailExists: Conflict response.'
+                    description: 'EmailExistsConflict: Conflict response.'
                     content:
                         application/json:
                             schema:
@@ -125,7 +125,7 @@ paths:
                                 example: Hic esse amet voluptatem quia cumque.
                             example: Sed autem aspernatur magni non molestiae.
                 "409":
-                    description: 'EmailExists: Conflict response.'
+                    description: 'EmailExistsConflict: Conflict response.'
                     content:
                         application/json:
                             schema:
@@ -1044,7 +1044,7 @@ paths:
                                 example: Aut voluptatibus quae autem odio nostrum modi.
                             example: Dolorem illo eum sit nobis incidunt aliquam.
                 "409":
-                    description: 'EmailExists: Conflict response.'
+                    description: 'EmailExistsConflict: Conflict response.'
                     content:
                         application/json:
                             schema:
@@ -1110,7 +1110,7 @@ paths:
                                 example: Ut fugiat.
                             example: Illo aut rerum qui adipisci.
                 "409":
-                    description: 'EmailExists: Conflict response.'
+                    description: 'EmailExistsConflict: Conflict response.'
                     content:
                         application/json:
                             schema:
@@ -1172,7 +1172,7 @@ paths:
                                 example: Perferendis molestias explicabo odio quasi.
                             example: Natus ut cum.
                 "409":
-                    description: 'EmailExists: Conflict response.'
+                    description: 'EmailExistsConflict: Conflict response.'
                     content:
                         application/json:
                             schema:
@@ -1246,7 +1246,7 @@ paths:
                                 example: Sint nostrum.
                             example: Dolores sit in.
                 "409":
-                    description: 'EmailExists: Conflict response.'
+                    description: 'EmailExistsConflict: Conflict response.'
                     content:
                         application/json:
                             schema:
@@ -1331,7 +1331,7 @@ paths:
                                 example: Aliquid quo.
                             example: Similique ea impedit veritatis.
                 "409":
-                    description: 'EmailExists: Conflict response.'
+                    description: 'EmailExistsConflict: Conflict response.'
                     content:
                         application/json:
                             schema:

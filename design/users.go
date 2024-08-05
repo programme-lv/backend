@@ -102,16 +102,16 @@ var _ = dsl.Service("users", func() {
 	dsl.Error("InvalidCredentials", dsl.String, "Invalid credentials")
 	dsl.Error("InvalidUserDetails", dsl.String, "Invalid user details")
 	dsl.Error("NotFound", dsl.String, "User not found")
-	dsl.Error("UsernameExists", dsl.String, "Username already exists")
-	dsl.Error("EmailExists", dsl.String, "Email already exists")
+	dsl.Error("UsernameExistsConflict", dsl.String, "Username already exists")
+	dsl.Error("EmailExistsConflict", dsl.String, "Email already exists")
 	dsl.Error("InternalError", dsl.String, "Internal server error")
 
 	dsl.HTTP(func() {
 		dsl.Response("InvalidCredentials", dsl.StatusUnauthorized)
 		dsl.Response("InvalidUserDetails", dsl.StatusBadRequest)
 		dsl.Response("NotFound", dsl.StatusNotFound)
-		dsl.Response("UsernameExists", dsl.StatusConflict)
-		dsl.Response("EmailExists", dsl.StatusConflict)
+		dsl.Response("UsernameExistsConflict", dsl.StatusConflict)
+		dsl.Response("EmailExistsConflict", dsl.StatusConflict)
 	})
 
 	dsl.Method("listUsers", func() {
@@ -155,8 +155,8 @@ var _ = dsl.Service("users", func() {
 			dsl.Response(dsl.StatusCreated)
 		})
 		dsl.Error("InvalidUserDetails")
-		dsl.Error("UsernameExists", dsl.String, "Username already exists")
-		dsl.Error("EmailExists", dsl.String, "Email already exists")
+		dsl.Error("UsernameExistsConflict", dsl.String, "Username already exists")
+		dsl.Error("EmailExistsConflict", dsl.String, "Email already exists")
 	})
 
 	dsl.Method("updateUser", func() {
