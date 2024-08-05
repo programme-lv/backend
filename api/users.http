@@ -9,7 +9,7 @@ POST {{addr}}/users
 Content-Type: application/json
 
 {
-  "username": "Eliaa3abaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "username": "asdfasdfasdfasdf",
   "email": "johndoea3aaa@example.com",
   "password": "password123",
   "firstname": "John",

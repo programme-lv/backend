@@ -36,7 +36,6 @@ var User = dsl.Type("User", func() {
 var UserPayload = dsl.Type("UserPayload", func() {
 	dsl.Description("Payload for creating and updating a user")
 	dsl.Attribute("username", dsl.String, "Username of the user", func() {
-		dsl.MinLength(1)
 		dsl.Example("johndoe")
 	})
 	dsl.Attribute("email", dsl.String, "Email of the user", func() {
@@ -50,7 +49,6 @@ var UserPayload = dsl.Type("UserPayload", func() {
 		dsl.Example("Doe")
 	})
 	dsl.Attribute("password", dsl.String, "Password of the user", func() {
-		dsl.MinLength(8)
 		dsl.Example("password123")
 	})
 	dsl.Required("username", "email", "firstname", "lastname", "password")
@@ -172,7 +170,6 @@ var _ = dsl.Service("users", func() {
 				dsl.Example("550e8400-e29b-41d4-a716-446655440000")
 			})
 			dsl.Attribute("username", dsl.String, "Username of the user", func() {
-				dsl.MinLength(1)
 				dsl.Example("johndoe")
 			})
 			dsl.Attribute("email", dsl.String, "Email of the user", func() {

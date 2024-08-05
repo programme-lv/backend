@@ -59,13 +59,7 @@ func BuildCreateUserPayload(usersCreateUserBody string) (*users.UserPayload, err
 		if err != nil {
 			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"email\": \"johndoe@example.com\",\n      \"firstname\": \"John\",\n      \"lastname\": \"Doe\",\n      \"password\": \"password123\",\n      \"username\": \"johndoe\"\n   }'")
 		}
-		if utf8.RuneCountInString(body.Username) < 1 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.username", body.Username, utf8.RuneCountInString(body.Username), 1, true))
-		}
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.email", body.Email, goa.FormatEmail))
-		if utf8.RuneCountInString(body.Password) < 8 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.password", body.Password, utf8.RuneCountInString(body.Password), 8, true))
-		}
 		if err != nil {
 			return nil, err
 		}
@@ -90,9 +84,6 @@ func BuildUpdateUserPayload(usersUpdateUserBody string, usersUpdateUserUUID stri
 		err = json.Unmarshal([]byte(usersUpdateUserBody), &body)
 		if err != nil {
 			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"email\": \"johndoe@example.com\",\n      \"firstname\": \"John\",\n      \"lastname\": \"Doe\",\n      \"password\": \"password123\",\n      \"username\": \"johndoe\"\n   }'")
-		}
-		if utf8.RuneCountInString(body.Username) < 1 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.username", body.Username, utf8.RuneCountInString(body.Username), 1, true))
 		}
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.email", body.Email, goa.FormatEmail))
 		if body.Password != nil {

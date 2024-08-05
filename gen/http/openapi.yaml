@@ -1274,12 +1274,10 @@ definitions:
                 type: string
                 description: Password of the user
                 example: password123
-                minLength: 8
             username:
                 type: string
                 description: Username of the user
                 example: johndoe
-                minLength: 1
         example:
             email: johndoe@example.com
             firstname: John
@@ -1556,7 +1554,6 @@ definitions:
                 type: string
                 description: Username of the user
                 example: johndoe
-                minLength: 1
         example:
             email: johndoe@example.com
             firstname: John
