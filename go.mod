@@ -10,9 +10,11 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/google/uuid v1.6.0
 	github.com/guregu/dynamo/v2 v2.1.1
+	github.com/pelletier/go-toml/v2 v2.2.2
 	goa.design/clue v1.0.6
 	goa.design/goa/v3 v3.18.2
 	golang.org/x/crypto v0.25.0
+	golang.org/x/text v0.16.0
 )
 
 require (
@@ -49,7 +51,6 @@ require (
 	golang.org/x/sync v0.7.0 // indirect
 	golang.org/x/sys v0.22.0 // indirect
 	golang.org/x/term v0.22.0 // indirect
-	golang.org/x/text v0.16.0 // indirect
 	golang.org/x/tools v0.23.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240730163845-b1a4ccb954bf // indirect
 	google.golang.org/grpc v1.65.0 // indirect

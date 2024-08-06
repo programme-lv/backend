@@ -3,6 +3,7 @@ package task
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
@@ -48,15 +49,51 @@ func (s *taskssrvc) GetTask(ctx context.Context, p *taskgen.GetTaskPayload) (res
 		return nil, fmt.Errorf("task not found")
 	}
 
+	taskManifest, err := ParseTaskTomlManifest(row.TomlManifest)
+	if err != nil {
+		return nil, fmt.Errorf("could not parse task toml manifest: %w", err)
+	}
+
+	mds := taskManifest.Statement.MDs
+	var responseDefaulMdStatement *taskgen.MarkdownStatement = nil
+	if len(mds) > 0 {
+		defaultMd := mds[0]
+		resolveImgsToUrls := func(mdSection string) string {
+			for uuid, key := range defaultMd.ImgUuidToS3Key {
+				url := fmt.Sprintf("https://dvhk4hiwp1rmf.cloudfront.net/%s", key)
+				mdSection = strings.Replace(mdSection, uuid, url, 1)
+			}
+			return mdSection
+		}
+		var notes *string = nil
+		if defaultMd.Notes.Content != "" {
+			notesStr := resolveImgsToUrls(defaultMd.Notes.Content)
+			notes = &notesStr
+		}
+		var scoring *string = nil
+		if defaultMd.Scoring.Content != "" {
+			scoringStr := resolveImgsToUrls(defaultMd.Scoring.Content)
+			scoring = &scoringStr
+		}
+
+		responseDefaulMdStatement = &taskgen.MarkdownStatement{
+			Story:   resolveImgsToUrls(defaultMd.Story.Content),
+			Input:   resolveImgsToUrls(defaultMd.Input.Content),
+			Output:  resolveImgsToUrls(defaultMd.Output.Content),
+			Notes:   notes,
+			Scoring: scoring,
+		}
+	}
+
 	res = &taskgen.Task{
 		PublishedTaskID:        "hello",
-		TaskFullName:           row.TomlManifest,
+		TaskFullName:           "",
 		MemoryLimitMegabytes:   0,
 		CPUTimeLimitSeconds:    0,
 		OriginOlympiad:         "",
 		IllustrationImgURL:     new(string),
 		DifficultyRating:       0,
-		DefaultMdStatement:     &taskgen.MarkdownStatement{},
+		DefaultMdStatement:     responseDefaulMdStatement,
 		Examples:               []*taskgen.Example{},
 		DefaultPdfStatementURL: new(string),
 		OriginNotes:            map[string]string{},
