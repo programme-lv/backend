@@ -54,8 +54,6 @@ func (s *taskssrvc) GetTask(ctx context.Context, p *taskgen.GetTaskPayload) (res
 		return nil, fmt.Errorf("could not parse task toml manifest: %w", err)
 	}
 
-	log.Printf(ctx, "test count: %d", len(taskManifest.Tests))
-
 	mds := taskManifest.Statement.MDs
 	var responseDefaulMdStatement *taskgen.MarkdownStatement = nil
 	if len(mds) > 0 {
@@ -87,19 +85,49 @@ func (s *taskssrvc) GetTask(ctx context.Context, p *taskgen.GetTaskPayload) (res
 		}
 	}
 
+	var illustrationImgUrl *string = nil
+	if taskManifest.Statement.IllustrationImg.S3ObjKey != "" {
+		illustrationImgUrlStrl := fmt.Sprintf("https://dvhk4hiwp1rmf.cloudfront.net/%s", taskManifest.Statement.IllustrationImg.S3ObjKey)
+		illustrationImgUrl = &illustrationImgUrlStrl
+	}
+
+	var examples []*taskgen.Example = make([]*taskgen.Example, 0)
+	for _, example := range taskManifest.Statement.Examples {
+		examples = append(examples, &taskgen.Example{
+			Input:  example.Input,
+			Output: example.Output,
+			MdNote: example.MdNote,
+		})
+	}
+
+	var stInputs []*taskgen.StInputs = make([]*taskgen.StInputs, 0)
+	for _, st := range taskManifest.Statement.VisInpSTs {
+		stInputs = append(stInputs, &taskgen.StInputs{
+			Subtask: st.Subtask,
+			Inputs:  st.Inputs,
+		})
+	}
+
+	var defaultPdfStatementURL *string = nil
+	if len(taskManifest.Statement.PDFs) > 0 {
+		pdf := taskManifest.Statement.PDFs[0]
+		defaultPdfStatementURLStr := fmt.Sprintf("https://dvhk4hiwp1rmf.cloudfront.net/task-pdf-statements/%s.pdf", pdf.SHA256)
+		defaultPdfStatementURL = &defaultPdfStatementURLStr
+	}
+
 	res = &taskgen.Task{
-		PublishedTaskID:        "hello",
-		TaskFullName:           "",
-		MemoryLimitMegabytes:   0,
-		CPUTimeLimitSeconds:    0,
-		OriginOlympiad:         "",
-		IllustrationImgURL:     new(string),
-		DifficultyRating:       0,
+		PublishedTaskID:        p.TaskID,
+		TaskFullName:           taskManifest.FullName,
+		MemoryLimitMegabytes:   taskManifest.Contraints.MemoryLimMB,
+		CPUTimeLimitSeconds:    taskManifest.Contraints.CpuTimeInSecs,
+		OriginOlympiad:         taskManifest.Metadata.OriginOlympiad,
+		IllustrationImgURL:     illustrationImgUrl,
+		DifficultyRating:       taskManifest.Metadata.Difficulty,
 		DefaultMdStatement:     responseDefaulMdStatement,
-		Examples:               []*taskgen.Example{},
-		DefaultPdfStatementURL: new(string),
-		OriginNotes:            map[string]string{},
-		VisibleInputSubtasks:   []*taskgen.StInputs{},
+		Examples:               examples,
+		DefaultPdfStatementURL: defaultPdfStatementURL,
+		OriginNotes:            taskManifest.Metadata.OriginNotes,
+		VisibleInputSubtasks:   stInputs,
 	}
 	log.Printf(ctx, "tasks.getTask")
 	return

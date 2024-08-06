@@ -8,8 +8,27 @@ import (
 )
 
 type TaskManifest struct {
-	Statement Statement
-	Tests     []Test
+	FullName   string
+	Contraints Constraints
+	Statement  Statement
+	Metadata   Metadata
+
+	Tests      []Test
+	TestGroups []TestGroup
+}
+
+type Metadata struct {
+	ProblemTags       []string
+	Difficulty        int
+	TaskAuthors       []string
+	OriginOlympiad    string
+	OriginNotes       map[string]string
+	OriginInstitution string
+}
+
+type Constraints struct {
+	MemoryLimMB   int
+	CpuTimeInSecs float64
 }
 
 type Test struct {
@@ -18,9 +37,21 @@ type Test struct {
 }
 
 type Statement struct {
-	PDFs     []PDF
-	MDs      []MdStatement
-	Examples []Example
+	PDFs      []PDF
+	MDs       []MdStatement
+	Examples  []Example
+	VisInpSTs []VisibleInputSubtask
+
+	IllustrationImg IllustrationImg
+}
+
+type IllustrationImg struct {
+	S3ObjKey string
+}
+
+type VisibleInputSubtask struct {
+	Subtask int
+	Inputs  []string
 }
 
 type PDF struct {
@@ -50,7 +81,7 @@ type MdImage struct {
 type Example struct {
 	Input  string
 	Output string
-	MdNote string
+	MdNote *string
 }
 
 func ParseTaskTomlManifest(manifest string) (*TaskManifest, error) {
@@ -101,13 +132,71 @@ func ParseTaskTomlManifest(manifest string) (*TaskManifest, error) {
 		})
 	}
 
+	var examples []Example = make([]Example, 0)
+	for _, ex := range taskTomlManifest.Examples {
+		var mdNote *string = nil
+		if mdNoteStr := ex.MdNote; mdNoteStr != "" {
+			mdNote = &mdNoteStr
+		}
+
+		examples = append(examples, Example{
+			Input:  ex.Input,
+			Output: ex.Output,
+			MdNote: mdNote,
+		})
+	}
+
+	var visInpSTs []VisibleInputSubtask = make([]VisibleInputSubtask, 0)
+	for i, visInpST := range taskTomlManifest.VisibleInputSTs {
+		visInpSTs = append(visInpSTs, VisibleInputSubtask{
+			Subtask: visInpST,
+			Inputs:  taskTomlManifest.VisInpStInputs[i].Inputs,
+		})
+	}
+
+	var testGroups []TestGroup = make([]TestGroup, 0)
+	for _, tg := range taskTomlManifest.TestGroups {
+		testGroups = append(testGroups, TestGroup(tg))
+	}
+
+	var pdfs []PDF = make([]PDF, 0)
+	for _, pdf := range taskTomlManifest.PDFSHA256s {
+		lang, err := language.Parse(pdf.Language)
+		if err != nil {
+			return nil, fmt.Errorf("could not parse language %s", pdf.Language)
+		}
+
+		pdfs = append(pdfs, PDF{
+			Language: lang,
+			SHA256:   pdf.SHA256,
+		})
+	}
+
 	return &TaskManifest{
-		Statement: Statement{
-			PDFs:     []PDF{},
-			MDs:      mdStatements,
-			Examples: []Example{},
+		FullName: taskTomlManifest.TaskFullName,
+		Contraints: Constraints{
+			MemoryLimMB:   taskTomlManifest.MemoryLimMB,
+			CpuTimeInSecs: taskTomlManifest.CpuTimeInSecs,
 		},
-		Tests: tests,
+		Statement: Statement{
+			PDFs:      pdfs,
+			MDs:       mdStatements,
+			Examples:  examples,
+			VisInpSTs: visInpSTs,
+			IllustrationImg: IllustrationImg{
+				S3ObjKey: taskTomlManifest.IllustrationImg,
+			},
+		},
+		Metadata: Metadata{
+			ProblemTags:       taskTomlManifest.ProblemTags,
+			Difficulty:        taskTomlManifest.Difficulty,
+			TaskAuthors:       taskTomlManifest.TaskAuthors,
+			OriginOlympiad:    taskTomlManifest.OriginOlympiad,
+			OriginNotes:       taskTomlManifest.OriginNotes,
+			OriginInstitution: taskTomlManifest.OriginInstitution,
+		},
+		Tests:      tests,
+		TestGroups: testGroups,
 	}, nil
 }
 
