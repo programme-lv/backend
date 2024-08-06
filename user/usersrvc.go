@@ -7,13 +7,7 @@ import (
 	"os"
 
 	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
-	"github.com/go-playground/locales/en"
-	"github.com/go-playground/locales/lv"
-	ut "github.com/go-playground/universal-translator"
-	"github.com/go-playground/validator/v10"
-	en_translations "github.com/go-playground/validator/v10/translations/en"
-	lv_translations "github.com/go-playground/validator/v10/translations/lv" // assuming custom Latvian translations
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb" // assuming custom Latvian translations
 	"github.com/programme-lv/backend/auth"
 	usergen "github.com/programme-lv/backend/gen/users"
 	"goa.design/clue/log"
@@ -24,8 +18,6 @@ import (
 type userssrvc struct {
 	jwtKey       []byte
 	ddbUserTable *DynamoDbUserTable
-	validate     *validator.Validate
-	uni          *ut.UniversalTranslator
 }
 
 func NewUsers(ctx context.Context) usergen.Service {
@@ -46,26 +38,10 @@ func NewUsers(ctx context.Context) usergen.Service {
 	}
 	dynamodbClient := dynamodb.NewFromConfig(cfg)
 
-	// Initialize validator and translator
-	validate := validator.New()
-
-	// Set up translation for English and Latvian
-	en := en.New()
-	lv := lv.New()
-	uni := ut.New(lv, lv, en)
-
-	transEn, _ := uni.GetTranslator("en")
-	transLv, _ := uni.GetTranslator("lv")
-
-	en_translations.RegisterDefaultTranslations(validate, transEn)
-	lv_translations.RegisterDefaultTranslations(validate, transLv)
-
 	return &userssrvc{
 		jwtKey: []byte(jwtKey),
 		ddbUserTable: NewDynamoDbUsersTable(
 			dynamodbClient, "ProglvUsers"),
-		validate: validate,
-		uni:      uni,
 	}
 }
 
