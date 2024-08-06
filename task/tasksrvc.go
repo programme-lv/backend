@@ -28,7 +28,7 @@ func NewTasks() taskgen.Service {
 	dynamodbClient := dynamodb.NewFromConfig(cfg)
 
 	return &taskssrvc{
-		ddbTaskTable: NewDynamoDbTaskTable(dynamodbClient, "ProglvUsers"),
+		ddbTaskTable: NewDynamoDbTaskTable(dynamodbClient, "ProglvTasks"),
 	}
 }
 
@@ -40,9 +40,17 @@ func (s *taskssrvc) ListTasks(ctx context.Context) (res []*taskgen.Task, err err
 
 // Get a task by its ID
 func (s *taskssrvc) GetTask(ctx context.Context, p *taskgen.GetTaskPayload) (res *taskgen.Task, err error) {
+	row, err := s.ddbTaskTable.Get(ctx, p.TaskID)
+	if err != nil {
+		return nil, err
+	}
+	if row == nil {
+		return nil, fmt.Errorf("task not found")
+	}
+
 	res = &taskgen.Task{
 		PublishedTaskID:        "hello",
-		TaskFullName:           "",
+		TaskFullName:           row.TomlManifest,
 		MemoryLimitMegabytes:   0,
 		CPUTimeLimitSeconds:    0,
 		OriginOlympiad:         "",

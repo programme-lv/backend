@@ -35,7 +35,8 @@ func NewDynamoDbTaskTable(ddbClient *dynamodb.Client, tableName string) *DynamoD
 	return ddb
 }
 
-// Get retrieves a user by ID from the DynamoDB table.
+// Get retrieves a task by ID from the DynamoDB table.
+// Returns nil if the task is not found.
 func (ddb *DynamoDbTaskTable) Get(ctx context.Context, id string) (*TaskRow, error) {
 	user := new(TaskRow)
 
