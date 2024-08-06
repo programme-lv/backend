@@ -7,7 +7,9 @@ import (
 	"sync"
 	"time"
 
+	taskssvr "github.com/programme-lv/backend/gen/http/tasks/server"
 	userssvr "github.com/programme-lv/backend/gen/http/users/server"
+	tasks "github.com/programme-lv/backend/gen/tasks"
 	users "github.com/programme-lv/backend/gen/users"
 	"goa.design/clue/debug"
 	"goa.design/clue/log"
@@ -16,7 +18,7 @@ import (
 
 // handleHTTPServer starts configures and starts a HTTP server on the given
 // URL. It shuts down the server if any error is received in the error channel.
-func handleHTTPServer(ctx context.Context, u *url.URL, usersEndpoints *users.Endpoints, wg *sync.WaitGroup, errc chan error, dbg bool) {
+func handleHTTPServer(ctx context.Context, u *url.URL, tasksEndpoints *tasks.Endpoints, usersEndpoints *users.Endpoints, wg *sync.WaitGroup, errc chan error, dbg bool) {
 
 	// Provide the transport specific request decoder and response encoder.
 	// The goa http package has built-in support for JSON, XML and gob.
@@ -45,14 +47,17 @@ func handleHTTPServer(ctx context.Context, u *url.URL, usersEndpoints *users.End
 	// the service input and output data structures to HTTP requests and
 	// responses.
 	var (
+		tasksServer *taskssvr.Server
 		usersServer *userssvr.Server
 	)
 	{
 		eh := errorHandler(ctx)
+		tasksServer = taskssvr.New(tasksEndpoints, mux, dec, enc, eh, nil)
 		usersServer = userssvr.New(usersEndpoints, mux, dec, enc, eh, nil)
 	}
 
 	// Configure the mux.
+	taskssvr.Mount(mux, tasksServer)
 	userssvr.Mount(mux, usersServer)
 
 	var handler http.Handler = mux
@@ -65,6 +70,9 @@ func handleHTTPServer(ctx context.Context, u *url.URL, usersEndpoints *users.End
 	// Start HTTP server using default configuration, change the code to
 	// configure the server as required by your service.
 	srv := &http.Server{Addr: u.Host, Handler: handler, ReadHeaderTimeout: time.Second * 60}
+	for _, m := range tasksServer.Mounts {
+		log.Printf(ctx, "HTTP %q mounted on %s %s", m.Method, m.Verb, m.Pattern)
+	}
 	for _, m := range usersServer.Mounts {
 		log.Printf(ctx, "HTTP %q mounted on %s %s", m.Method, m.Verb, m.Pattern)
 	}

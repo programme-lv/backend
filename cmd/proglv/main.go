@@ -11,8 +11,10 @@ import (
 	"sync"
 	"syscall"
 
-	usergen "github.com/programme-lv/backend/gen/users"
-	usersrv "github.com/programme-lv/backend/user"
+	tasks "github.com/programme-lv/backend/gen/tasks"
+	users "github.com/programme-lv/backend/gen/users"
+	"github.com/programme-lv/backend/task"
+	"github.com/programme-lv/backend/user"
 	"goa.design/clue/debug"
 	"goa.design/clue/log"
 )
@@ -43,19 +45,25 @@ func main() {
 
 	// Initialize the services.
 	var (
-		usersSvc usergen.Service
+		tasksSvc tasks.Service
+		usersSvc users.Service
 	)
 	{
-		usersSvc = usersrv.NewUsers(ctx)
+		tasksSvc = task.NewTasks()
+		usersSvc = user.NewUsers(ctx)
 	}
 
 	// Wrap the services in endpoints that can be invoked from other services
 	// potentially running in different processes.
 	var (
-		usersEndpoints *usergen.Endpoints
+		tasksEndpoints *tasks.Endpoints
+		usersEndpoints *users.Endpoints
 	)
 	{
-		usersEndpoints = usergen.NewEndpoints(usersSvc)
+		tasksEndpoints = tasks.NewEndpoints(tasksSvc)
+		tasksEndpoints.Use(debug.LogPayloads())
+		tasksEndpoints.Use(log.Endpoint)
+		usersEndpoints = users.NewEndpoints(usersSvc)
 		usersEndpoints.Use(debug.LogPayloads())
 		usersEndpoints.Use(log.Endpoint)
 	}
@@ -97,9 +105,9 @@ func main() {
 				}
 				u.Host = net.JoinHostPort(h, *httpPortF)
 			} else if u.Port() == "" {
-				u.Host = net.JoinHostPort(u.Host, "8080")
+				u.Host = net.JoinHostPort(u.Host, "80")
 			}
-			handleHTTPServer(ctx, u, usersEndpoints, &wg, errc, *dbgF)
+			handleHTTPServer(ctx, u, tasksEndpoints, usersEndpoints, &wg, errc, *dbgF)
 		}
 
 	default:
