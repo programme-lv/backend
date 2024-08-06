@@ -93,13 +93,21 @@ func ParseTaskTomlManifest(manifest string) (*TaskManifest, error) {
 		mdStatements = append(mdStatements, mdStatement)
 	}
 
+	var tests []Test
+	for _, test := range taskTomlManifest.TestSHA256s {
+		tests = append(tests, Test{
+			InputSHA256:  test.InputSHA256,
+			AnswerSHA256: test.AnswerSHA256,
+		})
+	}
+
 	return &TaskManifest{
 		Statement: Statement{
 			PDFs:     []PDF{},
 			MDs:      mdStatements,
 			Examples: []Example{},
 		},
-		Tests: []Test{},
+		Tests: tests,
 	}, nil
 }
 

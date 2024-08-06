@@ -54,6 +54,8 @@ func (s *taskssrvc) GetTask(ctx context.Context, p *taskgen.GetTaskPayload) (res
 		return nil, fmt.Errorf("could not parse task toml manifest: %w", err)
 	}
 
+	log.Printf(ctx, "test count: %d", len(taskManifest.Tests))
+
 	mds := taskManifest.Statement.MDs
 	var responseDefaulMdStatement *taskgen.MarkdownStatement = nil
 	if len(mds) > 0 {
