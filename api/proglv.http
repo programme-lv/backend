@@ -1,6 +1,6 @@
 # @addr=https://0f6de9e9w5.execute-api.eu-central-1.amazonaws.com
-@addr=http://localhost:8080
-# @addr=https://api.programme.lv
+# @addr=http://localhost:8080
+@addr=https://api.programme.lv
 @uuid=1f5b8a10-67c2-4374-a378-0bc2a07bc682
 @token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6IkVsaWFhM2FiYSIsImZpcnN0bmFtZSI6IkpvaG4iLCJsYXN0bmFtZSI6IkRvZSIsImVtYWlsIjoiam9obmRvZWEzYWFAZXhhbXBsZS5jb20iLCJ1dWlkIjoiNGZmYzc4ZjUtMDliNi00MGYwLWE2MzEtMTc4ZjgyNjgxYmI2IiwiZXhwIjoxNzIyOTgwNDIyfQ.-MwbRPeJmg9qqDlVWp4SxvQGrjRoiINN71tE4gR4pdM
 ### Create User
