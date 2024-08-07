@@ -10,7 +10,7 @@ import (
 
 // TaskRow represents the user data structure.
 type TaskRow struct {
-	Id           string `dynamo:"PublishedId,hash"` // Primary key
+	Id           string `dynamo:"PublishedID,hash"` // Primary key
 	TomlManifest string `dynamo:"Manifest"`
 	Version      int    `dynamo:"version"` // For optimistic locking
 }

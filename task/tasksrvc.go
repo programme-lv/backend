@@ -8,7 +8,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	taskgen "github.com/programme-lv/backend/gen/tasks"
-	"goa.design/clue/log"
 )
 
 // tasks service example implementation.
@@ -35,7 +34,21 @@ func NewTasks() taskgen.Service {
 
 // List all tasks
 func (s *taskssrvc) ListTasks(ctx context.Context) (res []*taskgen.Task, err error) {
-	log.Printf(ctx, "tasks.listTasks")
+	all, err := s.ddbTaskTable.List(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("could not list tasks: %w", err)
+	}
+
+	res = make([]*taskgen.Task, 0)
+
+	for _, row := range all {
+		task, err := ddbTaskRowToResponse(row)
+		if err != nil {
+			return nil, fmt.Errorf("could not convert task row to response: %w", err)
+		}
+		res = append(res, task)
+	}
+
 	return
 }
 
@@ -43,12 +56,16 @@ func (s *taskssrvc) ListTasks(ctx context.Context) (res []*taskgen.Task, err err
 func (s *taskssrvc) GetTask(ctx context.Context, p *taskgen.GetTaskPayload) (res *taskgen.Task, err error) {
 	row, err := s.ddbTaskTable.Get(ctx, p.TaskID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("could not get task: %w", err)
 	}
 	if row == nil {
 		return nil, fmt.Errorf("task not found")
 	}
 
+	return ddbTaskRowToResponse(row)
+}
+
+func ddbTaskRowToResponse(row *TaskRow) (res *taskgen.Task, err error) {
 	taskManifest, err := ParseTaskTomlManifest(row.TomlManifest)
 	if err != nil {
 		return nil, fmt.Errorf("could not parse task toml manifest: %w", err)
@@ -116,7 +133,7 @@ func (s *taskssrvc) GetTask(ctx context.Context, p *taskgen.GetTaskPayload) (res
 	}
 
 	res = &taskgen.Task{
-		PublishedTaskID:        p.TaskID,
+		PublishedTaskID:        row.Id,
 		TaskFullName:           taskManifest.FullName,
 		MemoryLimitMegabytes:   taskManifest.Contraints.MemoryLimMB,
 		CPUTimeLimitSeconds:    taskManifest.Contraints.CpuTimeInSecs,
@@ -129,6 +146,6 @@ func (s *taskssrvc) GetTask(ctx context.Context, p *taskgen.GetTaskPayload) (res
 		OriginNotes:            taskManifest.Metadata.OriginNotes,
 		VisibleInputSubtasks:   stInputs,
 	}
-	log.Printf(ctx, "tasks.getTask")
+
 	return
 }
