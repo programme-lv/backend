@@ -33,92 +33,10 @@ users (list-users|get-user|create-user|delete-user|login|query-current-jwt)
 // UsageExamples produces an example of a valid invocation of the CLI tool.
 func UsageExamples() string {
 	return os.Args[0] + ` submissions create-submission --body '{
-      "createdAt": "2024-08-08T10:30:00Z",
-      "evaluation": {
-         "possibleScore": 100,
-         "receivedScore": 85,
-         "status": "completed",
-         "uuid": "123e4567-e89b-12d3-a456-426614174000"
-      },
-      "language": {
-         "fullName": "Go",
-         "id": "go",
-         "monacoId": "go"
-      },
+      "programming_lang_id": "go",
       "submission": "print(factorial(5))",
-      "task": {
-         "cpu_time_limit_seconds": 0.5,
-         "default_md_statement": {
-            "input": "Ievaddatu pirmajā rindā dotas trīs naturālu skaitļu...",
-            "notes": "Illo officia.",
-            "output": "Izvaddatu vienīgajā rindā jābūt veselam skaitlim...",
-            "scoring": "Asperiores quidem omnis illo.",
-            "story": "Krišjānis ir uzkonstruējis kvadrātveida putekļsūcēju (saīsināti – KP), kas ir neaizstājams palīgs viņa darbnīcas uzkopšanā..."
-         },
-         "default_pdf_statement_url": "https://dvhk4hiwp1rmf.cloudfront.net/task-pdf-statements/f27386f1b69f3c020335fe7c84316c5da099933832043e6a5820bcdb0cd66a81.pdf",
-         "difficulty_rating": 3,
-         "examples": [
-            {
-               "input": "5 9 3\nA....X..B\n..X..X.X.\n.XXX.XX..\nX.X.X..X.\n...XX....\n",
-               "md_note": "Qui tempora aut ea.",
-               "output": "10\n"
-            },
-            {
-               "input": "5 9 3\nA....X..B\n..X..X.X.\n.XXX.XX..\nX.X.X..X.\n...XX....\n",
-               "md_note": "Qui tempora aut ea.",
-               "output": "10\n"
-            },
-            {
-               "input": "5 9 3\nA....X..B\n..X..X.X.\n.XXX.XX..\nX.X.X..X.\n...XX....\n",
-               "md_note": "Qui tempora aut ea.",
-               "output": "10\n"
-            }
-         ],
-         "illustration_img_url": "https://dvhk4hiwp1rmf.cloudfront.net/task-illustrations/bafcc0aa1b4c56faa44f5f3b2a5abd9529af941eb9a9b10f541b436762d4948a.png",
-         "memory_limit_megabytes": 256,
-         "origin_notes": {
-            "lv": "Uzdevums parādījās Latvijas 37. informātikas olimpiādes (2023./2024. gads) skolas kārtā."
-         },
-         "origin_olympiad": "LIO",
-         "published_task_id": "kvadrputekl",
-         "task_full_name": "Kvadrātveida putekļsūcējs",
-         "visible_input_subtasks": [
-            {
-               "inputs": [
-                  "5 5 3\nA.X..\nX.B.X\n....X\nXX...\nX.XXX\n",
-                  "6 3 1\n...\nXA.\n.X.\nX..\nB..\n...\n",
-                  "6 4 2\nX...\n.AXX\nX..X\n.X.X\nXXXX\nX.BX\n"
-               ],
-               "subtask": 1
-            },
-            {
-               "inputs": [
-                  "5 5 3\nA.X..\nX.B.X\n....X\nXX...\nX.XXX\n",
-                  "6 3 1\n...\nXA.\n.X.\nX..\nB..\n...\n",
-                  "6 4 2\nX...\n.AXX\nX..X\n.X.X\nXXXX\nX.BX\n"
-               ],
-               "subtask": 1
-            },
-            {
-               "inputs": [
-                  "5 5 3\nA.X..\nX.B.X\n....X\nXX...\nX.XXX\n",
-                  "6 3 1\n...\nXA.\n.X.\nX..\nB..\n...\n",
-                  "6 4 2\nX...\n.AXX\nX..X\n.X.X\nXXXX\nX.BX\n"
-               ],
-               "subtask": 1
-            },
-            {
-               "inputs": [
-                  "5 5 3\nA.X..\nX.B.X\n....X\nXX...\nX.XXX\n",
-                  "6 3 1\n...\nXA.\n.X.\nX..\nB..\n...\n",
-                  "6 4 2\nX...\n.AXX\nX..X\n.X.X\nXXXX\nX.BX\n"
-               ],
-               "subtask": 1
-            }
-         ]
-      },
-      "username": "coder123",
-      "uuid": "123e4567-e89b-12d3-a456-426614174000"
+      "task_code_id": "kvadrputekl",
+      "username": "coder123"
    }'` + "\n" +
 		os.Args[0] + ` tasks list-tasks` + "\n" +
 		os.Args[0] + ` users list-users --token "jwt_token"` + "\n" +
@@ -368,92 +286,10 @@ Create a new submission
 
 Example:
     %[1]s submissions create-submission --body '{
-      "createdAt": "2024-08-08T10:30:00Z",
-      "evaluation": {
-         "possibleScore": 100,
-         "receivedScore": 85,
-         "status": "completed",
-         "uuid": "123e4567-e89b-12d3-a456-426614174000"
-      },
-      "language": {
-         "fullName": "Go",
-         "id": "go",
-         "monacoId": "go"
-      },
+      "programming_lang_id": "go",
       "submission": "print(factorial(5))",
-      "task": {
-         "cpu_time_limit_seconds": 0.5,
-         "default_md_statement": {
-            "input": "Ievaddatu pirmajā rindā dotas trīs naturālu skaitļu...",
-            "notes": "Illo officia.",
-            "output": "Izvaddatu vienīgajā rindā jābūt veselam skaitlim...",
-            "scoring": "Asperiores quidem omnis illo.",
-            "story": "Krišjānis ir uzkonstruējis kvadrātveida putekļsūcēju (saīsināti – KP), kas ir neaizstājams palīgs viņa darbnīcas uzkopšanā..."
-         },
-         "default_pdf_statement_url": "https://dvhk4hiwp1rmf.cloudfront.net/task-pdf-statements/f27386f1b69f3c020335fe7c84316c5da099933832043e6a5820bcdb0cd66a81.pdf",
-         "difficulty_rating": 3,
-         "examples": [
-            {
-               "input": "5 9 3\nA....X..B\n..X..X.X.\n.XXX.XX..\nX.X.X..X.\n...XX....\n",
-               "md_note": "Qui tempora aut ea.",
-               "output": "10\n"
-            },
-            {
-               "input": "5 9 3\nA....X..B\n..X..X.X.\n.XXX.XX..\nX.X.X..X.\n...XX....\n",
-               "md_note": "Qui tempora aut ea.",
-               "output": "10\n"
-            },
-            {
-               "input": "5 9 3\nA....X..B\n..X..X.X.\n.XXX.XX..\nX.X.X..X.\n...XX....\n",
-               "md_note": "Qui tempora aut ea.",
-               "output": "10\n"
-            }
-         ],
-         "illustration_img_url": "https://dvhk4hiwp1rmf.cloudfront.net/task-illustrations/bafcc0aa1b4c56faa44f5f3b2a5abd9529af941eb9a9b10f541b436762d4948a.png",
-         "memory_limit_megabytes": 256,
-         "origin_notes": {
-            "lv": "Uzdevums parādījās Latvijas 37. informātikas olimpiādes (2023./2024. gads) skolas kārtā."
-         },
-         "origin_olympiad": "LIO",
-         "published_task_id": "kvadrputekl",
-         "task_full_name": "Kvadrātveida putekļsūcējs",
-         "visible_input_subtasks": [
-            {
-               "inputs": [
-                  "5 5 3\nA.X..\nX.B.X\n....X\nXX...\nX.XXX\n",
-                  "6 3 1\n...\nXA.\n.X.\nX..\nB..\n...\n",
-                  "6 4 2\nX...\n.AXX\nX..X\n.X.X\nXXXX\nX.BX\n"
-               ],
-               "subtask": 1
-            },
-            {
-               "inputs": [
-                  "5 5 3\nA.X..\nX.B.X\n....X\nXX...\nX.XXX\n",
-                  "6 3 1\n...\nXA.\n.X.\nX..\nB..\n...\n",
-                  "6 4 2\nX...\n.AXX\nX..X\n.X.X\nXXXX\nX.BX\n"
-               ],
-               "subtask": 1
-            },
-            {
-               "inputs": [
-                  "5 5 3\nA.X..\nX.B.X\n....X\nXX...\nX.XXX\n",
-                  "6 3 1\n...\nXA.\n.X.\nX..\nB..\n...\n",
-                  "6 4 2\nX...\n.AXX\nX..X\n.X.X\nXXXX\nX.BX\n"
-               ],
-               "subtask": 1
-            },
-            {
-               "inputs": [
-                  "5 5 3\nA.X..\nX.B.X\n....X\nXX...\nX.XXX\n",
-                  "6 3 1\n...\nXA.\n.X.\nX..\nB..\n...\n",
-                  "6 4 2\nX...\n.AXX\nX..X\n.X.X\nXXXX\nX.BX\n"
-               ],
-               "subtask": 1
-            }
-         ]
-      },
-      "username": "coder123",
-      "uuid": "123e4567-e89b-12d3-a456-426614174000"
+      "task_code_id": "kvadrputekl",
+      "username": "coder123"
    }'
 `, os.Args[0])
 }
@@ -605,6 +441,6 @@ Query current JWT
     -token STRING: 
 
 Example:
-    %[1]s users query-current-jwt --token "Quo ut eos non consequatur."
+    %[1]s users query-current-jwt --token "Id modi voluptatibus eos."
 `, os.Args[0])
 }

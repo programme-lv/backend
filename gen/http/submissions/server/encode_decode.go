@@ -53,7 +53,7 @@ func DecodeCreateSubmissionRequest(mux goahttp.Muxer, decoder func(*http.Request
 		if err != nil {
 			return nil, err
 		}
-		payload := NewCreateSubmissionSubmission(&body)
+		payload := NewCreateSubmissionPayload(&body)
 
 		return payload, nil
 	}
@@ -241,122 +241,6 @@ func EncodeGetSubmissionError(encoder func(context.Context, http.ResponseWriter)
 			return encodeError(ctx, w, v)
 		}
 	}
-}
-
-// unmarshalEvaluationRequestBodyToSubmissionsEvaluation builds a value of type
-// *submissions.Evaluation from a value of type *EvaluationRequestBody.
-func unmarshalEvaluationRequestBodyToSubmissionsEvaluation(v *EvaluationRequestBody) *submissions.Evaluation {
-	res := &submissions.Evaluation{
-		UUID:          *v.UUID,
-		Status:        *v.Status,
-		ReceivedScore: *v.ReceivedScore,
-		PossibleScore: *v.PossibleScore,
-	}
-
-	return res
-}
-
-// unmarshalProgrammingLangRequestBodyToSubmissionsProgrammingLang builds a
-// value of type *submissions.ProgrammingLang from a value of type
-// *ProgrammingLangRequestBody.
-func unmarshalProgrammingLangRequestBodyToSubmissionsProgrammingLang(v *ProgrammingLangRequestBody) *submissions.ProgrammingLang {
-	res := &submissions.ProgrammingLang{
-		ID:       *v.ID,
-		FullName: *v.FullName,
-		MonacoID: *v.MonacoID,
-	}
-
-	return res
-}
-
-// unmarshalTaskRequestBodyToSubmissionsTask builds a value of type
-// *submissions.Task from a value of type *TaskRequestBody.
-func unmarshalTaskRequestBodyToSubmissionsTask(v *TaskRequestBody) *submissions.Task {
-	res := &submissions.Task{
-		PublishedTaskID:        *v.PublishedTaskID,
-		TaskFullName:           *v.TaskFullName,
-		MemoryLimitMegabytes:   *v.MemoryLimitMegabytes,
-		CPUTimeLimitSeconds:    *v.CPUTimeLimitSeconds,
-		OriginOlympiad:         *v.OriginOlympiad,
-		IllustrationImgURL:     v.IllustrationImgURL,
-		DifficultyRating:       *v.DifficultyRating,
-		DefaultPdfStatementURL: v.DefaultPdfStatementURL,
-	}
-	if v.DefaultMdStatement != nil {
-		res.DefaultMdStatement = unmarshalMarkdownStatementRequestBodyToSubmissionsMarkdownStatement(v.DefaultMdStatement)
-	}
-	if v.Examples != nil {
-		res.Examples = make([]*submissions.Example, len(v.Examples))
-		for i, val := range v.Examples {
-			res.Examples[i] = unmarshalExampleRequestBodyToSubmissionsExample(val)
-		}
-	}
-	if v.OriginNotes != nil {
-		res.OriginNotes = make(map[string]string, len(v.OriginNotes))
-		for key, val := range v.OriginNotes {
-			tk := key
-			tv := val
-			res.OriginNotes[tk] = tv
-		}
-	}
-	if v.VisibleInputSubtasks != nil {
-		res.VisibleInputSubtasks = make([]*submissions.StInputs, len(v.VisibleInputSubtasks))
-		for i, val := range v.VisibleInputSubtasks {
-			res.VisibleInputSubtasks[i] = unmarshalStInputsRequestBodyToSubmissionsStInputs(val)
-		}
-	}
-
-	return res
-}
-
-// unmarshalMarkdownStatementRequestBodyToSubmissionsMarkdownStatement builds a
-// value of type *submissions.MarkdownStatement from a value of type
-// *MarkdownStatementRequestBody.
-func unmarshalMarkdownStatementRequestBodyToSubmissionsMarkdownStatement(v *MarkdownStatementRequestBody) *submissions.MarkdownStatement {
-	if v == nil {
-		return nil
-	}
-	res := &submissions.MarkdownStatement{
-		Story:   *v.Story,
-		Input:   *v.Input,
-		Output:  *v.Output,
-		Notes:   v.Notes,
-		Scoring: v.Scoring,
-	}
-
-	return res
-}
-
-// unmarshalExampleRequestBodyToSubmissionsExample builds a value of type
-// *submissions.Example from a value of type *ExampleRequestBody.
-func unmarshalExampleRequestBodyToSubmissionsExample(v *ExampleRequestBody) *submissions.Example {
-	if v == nil {
-		return nil
-	}
-	res := &submissions.Example{
-		Input:  *v.Input,
-		Output: *v.Output,
-		MdNote: v.MdNote,
-	}
-
-	return res
-}
-
-// unmarshalStInputsRequestBodyToSubmissionsStInputs builds a value of type
-// *submissions.StInputs from a value of type *StInputsRequestBody.
-func unmarshalStInputsRequestBodyToSubmissionsStInputs(v *StInputsRequestBody) *submissions.StInputs {
-	if v == nil {
-		return nil
-	}
-	res := &submissions.StInputs{
-		Subtask: *v.Subtask,
-	}
-	res.Inputs = make([]string, len(v.Inputs))
-	for i, val := range v.Inputs {
-		res.Inputs[i] = val
-	}
-
-	return res
 }
 
 // marshalSubmissionsEvaluationToEvaluationResponseBody builds a value of type

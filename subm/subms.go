@@ -16,11 +16,9 @@ func NewSubmissions() submgen.Service {
 	return &submissionssrvc{}
 }
 
-// Create a new submission
-func (s *submissionssrvc) CreateSubmission(ctx context.Context, p *submgen.Submission) (res *submgen.Submission, err error) {
-	res = &submgen.Submission{}
-	log.Printf(ctx, "submissions.createSubmission")
-	return
+// CreateSubmission implements submissions.Service.
+func (s *submissionssrvc) CreateSubmission(context.Context, *submgen.CreateSubmissionPayload) (res *submgen.Submission, err error) {
+	panic("unimplemented")
 }
 
 // List all submissions

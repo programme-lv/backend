@@ -37,7 +37,7 @@ func NewClient(createSubmission, listSubmissions, getSubmission goa.Endpoint) *C
 //   - "NotFound" (type NotFound)
 //   - "InternalError" (type InternalError)
 //   - error: internal error
-func (c *Client) CreateSubmission(ctx context.Context, p *Submission) (res *Submission, err error) {
+func (c *Client) CreateSubmission(ctx context.Context, p *CreateSubmissionPayload) (res *Submission, err error) {
 	var ires any
 	ires, err = c.CreateSubmissionEndpoint(ctx, p)
 	if err != nil {

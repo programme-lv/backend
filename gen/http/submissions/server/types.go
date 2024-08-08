@@ -15,20 +15,14 @@ import (
 // CreateSubmissionRequestBody is the type of the "submissions" service
 // "createSubmission" endpoint HTTP request body.
 type CreateSubmissionRequestBody struct {
-	// UUID of the submission
-	UUID *string `form:"uuid,omitempty" json:"uuid,omitempty" xml:"uuid,omitempty"`
 	// The code submission
 	Submission *string `form:"submission,omitempty" json:"submission,omitempty" xml:"submission,omitempty"`
 	// Username of the user who submitted
 	Username *string `form:"username,omitempty" json:"username,omitempty" xml:"username,omitempty"`
-	// Creation date of the submission
-	CreatedAt *string `form:"createdAt,omitempty" json:"createdAt,omitempty" xml:"createdAt,omitempty"`
-	// Evaluation of the submission
-	Evaluation *EvaluationRequestBody `form:"evaluation,omitempty" json:"evaluation,omitempty" xml:"evaluation,omitempty"`
-	// Programming language of the submission
-	Language *ProgrammingLangRequestBody `form:"language,omitempty" json:"language,omitempty" xml:"language,omitempty"`
-	// Task associated with the submission
-	Task *TaskRequestBody `form:"task,omitempty" json:"task,omitempty" xml:"task,omitempty"`
+	// ID of the programming language
+	ProgrammingLangID *string `form:"programming_lang_id,omitempty" json:"programming_lang_id,omitempty" xml:"programming_lang_id,omitempty"`
+	// ID of the task
+	TaskCodeID *string `form:"task_code_id,omitempty" json:"task_code_id,omitempty" xml:"task_code_id,omitempty"`
 }
 
 // CreateSubmissionResponseBody is the type of the "submissions" service
@@ -256,88 +250,6 @@ type StInputsResponse struct {
 	Inputs []string `form:"inputs" json:"inputs" xml:"inputs"`
 }
 
-// EvaluationRequestBody is used to define fields on request body types.
-type EvaluationRequestBody struct {
-	// UUID of the evaluation
-	UUID *string `form:"uuid,omitempty" json:"uuid,omitempty" xml:"uuid,omitempty"`
-	// Status of the evaluation
-	Status *string `form:"status,omitempty" json:"status,omitempty" xml:"status,omitempty"`
-	// Received score of the evaluation
-	ReceivedScore *int `form:"receivedScore,omitempty" json:"receivedScore,omitempty" xml:"receivedScore,omitempty"`
-	// Possible score of the evaluation
-	PossibleScore *int `form:"possibleScore,omitempty" json:"possibleScore,omitempty" xml:"possibleScore,omitempty"`
-}
-
-// ProgrammingLangRequestBody is used to define fields on request body types.
-type ProgrammingLangRequestBody struct {
-	// ID of the programming language
-	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
-	// Full name of the programming language
-	FullName *string `form:"fullName,omitempty" json:"fullName,omitempty" xml:"fullName,omitempty"`
-	// Monaco editor ID for the programming language
-	MonacoID *string `form:"monacoId,omitempty" json:"monacoId,omitempty" xml:"monacoId,omitempty"`
-}
-
-// TaskRequestBody is used to define fields on request body types.
-type TaskRequestBody struct {
-	// ID of the published task
-	PublishedTaskID *string `form:"published_task_id,omitempty" json:"published_task_id,omitempty" xml:"published_task_id,omitempty"`
-	// Full name of the task
-	TaskFullName *string `form:"task_full_name,omitempty" json:"task_full_name,omitempty" xml:"task_full_name,omitempty"`
-	// Memory limit in megabytes
-	MemoryLimitMegabytes *int `form:"memory_limit_megabytes,omitempty" json:"memory_limit_megabytes,omitempty" xml:"memory_limit_megabytes,omitempty"`
-	// CPU time limit in seconds
-	CPUTimeLimitSeconds *float64 `form:"cpu_time_limit_seconds,omitempty" json:"cpu_time_limit_seconds,omitempty" xml:"cpu_time_limit_seconds,omitempty"`
-	// Origin olympiad of the task
-	OriginOlympiad *string `form:"origin_olympiad,omitempty" json:"origin_olympiad,omitempty" xml:"origin_olympiad,omitempty"`
-	// URL of the illustration image
-	IllustrationImgURL *string `form:"illustration_img_url,omitempty" json:"illustration_img_url,omitempty" xml:"illustration_img_url,omitempty"`
-	// Difficulty rating of the task
-	DifficultyRating *int `form:"difficulty_rating,omitempty" json:"difficulty_rating,omitempty" xml:"difficulty_rating,omitempty"`
-	// Default markdown statement of the task
-	DefaultMdStatement *MarkdownStatementRequestBody `form:"default_md_statement,omitempty" json:"default_md_statement,omitempty" xml:"default_md_statement,omitempty"`
-	// Examples for the task
-	Examples []*ExampleRequestBody `form:"examples,omitempty" json:"examples,omitempty" xml:"examples,omitempty"`
-	// URL of the default PDF statement
-	DefaultPdfStatementURL *string `form:"default_pdf_statement_url,omitempty" json:"default_pdf_statement_url,omitempty" xml:"default_pdf_statement_url,omitempty"`
-	// Origin notes for the task
-	OriginNotes map[string]string `form:"origin_notes,omitempty" json:"origin_notes,omitempty" xml:"origin_notes,omitempty"`
-	// Visible input subtasks
-	VisibleInputSubtasks []*StInputsRequestBody `form:"visible_input_subtasks,omitempty" json:"visible_input_subtasks,omitempty" xml:"visible_input_subtasks,omitempty"`
-}
-
-// MarkdownStatementRequestBody is used to define fields on request body types.
-type MarkdownStatementRequestBody struct {
-	// Story section of the markdown statement
-	Story *string `form:"story,omitempty" json:"story,omitempty" xml:"story,omitempty"`
-	// Input section of the markdown statement
-	Input *string `form:"input,omitempty" json:"input,omitempty" xml:"input,omitempty"`
-	// Output section of the markdown statement
-	Output *string `form:"output,omitempty" json:"output,omitempty" xml:"output,omitempty"`
-	// Notes section of the markdown statement
-	Notes *string `form:"notes,omitempty" json:"notes,omitempty" xml:"notes,omitempty"`
-	// Scoring section of the markdown statement
-	Scoring *string `form:"scoring,omitempty" json:"scoring,omitempty" xml:"scoring,omitempty"`
-}
-
-// ExampleRequestBody is used to define fields on request body types.
-type ExampleRequestBody struct {
-	// Example input
-	Input *string `form:"input,omitempty" json:"input,omitempty" xml:"input,omitempty"`
-	// Example output
-	Output *string `form:"output,omitempty" json:"output,omitempty" xml:"output,omitempty"`
-	// Markdown note for the example
-	MdNote *string `form:"md_note,omitempty" json:"md_note,omitempty" xml:"md_note,omitempty"`
-}
-
-// StInputsRequestBody is used to define fields on request body types.
-type StInputsRequestBody struct {
-	// Subtask number
-	Subtask *int `form:"subtask,omitempty" json:"subtask,omitempty" xml:"subtask,omitempty"`
-	// Inputs for the subtask
-	Inputs []string `form:"inputs,omitempty" json:"inputs,omitempty" xml:"inputs,omitempty"`
-}
-
 // NewCreateSubmissionResponseBody builds the HTTP response body from the
 // result of the "createSubmission" endpoint of the "submissions" service.
 func NewCreateSubmissionResponseBody(res *submissions.Submission) *CreateSubmissionResponseBody {
@@ -390,18 +302,15 @@ func NewGetSubmissionResponseBody(res *submissions.Submission) *GetSubmissionRes
 	return body
 }
 
-// NewCreateSubmissionSubmission builds a submissions service createSubmission
+// NewCreateSubmissionPayload builds a submissions service createSubmission
 // endpoint payload.
-func NewCreateSubmissionSubmission(body *CreateSubmissionRequestBody) *submissions.Submission {
-	v := &submissions.Submission{
-		UUID:       *body.UUID,
-		Submission: *body.Submission,
-		Username:   *body.Username,
-		CreatedAt:  *body.CreatedAt,
+func NewCreateSubmissionPayload(body *CreateSubmissionRequestBody) *submissions.CreateSubmissionPayload {
+	v := &submissions.CreateSubmissionPayload{
+		Submission:        *body.Submission,
+		Username:          *body.Username,
+		ProgrammingLangID: *body.ProgrammingLangID,
+		TaskCodeID:        *body.TaskCodeID,
 	}
-	v.Evaluation = unmarshalEvaluationRequestBodyToSubmissionsEvaluation(body.Evaluation)
-	v.Language = unmarshalProgrammingLangRequestBodyToSubmissionsProgrammingLang(body.Language)
-	v.Task = unmarshalTaskRequestBodyToSubmissionsTask(body.Task)
 
 	return v
 }
@@ -418,162 +327,17 @@ func NewGetSubmissionPayload(uuid string) *submissions.GetSubmissionPayload {
 // ValidateCreateSubmissionRequestBody runs the validations defined on
 // CreateSubmissionRequestBody
 func ValidateCreateSubmissionRequestBody(body *CreateSubmissionRequestBody) (err error) {
-	if body.UUID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("uuid", "body"))
-	}
 	if body.Submission == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("submission", "body"))
 	}
 	if body.Username == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("username", "body"))
 	}
-	if body.CreatedAt == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("createdAt", "body"))
+	if body.ProgrammingLangID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("programming_lang_id", "body"))
 	}
-	if body.Evaluation == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("evaluation", "body"))
-	}
-	if body.Language == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("language", "body"))
-	}
-	if body.Task == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("task", "body"))
-	}
-	if body.CreatedAt != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.createdAt", *body.CreatedAt, goa.FormatDateTime))
-	}
-	if body.Evaluation != nil {
-		if err2 := ValidateEvaluationRequestBody(body.Evaluation); err2 != nil {
-			err = goa.MergeErrors(err, err2)
-		}
-	}
-	if body.Language != nil {
-		if err2 := ValidateProgrammingLangRequestBody(body.Language); err2 != nil {
-			err = goa.MergeErrors(err, err2)
-		}
-	}
-	if body.Task != nil {
-		if err2 := ValidateTaskRequestBody(body.Task); err2 != nil {
-			err = goa.MergeErrors(err, err2)
-		}
-	}
-	return
-}
-
-// ValidateEvaluationRequestBody runs the validations defined on
-// EvaluationRequestBody
-func ValidateEvaluationRequestBody(body *EvaluationRequestBody) (err error) {
-	if body.UUID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("uuid", "body"))
-	}
-	if body.Status == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("status", "body"))
-	}
-	if body.ReceivedScore == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("receivedScore", "body"))
-	}
-	if body.PossibleScore == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("possibleScore", "body"))
-	}
-	return
-}
-
-// ValidateProgrammingLangRequestBody runs the validations defined on
-// ProgrammingLangRequestBody
-func ValidateProgrammingLangRequestBody(body *ProgrammingLangRequestBody) (err error) {
-	if body.ID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
-	}
-	if body.FullName == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("fullName", "body"))
-	}
-	if body.MonacoID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("monacoId", "body"))
-	}
-	return
-}
-
-// ValidateTaskRequestBody runs the validations defined on TaskRequestBody
-func ValidateTaskRequestBody(body *TaskRequestBody) (err error) {
-	if body.PublishedTaskID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("published_task_id", "body"))
-	}
-	if body.TaskFullName == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("task_full_name", "body"))
-	}
-	if body.MemoryLimitMegabytes == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("memory_limit_megabytes", "body"))
-	}
-	if body.CPUTimeLimitSeconds == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("cpu_time_limit_seconds", "body"))
-	}
-	if body.OriginOlympiad == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("origin_olympiad", "body"))
-	}
-	if body.DifficultyRating == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("difficulty_rating", "body"))
-	}
-	if body.DifficultyRating != nil {
-		if !(*body.DifficultyRating == 1 || *body.DifficultyRating == 2 || *body.DifficultyRating == 3 || *body.DifficultyRating == 4 || *body.DifficultyRating == 5) {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.difficulty_rating", *body.DifficultyRating, []any{1, 2, 3, 4, 5}))
-		}
-	}
-	if body.DefaultMdStatement != nil {
-		if err2 := ValidateMarkdownStatementRequestBody(body.DefaultMdStatement); err2 != nil {
-			err = goa.MergeErrors(err, err2)
-		}
-	}
-	for _, e := range body.Examples {
-		if e != nil {
-			if err2 := ValidateExampleRequestBody(e); err2 != nil {
-				err = goa.MergeErrors(err, err2)
-			}
-		}
-	}
-	for _, e := range body.VisibleInputSubtasks {
-		if e != nil {
-			if err2 := ValidateStInputsRequestBody(e); err2 != nil {
-				err = goa.MergeErrors(err, err2)
-			}
-		}
-	}
-	return
-}
-
-// ValidateMarkdownStatementRequestBody runs the validations defined on
-// MarkdownStatementRequestBody
-func ValidateMarkdownStatementRequestBody(body *MarkdownStatementRequestBody) (err error) {
-	if body.Story == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("story", "body"))
-	}
-	if body.Input == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("input", "body"))
-	}
-	if body.Output == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("output", "body"))
-	}
-	return
-}
-
-// ValidateExampleRequestBody runs the validations defined on ExampleRequestBody
-func ValidateExampleRequestBody(body *ExampleRequestBody) (err error) {
-	if body.Input == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("input", "body"))
-	}
-	if body.Output == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("output", "body"))
-	}
-	return
-}
-
-// ValidateStInputsRequestBody runs the validations defined on
-// StInputsRequestBody
-func ValidateStInputsRequestBody(body *StInputsRequestBody) (err error) {
-	if body.Subtask == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("subtask", "body"))
-	}
-	if body.Inputs == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("inputs", "body"))
+	if body.TaskCodeID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("task_code_id", "body"))
 	}
 	return
 }

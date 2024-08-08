@@ -16,7 +16,7 @@ import (
 // Service for managing submissions
 type Service interface {
 	// Create a new submission
-	CreateSubmission(context.Context, *Submission) (res *Submission, err error)
+	CreateSubmission(context.Context, *CreateSubmissionPayload) (res *Submission, err error)
 	// List all submissions
 	ListSubmissions(context.Context) (res []*Submission, err error)
 	// Get a submission by UUID
@@ -38,6 +38,19 @@ const ServiceName = "submissions"
 // are the same values that are set in the endpoint request contexts under the
 // MethodKey key.
 var MethodNames = [3]string{"createSubmission", "listSubmissions", "getSubmission"}
+
+// CreateSubmissionPayload is the payload type of the submissions service
+// createSubmission method.
+type CreateSubmissionPayload struct {
+	// The code submission
+	Submission string
+	// Username of the user who submitted
+	Username string
+	// ID of the programming language
+	ProgrammingLangID string
+	// ID of the task
+	TaskCodeID string
+}
 
 // Represents the evaluation of a submission
 type Evaluation struct {
@@ -109,7 +122,7 @@ type StInputs struct {
 	Inputs []string
 }
 
-// Submission is the payload type of the submissions service createSubmission
+// Submission is the result type of the submissions service createSubmission
 // method.
 type Submission struct {
 	// UUID of the submission

@@ -67,6 +67,23 @@ var Submission = dsl.Type("Submission", func() {
 	dsl.Required("uuid", "submission", "username", "createdAt", "evaluation", "language", "task")
 })
 
+var CreateSubmissionPayload = dsl.Type("CreateSubmissionPayload", func() {
+	dsl.Description("Payload for creating a submission")
+	dsl.Attribute("submission", dsl.String, "The code submission", func() {
+		dsl.Example("print(factorial(5))")
+	})
+	dsl.Attribute("username", dsl.String, "Username of the user who submitted", func() {
+		dsl.Example("coder123")
+	})
+	dsl.Attribute("programming_lang_id", dsl.String, "ID of the programming language", func() {
+		dsl.Example("go")
+	})
+	dsl.Attribute("task_code_id", dsl.String, "ID of the task", func() {
+		dsl.Example("kvadrputekl")
+	})
+	dsl.Required("submission", "username", "programming_lang_id", "task_code_id")
+})
+
 var _ = dsl.Service("submissions", func() {
 	dsl.Description("Service for managing submissions")
 
@@ -84,7 +101,7 @@ var _ = dsl.Service("submissions", func() {
 
 	dsl.Method("createSubmission", func() {
 		dsl.Description("Create a new submission")
-		dsl.Payload(Submission)
+		dsl.Payload(CreateSubmissionPayload)
 		dsl.Result(Submission)
 		dsl.HTTP(func() {
 			dsl.POST("/submissions")

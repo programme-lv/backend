@@ -40,7 +40,7 @@ func (e *Endpoints) Use(m func(goa.Endpoint) goa.Endpoint) {
 // method "createSubmission" of service "submissions".
 func NewCreateSubmissionEndpoint(s Service) goa.Endpoint {
 	return func(ctx context.Context, req any) (any, error) {
-		p := req.(*Submission)
+		p := req.(*CreateSubmissionPayload)
 		return s.CreateSubmission(ctx, p)
 	}
 }
