@@ -22,8 +22,6 @@ type Service interface {
 	GetUser(context.Context, *SecureUUIDPayload) (res *User, err error)
 	// Create a new user
 	CreateUser(context.Context, *UserPayload) (res *User, err error)
-	// Update an existing user
-	UpdateUser(context.Context, *UpdateUserPayload) (res *User, err error)
 	// Delete a user
 	DeleteUser(context.Context, *SecureUUIDPayload) (err error)
 	// User login
@@ -52,7 +50,7 @@ const ServiceName = "users"
 // MethodNames lists the service method names as defined in the design. These
 // are the same values that are set in the endpoint request contexts under the
 // MethodKey key.
-var MethodNames = [7]string{"listUsers", "getUser", "createUser", "updateUser", "deleteUser", "login", "queryCurrentJWT"}
+var MethodNames = [6]string{"listUsers", "getUser", "createUser", "deleteUser", "login", "queryCurrentJWT"}
 
 // Email already exists
 type EmailExistsConflict string
@@ -112,24 +110,6 @@ type SecureUUIDPayload struct {
 	Token string
 	// UUID of the user
 	UUID string
-}
-
-// UpdateUserPayload is the payload type of the users service updateUser method.
-type UpdateUserPayload struct {
-	// JWT token used for authentication
-	Token string
-	// UUID of the user
-	UUID string
-	// Username of the user
-	Username string
-	// Email of the user
-	Email string
-	// First name of the user
-	Firstname string
-	// Last name of the user
-	Lastname string
-	// Password of the user
-	Password *string
 }
 
 // User is the result type of the users service getUser method.

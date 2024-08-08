@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"os"
 
+	submissionsc "github.com/programme-lv/backend/gen/http/submissions/client"
 	tasksc "github.com/programme-lv/backend/gen/http/tasks/client"
 	usersc "github.com/programme-lv/backend/gen/http/users/client"
 	goahttp "goa.design/goa/v3/http"
@@ -23,14 +24,103 @@ import (
 //
 //	command (subcommand1|subcommand2|...)
 func UsageCommands() string {
-	return `tasks (list-tasks|get-task)
-users (list-users|get-user|create-user|update-user|delete-user|login|query-current-jwt)
+	return `submissions (create-submission|list-submissions|get-submission)
+tasks (list-tasks|get-task)
+users (list-users|get-user|create-user|delete-user|login|query-current-jwt)
 `
 }
 
 // UsageExamples produces an example of a valid invocation of the CLI tool.
 func UsageExamples() string {
-	return os.Args[0] + ` tasks list-tasks` + "\n" +
+	return os.Args[0] + ` submissions create-submission --body '{
+      "createdAt": "2024-08-08T10:30:00Z",
+      "evaluation": {
+         "possibleScore": 100,
+         "receivedScore": 85,
+         "status": "completed",
+         "uuid": "123e4567-e89b-12d3-a456-426614174000"
+      },
+      "language": {
+         "fullName": "Go",
+         "id": "go",
+         "monacoId": "go"
+      },
+      "submission": "print(factorial(5))",
+      "task": {
+         "cpu_time_limit_seconds": 0.5,
+         "default_md_statement": {
+            "input": "Ievaddatu pirmajā rindā dotas trīs naturālu skaitļu...",
+            "notes": "Illo officia.",
+            "output": "Izvaddatu vienīgajā rindā jābūt veselam skaitlim...",
+            "scoring": "Asperiores quidem omnis illo.",
+            "story": "Krišjānis ir uzkonstruējis kvadrātveida putekļsūcēju (saīsināti – KP), kas ir neaizstājams palīgs viņa darbnīcas uzkopšanā..."
+         },
+         "default_pdf_statement_url": "https://dvhk4hiwp1rmf.cloudfront.net/task-pdf-statements/f27386f1b69f3c020335fe7c84316c5da099933832043e6a5820bcdb0cd66a81.pdf",
+         "difficulty_rating": 3,
+         "examples": [
+            {
+               "input": "5 9 3\nA....X..B\n..X..X.X.\n.XXX.XX..\nX.X.X..X.\n...XX....\n",
+               "md_note": "Qui tempora aut ea.",
+               "output": "10\n"
+            },
+            {
+               "input": "5 9 3\nA....X..B\n..X..X.X.\n.XXX.XX..\nX.X.X..X.\n...XX....\n",
+               "md_note": "Qui tempora aut ea.",
+               "output": "10\n"
+            },
+            {
+               "input": "5 9 3\nA....X..B\n..X..X.X.\n.XXX.XX..\nX.X.X..X.\n...XX....\n",
+               "md_note": "Qui tempora aut ea.",
+               "output": "10\n"
+            }
+         ],
+         "illustration_img_url": "https://dvhk4hiwp1rmf.cloudfront.net/task-illustrations/bafcc0aa1b4c56faa44f5f3b2a5abd9529af941eb9a9b10f541b436762d4948a.png",
+         "memory_limit_megabytes": 256,
+         "origin_notes": {
+            "lv": "Uzdevums parādījās Latvijas 37. informātikas olimpiādes (2023./2024. gads) skolas kārtā."
+         },
+         "origin_olympiad": "LIO",
+         "published_task_id": "kvadrputekl",
+         "task_full_name": "Kvadrātveida putekļsūcējs",
+         "visible_input_subtasks": [
+            {
+               "inputs": [
+                  "5 5 3\nA.X..\nX.B.X\n....X\nXX...\nX.XXX\n",
+                  "6 3 1\n...\nXA.\n.X.\nX..\nB..\n...\n",
+                  "6 4 2\nX...\n.AXX\nX..X\n.X.X\nXXXX\nX.BX\n"
+               ],
+               "subtask": 1
+            },
+            {
+               "inputs": [
+                  "5 5 3\nA.X..\nX.B.X\n....X\nXX...\nX.XXX\n",
+                  "6 3 1\n...\nXA.\n.X.\nX..\nB..\n...\n",
+                  "6 4 2\nX...\n.AXX\nX..X\n.X.X\nXXXX\nX.BX\n"
+               ],
+               "subtask": 1
+            },
+            {
+               "inputs": [
+                  "5 5 3\nA.X..\nX.B.X\n....X\nXX...\nX.XXX\n",
+                  "6 3 1\n...\nXA.\n.X.\nX..\nB..\n...\n",
+                  "6 4 2\nX...\n.AXX\nX..X\n.X.X\nXXXX\nX.BX\n"
+               ],
+               "subtask": 1
+            },
+            {
+               "inputs": [
+                  "5 5 3\nA.X..\nX.B.X\n....X\nXX...\nX.XXX\n",
+                  "6 3 1\n...\nXA.\n.X.\nX..\nB..\n...\n",
+                  "6 4 2\nX...\n.AXX\nX..X\n.X.X\nXXXX\nX.BX\n"
+               ],
+               "subtask": 1
+            }
+         ]
+      },
+      "username": "coder123",
+      "uuid": "123e4567-e89b-12d3-a456-426614174000"
+   }'` + "\n" +
+		os.Args[0] + ` tasks list-tasks` + "\n" +
 		os.Args[0] + ` users list-users --token "jwt_token"` + "\n" +
 		""
 }
@@ -45,6 +135,16 @@ func ParseEndpoint(
 	restore bool,
 ) (goa.Endpoint, any, error) {
 	var (
+		submissionsFlags = flag.NewFlagSet("submissions", flag.ContinueOnError)
+
+		submissionsCreateSubmissionFlags    = flag.NewFlagSet("create-submission", flag.ExitOnError)
+		submissionsCreateSubmissionBodyFlag = submissionsCreateSubmissionFlags.String("body", "REQUIRED", "")
+
+		submissionsListSubmissionsFlags = flag.NewFlagSet("list-submissions", flag.ExitOnError)
+
+		submissionsGetSubmissionFlags    = flag.NewFlagSet("get-submission", flag.ExitOnError)
+		submissionsGetSubmissionUUIDFlag = submissionsGetSubmissionFlags.String("uuid", "REQUIRED", "UUID of the submission")
+
 		tasksFlags = flag.NewFlagSet("tasks", flag.ContinueOnError)
 
 		tasksListTasksFlags = flag.NewFlagSet("list-tasks", flag.ExitOnError)
@@ -64,11 +164,6 @@ func ParseEndpoint(
 		usersCreateUserFlags    = flag.NewFlagSet("create-user", flag.ExitOnError)
 		usersCreateUserBodyFlag = usersCreateUserFlags.String("body", "REQUIRED", "")
 
-		usersUpdateUserFlags     = flag.NewFlagSet("update-user", flag.ExitOnError)
-		usersUpdateUserBodyFlag  = usersUpdateUserFlags.String("body", "REQUIRED", "")
-		usersUpdateUserUUIDFlag  = usersUpdateUserFlags.String("uuid", "REQUIRED", "UUID of the user")
-		usersUpdateUserTokenFlag = usersUpdateUserFlags.String("token", "REQUIRED", "")
-
 		usersDeleteUserFlags     = flag.NewFlagSet("delete-user", flag.ExitOnError)
 		usersDeleteUserUUIDFlag  = usersDeleteUserFlags.String("uuid", "REQUIRED", "UUID of the user")
 		usersDeleteUserTokenFlag = usersDeleteUserFlags.String("token", "REQUIRED", "")
@@ -79,6 +174,11 @@ func ParseEndpoint(
 		usersQueryCurrentJWTFlags     = flag.NewFlagSet("query-current-jwt", flag.ExitOnError)
 		usersQueryCurrentJWTTokenFlag = usersQueryCurrentJWTFlags.String("token", "REQUIRED", "")
 	)
+	submissionsFlags.Usage = submissionsUsage
+	submissionsCreateSubmissionFlags.Usage = submissionsCreateSubmissionUsage
+	submissionsListSubmissionsFlags.Usage = submissionsListSubmissionsUsage
+	submissionsGetSubmissionFlags.Usage = submissionsGetSubmissionUsage
+
 	tasksFlags.Usage = tasksUsage
 	tasksListTasksFlags.Usage = tasksListTasksUsage
 	tasksGetTaskFlags.Usage = tasksGetTaskUsage
@@ -87,7 +187,6 @@ func ParseEndpoint(
 	usersListUsersFlags.Usage = usersListUsersUsage
 	usersGetUserFlags.Usage = usersGetUserUsage
 	usersCreateUserFlags.Usage = usersCreateUserUsage
-	usersUpdateUserFlags.Usage = usersUpdateUserUsage
 	usersDeleteUserFlags.Usage = usersDeleteUserUsage
 	usersLoginFlags.Usage = usersLoginUsage
 	usersQueryCurrentJWTFlags.Usage = usersQueryCurrentJWTUsage
@@ -107,6 +206,8 @@ func ParseEndpoint(
 	{
 		svcn = flag.Arg(0)
 		switch svcn {
+		case "submissions":
+			svcf = submissionsFlags
 		case "tasks":
 			svcf = tasksFlags
 		case "users":
@@ -126,6 +227,19 @@ func ParseEndpoint(
 	{
 		epn = svcf.Arg(0)
 		switch svcn {
+		case "submissions":
+			switch epn {
+			case "create-submission":
+				epf = submissionsCreateSubmissionFlags
+
+			case "list-submissions":
+				epf = submissionsListSubmissionsFlags
+
+			case "get-submission":
+				epf = submissionsGetSubmissionFlags
+
+			}
+
 		case "tasks":
 			switch epn {
 			case "list-tasks":
@@ -146,9 +260,6 @@ func ParseEndpoint(
 
 			case "create-user":
 				epf = usersCreateUserFlags
-
-			case "update-user":
-				epf = usersUpdateUserFlags
 
 			case "delete-user":
 				epf = usersDeleteUserFlags
@@ -181,6 +292,18 @@ func ParseEndpoint(
 	)
 	{
 		switch svcn {
+		case "submissions":
+			c := submissionsc.NewClient(scheme, host, doer, enc, dec, restore)
+			switch epn {
+			case "create-submission":
+				endpoint = c.CreateSubmission()
+				data, err = submissionsc.BuildCreateSubmissionPayload(*submissionsCreateSubmissionBodyFlag)
+			case "list-submissions":
+				endpoint = c.ListSubmissions()
+			case "get-submission":
+				endpoint = c.GetSubmission()
+				data, err = submissionsc.BuildGetSubmissionPayload(*submissionsGetSubmissionUUIDFlag)
+			}
 		case "tasks":
 			c := tasksc.NewClient(scheme, host, doer, enc, dec, restore)
 			switch epn {
@@ -202,9 +325,6 @@ func ParseEndpoint(
 			case "create-user":
 				endpoint = c.CreateUser()
 				data, err = usersc.BuildCreateUserPayload(*usersCreateUserBodyFlag)
-			case "update-user":
-				endpoint = c.UpdateUser()
-				data, err = usersc.BuildUpdateUserPayload(*usersUpdateUserBodyFlag, *usersUpdateUserUUIDFlag, *usersUpdateUserTokenFlag)
 			case "delete-user":
 				endpoint = c.DeleteUser()
 				data, err = usersc.BuildDeleteUserPayload(*usersDeleteUserUUIDFlag, *usersDeleteUserTokenFlag)
@@ -222,6 +342,141 @@ func ParseEndpoint(
 	}
 
 	return endpoint, data, nil
+}
+
+// submissionsUsage displays the usage of the submissions command and its
+// subcommands.
+func submissionsUsage() {
+	fmt.Fprintf(os.Stderr, `Service for managing submissions
+Usage:
+    %[1]s [globalflags] submissions COMMAND [flags]
+
+COMMAND:
+    create-submission: Create a new submission
+    list-submissions: List all submissions
+    get-submission: Get a submission by UUID
+
+Additional help:
+    %[1]s submissions COMMAND --help
+`, os.Args[0])
+}
+func submissionsCreateSubmissionUsage() {
+	fmt.Fprintf(os.Stderr, `%[1]s [flags] submissions create-submission -body JSON
+
+Create a new submission
+    -body JSON: 
+
+Example:
+    %[1]s submissions create-submission --body '{
+      "createdAt": "2024-08-08T10:30:00Z",
+      "evaluation": {
+         "possibleScore": 100,
+         "receivedScore": 85,
+         "status": "completed",
+         "uuid": "123e4567-e89b-12d3-a456-426614174000"
+      },
+      "language": {
+         "fullName": "Go",
+         "id": "go",
+         "monacoId": "go"
+      },
+      "submission": "print(factorial(5))",
+      "task": {
+         "cpu_time_limit_seconds": 0.5,
+         "default_md_statement": {
+            "input": "Ievaddatu pirmajā rindā dotas trīs naturālu skaitļu...",
+            "notes": "Illo officia.",
+            "output": "Izvaddatu vienīgajā rindā jābūt veselam skaitlim...",
+            "scoring": "Asperiores quidem omnis illo.",
+            "story": "Krišjānis ir uzkonstruējis kvadrātveida putekļsūcēju (saīsināti – KP), kas ir neaizstājams palīgs viņa darbnīcas uzkopšanā..."
+         },
+         "default_pdf_statement_url": "https://dvhk4hiwp1rmf.cloudfront.net/task-pdf-statements/f27386f1b69f3c020335fe7c84316c5da099933832043e6a5820bcdb0cd66a81.pdf",
+         "difficulty_rating": 3,
+         "examples": [
+            {
+               "input": "5 9 3\nA....X..B\n..X..X.X.\n.XXX.XX..\nX.X.X..X.\n...XX....\n",
+               "md_note": "Qui tempora aut ea.",
+               "output": "10\n"
+            },
+            {
+               "input": "5 9 3\nA....X..B\n..X..X.X.\n.XXX.XX..\nX.X.X..X.\n...XX....\n",
+               "md_note": "Qui tempora aut ea.",
+               "output": "10\n"
+            },
+            {
+               "input": "5 9 3\nA....X..B\n..X..X.X.\n.XXX.XX..\nX.X.X..X.\n...XX....\n",
+               "md_note": "Qui tempora aut ea.",
+               "output": "10\n"
+            }
+         ],
+         "illustration_img_url": "https://dvhk4hiwp1rmf.cloudfront.net/task-illustrations/bafcc0aa1b4c56faa44f5f3b2a5abd9529af941eb9a9b10f541b436762d4948a.png",
+         "memory_limit_megabytes": 256,
+         "origin_notes": {
+            "lv": "Uzdevums parādījās Latvijas 37. informātikas olimpiādes (2023./2024. gads) skolas kārtā."
+         },
+         "origin_olympiad": "LIO",
+         "published_task_id": "kvadrputekl",
+         "task_full_name": "Kvadrātveida putekļsūcējs",
+         "visible_input_subtasks": [
+            {
+               "inputs": [
+                  "5 5 3\nA.X..\nX.B.X\n....X\nXX...\nX.XXX\n",
+                  "6 3 1\n...\nXA.\n.X.\nX..\nB..\n...\n",
+                  "6 4 2\nX...\n.AXX\nX..X\n.X.X\nXXXX\nX.BX\n"
+               ],
+               "subtask": 1
+            },
+            {
+               "inputs": [
+                  "5 5 3\nA.X..\nX.B.X\n....X\nXX...\nX.XXX\n",
+                  "6 3 1\n...\nXA.\n.X.\nX..\nB..\n...\n",
+                  "6 4 2\nX...\n.AXX\nX..X\n.X.X\nXXXX\nX.BX\n"
+               ],
+               "subtask": 1
+            },
+            {
+               "inputs": [
+                  "5 5 3\nA.X..\nX.B.X\n....X\nXX...\nX.XXX\n",
+                  "6 3 1\n...\nXA.\n.X.\nX..\nB..\n...\n",
+                  "6 4 2\nX...\n.AXX\nX..X\n.X.X\nXXXX\nX.BX\n"
+               ],
+               "subtask": 1
+            },
+            {
+               "inputs": [
+                  "5 5 3\nA.X..\nX.B.X\n....X\nXX...\nX.XXX\n",
+                  "6 3 1\n...\nXA.\n.X.\nX..\nB..\n...\n",
+                  "6 4 2\nX...\n.AXX\nX..X\n.X.X\nXXXX\nX.BX\n"
+               ],
+               "subtask": 1
+            }
+         ]
+      },
+      "username": "coder123",
+      "uuid": "123e4567-e89b-12d3-a456-426614174000"
+   }'
+`, os.Args[0])
+}
+
+func submissionsListSubmissionsUsage() {
+	fmt.Fprintf(os.Stderr, `%[1]s [flags] submissions list-submissions
+
+List all submissions
+
+Example:
+    %[1]s submissions list-submissions
+`, os.Args[0])
+}
+
+func submissionsGetSubmissionUsage() {
+	fmt.Fprintf(os.Stderr, `%[1]s [flags] submissions get-submission -uuid STRING
+
+Get a submission by UUID
+    -uuid STRING: UUID of the submission
+
+Example:
+    %[1]s submissions get-submission --uuid "123e4567-e89b-12d3-a456-426614174000"
+`, os.Args[0])
 }
 
 // tasksUsage displays the usage of the tasks command and its subcommands.
@@ -269,7 +524,6 @@ COMMAND:
     list-users: List all users
     get-user: Get a user by UUID
     create-user: Create a new user
-    update-user: Update an existing user
     delete-user: Delete a user
     login: User login
     query-current-jwt: Query current JWT
@@ -318,25 +572,6 @@ Example:
 `, os.Args[0])
 }
 
-func usersUpdateUserUsage() {
-	fmt.Fprintf(os.Stderr, `%[1]s [flags] users update-user -body JSON -uuid STRING -token STRING
-
-Update an existing user
-    -body JSON: 
-    -uuid STRING: UUID of the user
-    -token STRING: 
-
-Example:
-    %[1]s users update-user --body '{
-      "email": "johndoe@example.com",
-      "firstname": "John",
-      "lastname": "Doe",
-      "password": "password123",
-      "username": "johndoe"
-   }' --uuid "550e8400-e29b-41d4-a716-446655440000" --token "jwt_token"
-`, os.Args[0])
-}
-
 func usersDeleteUserUsage() {
 	fmt.Fprintf(os.Stderr, `%[1]s [flags] users delete-user -uuid STRING -token STRING
 
@@ -370,6 +605,6 @@ Query current JWT
     -token STRING: 
 
 Example:
-    %[1]s users query-current-jwt --token "Sint omnis dignissimos laborum."
+    %[1]s users query-current-jwt --token "Quo ut eos non consequatur."
 `, os.Args[0])
 }

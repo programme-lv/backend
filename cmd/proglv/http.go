@@ -7,8 +7,10 @@ import (
 	"sync"
 	"time"
 
+	submssvr "github.com/programme-lv/backend/gen/http/submissions/server"
 	taskssvr "github.com/programme-lv/backend/gen/http/tasks/server"
 	userssvr "github.com/programme-lv/backend/gen/http/users/server"
+	subms "github.com/programme-lv/backend/gen/submissions"
 	tasks "github.com/programme-lv/backend/gen/tasks"
 	users "github.com/programme-lv/backend/gen/users"
 	"goa.design/clue/debug"
@@ -18,7 +20,7 @@ import (
 
 // handleHTTPServer starts configures and starts a HTTP server on the given
 // URL. It shuts down the server if any error is received in the error channel.
-func handleHTTPServer(ctx context.Context, u *url.URL, tasksEndpoints *tasks.Endpoints, usersEndpoints *users.Endpoints, wg *sync.WaitGroup, errc chan error, dbg bool) {
+func handleHTTPServer(ctx context.Context, u *url.URL, tasksEndpoints *tasks.Endpoints, usersEndpoints *users.Endpoints, submsEndpoints *subms.Endpoints, wg *sync.WaitGroup, errc chan error, dbg bool) {
 
 	// Provide the transport specific request decoder and response encoder.
 	// The goa http package has built-in support for JSON, XML and gob.
@@ -49,16 +51,19 @@ func handleHTTPServer(ctx context.Context, u *url.URL, tasksEndpoints *tasks.End
 	var (
 		tasksServer *taskssvr.Server
 		usersServer *userssvr.Server
+		submsServer *submssvr.Server
 	)
 	{
 		eh := errorHandler(ctx)
 		tasksServer = taskssvr.New(tasksEndpoints, mux, dec, enc, eh, nil)
 		usersServer = userssvr.New(usersEndpoints, mux, dec, enc, eh, nil)
+		submsServer = submssvr.New(submsEndpoints, mux, dec, enc, eh, nil)
 	}
 
 	// Configure the mux.
 	taskssvr.Mount(mux, tasksServer)
 	userssvr.Mount(mux, usersServer)
+	submssvr.Mount(mux, submsServer)
 
 	var handler http.Handler = mux
 	if dbg {

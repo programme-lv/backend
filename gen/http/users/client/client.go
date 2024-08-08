@@ -29,10 +29,6 @@ type Client struct {
 	// endpoint.
 	CreateUserDoer goahttp.Doer
 
-	// UpdateUser Doer is the HTTP client used to make requests to the updateUser
-	// endpoint.
-	UpdateUserDoer goahttp.Doer
-
 	// DeleteUser Doer is the HTTP client used to make requests to the deleteUser
 	// endpoint.
 	DeleteUserDoer goahttp.Doer
@@ -70,7 +66,6 @@ func NewClient(
 		ListUsersDoer:       doer,
 		GetUserDoer:         doer,
 		CreateUserDoer:      doer,
-		UpdateUserDoer:      doer,
 		DeleteUserDoer:      doer,
 		LoginDoer:           doer,
 		QueryCurrentJWTDoer: doer,
@@ -150,30 +145,6 @@ func (c *Client) CreateUser() goa.Endpoint {
 		resp, err := c.CreateUserDoer.Do(req)
 		if err != nil {
 			return nil, goahttp.ErrRequestError("users", "createUser", err)
-		}
-		return decodeResponse(resp)
-	}
-}
-
-// UpdateUser returns an endpoint that makes HTTP requests to the users service
-// updateUser server.
-func (c *Client) UpdateUser() goa.Endpoint {
-	var (
-		encodeRequest  = EncodeUpdateUserRequest(c.encoder)
-		decodeResponse = DecodeUpdateUserResponse(c.decoder, c.RestoreResponseBody)
-	)
-	return func(ctx context.Context, v any) (any, error) {
-		req, err := c.BuildUpdateUserRequest(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-		err = encodeRequest(req, v)
-		if err != nil {
-			return nil, err
-		}
-		resp, err := c.UpdateUserDoer.Do(req)
-		if err != nil {
-			return nil, goahttp.ErrRequestError("users", "updateUser", err)
 		}
 		return decodeResponse(resp)
 	}

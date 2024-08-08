@@ -23,7 +23,6 @@ type Server struct {
 	ListUsers       http.Handler
 	GetUser         http.Handler
 	CreateUser      http.Handler
-	UpdateUser      http.Handler
 	DeleteUser      http.Handler
 	Login           http.Handler
 	QueryCurrentJWT http.Handler
@@ -60,7 +59,6 @@ func New(
 			{"ListUsers", "GET", "/users"},
 			{"GetUser", "GET", "/users/{uuid}"},
 			{"CreateUser", "POST", "/users"},
-			{"UpdateUser", "PUT", "/users/{uuid}"},
 			{"DeleteUser", "DELETE", "/users/{uuid}"},
 			{"Login", "POST", "/auth/login"},
 			{"QueryCurrentJWT", "GET", "/auth/current/jwt"},
@@ -72,7 +70,6 @@ func New(
 		ListUsers:       NewListUsersHandler(e.ListUsers, mux, decoder, encoder, errhandler, formatter),
 		GetUser:         NewGetUserHandler(e.GetUser, mux, decoder, encoder, errhandler, formatter),
 		CreateUser:      NewCreateUserHandler(e.CreateUser, mux, decoder, encoder, errhandler, formatter),
-		UpdateUser:      NewUpdateUserHandler(e.UpdateUser, mux, decoder, encoder, errhandler, formatter),
 		DeleteUser:      NewDeleteUserHandler(e.DeleteUser, mux, decoder, encoder, errhandler, formatter),
 		Login:           NewLoginHandler(e.Login, mux, decoder, encoder, errhandler, formatter),
 		QueryCurrentJWT: NewQueryCurrentJWTHandler(e.QueryCurrentJWT, mux, decoder, encoder, errhandler, formatter),
@@ -88,7 +85,6 @@ func (s *Server) Use(m func(http.Handler) http.Handler) {
 	s.ListUsers = m(s.ListUsers)
 	s.GetUser = m(s.GetUser)
 	s.CreateUser = m(s.CreateUser)
-	s.UpdateUser = m(s.UpdateUser)
 	s.DeleteUser = m(s.DeleteUser)
 	s.Login = m(s.Login)
 	s.QueryCurrentJWT = m(s.QueryCurrentJWT)
@@ -103,7 +99,6 @@ func Mount(mux goahttp.Muxer, h *Server) {
 	MountListUsersHandler(mux, h.ListUsers)
 	MountGetUserHandler(mux, h.GetUser)
 	MountCreateUserHandler(mux, h.CreateUser)
-	MountUpdateUserHandler(mux, h.UpdateUser)
 	MountDeleteUserHandler(mux, h.DeleteUser)
 	MountLoginHandler(mux, h.Login)
 	MountQueryCurrentJWTHandler(mux, h.QueryCurrentJWT)
@@ -247,57 +242,6 @@ func NewCreateUserHandler(
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
 		ctx = context.WithValue(ctx, goa.MethodKey, "createUser")
-		ctx = context.WithValue(ctx, goa.ServiceKey, "users")
-		payload, err := decodeRequest(r)
-		if err != nil {
-			if err := encodeError(ctx, w, err); err != nil {
-				errhandler(ctx, w, err)
-			}
-			return
-		}
-		res, err := endpoint(ctx, payload)
-		if err != nil {
-			if err := encodeError(ctx, w, err); err != nil {
-				errhandler(ctx, w, err)
-			}
-			return
-		}
-		if err := encodeResponse(ctx, w, res); err != nil {
-			errhandler(ctx, w, err)
-		}
-	})
-}
-
-// MountUpdateUserHandler configures the mux to serve the "users" service
-// "updateUser" endpoint.
-func MountUpdateUserHandler(mux goahttp.Muxer, h http.Handler) {
-	f, ok := HandleUsersOrigin(h).(http.HandlerFunc)
-	if !ok {
-		f = func(w http.ResponseWriter, r *http.Request) {
-			h.ServeHTTP(w, r)
-		}
-	}
-	mux.Handle("PUT", "/users/{uuid}", f)
-}
-
-// NewUpdateUserHandler creates a HTTP handler which loads the HTTP request and
-// calls the "users" service "updateUser" endpoint.
-func NewUpdateUserHandler(
-	endpoint goa.Endpoint,
-	mux goahttp.Muxer,
-	decoder func(*http.Request) goahttp.Decoder,
-	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
-	errhandler func(context.Context, http.ResponseWriter, error),
-	formatter func(ctx context.Context, err error) goahttp.Statuser,
-) http.Handler {
-	var (
-		decodeRequest  = DecodeUpdateUserRequest(mux, decoder)
-		encodeResponse = EncodeUpdateUserResponse(encoder)
-		encodeError    = EncodeUpdateUserError(encoder, formatter)
-	)
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
-		ctx = context.WithValue(ctx, goa.MethodKey, "updateUser")
 		ctx = context.WithValue(ctx, goa.ServiceKey, "users")
 		payload, err := decodeRequest(r)
 		if err != nil {

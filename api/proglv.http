@@ -34,3 +34,9 @@ GET {{addr}}/tasks
 
 ### Get specific task
 GET {{addr}}/tasks/kvadrputekl
+
+### Get submission list
+GET {{addr}}/submissions
+
+### Get specific submission
+GET {{addr}}/submissions/{{uuid}}

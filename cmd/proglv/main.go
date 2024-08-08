@@ -11,8 +11,10 @@ import (
 	"sync"
 	"syscall"
 
+	subms "github.com/programme-lv/backend/gen/submissions"
 	tasks "github.com/programme-lv/backend/gen/tasks"
 	users "github.com/programme-lv/backend/gen/users"
+	"github.com/programme-lv/backend/subm"
 	"github.com/programme-lv/backend/task"
 	"github.com/programme-lv/backend/user"
 	"goa.design/clue/debug"
@@ -47,10 +49,12 @@ func main() {
 	var (
 		tasksSvc tasks.Service
 		usersSvc users.Service
+		submsSvr subms.Service
 	)
 	{
 		tasksSvc = task.NewTasks()
 		usersSvc = user.NewUsers(ctx)
+		submsSvr = subm.NewSubmissions()
 	}
 
 	// Wrap the services in endpoints that can be invoked from other services
@@ -58,6 +62,7 @@ func main() {
 	var (
 		tasksEndpoints *tasks.Endpoints
 		usersEndpoints *users.Endpoints
+		submsEndpoints *subms.Endpoints
 	)
 	{
 		tasksEndpoints = tasks.NewEndpoints(tasksSvc)
@@ -66,6 +71,9 @@ func main() {
 		usersEndpoints = users.NewEndpoints(usersSvc)
 		usersEndpoints.Use(debug.LogPayloads())
 		usersEndpoints.Use(log.Endpoint)
+		submsEndpoints = subms.NewEndpoints(submsSvr)
+		submsEndpoints.Use(debug.LogPayloads())
+		submsEndpoints.Use(log.Endpoint)
 	}
 
 	// Create channel used by both the signal handler and server goroutines
@@ -107,7 +115,7 @@ func main() {
 			} else if u.Port() == "" {
 				u.Host = net.JoinHostPort(u.Host, "80")
 			}
-			handleHTTPServer(ctx, u, tasksEndpoints, usersEndpoints, &wg, errc, *dbgF)
+			handleHTTPServer(ctx, u, tasksEndpoints, usersEndpoints, submsEndpoints, &wg, errc, *dbgF)
 		}
 
 	default:

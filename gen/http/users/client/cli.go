@@ -74,42 +74,6 @@ func BuildCreateUserPayload(usersCreateUserBody string) (*users.UserPayload, err
 	return v, nil
 }
 
-// BuildUpdateUserPayload builds the payload for the users updateUser endpoint
-// from CLI flags.
-func BuildUpdateUserPayload(usersUpdateUserBody string, usersUpdateUserUUID string, usersUpdateUserToken string) (*users.UpdateUserPayload, error) {
-	var err error
-	var body UpdateUserRequestBody
-	{
-		err = json.Unmarshal([]byte(usersUpdateUserBody), &body)
-		if err != nil {
-			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"email\": \"johndoe@example.com\",\n      \"firstname\": \"John\",\n      \"lastname\": \"Doe\",\n      \"password\": \"password123\",\n      \"username\": \"johndoe\"\n   }'")
-		}
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.email", body.Email, goa.FormatEmail))
-		if err != nil {
-			return nil, err
-		}
-	}
-	var uuid string
-	{
-		uuid = usersUpdateUserUUID
-	}
-	var token string
-	{
-		token = usersUpdateUserToken
-	}
-	v := &users.UpdateUserPayload{
-		Username:  body.Username,
-		Email:     body.Email,
-		Firstname: body.Firstname,
-		Lastname:  body.Lastname,
-		Password:  body.Password,
-	}
-	v.UUID = uuid
-	v.Token = token
-
-	return v, nil
-}
-
 // BuildDeleteUserPayload builds the payload for the users deleteUser endpoint
 // from CLI flags.
 func BuildDeleteUserPayload(usersDeleteUserUUID string, usersDeleteUserToken string) (*users.SecureUUIDPayload, error) {

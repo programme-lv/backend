@@ -18,19 +18,17 @@ type Client struct {
 	ListUsersEndpoint       goa.Endpoint
 	GetUserEndpoint         goa.Endpoint
 	CreateUserEndpoint      goa.Endpoint
-	UpdateUserEndpoint      goa.Endpoint
 	DeleteUserEndpoint      goa.Endpoint
 	LoginEndpoint           goa.Endpoint
 	QueryCurrentJWTEndpoint goa.Endpoint
 }
 
 // NewClient initializes a "users" service client given the endpoints.
-func NewClient(listUsers, getUser, createUser, updateUser, deleteUser, login, queryCurrentJWT goa.Endpoint) *Client {
+func NewClient(listUsers, getUser, createUser, deleteUser, login, queryCurrentJWT goa.Endpoint) *Client {
 	return &Client{
 		ListUsersEndpoint:       listUsers,
 		GetUserEndpoint:         getUser,
 		CreateUserEndpoint:      createUser,
-		UpdateUserEndpoint:      updateUser,
 		DeleteUserEndpoint:      deleteUser,
 		LoginEndpoint:           login,
 		QueryCurrentJWTEndpoint: queryCurrentJWT,
@@ -88,25 +86,6 @@ func (c *Client) GetUser(ctx context.Context, p *SecureUUIDPayload) (res *User, 
 func (c *Client) CreateUser(ctx context.Context, p *UserPayload) (res *User, err error) {
 	var ires any
 	ires, err = c.CreateUserEndpoint(ctx, p)
-	if err != nil {
-		return
-	}
-	return ires.(*User), nil
-}
-
-// UpdateUser calls the "updateUser" endpoint of the "users" service.
-// UpdateUser may return the following errors:
-//   - "InvalidUserDetails" (type *goa.ServiceError)
-//   - "unauthorized" (type Unauthorized)
-//   - "InvalidCredentials" (type InvalidCredentials)
-//   - "NotFound" (type NotFound)
-//   - "UsernameExistsConflict" (type UsernameExistsConflict)
-//   - "EmailExistsConflict" (type EmailExistsConflict)
-//   - "InternalError" (type InternalError)
-//   - error: internal error
-func (c *Client) UpdateUser(ctx context.Context, p *UpdateUserPayload) (res *User, err error) {
-	var ires any
-	ires, err = c.UpdateUserEndpoint(ctx, p)
 	if err != nil {
 		return
 	}

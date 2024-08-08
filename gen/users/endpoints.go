@@ -19,7 +19,6 @@ type Endpoints struct {
 	ListUsers       goa.Endpoint
 	GetUser         goa.Endpoint
 	CreateUser      goa.Endpoint
-	UpdateUser      goa.Endpoint
 	DeleteUser      goa.Endpoint
 	Login           goa.Endpoint
 	QueryCurrentJWT goa.Endpoint
@@ -33,7 +32,6 @@ func NewEndpoints(s Service) *Endpoints {
 		ListUsers:       NewListUsersEndpoint(s, a.JWTAuth),
 		GetUser:         NewGetUserEndpoint(s, a.JWTAuth),
 		CreateUser:      NewCreateUserEndpoint(s),
-		UpdateUser:      NewUpdateUserEndpoint(s, a.JWTAuth),
 		DeleteUser:      NewDeleteUserEndpoint(s, a.JWTAuth),
 		Login:           NewLoginEndpoint(s),
 		QueryCurrentJWT: NewQueryCurrentJWTEndpoint(s, a.JWTAuth),
@@ -45,7 +43,6 @@ func (e *Endpoints) Use(m func(goa.Endpoint) goa.Endpoint) {
 	e.ListUsers = m(e.ListUsers)
 	e.GetUser = m(e.GetUser)
 	e.CreateUser = m(e.CreateUser)
-	e.UpdateUser = m(e.UpdateUser)
 	e.DeleteUser = m(e.DeleteUser)
 	e.Login = m(e.Login)
 	e.QueryCurrentJWT = m(e.QueryCurrentJWT)
@@ -99,25 +96,6 @@ func NewCreateUserEndpoint(s Service) goa.Endpoint {
 	return func(ctx context.Context, req any) (any, error) {
 		p := req.(*UserPayload)
 		return s.CreateUser(ctx, p)
-	}
-}
-
-// NewUpdateUserEndpoint returns an endpoint function that calls the method
-// "updateUser" of service "users".
-func NewUpdateUserEndpoint(s Service, authJWTFn security.AuthJWTFunc) goa.Endpoint {
-	return func(ctx context.Context, req any) (any, error) {
-		p := req.(*UpdateUserPayload)
-		var err error
-		sc := security.JWTScheme{
-			Name:           "jwt",
-			Scopes:         []string{"users:read", "users:write"},
-			RequiredScopes: []string{"users:write"},
-		}
-		ctx, err = authJWTFn(ctx, p.Token, &sc)
-		if err != nil {
-			return nil, err
-		}
-		return s.UpdateUser(ctx, p)
 	}
 }
 

@@ -27,21 +27,6 @@ type CreateUserRequestBody struct {
 	Password string `form:"password" json:"password" xml:"password"`
 }
 
-// UpdateUserRequestBody is the type of the "users" service "updateUser"
-// endpoint HTTP request body.
-type UpdateUserRequestBody struct {
-	// Username of the user
-	Username string `form:"username" json:"username" xml:"username"`
-	// Email of the user
-	Email string `form:"email" json:"email" xml:"email"`
-	// First name of the user
-	Firstname string `form:"firstname" json:"firstname" xml:"firstname"`
-	// Last name of the user
-	Lastname string `form:"lastname" json:"lastname" xml:"lastname"`
-	// Password of the user
-	Password *string `form:"password,omitempty" json:"password,omitempty" xml:"password,omitempty"`
-}
-
 // LoginRequestBody is the type of the "users" service "login" endpoint HTTP
 // request body.
 type LoginRequestBody struct {
@@ -85,21 +70,6 @@ type CreateUserResponseBody struct {
 	Lastname *string `form:"lastname,omitempty" json:"lastname,omitempty" xml:"lastname,omitempty"`
 }
 
-// UpdateUserOKResponseBody is the type of the "users" service "updateUser"
-// endpoint HTTP response body.
-type UpdateUserOKResponseBody struct {
-	// Unique user UUID
-	UUID *string `form:"uuid,omitempty" json:"uuid,omitempty" xml:"uuid,omitempty"`
-	// Username of the user
-	Username *string `form:"username,omitempty" json:"username,omitempty" xml:"username,omitempty"`
-	// Email of the user
-	Email *string `form:"email,omitempty" json:"email,omitempty" xml:"email,omitempty"`
-	// First name of the user
-	Firstname *string `form:"firstname,omitempty" json:"firstname,omitempty" xml:"firstname,omitempty"`
-	// Last name of the user
-	Lastname *string `form:"lastname,omitempty" json:"lastname,omitempty" xml:"lastname,omitempty"`
-}
-
 // QueryCurrentJWTResponseBody is the type of the "users" service
 // "queryCurrentJWT" endpoint HTTP response body.
 type QueryCurrentJWTResponseBody struct {
@@ -131,38 +101,10 @@ type UserResponse struct {
 	Lastname *string `form:"lastname,omitempty" json:"lastname,omitempty" xml:"lastname,omitempty"`
 }
 
-// UpdateUserBadRequestResponseBody is used to define fields on response body
-// types.
-type UpdateUserBadRequestResponseBody struct {
-	// Unique user UUID
-	UUID *string `form:"uuid,omitempty" json:"uuid,omitempty" xml:"uuid,omitempty"`
-	// Username of the user
-	Username *string `form:"username,omitempty" json:"username,omitempty" xml:"username,omitempty"`
-	// Email of the user
-	Email *string `form:"email,omitempty" json:"email,omitempty" xml:"email,omitempty"`
-	// First name of the user
-	Firstname *string `form:"firstname,omitempty" json:"firstname,omitempty" xml:"firstname,omitempty"`
-	// Last name of the user
-	Lastname *string `form:"lastname,omitempty" json:"lastname,omitempty" xml:"lastname,omitempty"`
-}
-
 // NewCreateUserRequestBody builds the HTTP request body from the payload of
 // the "createUser" endpoint of the "users" service.
 func NewCreateUserRequestBody(p *users.UserPayload) *CreateUserRequestBody {
 	body := &CreateUserRequestBody{
-		Username:  p.Username,
-		Email:     p.Email,
-		Firstname: p.Firstname,
-		Lastname:  p.Lastname,
-		Password:  p.Password,
-	}
-	return body
-}
-
-// NewUpdateUserRequestBody builds the HTTP request body from the payload of
-// the "updateUser" endpoint of the "users" service.
-func NewUpdateUserRequestBody(p *users.UpdateUserPayload) *UpdateUserRequestBody {
-	body := &UpdateUserRequestBody{
 		Username:  p.Username,
 		Email:     p.Email,
 		Firstname: p.Firstname,
@@ -335,60 +277,6 @@ func NewCreateUserInvalidUserDetails(body string) users.InvalidUserDetails {
 // NewCreateUserNotFound builds a users service createUser endpoint NotFound
 // error.
 func NewCreateUserNotFound(body string) users.NotFound {
-	v := users.NotFound(body)
-
-	return v
-}
-
-// NewUpdateUserUserOK builds a "users" service "updateUser" endpoint result
-// from a HTTP "OK" response.
-func NewUpdateUserUserOK(body *UpdateUserOKResponseBody) *users.User {
-	v := &users.User{
-		UUID:      *body.UUID,
-		Username:  *body.Username,
-		Email:     *body.Email,
-		Firstname: *body.Firstname,
-		Lastname:  *body.Lastname,
-	}
-
-	return v
-}
-
-// NewUpdateUserEmailExistsConflict builds a users service updateUser endpoint
-// EmailExistsConflict error.
-func NewUpdateUserEmailExistsConflict(body string) users.EmailExistsConflict {
-	v := users.EmailExistsConflict(body)
-
-	return v
-}
-
-// NewUpdateUserUsernameExistsConflict builds a users service updateUser
-// endpoint UsernameExistsConflict error.
-func NewUpdateUserUsernameExistsConflict(body string) users.UsernameExistsConflict {
-	v := users.UsernameExistsConflict(body)
-
-	return v
-}
-
-// NewUpdateUserInvalidCredentials builds a users service updateUser endpoint
-// InvalidCredentials error.
-func NewUpdateUserInvalidCredentials(body string) users.InvalidCredentials {
-	v := users.InvalidCredentials(body)
-
-	return v
-}
-
-// NewUpdateUserInvalidUserDetails builds a users service updateUser endpoint
-// InvalidUserDetails error.
-func NewUpdateUserInvalidUserDetails(body string) users.InvalidUserDetails {
-	v := users.InvalidUserDetails(body)
-
-	return v
-}
-
-// NewUpdateUserNotFound builds a users service updateUser endpoint NotFound
-// error.
-func NewUpdateUserNotFound(body string) users.NotFound {
 	v := users.NotFound(body)
 
 	return v
@@ -592,56 +480,8 @@ func ValidateCreateUserResponseBody(body *CreateUserResponseBody) (err error) {
 	return
 }
 
-// ValidateUpdateUserOKResponseBody runs the validations defined on
-// UpdateUserOKResponseBody
-func ValidateUpdateUserOKResponseBody(body *UpdateUserOKResponseBody) (err error) {
-	if body.UUID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("uuid", "body"))
-	}
-	if body.Username == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("username", "body"))
-	}
-	if body.Email == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("email", "body"))
-	}
-	if body.Firstname == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("firstname", "body"))
-	}
-	if body.Lastname == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("lastname", "body"))
-	}
-	if body.Email != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.email", *body.Email, goa.FormatEmail))
-	}
-	return
-}
-
 // ValidateUserResponse runs the validations defined on UserResponse
 func ValidateUserResponse(body *UserResponse) (err error) {
-	if body.UUID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("uuid", "body"))
-	}
-	if body.Username == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("username", "body"))
-	}
-	if body.Email == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("email", "body"))
-	}
-	if body.Firstname == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("firstname", "body"))
-	}
-	if body.Lastname == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("lastname", "body"))
-	}
-	if body.Email != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.email", *body.Email, goa.FormatEmail))
-	}
-	return
-}
-
-// ValidateUpdateUserBadRequestResponseBody runs the validations defined on
-// UpdateUserBad RequestResponseBody
-func ValidateUpdateUserBadRequestResponseBody(body *UpdateUserBadRequestResponseBody) (err error) {
 	if body.UUID == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("uuid", "body"))
 	}

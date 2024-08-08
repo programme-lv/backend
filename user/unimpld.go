@@ -20,8 +20,3 @@ func (s *userssrvc) GetUser(context.Context, *usergen.SecureUUIDPayload) (res *u
 func (s *userssrvc) ListUsers(context.Context, *usergen.ListUsersPayload) (res []*usergen.User, err error) {
 	panic("unimplemented")
 }
-
-// UpdateUser implements users.Service.
-func (s *userssrvc) UpdateUser(context.Context, *usergen.UpdateUserPayload) (res *usergen.User, err error) {
-	panic("unimplemented")
-}

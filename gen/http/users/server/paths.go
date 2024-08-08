@@ -26,11 +26,6 @@ func CreateUserUsersPath() string {
 	return "/users"
 }
 
-// UpdateUserUsersPath returns the URL path to the users service updateUser HTTP endpoint.
-func UpdateUserUsersPath(uuid string) string {
-	return fmt.Sprintf("/users/%v", uuid)
-}
-
 // DeleteUserUsersPath returns the URL path to the users service deleteUser HTTP endpoint.
 func DeleteUserUsersPath(uuid string) string {
 	return fmt.Sprintf("/users/%v", uuid)
