@@ -94,3 +94,44 @@ func (s *userssrvc) Login(ctx context.Context, p *usergen.LoginPayload) (res str
 
 	return "", usergen.InvalidCredentials("lietotājvārds vai parole nav pareiza")
 }
+
+// GetUserByUsername implements users.Service.
+func (s *userssrvc) GetUserByUsername(ctx context.Context, p *usergen.GetUserByUsernamePayload) (res *usergen.User, err error) {
+	allUsers, err := s.ddbUserTable.List(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("error listing users: %w", err)
+	}
+
+	var resSlice []usergen.User = make([]usergen.User, 0)
+	for _, user := range allUsers {
+		if user.Username == p.Username {
+			if len(resSlice) == 1 {
+				return nil, usergen.InternalError("vairāki lietotāji ar vienādu lietotājvārdu")
+			}
+
+			firstname := ""
+			if user.Firstname != nil {
+				firstname = *user.Firstname
+			}
+
+			lastname := ""
+			if user.Lastname != nil {
+				lastname = *user.Lastname
+			}
+
+			genUser := usergen.User{
+				UUID:      user.Uuid,
+				Username:  user.Username,
+				Email:     user.Email,
+				Firstname: firstname,
+				Lastname:  lastname,
+			}
+			resSlice = append(resSlice, genUser)
+		}
+	}
+	if len(resSlice) == 0 {
+		return nil, usergen.NotFound("lietotājs ar šādu lietotājvārdu neeksistē")
+	}
+
+	return &resSlice[0], nil
+}

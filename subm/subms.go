@@ -72,18 +72,30 @@ func (s *submissionssrvc) CreateSubmission(ctx context.Context, p *submgen.Creat
 		}
 	}
 
-	// TODO: retrieve user id for username
+	userSrvcUser, err := s.userSrvc.GetUserByUsername(ctx, &usergen.GetUserByUsernamePayload{Username: ""})
+	if err != nil {
+		log.Errorf(ctx, err, "error getting user: %+v", err.Error())
+		if e, ok := err.(usergen.NotFound); ok {
+			return nil, submgen.InvalidSubmissionDetails(string(e))
+		}
+		return nil, submgen.InternalError("error getting user")
+	}
+
+	// TODO: verify that the username is being held by jwt context user
 
 	// TODO: verify that the programming language is valid
+	// for now we could just hardcode language list
 	// TODO: verify that the task id is valid
 
 	uuid := uuid.New()
 	createdAt := time.Now()
 	row := &SubmissionRow{
-		Uuid:     uuid.String(),
-		UnixTime: createdAt.Unix(),
-		Content:  submContent.String(),
-		Version:  0,
+		Uuid:       uuid.String(),
+		UnixTime:   createdAt.Unix(),
+		Content:    submContent.String(),
+		Version:    0,
+		AuthorUuid: userSrvcUser.UUID,
+		ProgLangId: "",
 	}
 
 	err = s.ddbSubmTable.Save(ctx, row)

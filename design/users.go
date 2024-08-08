@@ -143,6 +143,17 @@ var _ = dsl.Service("users", func() {
 		})
 	})
 
+	dsl.Method("getUserByUsername", func() {
+		dsl.Description("Get a user by username")
+		dsl.Payload(func() {
+			dsl.Attribute("username", dsl.String, "Username of the user", func() {
+				dsl.Example("johndoe")
+			})
+			dsl.Required("username")
+		})
+		dsl.Result(User)
+	})
+
 	dsl.Method("createUser", func() {
 		dsl.Description("Create a new user")
 		dsl.Payload(UserPayload)

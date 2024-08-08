@@ -20,6 +20,8 @@ type Service interface {
 	ListUsers(context.Context, *ListUsersPayload) (res []*User, err error)
 	// Get a user by UUID
 	GetUser(context.Context, *SecureUUIDPayload) (res *User, err error)
+	// Get a user by username
+	GetUserByUsername(context.Context, *GetUserByUsernamePayload) (res *User, err error)
 	// Create a new user
 	CreateUser(context.Context, *UserPayload) (res *User, err error)
 	// Delete a user
@@ -50,10 +52,17 @@ const ServiceName = "users"
 // MethodNames lists the service method names as defined in the design. These
 // are the same values that are set in the endpoint request contexts under the
 // MethodKey key.
-var MethodNames = [6]string{"listUsers", "getUser", "createUser", "deleteUser", "login", "queryCurrentJWT"}
+var MethodNames = [7]string{"listUsers", "getUser", "getUserByUsername", "createUser", "deleteUser", "login", "queryCurrentJWT"}
 
 // Email already exists
 type EmailExistsConflict string
+
+// GetUserByUsernamePayload is the payload type of the users service
+// getUserByUsername method.
+type GetUserByUsernamePayload struct {
+	// Username of the user
+	Username string
+}
 
 // Internal server error
 type InternalError string

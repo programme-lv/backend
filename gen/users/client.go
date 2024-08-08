@@ -15,23 +15,25 @@ import (
 
 // Client is the "users" service client.
 type Client struct {
-	ListUsersEndpoint       goa.Endpoint
-	GetUserEndpoint         goa.Endpoint
-	CreateUserEndpoint      goa.Endpoint
-	DeleteUserEndpoint      goa.Endpoint
-	LoginEndpoint           goa.Endpoint
-	QueryCurrentJWTEndpoint goa.Endpoint
+	ListUsersEndpoint         goa.Endpoint
+	GetUserEndpoint           goa.Endpoint
+	GetUserByUsernameEndpoint goa.Endpoint
+	CreateUserEndpoint        goa.Endpoint
+	DeleteUserEndpoint        goa.Endpoint
+	LoginEndpoint             goa.Endpoint
+	QueryCurrentJWTEndpoint   goa.Endpoint
 }
 
 // NewClient initializes a "users" service client given the endpoints.
-func NewClient(listUsers, getUser, createUser, deleteUser, login, queryCurrentJWT goa.Endpoint) *Client {
+func NewClient(listUsers, getUser, getUserByUsername, createUser, deleteUser, login, queryCurrentJWT goa.Endpoint) *Client {
 	return &Client{
-		ListUsersEndpoint:       listUsers,
-		GetUserEndpoint:         getUser,
-		CreateUserEndpoint:      createUser,
-		DeleteUserEndpoint:      deleteUser,
-		LoginEndpoint:           login,
-		QueryCurrentJWTEndpoint: queryCurrentJWT,
+		ListUsersEndpoint:         listUsers,
+		GetUserEndpoint:           getUser,
+		GetUserByUsernameEndpoint: getUserByUsername,
+		CreateUserEndpoint:        createUser,
+		DeleteUserEndpoint:        deleteUser,
+		LoginEndpoint:             login,
+		QueryCurrentJWTEndpoint:   queryCurrentJWT,
 	}
 }
 
@@ -67,6 +69,26 @@ func (c *Client) ListUsers(ctx context.Context, p *ListUsersPayload) (res []*Use
 func (c *Client) GetUser(ctx context.Context, p *SecureUUIDPayload) (res *User, err error) {
 	var ires any
 	ires, err = c.GetUserEndpoint(ctx, p)
+	if err != nil {
+		return
+	}
+	return ires.(*User), nil
+}
+
+// GetUserByUsername calls the "getUserByUsername" endpoint of the "users"
+// service.
+// GetUserByUsername may return the following errors:
+//   - "unauthorized" (type Unauthorized)
+//   - "InvalidCredentials" (type InvalidCredentials)
+//   - "InvalidUserDetails" (type InvalidUserDetails)
+//   - "NotFound" (type NotFound)
+//   - "UsernameExistsConflict" (type UsernameExistsConflict)
+//   - "EmailExistsConflict" (type EmailExistsConflict)
+//   - "InternalError" (type InternalError)
+//   - error: internal error
+func (c *Client) GetUserByUsername(ctx context.Context, p *GetUserByUsernamePayload) (res *User, err error) {
+	var ires any
+	ires, err = c.GetUserByUsernameEndpoint(ctx, p)
 	if err != nil {
 		return
 	}

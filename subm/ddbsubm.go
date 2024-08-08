@@ -9,10 +9,12 @@ import (
 
 // SubmissionRow represents the user data structure.
 type SubmissionRow struct {
-	Uuid     string `dynamo:"uuid,hash"` // Primary key
-	UnixTime int64  `dynamo:"unix_timestamp"`
-	Content  string `dynamo:"content"`
-	Version  int64  `dynamo:"version"` // For optimistic locking
+	Uuid       string `dynamo:"uuid,hash"` // Primary key
+	UnixTime   int64  `dynamo:"unix_timestamp"`
+	Content    string `dynamo:"content"`
+	Version    int64  `dynamo:"version"` // For optimistic locking
+	AuthorUuid string `dynamo:"author_uuid"`
+	ProgLangId string `dynamo:"prog_lang_id"`
 }
 
 // DynamoDbSubmTable represents the DynamoDB table.

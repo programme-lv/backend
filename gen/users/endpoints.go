@@ -16,12 +16,13 @@ import (
 
 // Endpoints wraps the "users" service endpoints.
 type Endpoints struct {
-	ListUsers       goa.Endpoint
-	GetUser         goa.Endpoint
-	CreateUser      goa.Endpoint
-	DeleteUser      goa.Endpoint
-	Login           goa.Endpoint
-	QueryCurrentJWT goa.Endpoint
+	ListUsers         goa.Endpoint
+	GetUser           goa.Endpoint
+	GetUserByUsername goa.Endpoint
+	CreateUser        goa.Endpoint
+	DeleteUser        goa.Endpoint
+	Login             goa.Endpoint
+	QueryCurrentJWT   goa.Endpoint
 }
 
 // NewEndpoints wraps the methods of the "users" service with endpoints.
@@ -29,12 +30,13 @@ func NewEndpoints(s Service) *Endpoints {
 	// Casting service to Auther interface
 	a := s.(Auther)
 	return &Endpoints{
-		ListUsers:       NewListUsersEndpoint(s, a.JWTAuth),
-		GetUser:         NewGetUserEndpoint(s, a.JWTAuth),
-		CreateUser:      NewCreateUserEndpoint(s),
-		DeleteUser:      NewDeleteUserEndpoint(s, a.JWTAuth),
-		Login:           NewLoginEndpoint(s),
-		QueryCurrentJWT: NewQueryCurrentJWTEndpoint(s, a.JWTAuth),
+		ListUsers:         NewListUsersEndpoint(s, a.JWTAuth),
+		GetUser:           NewGetUserEndpoint(s, a.JWTAuth),
+		GetUserByUsername: NewGetUserByUsernameEndpoint(s),
+		CreateUser:        NewCreateUserEndpoint(s),
+		DeleteUser:        NewDeleteUserEndpoint(s, a.JWTAuth),
+		Login:             NewLoginEndpoint(s),
+		QueryCurrentJWT:   NewQueryCurrentJWTEndpoint(s, a.JWTAuth),
 	}
 }
 
@@ -42,6 +44,7 @@ func NewEndpoints(s Service) *Endpoints {
 func (e *Endpoints) Use(m func(goa.Endpoint) goa.Endpoint) {
 	e.ListUsers = m(e.ListUsers)
 	e.GetUser = m(e.GetUser)
+	e.GetUserByUsername = m(e.GetUserByUsername)
 	e.CreateUser = m(e.CreateUser)
 	e.DeleteUser = m(e.DeleteUser)
 	e.Login = m(e.Login)
@@ -87,6 +90,15 @@ func NewGetUserEndpoint(s Service, authJWTFn security.AuthJWTFunc) goa.Endpoint 
 			return nil, err
 		}
 		return s.GetUser(ctx, p)
+	}
+}
+
+// NewGetUserByUsernameEndpoint returns an endpoint function that calls the
+// method "getUserByUsername" of service "users".
+func NewGetUserByUsernameEndpoint(s Service) goa.Endpoint {
+	return func(ctx context.Context, req any) (any, error) {
+		p := req.(*GetUserByUsernamePayload)
+		return s.GetUserByUsername(ctx, p)
 	}
 }
 
