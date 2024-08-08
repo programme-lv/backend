@@ -1372,7 +1372,6 @@ definitions:
                 type: string
                 description: Password of the user
                 example: password123
-                minLength: 8
             username:
                 type: string
                 description: Username of the user
@@ -1549,7 +1548,6 @@ definitions:
                 type: string
                 description: Password of the user
                 example: password123
-                minLength: 8
             username:
                 type: string
                 description: Username of the user

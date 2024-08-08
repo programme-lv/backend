@@ -8,8 +8,6 @@
 package server
 
 import (
-	"unicode/utf8"
-
 	users "github.com/programme-lv/backend/gen/users"
 	goa "goa.design/goa/v3/pkg"
 )
@@ -328,11 +326,6 @@ func ValidateUpdateUserRequestBody(body *UpdateUserRequestBody) (err error) {
 	if body.Email != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.email", *body.Email, goa.FormatEmail))
 	}
-	if body.Password != nil {
-		if utf8.RuneCountInString(*body.Password) < 8 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.password", *body.Password, utf8.RuneCountInString(*body.Password), 8, true))
-		}
-	}
 	return
 }
 
@@ -343,11 +336,6 @@ func ValidateLoginRequestBody(body *LoginRequestBody) (err error) {
 	}
 	if body.Password == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("password", "body"))
-	}
-	if body.Password != nil {
-		if utf8.RuneCountInString(*body.Password) < 8 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.password", *body.Password, utf8.RuneCountInString(*body.Password), 8, true))
-		}
 	}
 	return
 }

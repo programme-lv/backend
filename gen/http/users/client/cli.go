@@ -10,7 +10,6 @@ package client
 import (
 	"encoding/json"
 	"fmt"
-	"unicode/utf8"
 
 	users "github.com/programme-lv/backend/gen/users"
 	goa "goa.design/goa/v3/pkg"
@@ -86,11 +85,6 @@ func BuildUpdateUserPayload(usersUpdateUserBody string, usersUpdateUserUUID stri
 			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"email\": \"johndoe@example.com\",\n      \"firstname\": \"John\",\n      \"lastname\": \"Doe\",\n      \"password\": \"password123\",\n      \"username\": \"johndoe\"\n   }'")
 		}
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.email", body.Email, goa.FormatEmail))
-		if body.Password != nil {
-			if utf8.RuneCountInString(*body.Password) < 8 {
-				err = goa.MergeErrors(err, goa.InvalidLengthError("body.password", *body.Password, utf8.RuneCountInString(*body.Password), 8, true))
-			}
-		}
 		if err != nil {
 			return nil, err
 		}
@@ -143,12 +137,6 @@ func BuildLoginPayload(usersLoginBody string) (*users.LoginPayload, error) {
 		err = json.Unmarshal([]byte(usersLoginBody), &body)
 		if err != nil {
 			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"password\": \"password123\",\n      \"username\": \"johndoe\"\n   }'")
-		}
-		if utf8.RuneCountInString(body.Password) < 8 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.password", body.Password, utf8.RuneCountInString(body.Password), 8, true))
-		}
-		if err != nil {
-			return nil, err
 		}
 	}
 	v := &users.LoginPayload{

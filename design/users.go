@@ -61,7 +61,6 @@ var LoginPayload = dsl.Type("LoginPayload", func() {
 		dsl.Example("johndoe")
 	})
 	dsl.Attribute("password", dsl.String, "Password of the user", func() {
-		dsl.MinLength(8)
 		dsl.Example("password123")
 	})
 	dsl.Required("username", "password")
@@ -183,7 +182,6 @@ var _ = dsl.Service("users", func() {
 				dsl.Example("Doe")
 			})
 			dsl.Attribute("password", dsl.String, "Password of the user", func() {
-				dsl.MinLength(8)
 				dsl.Example("password123")
 			})
 			dsl.Required("token", "uuid", "username", "email", "firstname", "lastname")
