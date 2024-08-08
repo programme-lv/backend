@@ -54,7 +54,7 @@ func main() {
 	{
 		tasksSvc = task.NewTasks()
 		usersSvc = user.NewUsers(ctx)
-		submsSvr = subm.NewSubmissions()
+		submsSvr = subm.NewSubmissions(ctx)
 	}
 
 	// Wrap the services in endpoints that can be invoked from other services

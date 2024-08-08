@@ -10,6 +10,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/guregu/dynamo/v2"
 	submgen "github.com/programme-lv/backend/gen/submissions"
+	usergen "github.com/programme-lv/backend/gen/users"
+	"github.com/programme-lv/backend/user"
 	"goa.design/clue/log"
 )
 
@@ -17,10 +19,11 @@ import (
 // The example methods log the requests and return zero values.
 type submissionssrvc struct {
 	ddbSubmTable *DynamoDbSubmTable
+	userSrvc     usergen.Service
 }
 
 // NewSubmissions returns the submissions service implementation.
-func NewSubmissions() submgen.Service {
+func NewSubmissions(ctx context.Context) submgen.Service {
 	cfg, err := config.LoadDefaultConfig(context.TODO(),
 		config.WithRegion("eu-central-1"),
 		config.WithSharedConfigProfile("kp"),
@@ -32,6 +35,7 @@ func NewSubmissions() submgen.Service {
 
 	return &submissionssrvc{
 		ddbSubmTable: NewDynamoDbSubmTable(dynamodbClient, "proglv_submissions"),
+		userSrvc:     user.NewUsers(ctx),
 	}
 }
 
@@ -68,7 +72,10 @@ func (s *submissionssrvc) CreateSubmission(ctx context.Context, p *submgen.Creat
 		}
 	}
 
-	// TODO: retrieved at
+	// TODO: retrieve user id for username
+
+	// TODO: verify that the programming language is valid
+	// TODO: verify that the task id is valid
 
 	uuid := uuid.New()
 	createdAt := time.Now()
