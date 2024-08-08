@@ -31,7 +31,7 @@ func NewSubmissions() submgen.Service {
 	dynamodbClient := dynamodb.NewFromConfig(cfg)
 
 	return &submissionssrvc{
-		ddbSubmTable: NewDynamoDbSubmTable(dynamodbClient, "ProglvTasks"),
+		ddbSubmTable: NewDynamoDbSubmTable(dynamodbClient, "proglv_submissions"),
 	}
 }
 
@@ -68,11 +68,13 @@ func (s *submissionssrvc) CreateSubmission(ctx context.Context, p *submgen.Creat
 		}
 	}
 
+	// TODO: retrieved at
+
 	uuid := uuid.New()
-	createdAt := time.Now().Unix()
+	createdAt := time.Now()
 	row := &SubmissionRow{
 		Uuid:     uuid.String(),
-		UnixTime: createdAt,
+		UnixTime: createdAt.Unix(),
 		Content:  submContent.String(),
 		Version:  0,
 	}
@@ -89,11 +91,13 @@ func (s *submissionssrvc) CreateSubmission(ctx context.Context, p *submgen.Creat
 		}
 	}
 
+	createdAtRfc3339 := createdAt.Format(time.RFC3339)
+
 	res = &submgen.Submission{
 		UUID:       row.Uuid,
 		Submission: row.Content,
 		Username:   "",
-		CreatedAt:  "",
+		CreatedAt:  createdAtRfc3339,
 		Evaluation: nil,
 		Language:   nil,
 		Task:       nil,

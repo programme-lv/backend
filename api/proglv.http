@@ -40,3 +40,15 @@ GET {{addr}}/submissions
 
 ### Get specific submission
 GET {{addr}}/submissions/{{uuid}}
+
+### Create submission
+POST {{addr}}/submissions
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "submission": "print(factorial(5))",
+  "username": "coder123",
+  "programming_lang_id": "go",
+  "task_code_id": "kvadrputekl"
+}
