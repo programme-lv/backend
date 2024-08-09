@@ -2,13 +2,16 @@ package subm
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/google/uuid"
 	"github.com/guregu/dynamo/v2"
+	"github.com/programme-lv/backend/auth"
 	submgen "github.com/programme-lv/backend/gen/submissions"
 	usergen "github.com/programme-lv/backend/gen/users"
 	"github.com/programme-lv/backend/user"
@@ -20,6 +23,7 @@ import (
 type submissionssrvc struct {
 	ddbSubmTable *DynamoDbSubmTable
 	userSrvc     usergen.Service
+	jwtKey       []byte
 }
 
 // NewSubmissions returns the submissions service implementation.
@@ -33,9 +37,17 @@ func NewSubmissions(ctx context.Context) submgen.Service {
 	}
 	dynamodbClient := dynamodb.NewFromConfig(cfg)
 
+	jwtKey := os.Getenv("JWT_KEY")
+	if jwtKey == "" {
+		log.Fatalf(ctx,
+			errors.New("JWT_KEY is not set"),
+			"cant read JWT_KEY from env in new user service constructor")
+	}
+
 	return &submissionssrvc{
 		ddbSubmTable: NewDynamoDbSubmTable(dynamodbClient, "proglv_submissions"),
 		userSrvc:     user.NewUsers(ctx),
+		jwtKey:       []byte(jwtKey),
 	}
 }
 
@@ -72,7 +84,7 @@ func (s *submissionssrvc) CreateSubmission(ctx context.Context, p *submgen.Creat
 		}
 	}
 
-	userSrvcUser, err := s.userSrvc.GetUserByUsername(ctx, &usergen.GetUserByUsernamePayload{Username: ""})
+	userSrvcUser, err := s.userSrvc.GetUserByUsername(ctx, &usergen.GetUserByUsernamePayload{Username: p.Username})
 	if err != nil {
 		log.Errorf(ctx, err, "error getting user: %+v", err.Error())
 		if e, ok := err.(usergen.NotFound); ok {
@@ -81,7 +93,12 @@ func (s *submissionssrvc) CreateSubmission(ctx context.Context, p *submgen.Creat
 		return nil, submgen.InternalError("error getting user")
 	}
 
-	// TODO: verify that the username is being held by jwt context user
+	claims := ctx.Value(ClaimsKey("claims")).(*auth.Claims)
+	log.Printf(ctx, "%+v", claims)
+
+	if claims.UUID != userSrvcUser.UUID {
+		return nil, submgen.Unauthorized("jwt claims uuid does not match username's user's uuid")
+	}
 
 	// TODO: verify that the programming language is valid
 	// for now we could just hardcode language list
@@ -115,7 +132,7 @@ func (s *submissionssrvc) CreateSubmission(ctx context.Context, p *submgen.Creat
 	res = &submgen.Submission{
 		UUID:       row.Uuid,
 		Submission: row.Content,
-		Username:   "",
+		Username:   userSrvcUser.Username,
 		CreatedAt:  createdAtRfc3339,
 		Evaluation: nil,
 		Language:   nil,

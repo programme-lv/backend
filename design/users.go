@@ -4,12 +4,6 @@ import (
 	"goa.design/goa/v3/dsl"
 )
 
-// JWTAuth defines a security scheme using JWT tokens.
-var JWTAuth = dsl.JWTSecurity("jwt", func() {
-	dsl.Scope("users:read", "Read users")
-	dsl.Scope("users:write", "Write users")
-})
-
 // User represents a user.
 var User = dsl.Type("User", func() {
 	dsl.Description("User representation")

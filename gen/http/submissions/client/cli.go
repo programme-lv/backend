@@ -16,7 +16,7 @@ import (
 
 // BuildCreateSubmissionPayload builds the payload for the submissions
 // createSubmission endpoint from CLI flags.
-func BuildCreateSubmissionPayload(submissionsCreateSubmissionBody string) (*submissions.CreateSubmissionPayload, error) {
+func BuildCreateSubmissionPayload(submissionsCreateSubmissionBody string, submissionsCreateSubmissionToken string) (*submissions.CreateSubmissionPayload, error) {
 	var err error
 	var body CreateSubmissionRequestBody
 	{
@@ -25,12 +25,17 @@ func BuildCreateSubmissionPayload(submissionsCreateSubmissionBody string) (*subm
 			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"programming_lang_id\": \"go\",\n      \"submission\": \"print(factorial(5))\",\n      \"task_code_id\": \"kvadrputekl\",\n      \"username\": \"coder123\"\n   }'")
 		}
 	}
+	var token string
+	{
+		token = submissionsCreateSubmissionToken
+	}
 	v := &submissions.CreateSubmissionPayload{
 		Submission:        body.Submission,
 		Username:          body.Username,
 		ProgrammingLangID: body.ProgrammingLangID,
 		TaskCodeID:        body.TaskCodeID,
 	}
+	v.Token = token
 
 	return v, nil
 }

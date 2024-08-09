@@ -25,3 +25,9 @@ var _ = dsl.API("proglv", func() {
 		cors.Credentials()
 	})
 })
+
+// JWTAuth defines a security scheme using JWT tokens.
+var JWTAuth = dsl.JWTSecurity("jwt", func() {
+	dsl.Scope("users:read", "Read users")
+	dsl.Scope("users:write", "Write users")
+})

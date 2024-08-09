@@ -13,6 +13,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 
 	submissions "github.com/programme-lv/backend/gen/submissions"
 	goahttp "goa.design/goa/v3/http"
@@ -41,6 +42,14 @@ func EncodeCreateSubmissionRequest(encoder func(*http.Request) goahttp.Encoder) 
 		p, ok := v.(*submissions.CreateSubmissionPayload)
 		if !ok {
 			return goahttp.ErrInvalidType("submissions", "createSubmission", "*submissions.CreateSubmissionPayload", v)
+		}
+		{
+			head := p.Token
+			if !strings.Contains(head, " ") {
+				req.Header.Set("Authorization", "Bearer "+head)
+			} else {
+				req.Header.Set("Authorization", head)
+			}
 		}
 		body := NewCreateSubmissionRequestBody(p)
 		if err := encoder(req).Encode(&body); err != nil {

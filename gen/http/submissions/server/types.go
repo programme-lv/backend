@@ -304,13 +304,14 @@ func NewGetSubmissionResponseBody(res *submissions.Submission) *GetSubmissionRes
 
 // NewCreateSubmissionPayload builds a submissions service createSubmission
 // endpoint payload.
-func NewCreateSubmissionPayload(body *CreateSubmissionRequestBody) *submissions.CreateSubmissionPayload {
+func NewCreateSubmissionPayload(body *CreateSubmissionRequestBody, token string) *submissions.CreateSubmissionPayload {
 	v := &submissions.CreateSubmissionPayload{
 		Submission:        *body.Submission,
 		Username:          *body.Username,
 		ProgrammingLangID: *body.ProgrammingLangID,
 		TaskCodeID:        *body.TaskCodeID,
 	}
+	v.Token = token
 
 	return v
 }

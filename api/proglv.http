@@ -2,15 +2,15 @@
 @addr=http://localhost:8080
 # @addr=https://api.programme.lv
 @uuid=1f5b8a10-67c2-4374-a378-0bc2a07bc682
-@token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6IkVsaWFhM2FiYSIsImZpcnN0bmFtZSI6IkpvaG4iLCJsYXN0bmFtZSI6IkRvZSIsImVtYWlsIjoiam9obmRvZWEzYWFAZXhhbXBsZS5jb20iLCJ1dWlkIjoiNGZmYzc4ZjUtMDliNi00MGYwLWE2MzEtMTc4ZjgyNjgxYmI2IiwiZXhwIjoxNzIyOTgwNDIyfQ.-MwbRPeJmg9qqDlVWp4SxvQGrjRoiINN71tE4gR4pdM
+@token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImFiYyIsImZpcnN0bmFtZSI6IkpvaG4iLCJsYXN0bmFtZSI6IkRvZSIsImVtYWlsIjoiYWJjQGV4YW1wbGUuY29tIiwidXVpZCI6IjBjODFkNGVkLTM0ZDYtNDE1ZS1hYmY5LTVjMTczMTdhNDUzOSIsImV4cCI6MTcyMzMyNDMwMH0.AyzjnFOQ7zqiLC9R9_ZmGobJ19V8jB6a4Mw0dClwlVU
 ### Create User
 POST {{addr}}/users
 Content-Type: application/json
 
 {
-  "username": "asdafasdfaasdfasdf",
-  "email": "johnadoeaa3aaaa@example.com",
-  "password": "pasaaaaaaaaaa",
+  "username": "abca",
+  "email": "abca@example.com",
+  "password": "12345678",
   "firstname": "John",
   "lastname": "Doe"
 }
@@ -20,8 +20,8 @@ POST {{addr}}/auth/login
 Content-Type: application/json
 
 {
-  "username": "Eliaa3aba",
-  "password": "pas"
+  "username": "abc",
+  "password": "12345678"
 }
 
 ### Get auth status
@@ -48,7 +48,7 @@ Content-Type: application/json
 
 {
   "submission": "print(factorial(5))",
-  "username": "coder123",
+  "username": "abca",
   "programming_lang_id": "go",
   "task_code_id": "kvadrputekl"
 }

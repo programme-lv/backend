@@ -81,7 +81,8 @@ var CreateSubmissionPayload = dsl.Type("CreateSubmissionPayload", func() {
 	dsl.Attribute("task_code_id", dsl.String, "ID of the task", func() {
 		dsl.Example("kvadrputekl")
 	})
-	dsl.Required("submission", "username", "programming_lang_id", "task_code_id")
+	dsl.Token("token", dsl.String, "JWT token used for authentication")
+	dsl.Required("submission", "username", "programming_lang_id", "task_code_id", "token")
 })
 
 var _ = dsl.Service("submissions", func() {
@@ -101,6 +102,7 @@ var _ = dsl.Service("submissions", func() {
 
 	dsl.Method("createSubmission", func() {
 		dsl.Description("Create a new submission")
+		dsl.Security(JWTAuth, func() {})
 		dsl.Payload(CreateSubmissionPayload)
 		dsl.Result(Submission)
 		dsl.HTTP(func() {

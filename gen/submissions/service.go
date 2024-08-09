@@ -11,6 +11,7 @@ import (
 	"context"
 
 	goa "goa.design/goa/v3/pkg"
+	"goa.design/goa/v3/security"
 )
 
 // Service for managing submissions
@@ -21,6 +22,12 @@ type Service interface {
 	ListSubmissions(context.Context) (res []*Submission, err error)
 	// Get a submission by UUID
 	GetSubmission(context.Context, *GetSubmissionPayload) (res *Submission, err error)
+}
+
+// Auther defines the authorization functions to be implemented by the service.
+type Auther interface {
+	// JWTAuth implements the authorization logic for the JWT security scheme.
+	JWTAuth(ctx context.Context, token string, schema *security.JWTScheme) (context.Context, error)
 }
 
 // APIName is the name of the API as defined in the design.
@@ -50,6 +57,8 @@ type CreateSubmissionPayload struct {
 	ProgrammingLangID string
 	// ID of the task
 	TaskCodeID string
+	// JWT token used for authentication
+	Token string
 }
 
 // Represents the evaluation of a submission

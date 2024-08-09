@@ -37,7 +37,7 @@ func UsageExamples() string {
       "submission": "print(factorial(5))",
       "task_code_id": "kvadrputekl",
       "username": "coder123"
-   }'` + "\n" +
+   }' --token "Qui ipsam in deserunt."` + "\n" +
 		os.Args[0] + ` tasks list-tasks` + "\n" +
 		os.Args[0] + ` users list-users --token "jwt_token"` + "\n" +
 		""
@@ -55,8 +55,9 @@ func ParseEndpoint(
 	var (
 		submissionsFlags = flag.NewFlagSet("submissions", flag.ContinueOnError)
 
-		submissionsCreateSubmissionFlags    = flag.NewFlagSet("create-submission", flag.ExitOnError)
-		submissionsCreateSubmissionBodyFlag = submissionsCreateSubmissionFlags.String("body", "REQUIRED", "")
+		submissionsCreateSubmissionFlags     = flag.NewFlagSet("create-submission", flag.ExitOnError)
+		submissionsCreateSubmissionBodyFlag  = submissionsCreateSubmissionFlags.String("body", "REQUIRED", "")
+		submissionsCreateSubmissionTokenFlag = submissionsCreateSubmissionFlags.String("token", "REQUIRED", "")
 
 		submissionsListSubmissionsFlags = flag.NewFlagSet("list-submissions", flag.ExitOnError)
 
@@ -215,7 +216,7 @@ func ParseEndpoint(
 			switch epn {
 			case "create-submission":
 				endpoint = c.CreateSubmission()
-				data, err = submissionsc.BuildCreateSubmissionPayload(*submissionsCreateSubmissionBodyFlag)
+				data, err = submissionsc.BuildCreateSubmissionPayload(*submissionsCreateSubmissionBodyFlag, *submissionsCreateSubmissionTokenFlag)
 			case "list-submissions":
 				endpoint = c.ListSubmissions()
 			case "get-submission":
@@ -279,10 +280,11 @@ Additional help:
 `, os.Args[0])
 }
 func submissionsCreateSubmissionUsage() {
-	fmt.Fprintf(os.Stderr, `%[1]s [flags] submissions create-submission -body JSON
+	fmt.Fprintf(os.Stderr, `%[1]s [flags] submissions create-submission -body JSON -token STRING
 
 Create a new submission
     -body JSON: 
+    -token STRING: 
 
 Example:
     %[1]s submissions create-submission --body '{
@@ -290,7 +292,7 @@ Example:
       "submission": "print(factorial(5))",
       "task_code_id": "kvadrputekl",
       "username": "coder123"
-   }'
+   }' --token "Qui ipsam in deserunt."
 `, os.Args[0])
 }
 
@@ -441,6 +443,6 @@ Query current JWT
     -token STRING: 
 
 Example:
-    %[1]s users query-current-jwt --token "Id modi voluptatibus eos."
+    %[1]s users query-current-jwt --token "Voluptates beatae."
 `, os.Args[0])
 }

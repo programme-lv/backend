@@ -23,23 +23,23 @@ paths:
                                 $ref: '#/components/schemas/JWTClaims'
                             example:
                                 audience:
-                                    - Aut dicta molestiae.
-                                    - Et velit.
-                                email: Maiores ea repellendus non.
-                                expires_at: Ullam aut odit amet molestiae quidem.
-                                firstname: Ea fuga omnis nihil et.
-                                issued_at: Sit consequatur et molestias.
-                                issuer: Temporibus doloremque quisquam aspernatur repellat.
-                                lastname: Ipsam sed nemo vero nostrum.
-                                not_before: Omnis explicabo error facere quis iure.
+                                    - Facere quis iure assumenda numquam officia dolores.
+                                    - Ut id.
+                                    - Illo perferendis quos aut consequatur eveniet.
+                                email: Maiores deleniti.
+                                expires_at: Doloremque excepturi deserunt.
+                                firstname: Enim et voluptatem consequatur laboriosam.
+                                issued_at: Reprehenderit suscipit quibusdam qui sunt.
+                                issuer: Est ullam aut odit amet molestiae.
+                                lastname: Ut nam est sit repellendus.
+                                not_before: Ut voluptas velit autem praesentium nihil.
                                 scopes:
-                                    - Beatae et dolorum.
-                                    - Ipsam enim et voluptatem consequatur.
-                                    - Alias ut nam est sit.
-                                    - Autem maiores deleniti delectus delectus.
-                                subject: Perspiciatis hic occaecati voluptas quaerat modi.
-                                username: Non esse incidunt quo eveniet cum consectetur.
-                                uuid: Quo ut eos non consequatur.
+                                    - Quisquam aspernatur repellat.
+                                    - Perspiciatis hic occaecati voluptas quaerat modi.
+                                    - Rerum aut dicta molestiae fugiat et.
+                                subject: Deleniti sit consequatur et molestias officiis omnis.
+                                username: Dolorum commodi.
+                                uuid: Delectus vero.
                 "400":
                     description: 'InvalidUserDetails: Bad Request response.'
                     content:
@@ -121,7 +121,7 @@ paths:
                         application/json:
                             schema:
                                 type: string
-                                example: Maxime quis qui expedita sed deserunt consequatur.
+                                example: Soluta architecto.
                             example: Ut est enim.
                 "409":
                     description: 'EmailExistsConflict: Conflict response.'
@@ -129,7 +129,7 @@ paths:
                         application/json:
                             schema:
                                 type: string
-                                example: Delectus iste autem.
+                                example: Maxime quis qui expedita sed deserunt consequatur.
                             example: Et amet quia voluptate fugiat sint.
     /submissions:
         get:
@@ -163,9 +163,9 @@ paths:
                                         cpu_time_limit_seconds: 0.5
                                         default_md_statement:
                                             input: Ievaddatu pirmajā rindā dotas trīs naturālu skaitļu...
-                                            notes: Quia dolore maxime aut reprehenderit.
+                                            notes: Inventore alias.
                                             output: Izvaddatu vienīgajā rindā jābūt veselam skaitlim...
-                                            scoring: Saepe aliquam iusto ipsa architecto.
+                                            scoring: Corporis est nostrum.
                                             story: Krišjānis ir uzkonstruējis kvadrātveida putekļsūcēju (saīsināti – KP), kas ir neaizstājams palīgs viņa darbnīcas uzkopšanā...
                                         default_pdf_statement_url: https://dvhk4hiwp1rmf.cloudfront.net/task-pdf-statements/f27386f1b69f3c020335fe7c84316c5da099933832043e6a5820bcdb0cd66a81.pdf
                                         difficulty_rating: 3
@@ -177,7 +177,7 @@ paths:
                                                 .XXX.XX..
                                                 X.X.X..X.
                                                 ...XX....
-                                              md_note: Nisi adipisci incidunt expedita consectetur.
+                                              md_note: Perferendis qui quos.
                                               output: |
                                                 10
                                             - input: |
@@ -187,17 +187,7 @@ paths:
                                                 .XXX.XX..
                                                 X.X.X..X.
                                                 ...XX....
-                                              md_note: Nisi adipisci incidunt expedita consectetur.
-                                              output: |
-                                                10
-                                            - input: |
-                                                5 9 3
-                                                A....X..B
-                                                ..X..X.X.
-                                                .XXX.XX..
-                                                X.X.X..X.
-                                                ...XX....
-                                              md_note: Nisi adipisci incidunt expedita consectetur.
+                                              md_note: Perferendis qui quos.
                                               output: |
                                                 10
                                         illustration_img_url: https://dvhk4hiwp1rmf.cloudfront.net/task-illustrations/bafcc0aa1b4c56faa44f5f3b2a5abd9529af941eb9a9b10f541b436762d4948a.png
@@ -325,9 +315,9 @@ paths:
                                         cpu_time_limit_seconds: 0.5
                                         default_md_statement:
                                             input: Ievaddatu pirmajā rindā dotas trīs naturālu skaitļu...
-                                            notes: Quia dolore maxime aut reprehenderit.
+                                            notes: Inventore alias.
                                             output: Izvaddatu vienīgajā rindā jābūt veselam skaitlim...
-                                            scoring: Saepe aliquam iusto ipsa architecto.
+                                            scoring: Corporis est nostrum.
                                             story: Krišjānis ir uzkonstruējis kvadrātveida putekļsūcēju (saīsināti – KP), kas ir neaizstājams palīgs viņa darbnīcas uzkopšanā...
                                         default_pdf_statement_url: https://dvhk4hiwp1rmf.cloudfront.net/task-pdf-statements/f27386f1b69f3c020335fe7c84316c5da099933832043e6a5820bcdb0cd66a81.pdf
                                         difficulty_rating: 3
@@ -339,7 +329,7 @@ paths:
                                                 .XXX.XX..
                                                 X.X.X..X.
                                                 ...XX....
-                                              md_note: Nisi adipisci incidunt expedita consectetur.
+                                              md_note: Perferendis qui quos.
                                               output: |
                                                 10
                                             - input: |
@@ -349,7 +339,149 @@ paths:
                                                 .XXX.XX..
                                                 X.X.X..X.
                                                 ...XX....
-                                              md_note: Nisi adipisci incidunt expedita consectetur.
+                                              md_note: Perferendis qui quos.
+                                              output: |
+                                                10
+                                        illustration_img_url: https://dvhk4hiwp1rmf.cloudfront.net/task-illustrations/bafcc0aa1b4c56faa44f5f3b2a5abd9529af941eb9a9b10f541b436762d4948a.png
+                                        memory_limit_megabytes: 256
+                                        origin_notes:
+                                            lv: Uzdevums parādījās Latvijas 37. informātikas olimpiādes (2023./2024. gads) skolas kārtā.
+                                        origin_olympiad: LIO
+                                        published_task_id: kvadrputekl
+                                        task_full_name: Kvadrātveida putekļsūcējs
+                                        visible_input_subtasks:
+                                            - inputs:
+                                                - |
+                                                  5 5 3
+                                                  A.X..
+                                                  X.B.X
+                                                  ....X
+                                                  XX...
+                                                  X.XXX
+                                                - |
+                                                  6 3 1
+                                                  ...
+                                                  XA.
+                                                  .X.
+                                                  X..
+                                                  B..
+                                                  ...
+                                                - |
+                                                  6 4 2
+                                                  X...
+                                                  .AXX
+                                                  X..X
+                                                  .X.X
+                                                  XXXX
+                                                  X.BX
+                                              subtask: 1
+                                            - inputs:
+                                                - |
+                                                  5 5 3
+                                                  A.X..
+                                                  X.B.X
+                                                  ....X
+                                                  XX...
+                                                  X.XXX
+                                                - |
+                                                  6 3 1
+                                                  ...
+                                                  XA.
+                                                  .X.
+                                                  X..
+                                                  B..
+                                                  ...
+                                                - |
+                                                  6 4 2
+                                                  X...
+                                                  .AXX
+                                                  X..X
+                                                  .X.X
+                                                  XXXX
+                                                  X.BX
+                                              subtask: 1
+                                            - inputs:
+                                                - |
+                                                  5 5 3
+                                                  A.X..
+                                                  X.B.X
+                                                  ....X
+                                                  XX...
+                                                  X.XXX
+                                                - |
+                                                  6 3 1
+                                                  ...
+                                                  XA.
+                                                  .X.
+                                                  X..
+                                                  B..
+                                                  ...
+                                                - |
+                                                  6 4 2
+                                                  X...
+                                                  .AXX
+                                                  X..X
+                                                  .X.X
+                                                  XXXX
+                                                  X.BX
+                                              subtask: 1
+                                            - inputs:
+                                                - |
+                                                  5 5 3
+                                                  A.X..
+                                                  X.B.X
+                                                  ....X
+                                                  XX...
+                                                  X.XXX
+                                                - |
+                                                  6 3 1
+                                                  ...
+                                                  XA.
+                                                  .X.
+                                                  X..
+                                                  B..
+                                                  ...
+                                                - |
+                                                  6 4 2
+                                                  X...
+                                                  .AXX
+                                                  X..X
+                                                  .X.X
+                                                  XXXX
+                                                  X.BX
+                                              subtask: 1
+                                      username: coder123
+                                      uuid: 123e4567-e89b-12d3-a456-426614174000
+                                    - createdAt: "2024-08-08T10:30:00Z"
+                                      evaluation:
+                                        possibleScore: 100
+                                        receivedScore: 85
+                                        status: completed
+                                        uuid: 123e4567-e89b-12d3-a456-426614174000
+                                      language:
+                                        fullName: Go
+                                        id: go
+                                        monacoId: go
+                                      submission: print(factorial(5))
+                                      task:
+                                        cpu_time_limit_seconds: 0.5
+                                        default_md_statement:
+                                            input: Ievaddatu pirmajā rindā dotas trīs naturālu skaitļu...
+                                            notes: Inventore alias.
+                                            output: Izvaddatu vienīgajā rindā jābūt veselam skaitlim...
+                                            scoring: Corporis est nostrum.
+                                            story: Krišjānis ir uzkonstruējis kvadrātveida putekļsūcēju (saīsināti – KP), kas ir neaizstājams palīgs viņa darbnīcas uzkopšanā...
+                                        default_pdf_statement_url: https://dvhk4hiwp1rmf.cloudfront.net/task-pdf-statements/f27386f1b69f3c020335fe7c84316c5da099933832043e6a5820bcdb0cd66a81.pdf
+                                        difficulty_rating: 3
+                                        examples:
+                                            - input: |
+                                                5 9 3
+                                                A....X..B
+                                                ..X..X.X.
+                                                .XXX.XX..
+                                                X.X.X..X.
+                                                ...XX....
+                                              md_note: Perferendis qui quos.
                                               output: |
                                                 10
                                             - input: |
@@ -359,7 +491,159 @@ paths:
                                                 .XXX.XX..
                                                 X.X.X..X.
                                                 ...XX....
-                                              md_note: Nisi adipisci incidunt expedita consectetur.
+                                              md_note: Perferendis qui quos.
+                                              output: |
+                                                10
+                                        illustration_img_url: https://dvhk4hiwp1rmf.cloudfront.net/task-illustrations/bafcc0aa1b4c56faa44f5f3b2a5abd9529af941eb9a9b10f541b436762d4948a.png
+                                        memory_limit_megabytes: 256
+                                        origin_notes:
+                                            lv: Uzdevums parādījās Latvijas 37. informātikas olimpiādes (2023./2024. gads) skolas kārtā.
+                                        origin_olympiad: LIO
+                                        published_task_id: kvadrputekl
+                                        task_full_name: Kvadrātveida putekļsūcējs
+                                        visible_input_subtasks:
+                                            - inputs:
+                                                - |
+                                                  5 5 3
+                                                  A.X..
+                                                  X.B.X
+                                                  ....X
+                                                  XX...
+                                                  X.XXX
+                                                - |
+                                                  6 3 1
+                                                  ...
+                                                  XA.
+                                                  .X.
+                                                  X..
+                                                  B..
+                                                  ...
+                                                - |
+                                                  6 4 2
+                                                  X...
+                                                  .AXX
+                                                  X..X
+                                                  .X.X
+                                                  XXXX
+                                                  X.BX
+                                              subtask: 1
+                                            - inputs:
+                                                - |
+                                                  5 5 3
+                                                  A.X..
+                                                  X.B.X
+                                                  ....X
+                                                  XX...
+                                                  X.XXX
+                                                - |
+                                                  6 3 1
+                                                  ...
+                                                  XA.
+                                                  .X.
+                                                  X..
+                                                  B..
+                                                  ...
+                                                - |
+                                                  6 4 2
+                                                  X...
+                                                  .AXX
+                                                  X..X
+                                                  .X.X
+                                                  XXXX
+                                                  X.BX
+                                              subtask: 1
+                                            - inputs:
+                                                - |
+                                                  5 5 3
+                                                  A.X..
+                                                  X.B.X
+                                                  ....X
+                                                  XX...
+                                                  X.XXX
+                                                - |
+                                                  6 3 1
+                                                  ...
+                                                  XA.
+                                                  .X.
+                                                  X..
+                                                  B..
+                                                  ...
+                                                - |
+                                                  6 4 2
+                                                  X...
+                                                  .AXX
+                                                  X..X
+                                                  .X.X
+                                                  XXXX
+                                                  X.BX
+                                              subtask: 1
+                                            - inputs:
+                                                - |
+                                                  5 5 3
+                                                  A.X..
+                                                  X.B.X
+                                                  ....X
+                                                  XX...
+                                                  X.XXX
+                                                - |
+                                                  6 3 1
+                                                  ...
+                                                  XA.
+                                                  .X.
+                                                  X..
+                                                  B..
+                                                  ...
+                                                - |
+                                                  6 4 2
+                                                  X...
+                                                  .AXX
+                                                  X..X
+                                                  .X.X
+                                                  XXXX
+                                                  X.BX
+                                              subtask: 1
+                                      username: coder123
+                                      uuid: 123e4567-e89b-12d3-a456-426614174000
+                                    - createdAt: "2024-08-08T10:30:00Z"
+                                      evaluation:
+                                        possibleScore: 100
+                                        receivedScore: 85
+                                        status: completed
+                                        uuid: 123e4567-e89b-12d3-a456-426614174000
+                                      language:
+                                        fullName: Go
+                                        id: go
+                                        monacoId: go
+                                      submission: print(factorial(5))
+                                      task:
+                                        cpu_time_limit_seconds: 0.5
+                                        default_md_statement:
+                                            input: Ievaddatu pirmajā rindā dotas trīs naturālu skaitļu...
+                                            notes: Inventore alias.
+                                            output: Izvaddatu vienīgajā rindā jābūt veselam skaitlim...
+                                            scoring: Corporis est nostrum.
+                                            story: Krišjānis ir uzkonstruējis kvadrātveida putekļsūcēju (saīsināti – KP), kas ir neaizstājams palīgs viņa darbnīcas uzkopšanā...
+                                        default_pdf_statement_url: https://dvhk4hiwp1rmf.cloudfront.net/task-pdf-statements/f27386f1b69f3c020335fe7c84316c5da099933832043e6a5820bcdb0cd66a81.pdf
+                                        difficulty_rating: 3
+                                        examples:
+                                            - input: |
+                                                5 9 3
+                                                A....X..B
+                                                ..X..X.X.
+                                                .XXX.XX..
+                                                X.X.X..X.
+                                                ...XX....
+                                              md_note: Perferendis qui quos.
+                                              output: |
+                                                10
+                                            - input: |
+                                                5 9 3
+                                                A....X..B
+                                                ..X..X.X.
+                                                .XXX.XX..
+                                                X.X.X..X.
+                                                ...XX....
+                                              md_note: Perferendis qui quos.
                                               output: |
                                                 10
                                         illustration_img_url: https://dvhk4hiwp1rmf.cloudfront.net/task-illustrations/bafcc0aa1b4c56faa44f5f3b2a5abd9529af941eb9a9b10f541b436762d4948a.png
@@ -488,9 +772,9 @@ paths:
                                     cpu_time_limit_seconds: 0.5
                                     default_md_statement:
                                         input: Ievaddatu pirmajā rindā dotas trīs naturālu skaitļu...
-                                        notes: Quia dolore maxime aut reprehenderit.
+                                        notes: Inventore alias.
                                         output: Izvaddatu vienīgajā rindā jābūt veselam skaitlim...
-                                        scoring: Saepe aliquam iusto ipsa architecto.
+                                        scoring: Corporis est nostrum.
                                         story: Krišjānis ir uzkonstruējis kvadrātveida putekļsūcēju (saīsināti – KP), kas ir neaizstājams palīgs viņa darbnīcas uzkopšanā...
                                     default_pdf_statement_url: https://dvhk4hiwp1rmf.cloudfront.net/task-pdf-statements/f27386f1b69f3c020335fe7c84316c5da099933832043e6a5820bcdb0cd66a81.pdf
                                     difficulty_rating: 3
@@ -502,7 +786,7 @@ paths:
                                             .XXX.XX..
                                             X.X.X..X.
                                             ...XX....
-                                          md_note: Nisi adipisci incidunt expedita consectetur.
+                                          md_note: Perferendis qui quos.
                                           output: |
                                             10
                                         - input: |
@@ -512,17 +796,7 @@ paths:
                                             .XXX.XX..
                                             X.X.X..X.
                                             ...XX....
-                                          md_note: Nisi adipisci incidunt expedita consectetur.
-                                          output: |
-                                            10
-                                        - input: |
-                                            5 9 3
-                                            A....X..B
-                                            ..X..X.X.
-                                            .XXX.XX..
-                                            X.X.X..X.
-                                            ...XX....
-                                          md_note: Nisi adipisci incidunt expedita consectetur.
+                                          md_note: Perferendis qui quos.
                                           output: |
                                             10
                                     illustration_img_url: https://dvhk4hiwp1rmf.cloudfront.net/task-illustrations/bafcc0aa1b4c56faa44f5f3b2a5abd9529af941eb9a9b10f541b436762d4948a.png
@@ -650,9 +924,9 @@ paths:
                                     cpu_time_limit_seconds: 0.5
                                     default_md_statement:
                                         input: Ievaddatu pirmajā rindā dotas trīs naturālu skaitļu...
-                                        notes: Quia dolore maxime aut reprehenderit.
+                                        notes: Inventore alias.
                                         output: Izvaddatu vienīgajā rindā jābūt veselam skaitlim...
-                                        scoring: Saepe aliquam iusto ipsa architecto.
+                                        scoring: Corporis est nostrum.
                                         story: Krišjānis ir uzkonstruējis kvadrātveida putekļsūcēju (saīsināti – KP), kas ir neaizstājams palīgs viņa darbnīcas uzkopšanā...
                                     default_pdf_statement_url: https://dvhk4hiwp1rmf.cloudfront.net/task-pdf-statements/f27386f1b69f3c020335fe7c84316c5da099933832043e6a5820bcdb0cd66a81.pdf
                                     difficulty_rating: 3
@@ -664,7 +938,7 @@ paths:
                                             .XXX.XX..
                                             X.X.X..X.
                                             ...XX....
-                                          md_note: Nisi adipisci incidunt expedita consectetur.
+                                          md_note: Perferendis qui quos.
                                           output: |
                                             10
                                         - input: |
@@ -674,17 +948,7 @@ paths:
                                             .XXX.XX..
                                             X.X.X..X.
                                             ...XX....
-                                          md_note: Nisi adipisci incidunt expedita consectetur.
-                                          output: |
-                                            10
-                                        - input: |
-                                            5 9 3
-                                            A....X..B
-                                            ..X..X.X.
-                                            .XXX.XX..
-                                            X.X.X..X.
-                                            ...XX....
-                                          md_note: Nisi adipisci incidunt expedita consectetur.
+                                          md_note: Perferendis qui quos.
                                           output: |
                                             10
                                     illustration_img_url: https://dvhk4hiwp1rmf.cloudfront.net/task-illustrations/bafcc0aa1b4c56faa44f5f3b2a5abd9529af941eb9a9b10f541b436762d4948a.png
@@ -812,9 +1076,9 @@ paths:
                                     cpu_time_limit_seconds: 0.5
                                     default_md_statement:
                                         input: Ievaddatu pirmajā rindā dotas trīs naturālu skaitļu...
-                                        notes: Quia dolore maxime aut reprehenderit.
+                                        notes: Inventore alias.
                                         output: Izvaddatu vienīgajā rindā jābūt veselam skaitlim...
-                                        scoring: Saepe aliquam iusto ipsa architecto.
+                                        scoring: Corporis est nostrum.
                                         story: Krišjānis ir uzkonstruējis kvadrātveida putekļsūcēju (saīsināti – KP), kas ir neaizstājams palīgs viņa darbnīcas uzkopšanā...
                                     default_pdf_statement_url: https://dvhk4hiwp1rmf.cloudfront.net/task-pdf-statements/f27386f1b69f3c020335fe7c84316c5da099933832043e6a5820bcdb0cd66a81.pdf
                                     difficulty_rating: 3
@@ -826,7 +1090,7 @@ paths:
                                             .XXX.XX..
                                             X.X.X..X.
                                             ...XX....
-                                          md_note: Nisi adipisci incidunt expedita consectetur.
+                                          md_note: Perferendis qui quos.
                                           output: |
                                             10
                                         - input: |
@@ -836,17 +1100,7 @@ paths:
                                             .XXX.XX..
                                             X.X.X..X.
                                             ...XX....
-                                          md_note: Nisi adipisci incidunt expedita consectetur.
-                                          output: |
-                                            10
-                                        - input: |
-                                            5 9 3
-                                            A....X..B
-                                            ..X..X.X.
-                                            .XXX.XX..
-                                            X.X.X..X.
-                                            ...XX....
-                                          md_note: Nisi adipisci incidunt expedita consectetur.
+                                          md_note: Perferendis qui quos.
                                           output: |
                                             10
                                     illustration_img_url: https://dvhk4hiwp1rmf.cloudfront.net/task-illustrations/bafcc0aa1b4c56faa44f5f3b2a5abd9529af941eb9a9b10f541b436762d4948a.png
@@ -965,7 +1219,7 @@ paths:
                         application/json:
                             schema:
                                 type: string
-                                example: Iste alias minus.
+                                example: Excepturi provident facilis incidunt.
                             example: Possimus fugiat et ut et deleniti.
                 "401":
                     description: 'unauthorized: Unauthorized response.'
@@ -973,7 +1227,7 @@ paths:
                         application/json:
                             schema:
                                 type: string
-                                example: Numquam inventore.
+                                example: Quidem quo explicabo occaecati reprehenderit reiciendis.
                             example: Aut rem non dolorem expedita.
                 "404":
                     description: 'NotFound: Not Found response.'
@@ -981,7 +1235,7 @@ paths:
                         application/json:
                             schema:
                                 type: string
-                                example: Doloremque dolorem ut ratione.
+                                example: Qui numquam.
                             example: Iusto ex nemo doloremque rerum.
                 "500":
                     description: 'InternalError: Internal Server Error response.'
@@ -989,7 +1243,7 @@ paths:
                         application/json:
                             schema:
                                 type: string
-                                example: Labore aut voluptatum molestiae qui.
+                                example: Ut iste alias minus nobis doloremque dolorem.
                             example: Incidunt architecto in quis sunt.
         post:
             tags:
@@ -1031,9 +1285,9 @@ paths:
                                     cpu_time_limit_seconds: 0.5
                                     default_md_statement:
                                         input: Ievaddatu pirmajā rindā dotas trīs naturālu skaitļu...
-                                        notes: Illo officia.
+                                        notes: Natus numquam tempore consequuntur et nulla.
                                         output: Izvaddatu vienīgajā rindā jābūt veselam skaitlim...
-                                        scoring: Asperiores quidem omnis illo.
+                                        scoring: Sit neque ut quas.
                                         story: Krišjānis ir uzkonstruējis kvadrātveida putekļsūcēju (saīsināti – KP), kas ir neaizstājams palīgs viņa darbnīcas uzkopšanā...
                                     default_pdf_statement_url: https://dvhk4hiwp1rmf.cloudfront.net/task-pdf-statements/f27386f1b69f3c020335fe7c84316c5da099933832043e6a5820bcdb0cd66a81.pdf
                                     difficulty_rating: 3
@@ -1045,7 +1299,7 @@ paths:
                                             .XXX.XX..
                                             X.X.X..X.
                                             ...XX....
-                                          md_note: Qui tempora aut ea.
+                                          md_note: Quidem nobis sapiente et quidem.
                                           output: |
                                             10
                                         - input: |
@@ -1055,7 +1309,7 @@ paths:
                                             .XXX.XX..
                                             X.X.X..X.
                                             ...XX....
-                                          md_note: Qui tempora aut ea.
+                                          md_note: Quidem nobis sapiente et quidem.
                                           output: |
                                             10
                                         - input: |
@@ -1065,7 +1319,7 @@ paths:
                                             .XXX.XX..
                                             X.X.X..X.
                                             ...XX....
-                                          md_note: Qui tempora aut ea.
+                                          md_note: Quidem nobis sapiente et quidem.
                                           output: |
                                             10
                                     illustration_img_url: https://dvhk4hiwp1rmf.cloudfront.net/task-illustrations/bafcc0aa1b4c56faa44f5f3b2a5abd9529af941eb9a9b10f541b436762d4948a.png
@@ -1184,7 +1438,7 @@ paths:
                         application/json:
                             schema:
                                 type: string
-                                example: Exercitationem neque numquam animi laudantium.
+                                example: Quia cumque ea est reiciendis porro.
                             example: Distinctio quasi unde.
                 "401":
                     description: 'unauthorized: Unauthorized response.'
@@ -1192,7 +1446,7 @@ paths:
                         application/json:
                             schema:
                                 type: string
-                                example: Earum fugiat quam molestiae ea enim consequuntur.
+                                example: Quod distinctio optio nesciunt.
                             example: Consequatur tempore expedita ut autem veniam.
                 "404":
                     description: 'NotFound: Not Found response.'
@@ -1200,7 +1454,7 @@ paths:
                         application/json:
                             schema:
                                 type: string
-                                example: Quo explicabo occaecati reprehenderit reiciendis necessitatibus excepturi.
+                                example: Neque numquam animi.
                             example: Ipsam totam ea repellat.
                 "500":
                     description: 'InternalError: Internal Server Error response.'
@@ -1208,8 +1462,10 @@ paths:
                         application/json:
                             schema:
                                 type: string
-                                example: Facilis incidunt.
+                                example: Minus earum fugiat quam molestiae ea.
                             example: In sint non quisquam.
+            security:
+                - jwt_header_Authorization: []
     /submissions/{uuid}:
         get:
             tags:
@@ -1250,9 +1506,9 @@ paths:
                                     cpu_time_limit_seconds: 0.5
                                     default_md_statement:
                                         input: Ievaddatu pirmajā rindā dotas trīs naturālu skaitļu...
-                                        notes: Illo officia.
+                                        notes: Natus numquam tempore consequuntur et nulla.
                                         output: Izvaddatu vienīgajā rindā jābūt veselam skaitlim...
-                                        scoring: Asperiores quidem omnis illo.
+                                        scoring: Sit neque ut quas.
                                         story: Krišjānis ir uzkonstruējis kvadrātveida putekļsūcēju (saīsināti – KP), kas ir neaizstājams palīgs viņa darbnīcas uzkopšanā...
                                     default_pdf_statement_url: https://dvhk4hiwp1rmf.cloudfront.net/task-pdf-statements/f27386f1b69f3c020335fe7c84316c5da099933832043e6a5820bcdb0cd66a81.pdf
                                     difficulty_rating: 3
@@ -1264,7 +1520,7 @@ paths:
                                             .XXX.XX..
                                             X.X.X..X.
                                             ...XX....
-                                          md_note: Qui tempora aut ea.
+                                          md_note: Quidem nobis sapiente et quidem.
                                           output: |
                                             10
                                         - input: |
@@ -1274,7 +1530,7 @@ paths:
                                             .XXX.XX..
                                             X.X.X..X.
                                             ...XX....
-                                          md_note: Qui tempora aut ea.
+                                          md_note: Quidem nobis sapiente et quidem.
                                           output: |
                                             10
                                         - input: |
@@ -1284,7 +1540,7 @@ paths:
                                             .XXX.XX..
                                             X.X.X..X.
                                             ...XX....
-                                          md_note: Qui tempora aut ea.
+                                          md_note: Quidem nobis sapiente et quidem.
                                           output: |
                                             10
                                     illustration_img_url: https://dvhk4hiwp1rmf.cloudfront.net/task-illustrations/bafcc0aa1b4c56faa44f5f3b2a5abd9529af941eb9a9b10f541b436762d4948a.png
@@ -1403,7 +1659,7 @@ paths:
                         application/json:
                             schema:
                                 type: string
-                                example: Aliquam et sunt officia consequatur quia cum.
+                                example: Voluptatum molestiae qui amet quod enim ipsum.
                             example: Sint perspiciatis cum quis.
                 "401":
                     description: 'unauthorized: Unauthorized response.'
@@ -1411,7 +1667,7 @@ paths:
                         application/json:
                             schema:
                                 type: string
-                                example: Quod enim ipsum et quod molestiae.
+                                example: Ratione quo labore.
                             example: Sed ipsum.
                 "404":
                     description: 'NotFound: Not Found response.'
@@ -1419,7 +1675,7 @@ paths:
                         application/json:
                             schema:
                                 type: string
-                                example: Quia debitis.
+                                example: Quod molestiae.
                             example: Error sed beatae non repudiandae a.
                 "500":
                     description: 'InternalError: Internal Server Error response.'
@@ -1427,7 +1683,7 @@ paths:
                         application/json:
                             schema:
                                 type: string
-                                example: Est dolorum quaerat qui.
+                                example: Aliquam et sunt officia consequatur quia cum.
                             example: Tenetur velit eligendi nostrum et.
     /tasks:
         get:
@@ -1449,9 +1705,9 @@ paths:
                                     - cpu_time_limit_seconds: 0.5
                                       default_md_statement:
                                         input: Ievaddatu pirmajā rindā dotas trīs naturālu skaitļu...
-                                        notes: Quia dolore maxime aut reprehenderit.
+                                        notes: Inventore alias.
                                         output: Izvaddatu vienīgajā rindā jābūt veselam skaitlim...
-                                        scoring: Saepe aliquam iusto ipsa architecto.
+                                        scoring: Corporis est nostrum.
                                         story: Krišjānis ir uzkonstruējis kvadrātveida putekļsūcēju (saīsināti – KP), kas ir neaizstājams palīgs viņa darbnīcas uzkopšanā...
                                       default_pdf_statement_url: https://dvhk4hiwp1rmf.cloudfront.net/task-pdf-statements/f27386f1b69f3c020335fe7c84316c5da099933832043e6a5820bcdb0cd66a81.pdf
                                       difficulty_rating: 3
@@ -1463,7 +1719,7 @@ paths:
                                             .XXX.XX..
                                             X.X.X..X.
                                             ...XX....
-                                          md_note: Nisi adipisci incidunt expedita consectetur.
+                                          md_note: Perferendis qui quos.
                                           output: |
                                             10
                                         - input: |
@@ -1473,17 +1729,7 @@ paths:
                                             .XXX.XX..
                                             X.X.X..X.
                                             ...XX....
-                                          md_note: Nisi adipisci incidunt expedita consectetur.
-                                          output: |
-                                            10
-                                        - input: |
-                                            5 9 3
-                                            A....X..B
-                                            ..X..X.X.
-                                            .XXX.XX..
-                                            X.X.X..X.
-                                            ...XX....
-                                          md_note: Nisi adipisci incidunt expedita consectetur.
+                                          md_note: Perferendis qui quos.
                                           output: |
                                             10
                                       illustration_img_url: https://dvhk4hiwp1rmf.cloudfront.net/task-illustrations/bafcc0aa1b4c56faa44f5f3b2a5abd9529af941eb9a9b10f541b436762d4948a.png
@@ -1597,9 +1843,9 @@ paths:
                                     - cpu_time_limit_seconds: 0.5
                                       default_md_statement:
                                         input: Ievaddatu pirmajā rindā dotas trīs naturālu skaitļu...
-                                        notes: Quia dolore maxime aut reprehenderit.
+                                        notes: Inventore alias.
                                         output: Izvaddatu vienīgajā rindā jābūt veselam skaitlim...
-                                        scoring: Saepe aliquam iusto ipsa architecto.
+                                        scoring: Corporis est nostrum.
                                         story: Krišjānis ir uzkonstruējis kvadrātveida putekļsūcēju (saīsināti – KP), kas ir neaizstājams palīgs viņa darbnīcas uzkopšanā...
                                       default_pdf_statement_url: https://dvhk4hiwp1rmf.cloudfront.net/task-pdf-statements/f27386f1b69f3c020335fe7c84316c5da099933832043e6a5820bcdb0cd66a81.pdf
                                       difficulty_rating: 3
@@ -1611,7 +1857,7 @@ paths:
                                             .XXX.XX..
                                             X.X.X..X.
                                             ...XX....
-                                          md_note: Nisi adipisci incidunt expedita consectetur.
+                                          md_note: Perferendis qui quos.
                                           output: |
                                             10
                                         - input: |
@@ -1621,17 +1867,7 @@ paths:
                                             .XXX.XX..
                                             X.X.X..X.
                                             ...XX....
-                                          md_note: Nisi adipisci incidunt expedita consectetur.
-                                          output: |
-                                            10
-                                        - input: |
-                                            5 9 3
-                                            A....X..B
-                                            ..X..X.X.
-                                            .XXX.XX..
-                                            X.X.X..X.
-                                            ...XX....
-                                          md_note: Nisi adipisci incidunt expedita consectetur.
+                                          md_note: Perferendis qui quos.
                                           output: |
                                             10
                                       illustration_img_url: https://dvhk4hiwp1rmf.cloudfront.net/task-illustrations/bafcc0aa1b4c56faa44f5f3b2a5abd9529af941eb9a9b10f541b436762d4948a.png
@@ -1745,9 +1981,9 @@ paths:
                                     - cpu_time_limit_seconds: 0.5
                                       default_md_statement:
                                         input: Ievaddatu pirmajā rindā dotas trīs naturālu skaitļu...
-                                        notes: Quia dolore maxime aut reprehenderit.
+                                        notes: Inventore alias.
                                         output: Izvaddatu vienīgajā rindā jābūt veselam skaitlim...
-                                        scoring: Saepe aliquam iusto ipsa architecto.
+                                        scoring: Corporis est nostrum.
                                         story: Krišjānis ir uzkonstruējis kvadrātveida putekļsūcēju (saīsināti – KP), kas ir neaizstājams palīgs viņa darbnīcas uzkopšanā...
                                       default_pdf_statement_url: https://dvhk4hiwp1rmf.cloudfront.net/task-pdf-statements/f27386f1b69f3c020335fe7c84316c5da099933832043e6a5820bcdb0cd66a81.pdf
                                       difficulty_rating: 3
@@ -1759,7 +1995,7 @@ paths:
                                             .XXX.XX..
                                             X.X.X..X.
                                             ...XX....
-                                          md_note: Nisi adipisci incidunt expedita consectetur.
+                                          md_note: Perferendis qui quos.
                                           output: |
                                             10
                                         - input: |
@@ -1769,17 +2005,7 @@ paths:
                                             .XXX.XX..
                                             X.X.X..X.
                                             ...XX....
-                                          md_note: Nisi adipisci incidunt expedita consectetur.
-                                          output: |
-                                            10
-                                        - input: |
-                                            5 9 3
-                                            A....X..B
-                                            ..X..X.X.
-                                            .XXX.XX..
-                                            X.X.X..X.
-                                            ...XX....
-                                          md_note: Nisi adipisci incidunt expedita consectetur.
+                                          md_note: Perferendis qui quos.
                                           output: |
                                             10
                                       illustration_img_url: https://dvhk4hiwp1rmf.cloudfront.net/task-illustrations/bafcc0aa1b4c56faa44f5f3b2a5abd9529af941eb9a9b10f541b436762d4948a.png
@@ -1893,9 +2119,9 @@ paths:
                                     - cpu_time_limit_seconds: 0.5
                                       default_md_statement:
                                         input: Ievaddatu pirmajā rindā dotas trīs naturālu skaitļu...
-                                        notes: Quia dolore maxime aut reprehenderit.
+                                        notes: Inventore alias.
                                         output: Izvaddatu vienīgajā rindā jābūt veselam skaitlim...
-                                        scoring: Saepe aliquam iusto ipsa architecto.
+                                        scoring: Corporis est nostrum.
                                         story: Krišjānis ir uzkonstruējis kvadrātveida putekļsūcēju (saīsināti – KP), kas ir neaizstājams palīgs viņa darbnīcas uzkopšanā...
                                       default_pdf_statement_url: https://dvhk4hiwp1rmf.cloudfront.net/task-pdf-statements/f27386f1b69f3c020335fe7c84316c5da099933832043e6a5820bcdb0cd66a81.pdf
                                       difficulty_rating: 3
@@ -1907,7 +2133,7 @@ paths:
                                             .XXX.XX..
                                             X.X.X..X.
                                             ...XX....
-                                          md_note: Nisi adipisci incidunt expedita consectetur.
+                                          md_note: Perferendis qui quos.
                                           output: |
                                             10
                                         - input: |
@@ -1917,17 +2143,7 @@ paths:
                                             .XXX.XX..
                                             X.X.X..X.
                                             ...XX....
-                                          md_note: Nisi adipisci incidunt expedita consectetur.
-                                          output: |
-                                            10
-                                        - input: |
-                                            5 9 3
-                                            A....X..B
-                                            ..X..X.X.
-                                            .XXX.XX..
-                                            X.X.X..X.
-                                            ...XX....
-                                          md_note: Nisi adipisci incidunt expedita consectetur.
+                                          md_note: Perferendis qui quos.
                                           output: |
                                             10
                                       illustration_img_url: https://dvhk4hiwp1rmf.cloudfront.net/task-illustrations/bafcc0aa1b4c56faa44f5f3b2a5abd9529af941eb9a9b10f541b436762d4948a.png
@@ -2042,9 +2258,9 @@ paths:
                                 - cpu_time_limit_seconds: 0.5
                                   default_md_statement:
                                     input: Ievaddatu pirmajā rindā dotas trīs naturālu skaitļu...
-                                    notes: Quia dolore maxime aut reprehenderit.
+                                    notes: Inventore alias.
                                     output: Izvaddatu vienīgajā rindā jābūt veselam skaitlim...
-                                    scoring: Saepe aliquam iusto ipsa architecto.
+                                    scoring: Corporis est nostrum.
                                     story: Krišjānis ir uzkonstruējis kvadrātveida putekļsūcēju (saīsināti – KP), kas ir neaizstājams palīgs viņa darbnīcas uzkopšanā...
                                   default_pdf_statement_url: https://dvhk4hiwp1rmf.cloudfront.net/task-pdf-statements/f27386f1b69f3c020335fe7c84316c5da099933832043e6a5820bcdb0cd66a81.pdf
                                   difficulty_rating: 3
@@ -2056,7 +2272,7 @@ paths:
                                         .XXX.XX..
                                         X.X.X..X.
                                         ...XX....
-                                      md_note: Nisi adipisci incidunt expedita consectetur.
+                                      md_note: Perferendis qui quos.
                                       output: |
                                         10
                                     - input: |
@@ -2066,17 +2282,7 @@ paths:
                                         .XXX.XX..
                                         X.X.X..X.
                                         ...XX....
-                                      md_note: Nisi adipisci incidunt expedita consectetur.
-                                      output: |
-                                        10
-                                    - input: |
-                                        5 9 3
-                                        A....X..B
-                                        ..X..X.X.
-                                        .XXX.XX..
-                                        X.X.X..X.
-                                        ...XX....
-                                      md_note: Nisi adipisci incidunt expedita consectetur.
+                                      md_note: Perferendis qui quos.
                                       output: |
                                         10
                                   illustration_img_url: https://dvhk4hiwp1rmf.cloudfront.net/task-illustrations/bafcc0aa1b4c56faa44f5f3b2a5abd9529af941eb9a9b10f541b436762d4948a.png
@@ -2190,9 +2396,9 @@ paths:
                                 - cpu_time_limit_seconds: 0.5
                                   default_md_statement:
                                     input: Ievaddatu pirmajā rindā dotas trīs naturālu skaitļu...
-                                    notes: Quia dolore maxime aut reprehenderit.
+                                    notes: Inventore alias.
                                     output: Izvaddatu vienīgajā rindā jābūt veselam skaitlim...
-                                    scoring: Saepe aliquam iusto ipsa architecto.
+                                    scoring: Corporis est nostrum.
                                     story: Krišjānis ir uzkonstruējis kvadrātveida putekļsūcēju (saīsināti – KP), kas ir neaizstājams palīgs viņa darbnīcas uzkopšanā...
                                   default_pdf_statement_url: https://dvhk4hiwp1rmf.cloudfront.net/task-pdf-statements/f27386f1b69f3c020335fe7c84316c5da099933832043e6a5820bcdb0cd66a81.pdf
                                   difficulty_rating: 3
@@ -2204,7 +2410,7 @@ paths:
                                         .XXX.XX..
                                         X.X.X..X.
                                         ...XX....
-                                      md_note: Nisi adipisci incidunt expedita consectetur.
+                                      md_note: Perferendis qui quos.
                                       output: |
                                         10
                                     - input: |
@@ -2214,17 +2420,7 @@ paths:
                                         .XXX.XX..
                                         X.X.X..X.
                                         ...XX....
-                                      md_note: Nisi adipisci incidunt expedita consectetur.
-                                      output: |
-                                        10
-                                    - input: |
-                                        5 9 3
-                                        A....X..B
-                                        ..X..X.X.
-                                        .XXX.XX..
-                                        X.X.X..X.
-                                        ...XX....
-                                      md_note: Nisi adipisci incidunt expedita consectetur.
+                                      md_note: Perferendis qui quos.
                                       output: |
                                         10
                                   illustration_img_url: https://dvhk4hiwp1rmf.cloudfront.net/task-illustrations/bafcc0aa1b4c56faa44f5f3b2a5abd9529af941eb9a9b10f541b436762d4948a.png
@@ -2338,9 +2534,9 @@ paths:
                                 - cpu_time_limit_seconds: 0.5
                                   default_md_statement:
                                     input: Ievaddatu pirmajā rindā dotas trīs naturālu skaitļu...
-                                    notes: Quia dolore maxime aut reprehenderit.
+                                    notes: Inventore alias.
                                     output: Izvaddatu vienīgajā rindā jābūt veselam skaitlim...
-                                    scoring: Saepe aliquam iusto ipsa architecto.
+                                    scoring: Corporis est nostrum.
                                     story: Krišjānis ir uzkonstruējis kvadrātveida putekļsūcēju (saīsināti – KP), kas ir neaizstājams palīgs viņa darbnīcas uzkopšanā...
                                   default_pdf_statement_url: https://dvhk4hiwp1rmf.cloudfront.net/task-pdf-statements/f27386f1b69f3c020335fe7c84316c5da099933832043e6a5820bcdb0cd66a81.pdf
                                   difficulty_rating: 3
@@ -2352,7 +2548,7 @@ paths:
                                         .XXX.XX..
                                         X.X.X..X.
                                         ...XX....
-                                      md_note: Nisi adipisci incidunt expedita consectetur.
+                                      md_note: Perferendis qui quos.
                                       output: |
                                         10
                                     - input: |
@@ -2362,17 +2558,7 @@ paths:
                                         .XXX.XX..
                                         X.X.X..X.
                                         ...XX....
-                                      md_note: Nisi adipisci incidunt expedita consectetur.
-                                      output: |
-                                        10
-                                    - input: |
-                                        5 9 3
-                                        A....X..B
-                                        ..X..X.X.
-                                        .XXX.XX..
-                                        X.X.X..X.
-                                        ...XX....
-                                      md_note: Nisi adipisci incidunt expedita consectetur.
+                                      md_note: Perferendis qui quos.
                                       output: |
                                         10
                                   illustration_img_url: https://dvhk4hiwp1rmf.cloudfront.net/task-illustrations/bafcc0aa1b4c56faa44f5f3b2a5abd9529af941eb9a9b10f541b436762d4948a.png
@@ -2511,9 +2697,9 @@ paths:
                                 cpu_time_limit_seconds: 0.5
                                 default_md_statement:
                                     input: Ievaddatu pirmajā rindā dotas trīs naturālu skaitļu...
-                                    notes: Illo officia.
+                                    notes: Natus numquam tempore consequuntur et nulla.
                                     output: Izvaddatu vienīgajā rindā jābūt veselam skaitlim...
-                                    scoring: Asperiores quidem omnis illo.
+                                    scoring: Sit neque ut quas.
                                     story: Krišjānis ir uzkonstruējis kvadrātveida putekļsūcēju (saīsināti – KP), kas ir neaizstājams palīgs viņa darbnīcas uzkopšanā...
                                 default_pdf_statement_url: https://dvhk4hiwp1rmf.cloudfront.net/task-pdf-statements/f27386f1b69f3c020335fe7c84316c5da099933832043e6a5820bcdb0cd66a81.pdf
                                 difficulty_rating: 3
@@ -2525,7 +2711,7 @@ paths:
                                         .XXX.XX..
                                         X.X.X..X.
                                         ...XX....
-                                      md_note: Qui tempora aut ea.
+                                      md_note: Quidem nobis sapiente et quidem.
                                       output: |
                                         10
                                     - input: |
@@ -2535,7 +2721,7 @@ paths:
                                         .XXX.XX..
                                         X.X.X..X.
                                         ...XX....
-                                      md_note: Qui tempora aut ea.
+                                      md_note: Quidem nobis sapiente et quidem.
                                       output: |
                                         10
                                     - input: |
@@ -2545,17 +2731,7 @@ paths:
                                         .XXX.XX..
                                         X.X.X..X.
                                         ...XX....
-                                      md_note: Qui tempora aut ea.
-                                      output: |
-                                        10
-                                    - input: |
-                                        5 9 3
-                                        A....X..B
-                                        ..X..X.X.
-                                        .XXX.XX..
-                                        X.X.X..X.
-                                        ...XX....
-                                      md_note: Qui tempora aut ea.
+                                      md_note: Quidem nobis sapiente et quidem.
                                       output: |
                                         10
                                 illustration_img_url: https://dvhk4hiwp1rmf.cloudfront.net/task-illustrations/bafcc0aa1b4c56faa44f5f3b2a5abd9529af941eb9a9b10f541b436762d4948a.png
@@ -2725,7 +2901,7 @@ paths:
                         application/json:
                             schema:
                                 type: string
-                                example: Modi tenetur.
+                                example: Qui voluptatibus et dolorum suscipit accusantium.
                             example: Qui aliquam quisquam doloribus aspernatur quia minima.
                 "401":
                     description: 'InvalidCredentials: Unauthorized response.'
@@ -2733,7 +2909,7 @@ paths:
                         application/json:
                             schema:
                                 type: string
-                                example: Dolorum suscipit accusantium.
+                                example: Debitis ea est dolorum.
                             example: Dolorem nam provident hic.
                 "404":
                     description: 'NotFound: Not Found response.'
@@ -2741,7 +2917,7 @@ paths:
                         application/json:
                             schema:
                                 type: string
-                                example: Possimus voluptates ea dolores sequi.
+                                example: Modi tenetur.
                             example: Sint ad et maiores quia est.
                 "409":
                     description: 'EmailExistsConflict: Conflict response.'
@@ -2749,7 +2925,7 @@ paths:
                         application/json:
                             schema:
                                 type: string
-                                example: Consectetur aliquam.
+                                example: Possimus voluptates ea dolores sequi.
                             example: Expedita alias eveniet expedita vitae occaecati temporibus.
             security:
                 - jwt_query_Authorization:
@@ -2791,7 +2967,7 @@ paths:
                         application/json:
                             schema:
                                 type: string
-                                example: Officia voluptatem dignissimos.
+                                example: Laudantium saepe omnis asperiores ut ipsa consequatur.
                             example: Et et.
                 "401":
                     description: 'InvalidCredentials: Unauthorized response.'
@@ -2799,7 +2975,7 @@ paths:
                         application/json:
                             schema:
                                 type: string
-                                example: Eum facere delectus ullam sit unde.
+                                example: Laboriosam aut qui voluptatibus minus.
                             example: Voluptatem sed repellat.
                 "404":
                     description: 'NotFound: Not Found response.'
@@ -2807,7 +2983,7 @@ paths:
                         application/json:
                             schema:
                                 type: string
-                                example: Exercitationem sequi quasi ex et ut.
+                                example: Eum facere delectus ullam sit unde.
                             example: Provident blanditiis est.
                 "409":
                     description: 'EmailExistsConflict: Conflict response.'
@@ -2815,7 +2991,7 @@ paths:
                         application/json:
                             schema:
                                 type: string
-                                example: Tempora unde.
+                                example: Officia voluptatem dignissimos.
                             example: Est quas id tempora repellat.
     /users/{uuid}:
         delete:
@@ -2853,7 +3029,7 @@ paths:
                         application/json:
                             schema:
                                 type: string
-                                example: Voluptatem iure ab.
+                                example: Quia et dolor voluptatem.
                             example: Distinctio ad ex deleniti possimus et.
                 "401":
                     description: 'InvalidCredentials: Unauthorized response.'
@@ -2861,7 +3037,7 @@ paths:
                         application/json:
                             schema:
                                 type: string
-                                example: Quia et dolor voluptatem.
+                                example: Tenetur explicabo qui in.
                             example: Ut tenetur rerum provident modi voluptatem odio.
                 "404":
                     description: 'NotFound: Not Found response.'
@@ -2869,7 +3045,7 @@ paths:
                         application/json:
                             schema:
                                 type: string
-                                example: Tenetur explicabo qui in.
+                                example: Exercitationem sequi quasi ex et ut.
                             example: Sint ullam pariatur aliquam tempore in.
                 "409":
                     description: 'EmailExistsConflict: Conflict response.'
@@ -2877,7 +3053,7 @@ paths:
                         application/json:
                             schema:
                                 type: string
-                                example: Autem repudiandae ut nostrum quod corporis repellendus.
+                                example: Voluptatem iure ab.
                             example: Quia laborum.
             security:
                 - jwt_query_Authorization:
@@ -2927,7 +3103,7 @@ paths:
                         application/json:
                             schema:
                                 type: string
-                                example: Et voluptate recusandae et perferendis modi.
+                                example: Quisquam ut eaque sunt amet voluptatem est.
                             example: Eligendi quae tempora qui hic quo.
                 "401":
                     description: 'InvalidCredentials: Unauthorized response.'
@@ -2935,7 +3111,7 @@ paths:
                         application/json:
                             schema:
                                 type: string
-                                example: Quisquam ut eaque sunt amet voluptatem est.
+                                example: Et ut similique fugiat harum corporis voluptas.
                             example: Quis at aut.
                 "404":
                     description: 'NotFound: Not Found response.'
@@ -2943,7 +3119,7 @@ paths:
                         application/json:
                             schema:
                                 type: string
-                                example: Quidem laborum voluptas.
+                                example: Et voluptate recusandae et perferendis modi.
                             example: Repudiandae distinctio amet et et.
                 "409":
                     description: 'EmailExistsConflict: Conflict response.'
@@ -2951,7 +3127,7 @@ paths:
                         application/json:
                             schema:
                                 type: string
-                                example: Consequatur a et qui.
+                                example: Quidem laborum voluptas.
                             example: Modi ratione quod.
             security:
                 - jwt_query_Authorization:
@@ -3071,7 +3247,7 @@ components:
                 md_note:
                     type: string
                     description: Markdown note for the example
-                    example: Laborum quia repellat voluptatem quia voluptas.
+                    example: Totam praesentium dolor aspernatur doloremque est et.
                 output:
                     type: string
                     description: Example output
@@ -3086,7 +3262,7 @@ components:
                     .XXX.XX..
                     X.X.X..X.
                     ...XX....
-                md_note: Laudantium qui labore corrupti.
+                md_note: Eveniet omnis aut a nihil blanditiis deserunt.
                 output: |
                     10
             required:
@@ -3099,29 +3275,30 @@ components:
                     type: array
                     items:
                         type: string
-                        example: Impedit dolores quis voluptas.
+                        example: Consequatur aut nostrum enim molestiae doloremque iusto.
                     example:
+                        - Dignissimos impedit dolores quis voluptas error.
                         - Illo eum sit nobis incidunt aliquam.
                         - Molestias aperiam omnis earum.
                         - Cum ratione architecto iusto quibusdam qui ut.
                 email:
                     type: string
-                    example: Delectus a.
+                    example: Ut iure omnis et recusandae.
                 expires_at:
                     type: string
                     example: Ea beatae dolor excepturi est.
                 firstname:
                     type: string
-                    example: Quam illo id.
+                    example: Beatae similique.
                 issued_at:
                     type: string
                     example: Ut fugit iusto molestiae.
                 issuer:
                     type: string
-                    example: Libero fugiat quas consequatur.
+                    example: Atque enim consequatur aperiam quis.
                 lastname:
                     type: string
-                    example: Ut iure omnis et recusandae.
+                    example: Quam illo id.
                 not_before:
                     type: string
                     example: Dolores sit in.
@@ -3129,21 +3306,20 @@ components:
                     type: array
                     items:
                         type: string
-                        example: Aut quos aspernatur officiis blanditiis.
+                        example: Sequi eveniet non non.
                     example:
-                        - Voluptas id sint.
-                        - Animi autem fuga quibusdam sunt voluptas atque.
-                        - Consequatur aperiam quis cupiditate.
-                        - Velit eum.
+                        - Quos aspernatur officiis blanditiis eius unde voluptas.
+                        - Sint et.
+                        - Autem fuga quibusdam sunt.
                 subject:
                     type: string
-                    example: Nostrum enim molestiae doloremque iusto eos soluta.
+                    example: Placeat velit eum ut libero fugiat.
                 username:
                     type: string
-                    example: Beatae similique.
+                    example: Animi aut eligendi.
                 uuid:
                     type: string
-                    example: Sequi eveniet non non.
+                    example: Delectus a.
             example:
                 audience:
                     - Nulla sed doloribus.
@@ -3189,7 +3365,7 @@ components:
                 notes:
                     type: string
                     description: Notes section of the markdown statement
-                    example: Odio quasi est dolorum quos et occaecati.
+                    example: Mollitia explicabo occaecati aperiam.
                 output:
                     type: string
                     description: Output section of the markdown statement
@@ -3197,7 +3373,7 @@ components:
                 scoring:
                     type: string
                     description: Scoring section of the markdown statement
-                    example: Eius a aut totam praesentium.
+                    example: Et consectetur iure quibusdam.
                 story:
                     type: string
                     description: Story section of the markdown statement
@@ -3205,9 +3381,9 @@ components:
             description: Represents a markdown statement for a task
             example:
                 input: Ievaddatu pirmajā rindā dotas trīs naturālu skaitļu...
-                notes: Aspernatur doloremque est et.
+                notes: Molestias explicabo odio quasi est.
                 output: Izvaddatu vienīgajā rindā jābūt veselam skaitlim...
-                scoring: Eveniet omnis aut a nihil blanditiis deserunt.
+                scoring: Quos et occaecati rem eius a.
                 story: Krišjānis ir uzkonstruējis kvadrātveida putekļsūcēju (saīsināti – KP), kas ir neaizstājams palīgs viņa darbnīcas uzkopšanā...
             required:
                 - story
@@ -3244,7 +3420,7 @@ components:
                     type: array
                     items:
                         type: string
-                        example: Porro magni.
+                        example: Labore corrupti voluptatum.
                     description: Inputs for the subtask
                     example:
                         - |
@@ -3347,9 +3523,9 @@ components:
                     cpu_time_limit_seconds: 0.5
                     default_md_statement:
                         input: Ievaddatu pirmajā rindā dotas trīs naturālu skaitļu...
-                        notes: Illo officia.
+                        notes: Natus numquam tempore consequuntur et nulla.
                         output: Izvaddatu vienīgajā rindā jābūt veselam skaitlim...
-                        scoring: Asperiores quidem omnis illo.
+                        scoring: Sit neque ut quas.
                         story: Krišjānis ir uzkonstruējis kvadrātveida putekļsūcēju (saīsināti – KP), kas ir neaizstājams palīgs viņa darbnīcas uzkopšanā...
                     default_pdf_statement_url: https://dvhk4hiwp1rmf.cloudfront.net/task-pdf-statements/f27386f1b69f3c020335fe7c84316c5da099933832043e6a5820bcdb0cd66a81.pdf
                     difficulty_rating: 3
@@ -3361,7 +3537,7 @@ components:
                             .XXX.XX..
                             X.X.X..X.
                             ...XX....
-                          md_note: Qui tempora aut ea.
+                          md_note: Quidem nobis sapiente et quidem.
                           output: |
                             10
                         - input: |
@@ -3371,7 +3547,7 @@ components:
                             .XXX.XX..
                             X.X.X..X.
                             ...XX....
-                          md_note: Qui tempora aut ea.
+                          md_note: Quidem nobis sapiente et quidem.
                           output: |
                             10
                         - input: |
@@ -3381,7 +3557,7 @@ components:
                             .XXX.XX..
                             X.X.X..X.
                             ...XX....
-                          md_note: Qui tempora aut ea.
+                          md_note: Quidem nobis sapiente et quidem.
                           output: |
                             10
                     illustration_img_url: https://dvhk4hiwp1rmf.cloudfront.net/task-illustrations/bafcc0aa1b4c56faa44f5f3b2a5abd9529af941eb9a9b10f541b436762d4948a.png
@@ -3540,7 +3716,7 @@ components:
                             .XXX.XX..
                             X.X.X..X.
                             ...XX....
-                          md_note: Qui tempora aut ea.
+                          md_note: Quidem nobis sapiente et quidem.
                           output: |
                             10
                         - input: |
@@ -3550,7 +3726,17 @@ components:
                             .XXX.XX..
                             X.X.X..X.
                             ...XX....
-                          md_note: Qui tempora aut ea.
+                          md_note: Quidem nobis sapiente et quidem.
+                          output: |
+                            10
+                        - input: |
+                            5 9 3
+                            A....X..B
+                            ..X..X.X.
+                            .XXX.XX..
+                            X.X.X..X.
+                            ...XX....
+                          md_note: Quidem nobis sapiente et quidem.
                           output: |
                             10
                 illustration_img_url:
@@ -3569,7 +3755,7 @@ components:
                         lv: Uzdevums parādījās Latvijas 37. informātikas olimpiādes (2023./2024. gads) skolas kārtā.
                     additionalProperties:
                         type: string
-                        example: Esse amet voluptatem quia cumque ea est.
+                        example: Quia repellat voluptatem quia voluptas possimus laudantium.
                 origin_olympiad:
                     type: string
                     description: Origin olympiad of the task
@@ -3668,9 +3854,9 @@ components:
                 cpu_time_limit_seconds: 0.5
                 default_md_statement:
                     input: Ievaddatu pirmajā rindā dotas trīs naturālu skaitļu...
-                    notes: Illo officia.
+                    notes: Natus numquam tempore consequuntur et nulla.
                     output: Izvaddatu vienīgajā rindā jābūt veselam skaitlim...
-                    scoring: Asperiores quidem omnis illo.
+                    scoring: Sit neque ut quas.
                     story: Krišjānis ir uzkonstruējis kvadrātveida putekļsūcēju (saīsināti – KP), kas ir neaizstājams palīgs viņa darbnīcas uzkopšanā...
                 default_pdf_statement_url: https://dvhk4hiwp1rmf.cloudfront.net/task-pdf-statements/f27386f1b69f3c020335fe7c84316c5da099933832043e6a5820bcdb0cd66a81.pdf
                 difficulty_rating: 3
@@ -3682,7 +3868,7 @@ components:
                         .XXX.XX..
                         X.X.X..X.
                         ...XX....
-                      md_note: Qui tempora aut ea.
+                      md_note: Quidem nobis sapiente et quidem.
                       output: |
                         10
                     - input: |
@@ -3692,7 +3878,7 @@ components:
                         .XXX.XX..
                         X.X.X..X.
                         ...XX....
-                      md_note: Qui tempora aut ea.
+                      md_note: Quidem nobis sapiente et quidem.
                       output: |
                         10
                     - input: |
@@ -3702,7 +3888,7 @@ components:
                         .XXX.XX..
                         X.X.X..X.
                         ...XX....
-                      md_note: Qui tempora aut ea.
+                      md_note: Quidem nobis sapiente et quidem.
                       output: |
                         10
                     - input: |
@@ -3712,7 +3898,7 @@ components:
                         .XXX.XX..
                         X.X.X..X.
                         ...XX....
-                      md_note: Qui tempora aut ea.
+                      md_note: Quidem nobis sapiente et quidem.
                       output: |
                         10
                 illustration_img_url: https://dvhk4hiwp1rmf.cloudfront.net/task-illustrations/bafcc0aa1b4c56faa44f5f3b2a5abd9529af941eb9a9b10f541b436762d4948a.png
