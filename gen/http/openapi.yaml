@@ -235,6 +235,10 @@ paths:
                         type: array
                         items:
                             $ref: '#/definitions/TaskResponse'
+                "404":
+                    description: Not Found response.
+                    schema:
+                        type: string
             schemes:
                 - http
     /tasks/{task_id}:
@@ -262,6 +266,10 @@ paths:
                             - cpu_time_limit_seconds
                             - origin_olympiad
                             - difficulty_rating
+                "404":
+                    description: Not Found response.
+                    schema:
+                        type: string
             schemes:
                 - http
     /users:
@@ -536,7 +544,7 @@ definitions:
             md_note:
                 type: string
                 description: Markdown note for the example
-                example: Cumque dolor similique iste.
+                example: Doloribus numquam in ut molestiae ut odit.
             output:
                 type: string
                 description: Example output
@@ -551,7 +559,7 @@ definitions:
                 .XXX.XX..
                 X.X.X..X.
                 ...XX....
-            md_note: Est ad cupiditate sint asperiores.
+            md_note: Sit velit quas aliquid incidunt.
             output: |
                 10
         required:
@@ -574,7 +582,7 @@ definitions:
             md_note:
                 type: string
                 description: Markdown note for the example
-                example: Optio enim reprehenderit similique.
+                example: Est voluptatum illo et sit.
             output:
                 type: string
                 description: Example output
@@ -589,7 +597,7 @@ definitions:
                 .XXX.XX..
                 X.X.X..X.
                 ...XX....
-            md_note: Natus qui est in et placeat accusantium.
+            md_note: Facere rerum et quaerat.
             output: |
                 10
         required:
@@ -606,7 +614,7 @@ definitions:
             notes:
                 type: string
                 description: Notes section of the markdown statement
-                example: Velit est sunt.
+                example: Rerum cupiditate dolores qui fugit necessitatibus ut.
             output:
                 type: string
                 description: Output section of the markdown statement
@@ -614,7 +622,7 @@ definitions:
             scoring:
                 type: string
                 description: Scoring section of the markdown statement
-                example: Reiciendis est voluptatum illo et sit.
+                example: Natus qui.
             story:
                 type: string
                 description: Story section of the markdown statement
@@ -622,9 +630,9 @@ definitions:
         description: Represents a markdown statement for a task
         example:
             input: Ievaddatu pirmajā rindā dotas trīs naturālu skaitļu...
-            notes: Facere rerum et quaerat.
+            notes: Consectetur et nisi et earum sed.
             output: Izvaddatu vienīgajā rindā jābūt veselam skaitlim...
-            scoring: Error debitis iste sequi.
+            scoring: Perferendis est asperiores et velit voluptas labore.
             story: Krišjānis ir uzkonstruējis kvadrātveida putekļsūcēju (saīsināti – KP), kas ir neaizstājams palīgs viņa darbnīcas uzkopšanā...
         required:
             - story
@@ -641,7 +649,7 @@ definitions:
             notes:
                 type: string
                 description: Notes section of the markdown statement
-                example: Nisi et earum sed error perferendis est.
+                example: Autem pariatur ea asperiores.
             output:
                 type: string
                 description: Output section of the markdown statement
@@ -649,7 +657,7 @@ definitions:
             scoring:
                 type: string
                 description: Scoring section of the markdown statement
-                example: Et velit voluptas labore aut doloribus.
+                example: Ea pariatur qui reiciendis dolorem.
             story:
                 type: string
                 description: Story section of the markdown statement
@@ -657,9 +665,9 @@ definitions:
         description: Represents a markdown statement for a task
         example:
             input: Ievaddatu pirmajā rindā dotas trīs naturālu skaitļu...
-            notes: In ut molestiae ut odit dolores sit.
+            notes: Vero nihil natus.
             output: Izvaddatu vienīgajā rindā jābūt veselam skaitlim...
-            scoring: Quas aliquid incidunt.
+            scoring: Est sunt sunt.
             story: Krišjānis ir uzkonstruējis kvadrātveida putekļsūcēju (saīsināti – KP), kas ir neaizstājams palīgs viņa darbnīcas uzkopšanā...
         required:
             - story
@@ -723,7 +731,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Nobis eos.
+                    example: Qui est in.
                 description: Inputs for the subtask
                 example:
                     - |
@@ -792,7 +800,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Qui reiciendis dolorem.
+                    example: Ipsam est ad cupiditate sint.
                 description: Inputs for the subtask
                 example:
                     - |
@@ -853,6 +861,44 @@ definitions:
         required:
             - subtask
             - inputs
+    SubmTaskResponse:
+        title: SubmTaskResponse
+        type: object
+        properties:
+            code:
+                type: string
+                description: Code of the task
+                example: fact001
+            name:
+                type: string
+                description: Name of the task
+                example: Factorial Calculation
+        description: Represents a competitive programming task
+        example:
+            code: fact001
+            name: Factorial Calculation
+        required:
+            - name
+            - code
+    SubmTaskResponseBody:
+        title: SubmTaskResponseBody
+        type: object
+        properties:
+            code:
+                type: string
+                description: Code of the task
+                example: fact001
+            name:
+                type: string
+                description: Name of the task
+                example: Factorial Calculation
+        description: Represents a competitive programming task
+        example:
+            code: fact001
+            name: Factorial Calculation
+        required:
+            - name
+            - code
     SubmissionResponse:
         title: SubmissionResponse
         type: object
@@ -871,7 +917,7 @@ definitions:
                 description: The code submission
                 example: print(factorial(5))
             task:
-                $ref: '#/definitions/TaskResponse'
+                $ref: '#/definitions/SubmTaskResponse'
             username:
                 type: string
                 description: Username of the user who submitted
@@ -894,144 +940,8 @@ definitions:
                 monacoId: go
             submission: print(factorial(5))
             task:
-                cpu_time_limit_seconds: 0.5
-                default_md_statement:
-                    input: Ievaddatu pirmajā rindā dotas trīs naturālu skaitļu...
-                    notes: Inventore alias.
-                    output: Izvaddatu vienīgajā rindā jābūt veselam skaitlim...
-                    scoring: Corporis est nostrum.
-                    story: Krišjānis ir uzkonstruējis kvadrātveida putekļsūcēju (saīsināti – KP), kas ir neaizstājams palīgs viņa darbnīcas uzkopšanā...
-                default_pdf_statement_url: https://dvhk4hiwp1rmf.cloudfront.net/task-pdf-statements/f27386f1b69f3c020335fe7c84316c5da099933832043e6a5820bcdb0cd66a81.pdf
-                difficulty_rating: 3
-                examples:
-                    - input: |
-                        5 9 3
-                        A....X..B
-                        ..X..X.X.
-                        .XXX.XX..
-                        X.X.X..X.
-                        ...XX....
-                      md_note: Perferendis qui quos.
-                      output: |
-                        10
-                    - input: |
-                        5 9 3
-                        A....X..B
-                        ..X..X.X.
-                        .XXX.XX..
-                        X.X.X..X.
-                        ...XX....
-                      md_note: Perferendis qui quos.
-                      output: |
-                        10
-                illustration_img_url: https://dvhk4hiwp1rmf.cloudfront.net/task-illustrations/bafcc0aa1b4c56faa44f5f3b2a5abd9529af941eb9a9b10f541b436762d4948a.png
-                memory_limit_megabytes: 256
-                origin_notes:
-                    lv: Uzdevums parādījās Latvijas 37. informātikas olimpiādes (2023./2024. gads) skolas kārtā.
-                origin_olympiad: LIO
-                published_task_id: kvadrputekl
-                task_full_name: Kvadrātveida putekļsūcējs
-                visible_input_subtasks:
-                    - inputs:
-                        - |
-                          5 5 3
-                          A.X..
-                          X.B.X
-                          ....X
-                          XX...
-                          X.XXX
-                        - |
-                          6 3 1
-                          ...
-                          XA.
-                          .X.
-                          X..
-                          B..
-                          ...
-                        - |
-                          6 4 2
-                          X...
-                          .AXX
-                          X..X
-                          .X.X
-                          XXXX
-                          X.BX
-                      subtask: 1
-                    - inputs:
-                        - |
-                          5 5 3
-                          A.X..
-                          X.B.X
-                          ....X
-                          XX...
-                          X.XXX
-                        - |
-                          6 3 1
-                          ...
-                          XA.
-                          .X.
-                          X..
-                          B..
-                          ...
-                        - |
-                          6 4 2
-                          X...
-                          .AXX
-                          X..X
-                          .X.X
-                          XXXX
-                          X.BX
-                      subtask: 1
-                    - inputs:
-                        - |
-                          5 5 3
-                          A.X..
-                          X.B.X
-                          ....X
-                          XX...
-                          X.XXX
-                        - |
-                          6 3 1
-                          ...
-                          XA.
-                          .X.
-                          X..
-                          B..
-                          ...
-                        - |
-                          6 4 2
-                          X...
-                          .AXX
-                          X..X
-                          .X.X
-                          XXXX
-                          X.BX
-                      subtask: 1
-                    - inputs:
-                        - |
-                          5 5 3
-                          A.X..
-                          X.B.X
-                          ....X
-                          XX...
-                          X.XXX
-                        - |
-                          6 3 1
-                          ...
-                          XA.
-                          .X.
-                          X..
-                          B..
-                          ...
-                        - |
-                          6 4 2
-                          X...
-                          .AXX
-                          X..X
-                          .X.X
-                          XXXX
-                          X.BX
-                      subtask: 1
+                code: fact001
+                name: Factorial Calculation
             username: coder123
             uuid: 123e4567-e89b-12d3-a456-426614174000
         required:
@@ -1090,7 +1000,7 @@ definitions:
                 description: The code submission
                 example: print(factorial(5))
             task:
-                $ref: '#/definitions/TaskResponseBody'
+                $ref: '#/definitions/SubmTaskResponseBody'
             username:
                 type: string
                 description: Username of the user who submitted
@@ -1112,154 +1022,8 @@ definitions:
                 monacoId: go
             submission: print(factorial(5))
             task:
-                cpu_time_limit_seconds: 0.5
-                default_md_statement:
-                    input: Ievaddatu pirmajā rindā dotas trīs naturālu skaitļu...
-                    notes: Natus numquam tempore consequuntur et nulla.
-                    output: Izvaddatu vienīgajā rindā jābūt veselam skaitlim...
-                    scoring: Sit neque ut quas.
-                    story: Krišjānis ir uzkonstruējis kvadrātveida putekļsūcēju (saīsināti – KP), kas ir neaizstājams palīgs viņa darbnīcas uzkopšanā...
-                default_pdf_statement_url: https://dvhk4hiwp1rmf.cloudfront.net/task-pdf-statements/f27386f1b69f3c020335fe7c84316c5da099933832043e6a5820bcdb0cd66a81.pdf
-                difficulty_rating: 3
-                examples:
-                    - input: |
-                        5 9 3
-                        A....X..B
-                        ..X..X.X.
-                        .XXX.XX..
-                        X.X.X..X.
-                        ...XX....
-                      md_note: Quidem nobis sapiente et quidem.
-                      output: |
-                        10
-                    - input: |
-                        5 9 3
-                        A....X..B
-                        ..X..X.X.
-                        .XXX.XX..
-                        X.X.X..X.
-                        ...XX....
-                      md_note: Quidem nobis sapiente et quidem.
-                      output: |
-                        10
-                    - input: |
-                        5 9 3
-                        A....X..B
-                        ..X..X.X.
-                        .XXX.XX..
-                        X.X.X..X.
-                        ...XX....
-                      md_note: Quidem nobis sapiente et quidem.
-                      output: |
-                        10
-                illustration_img_url: https://dvhk4hiwp1rmf.cloudfront.net/task-illustrations/bafcc0aa1b4c56faa44f5f3b2a5abd9529af941eb9a9b10f541b436762d4948a.png
-                memory_limit_megabytes: 256
-                origin_notes:
-                    lv: Uzdevums parādījās Latvijas 37. informātikas olimpiādes (2023./2024. gads) skolas kārtā.
-                origin_olympiad: LIO
-                published_task_id: kvadrputekl
-                task_full_name: Kvadrātveida putekļsūcējs
-                visible_input_subtasks:
-                    - inputs:
-                        - |
-                          5 5 3
-                          A.X..
-                          X.B.X
-                          ....X
-                          XX...
-                          X.XXX
-                        - |
-                          6 3 1
-                          ...
-                          XA.
-                          .X.
-                          X..
-                          B..
-                          ...
-                        - |
-                          6 4 2
-                          X...
-                          .AXX
-                          X..X
-                          .X.X
-                          XXXX
-                          X.BX
-                      subtask: 1
-                    - inputs:
-                        - |
-                          5 5 3
-                          A.X..
-                          X.B.X
-                          ....X
-                          XX...
-                          X.XXX
-                        - |
-                          6 3 1
-                          ...
-                          XA.
-                          .X.
-                          X..
-                          B..
-                          ...
-                        - |
-                          6 4 2
-                          X...
-                          .AXX
-                          X..X
-                          .X.X
-                          XXXX
-                          X.BX
-                      subtask: 1
-                    - inputs:
-                        - |
-                          5 5 3
-                          A.X..
-                          X.B.X
-                          ....X
-                          XX...
-                          X.XXX
-                        - |
-                          6 3 1
-                          ...
-                          XA.
-                          .X.
-                          X..
-                          B..
-                          ...
-                        - |
-                          6 4 2
-                          X...
-                          .AXX
-                          X..X
-                          .X.X
-                          XXXX
-                          X.BX
-                      subtask: 1
-                    - inputs:
-                        - |
-                          5 5 3
-                          A.X..
-                          X.B.X
-                          ....X
-                          XX...
-                          X.XXX
-                        - |
-                          6 3 1
-                          ...
-                          XA.
-                          .X.
-                          X..
-                          B..
-                          ...
-                        - |
-                          6 4 2
-                          X...
-                          .AXX
-                          X..X
-                          .X.X
-                          XXXX
-                          X.BX
-                      subtask: 1
+                code: fact001
+                name: Factorial Calculation
             username: coder123
             uuid: 123e4567-e89b-12d3-a456-426614174000
         required:
@@ -1288,7 +1052,7 @@ definitions:
                 description: The code submission
                 example: print(factorial(5))
             task:
-                $ref: '#/definitions/TaskResponseBody'
+                $ref: '#/definitions/SubmTaskResponseBody'
             username:
                 type: string
                 description: Username of the user who submitted
@@ -1310,154 +1074,8 @@ definitions:
                 monacoId: go
             submission: print(factorial(5))
             task:
-                cpu_time_limit_seconds: 0.5
-                default_md_statement:
-                    input: Ievaddatu pirmajā rindā dotas trīs naturālu skaitļu...
-                    notes: Natus numquam tempore consequuntur et nulla.
-                    output: Izvaddatu vienīgajā rindā jābūt veselam skaitlim...
-                    scoring: Sit neque ut quas.
-                    story: Krišjānis ir uzkonstruējis kvadrātveida putekļsūcēju (saīsināti – KP), kas ir neaizstājams palīgs viņa darbnīcas uzkopšanā...
-                default_pdf_statement_url: https://dvhk4hiwp1rmf.cloudfront.net/task-pdf-statements/f27386f1b69f3c020335fe7c84316c5da099933832043e6a5820bcdb0cd66a81.pdf
-                difficulty_rating: 3
-                examples:
-                    - input: |
-                        5 9 3
-                        A....X..B
-                        ..X..X.X.
-                        .XXX.XX..
-                        X.X.X..X.
-                        ...XX....
-                      md_note: Quidem nobis sapiente et quidem.
-                      output: |
-                        10
-                    - input: |
-                        5 9 3
-                        A....X..B
-                        ..X..X.X.
-                        .XXX.XX..
-                        X.X.X..X.
-                        ...XX....
-                      md_note: Quidem nobis sapiente et quidem.
-                      output: |
-                        10
-                    - input: |
-                        5 9 3
-                        A....X..B
-                        ..X..X.X.
-                        .XXX.XX..
-                        X.X.X..X.
-                        ...XX....
-                      md_note: Quidem nobis sapiente et quidem.
-                      output: |
-                        10
-                illustration_img_url: https://dvhk4hiwp1rmf.cloudfront.net/task-illustrations/bafcc0aa1b4c56faa44f5f3b2a5abd9529af941eb9a9b10f541b436762d4948a.png
-                memory_limit_megabytes: 256
-                origin_notes:
-                    lv: Uzdevums parādījās Latvijas 37. informātikas olimpiādes (2023./2024. gads) skolas kārtā.
-                origin_olympiad: LIO
-                published_task_id: kvadrputekl
-                task_full_name: Kvadrātveida putekļsūcējs
-                visible_input_subtasks:
-                    - inputs:
-                        - |
-                          5 5 3
-                          A.X..
-                          X.B.X
-                          ....X
-                          XX...
-                          X.XXX
-                        - |
-                          6 3 1
-                          ...
-                          XA.
-                          .X.
-                          X..
-                          B..
-                          ...
-                        - |
-                          6 4 2
-                          X...
-                          .AXX
-                          X..X
-                          .X.X
-                          XXXX
-                          X.BX
-                      subtask: 1
-                    - inputs:
-                        - |
-                          5 5 3
-                          A.X..
-                          X.B.X
-                          ....X
-                          XX...
-                          X.XXX
-                        - |
-                          6 3 1
-                          ...
-                          XA.
-                          .X.
-                          X..
-                          B..
-                          ...
-                        - |
-                          6 4 2
-                          X...
-                          .AXX
-                          X..X
-                          .X.X
-                          XXXX
-                          X.BX
-                      subtask: 1
-                    - inputs:
-                        - |
-                          5 5 3
-                          A.X..
-                          X.B.X
-                          ....X
-                          XX...
-                          X.XXX
-                        - |
-                          6 3 1
-                          ...
-                          XA.
-                          .X.
-                          X..
-                          B..
-                          ...
-                        - |
-                          6 4 2
-                          X...
-                          .AXX
-                          X..X
-                          .X.X
-                          XXXX
-                          X.BX
-                      subtask: 1
-                    - inputs:
-                        - |
-                          5 5 3
-                          A.X..
-                          X.B.X
-                          ....X
-                          XX...
-                          X.XXX
-                        - |
-                          6 3 1
-                          ...
-                          XA.
-                          .X.
-                          X..
-                          B..
-                          ...
-                        - |
-                          6 4 2
-                          X...
-                          .AXX
-                          X..X
-                          .X.X
-                          XXXX
-                          X.BX
-                      subtask: 1
+                code: fact001
+                name: Factorial Calculation
             username: coder123
             uuid: 123e4567-e89b-12d3-a456-426614174000
         required:
@@ -1507,7 +1125,7 @@ definitions:
                         .XXX.XX..
                         X.X.X..X.
                         ...XX....
-                      md_note: Perferendis qui quos.
+                      md_note: Commodi voluptates.
                       output: |
                         10
                     - input: |
@@ -1517,7 +1135,7 @@ definitions:
                         .XXX.XX..
                         X.X.X..X.
                         ...XX....
-                      md_note: Perferendis qui quos.
+                      md_note: Commodi voluptates.
                       output: |
                         10
                     - input: |
@@ -1527,7 +1145,17 @@ definitions:
                         .XXX.XX..
                         X.X.X..X.
                         ...XX....
-                      md_note: Perferendis qui quos.
+                      md_note: Commodi voluptates.
+                      output: |
+                        10
+                    - input: |
+                        5 9 3
+                        A....X..B
+                        ..X..X.X.
+                        .XXX.XX..
+                        X.X.X..X.
+                        ...XX....
+                      md_note: Commodi voluptates.
                       output: |
                         10
             illustration_img_url:
@@ -1546,7 +1174,7 @@ definitions:
                     lv: Uzdevums parādījās Latvijas 37. informātikas olimpiādes (2023./2024. gads) skolas kārtā.
                 additionalProperties:
                     type: string
-                    example: Alias ab.
+                    example: Enim reprehenderit similique dolorem.
             origin_olympiad:
                 type: string
                 description: Origin olympiad of the task
@@ -1670,9 +1298,9 @@ definitions:
             cpu_time_limit_seconds: 0.5
             default_md_statement:
                 input: Ievaddatu pirmajā rindā dotas trīs naturālu skaitļu...
-                notes: Inventore alias.
+                notes: Vel quisquam ducimus corporis illo et.
                 output: Izvaddatu vienīgajā rindā jābūt veselam skaitlim...
-                scoring: Corporis est nostrum.
+                scoring: Officiis rerum dolorem quasi.
                 story: Krišjānis ir uzkonstruējis kvadrātveida putekļsūcēju (saīsināti – KP), kas ir neaizstājams palīgs viņa darbnīcas uzkopšanā...
             default_pdf_statement_url: https://dvhk4hiwp1rmf.cloudfront.net/task-pdf-statements/f27386f1b69f3c020335fe7c84316c5da099933832043e6a5820bcdb0cd66a81.pdf
             difficulty_rating: 3
@@ -1684,7 +1312,7 @@ definitions:
                     .XXX.XX..
                     X.X.X..X.
                     ...XX....
-                  md_note: Perferendis qui quos.
+                  md_note: Commodi voluptates.
                   output: |
                     10
                 - input: |
@@ -1694,27 +1322,7 @@ definitions:
                     .XXX.XX..
                     X.X.X..X.
                     ...XX....
-                  md_note: Perferendis qui quos.
-                  output: |
-                    10
-                - input: |
-                    5 9 3
-                    A....X..B
-                    ..X..X.X.
-                    .XXX.XX..
-                    X.X.X..X.
-                    ...XX....
-                  md_note: Perferendis qui quos.
-                  output: |
-                    10
-                - input: |
-                    5 9 3
-                    A....X..B
-                    ..X..X.X.
-                    .XXX.XX..
-                    X.X.X..X.
-                    ...XX....
-                  md_note: Perferendis qui quos.
+                  md_note: Commodi voluptates.
                   output: |
                     10
             illustration_img_url: https://dvhk4hiwp1rmf.cloudfront.net/task-illustrations/bafcc0aa1b4c56faa44f5f3b2a5abd9529af941eb9a9b10f541b436762d4948a.png
@@ -1725,285 +1333,6 @@ definitions:
             published_task_id: kvadrputekl
             task_full_name: Kvadrātveida putekļsūcējs
             visible_input_subtasks:
-                - inputs:
-                    - |
-                      5 5 3
-                      A.X..
-                      X.B.X
-                      ....X
-                      XX...
-                      X.XXX
-                    - |
-                      6 3 1
-                      ...
-                      XA.
-                      .X.
-                      X..
-                      B..
-                      ...
-                    - |
-                      6 4 2
-                      X...
-                      .AXX
-                      X..X
-                      .X.X
-                      XXXX
-                      X.BX
-                  subtask: 1
-                - inputs:
-                    - |
-                      5 5 3
-                      A.X..
-                      X.B.X
-                      ....X
-                      XX...
-                      X.XXX
-                    - |
-                      6 3 1
-                      ...
-                      XA.
-                      .X.
-                      X..
-                      B..
-                      ...
-                    - |
-                      6 4 2
-                      X...
-                      .AXX
-                      X..X
-                      .X.X
-                      XXXX
-                      X.BX
-                  subtask: 1
-        required:
-            - published_task_id
-            - task_full_name
-            - memory_limit_megabytes
-            - cpu_time_limit_seconds
-            - origin_olympiad
-            - difficulty_rating
-    TaskResponseBody:
-        title: TaskResponseBody
-        type: object
-        properties:
-            cpu_time_limit_seconds:
-                type: number
-                description: CPU time limit in seconds
-                example: 0.5
-                format: double
-            default_md_statement:
-                $ref: '#/definitions/MarkdownStatementResponseBody'
-            default_pdf_statement_url:
-                type: string
-                description: URL of the default PDF statement
-                example: https://dvhk4hiwp1rmf.cloudfront.net/task-pdf-statements/f27386f1b69f3c020335fe7c84316c5da099933832043e6a5820bcdb0cd66a81.pdf
-            difficulty_rating:
-                type: integer
-                description: Difficulty rating of the task
-                example: 3
-                enum:
-                    - 1
-                    - 2
-                    - 3
-                    - 4
-                    - 5
-                format: int64
-            examples:
-                type: array
-                items:
-                    $ref: '#/definitions/ExampleResponseBody'
-                description: Examples for the task
-                example:
-                    - input: |
-                        5 9 3
-                        A....X..B
-                        ..X..X.X.
-                        .XXX.XX..
-                        X.X.X..X.
-                        ...XX....
-                      md_note: Quidem nobis sapiente et quidem.
-                      output: |
-                        10
-                    - input: |
-                        5 9 3
-                        A....X..B
-                        ..X..X.X.
-                        .XXX.XX..
-                        X.X.X..X.
-                        ...XX....
-                      md_note: Quidem nobis sapiente et quidem.
-                      output: |
-                        10
-                    - input: |
-                        5 9 3
-                        A....X..B
-                        ..X..X.X.
-                        .XXX.XX..
-                        X.X.X..X.
-                        ...XX....
-                      md_note: Quidem nobis sapiente et quidem.
-                      output: |
-                        10
-            illustration_img_url:
-                type: string
-                description: URL of the illustration image
-                example: https://dvhk4hiwp1rmf.cloudfront.net/task-illustrations/bafcc0aa1b4c56faa44f5f3b2a5abd9529af941eb9a9b10f541b436762d4948a.png
-            memory_limit_megabytes:
-                type: integer
-                description: Memory limit in megabytes
-                example: 256
-                format: int64
-            origin_notes:
-                type: object
-                description: Origin notes for the task
-                example:
-                    lv: Uzdevums parādījās Latvijas 37. informātikas olimpiādes (2023./2024. gads) skolas kārtā.
-                additionalProperties:
-                    type: string
-                    example: Pariatur ea asperiores ducimus ea.
-            origin_olympiad:
-                type: string
-                description: Origin olympiad of the task
-                example: LIO
-            published_task_id:
-                type: string
-                description: ID of the published task
-                example: kvadrputekl
-            task_full_name:
-                type: string
-                description: Full name of the task
-                example: Kvadrātveida putekļsūcējs
-            visible_input_subtasks:
-                type: array
-                items:
-                    $ref: '#/definitions/StInputsResponseBody'
-                description: Visible input subtasks
-                example:
-                    - inputs:
-                        - |
-                          5 5 3
-                          A.X..
-                          X.B.X
-                          ....X
-                          XX...
-                          X.XXX
-                        - |
-                          6 3 1
-                          ...
-                          XA.
-                          .X.
-                          X..
-                          B..
-                          ...
-                        - |
-                          6 4 2
-                          X...
-                          .AXX
-                          X..X
-                          .X.X
-                          XXXX
-                          X.BX
-                      subtask: 1
-                    - inputs:
-                        - |
-                          5 5 3
-                          A.X..
-                          X.B.X
-                          ....X
-                          XX...
-                          X.XXX
-                        - |
-                          6 3 1
-                          ...
-                          XA.
-                          .X.
-                          X..
-                          B..
-                          ...
-                        - |
-                          6 4 2
-                          X...
-                          .AXX
-                          X..X
-                          .X.X
-                          XXXX
-                          X.BX
-                      subtask: 1
-        description: Represents a competitive programming task
-        example:
-            cpu_time_limit_seconds: 0.5
-            default_md_statement:
-                input: Ievaddatu pirmajā rindā dotas trīs naturālu skaitļu...
-                notes: Natus numquam tempore consequuntur et nulla.
-                output: Izvaddatu vienīgajā rindā jābūt veselam skaitlim...
-                scoring: Sit neque ut quas.
-                story: Krišjānis ir uzkonstruējis kvadrātveida putekļsūcēju (saīsināti – KP), kas ir neaizstājams palīgs viņa darbnīcas uzkopšanā...
-            default_pdf_statement_url: https://dvhk4hiwp1rmf.cloudfront.net/task-pdf-statements/f27386f1b69f3c020335fe7c84316c5da099933832043e6a5820bcdb0cd66a81.pdf
-            difficulty_rating: 3
-            examples:
-                - input: |
-                    5 9 3
-                    A....X..B
-                    ..X..X.X.
-                    .XXX.XX..
-                    X.X.X..X.
-                    ...XX....
-                  md_note: Quidem nobis sapiente et quidem.
-                  output: |
-                    10
-                - input: |
-                    5 9 3
-                    A....X..B
-                    ..X..X.X.
-                    .XXX.XX..
-                    X.X.X..X.
-                    ...XX....
-                  md_note: Quidem nobis sapiente et quidem.
-                  output: |
-                    10
-                - input: |
-                    5 9 3
-                    A....X..B
-                    ..X..X.X.
-                    .XXX.XX..
-                    X.X.X..X.
-                    ...XX....
-                  md_note: Quidem nobis sapiente et quidem.
-                  output: |
-                    10
-            illustration_img_url: https://dvhk4hiwp1rmf.cloudfront.net/task-illustrations/bafcc0aa1b4c56faa44f5f3b2a5abd9529af941eb9a9b10f541b436762d4948a.png
-            memory_limit_megabytes: 256
-            origin_notes:
-                lv: Uzdevums parādījās Latvijas 37. informātikas olimpiādes (2023./2024. gads) skolas kārtā.
-            origin_olympiad: LIO
-            published_task_id: kvadrputekl
-            task_full_name: Kvadrātveida putekļsūcējs
-            visible_input_subtasks:
-                - inputs:
-                    - |
-                      5 5 3
-                      A.X..
-                      X.B.X
-                      ....X
-                      XX...
-                      X.XXX
-                    - |
-                      6 3 1
-                      ...
-                      XA.
-                      .X.
-                      X..
-                      B..
-                      ...
-                    - |
-                      6 4 2
-                      X...
-                      .AXX
-                      X..X
-                      .X.X
-                      XXXX
-                      X.BX
-                  subtask: 1
                 - inputs:
                     - |
                       5 5 3
@@ -2125,7 +1454,7 @@ definitions:
                         .XXX.XX..
                         X.X.X..X.
                         ...XX....
-                      md_note: Quidem nobis sapiente et quidem.
+                      md_note: Sed eos esse nisi ea animi.
                       output: |
                         10
                     - input: |
@@ -2135,7 +1464,7 @@ definitions:
                         .XXX.XX..
                         X.X.X..X.
                         ...XX....
-                      md_note: Quidem nobis sapiente et quidem.
+                      md_note: Sed eos esse nisi ea animi.
                       output: |
                         10
                     - input: |
@@ -2145,7 +1474,7 @@ definitions:
                         .XXX.XX..
                         X.X.X..X.
                         ...XX....
-                      md_note: Quidem nobis sapiente et quidem.
+                      md_note: Sed eos esse nisi ea animi.
                       output: |
                         10
                     - input: |
@@ -2155,7 +1484,7 @@ definitions:
                         .XXX.XX..
                         X.X.X..X.
                         ...XX....
-                      md_note: Quidem nobis sapiente et quidem.
+                      md_note: Sed eos esse nisi ea animi.
                       output: |
                         10
             illustration_img_url:
@@ -2174,7 +1503,7 @@ definitions:
                     lv: Uzdevums parādījās Latvijas 37. informātikas olimpiādes (2023./2024. gads) skolas kārtā.
                 additionalProperties:
                     type: string
-                    example: Est laudantium et.
+                    example: Debitis iste sequi dolorem cumque dolor similique.
             origin_olympiad:
                 type: string
                 description: Origin olympiad of the task
@@ -2297,9 +1626,9 @@ definitions:
             cpu_time_limit_seconds: 0.5
             default_md_statement:
                 input: Ievaddatu pirmajā rindā dotas trīs naturālu skaitļu...
-                notes: Natus numquam tempore consequuntur et nulla.
+                notes: Qui eveniet.
                 output: Izvaddatu vienīgajā rindā jābūt veselam skaitlim...
-                scoring: Sit neque ut quas.
+                scoring: Aut ipsa enim tempora totam consectetur.
                 story: Krišjānis ir uzkonstruējis kvadrātveida putekļsūcēju (saīsināti – KP), kas ir neaizstājams palīgs viņa darbnīcas uzkopšanā...
             default_pdf_statement_url: https://dvhk4hiwp1rmf.cloudfront.net/task-pdf-statements/f27386f1b69f3c020335fe7c84316c5da099933832043e6a5820bcdb0cd66a81.pdf
             difficulty_rating: 3
@@ -2311,7 +1640,7 @@ definitions:
                     .XXX.XX..
                     X.X.X..X.
                     ...XX....
-                  md_note: Quidem nobis sapiente et quidem.
+                  md_note: Sed eos esse nisi ea animi.
                   output: |
                     10
                 - input: |
@@ -2321,7 +1650,7 @@ definitions:
                     .XXX.XX..
                     X.X.X..X.
                     ...XX....
-                  md_note: Quidem nobis sapiente et quidem.
+                  md_note: Sed eos esse nisi ea animi.
                   output: |
                     10
                 - input: |
@@ -2331,17 +1660,7 @@ definitions:
                     .XXX.XX..
                     X.X.X..X.
                     ...XX....
-                  md_note: Quidem nobis sapiente et quidem.
-                  output: |
-                    10
-                - input: |
-                    5 9 3
-                    A....X..B
-                    ..X..X.X.
-                    .XXX.XX..
-                    X.X.X..X.
-                    ...XX....
-                  md_note: Quidem nobis sapiente et quidem.
+                  md_note: Sed eos esse nisi ea animi.
                   output: |
                     10
             illustration_img_url: https://dvhk4hiwp1rmf.cloudfront.net/task-illustrations/bafcc0aa1b4c56faa44f5f3b2a5abd9529af941eb9a9b10f541b436762d4948a.png
@@ -2609,70 +1928,68 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Laboriosam est hic.
+                    example: Quam est repudiandae.
                 example:
-                    - Exercitationem eligendi omnis.
-                    - Et nobis exercitationem.
-                    - Consequatur voluptas neque tenetur nemo cumque.
-                    - Qui repellat.
+                    - At in.
+                    - Temporibus harum assumenda laborum harum.
             email:
                 type: string
-                example: Et eligendi.
+                example: Eaque perspiciatis dolor aperiam voluptates repellendus sit.
             expires_at:
                 type: string
-                example: Voluptatibus quae autem odio.
+                example: Est hic omnis ipsa exercitationem.
             firstname:
                 type: string
-                example: Eaque perspiciatis dolor aperiam voluptates repellendus sit.
+                example: Eos necessitatibus nam et.
             issued_at:
                 type: string
-                example: Modi minima et illo dolor.
+                example: Omnis voluptatem et.
             issuer:
                 type: string
-                example: Est repudiandae ut quo at in tenetur.
+                example: Similique voluptate similique dolores.
             lastname:
                 type: string
-                example: Eos quo delectus rerum necessitatibus.
+                example: Repudiandae tempora dolores maxime.
             not_before:
                 type: string
-                example: Id quasi accusamus.
+                example: Exercitationem esse consequatur voluptas neque tenetur nemo.
             scopes:
                 type: array
                 items:
                     type: string
-                    example: Eum pariatur velit quia.
+                    example: Et eligendi.
                 example:
-                    - Sint consequatur maiores et.
-                    - Ut similique voluptate.
-                    - Dolores sint et aliquid dolores.
-                    - Doloremque ex.
+                    - Fugit beatae.
+                    - Eum pariatur velit quia.
+                    - Impedit sint consequatur maiores et doloremque.
             subject:
                 type: string
-                example: Harum assumenda laborum.
+                example: Et aliquid dolores et doloremque.
             username:
                 type: string
-                example: Repudiandae tempora dolores maxime.
+                example: Ab ut.
             uuid:
                 type: string
-                example: Aspernatur fugit beatae.
+                example: Eos quo delectus rerum necessitatibus.
         example:
             audience:
-                - Voluptas repellendus.
-                - Est sit.
-            email: Quisquam laboriosam optio qui.
-            expires_at: Reiciendis incidunt ratione.
-            firstname: Eum quia.
-            issued_at: Fugiat aut sint reiciendis.
-            issuer: Repellat animi soluta nulla.
-            lastname: Et nulla.
-            not_before: Vitae voluptate eum est.
+                - Accusamus voluptas repellendus atque est sit voluptatem.
+                - Incidunt ratione ut fugiat aut.
+                - Reiciendis maxime vitae voluptate eum.
+            email: Soluta id quasi accusamus quod repellendus et.
+            expires_at: Odit quod.
+            firstname: Aut voluptatibus quae autem odio nostrum modi.
+            issued_at: Laudantium et.
+            issuer: Vel voluptatem est accusamus animi et.
+            lastname: Et illo.
+            not_before: Quo magni explicabo mollitia explicabo.
             scopes:
-                - Eos debitis.
-                - Tempora ipsa.
-                - Voluptatem est accusamus animi et sapiente.
-            subject: Dolorum neque.
-            username: Repellendus et molestias.
-            uuid: Sint nostrum.
+                - Quisquam laboriosam optio qui.
+                - Sint nostrum.
+                - Saepe eos debitis ratione tempora.
+            subject: Quis repellat animi soluta nulla aut dolorum.
+            username: Architecto qui.
+            uuid: Rem eum quia et et.
 securityDefinitions:
     jwt_header_Authorization:
         type: apiKey

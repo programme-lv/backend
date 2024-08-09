@@ -84,6 +84,12 @@ var Example = dsl.Type("Example", func() {
 var _ = dsl.Service("tasks", func() {
 	dsl.Description("Service for managing tasks in the online judge")
 
+	dsl.Error("TaskNotFound", dsl.String, "Task not found")
+
+	dsl.HTTP(func() {
+		dsl.Response("TaskNotFound", dsl.StatusNotFound)
+	})
+
 	dsl.Method("listTasks", func() {
 		dsl.Description("List all tasks")
 		dsl.Result(dsl.ArrayOf(Task))

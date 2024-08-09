@@ -389,91 +389,12 @@ func unmarshalProgrammingLangResponseBodyToSubmissionsProgrammingLang(v *Program
 	return res
 }
 
-// unmarshalTaskResponseBodyToSubmissionsTask builds a value of type
-// *submissions.Task from a value of type *TaskResponseBody.
-func unmarshalTaskResponseBodyToSubmissionsTask(v *TaskResponseBody) *submissions.Task {
-	res := &submissions.Task{
-		PublishedTaskID:        *v.PublishedTaskID,
-		TaskFullName:           *v.TaskFullName,
-		MemoryLimitMegabytes:   *v.MemoryLimitMegabytes,
-		CPUTimeLimitSeconds:    *v.CPUTimeLimitSeconds,
-		OriginOlympiad:         *v.OriginOlympiad,
-		IllustrationImgURL:     v.IllustrationImgURL,
-		DifficultyRating:       *v.DifficultyRating,
-		DefaultPdfStatementURL: v.DefaultPdfStatementURL,
-	}
-	if v.DefaultMdStatement != nil {
-		res.DefaultMdStatement = unmarshalMarkdownStatementResponseBodyToSubmissionsMarkdownStatement(v.DefaultMdStatement)
-	}
-	if v.Examples != nil {
-		res.Examples = make([]*submissions.Example, len(v.Examples))
-		for i, val := range v.Examples {
-			res.Examples[i] = unmarshalExampleResponseBodyToSubmissionsExample(val)
-		}
-	}
-	if v.OriginNotes != nil {
-		res.OriginNotes = make(map[string]string, len(v.OriginNotes))
-		for key, val := range v.OriginNotes {
-			tk := key
-			tv := val
-			res.OriginNotes[tk] = tv
-		}
-	}
-	if v.VisibleInputSubtasks != nil {
-		res.VisibleInputSubtasks = make([]*submissions.StInputs, len(v.VisibleInputSubtasks))
-		for i, val := range v.VisibleInputSubtasks {
-			res.VisibleInputSubtasks[i] = unmarshalStInputsResponseBodyToSubmissionsStInputs(val)
-		}
-	}
-
-	return res
-}
-
-// unmarshalMarkdownStatementResponseBodyToSubmissionsMarkdownStatement builds
-// a value of type *submissions.MarkdownStatement from a value of type
-// *MarkdownStatementResponseBody.
-func unmarshalMarkdownStatementResponseBodyToSubmissionsMarkdownStatement(v *MarkdownStatementResponseBody) *submissions.MarkdownStatement {
-	if v == nil {
-		return nil
-	}
-	res := &submissions.MarkdownStatement{
-		Story:   *v.Story,
-		Input:   *v.Input,
-		Output:  *v.Output,
-		Notes:   v.Notes,
-		Scoring: v.Scoring,
-	}
-
-	return res
-}
-
-// unmarshalExampleResponseBodyToSubmissionsExample builds a value of type
-// *submissions.Example from a value of type *ExampleResponseBody.
-func unmarshalExampleResponseBodyToSubmissionsExample(v *ExampleResponseBody) *submissions.Example {
-	if v == nil {
-		return nil
-	}
-	res := &submissions.Example{
-		Input:  *v.Input,
-		Output: *v.Output,
-		MdNote: v.MdNote,
-	}
-
-	return res
-}
-
-// unmarshalStInputsResponseBodyToSubmissionsStInputs builds a value of type
-// *submissions.StInputs from a value of type *StInputsResponseBody.
-func unmarshalStInputsResponseBodyToSubmissionsStInputs(v *StInputsResponseBody) *submissions.StInputs {
-	if v == nil {
-		return nil
-	}
-	res := &submissions.StInputs{
-		Subtask: *v.Subtask,
-	}
-	res.Inputs = make([]string, len(v.Inputs))
-	for i, val := range v.Inputs {
-		res.Inputs[i] = val
+// unmarshalSubmTaskResponseBodyToSubmissionsSubmTask builds a value of type
+// *submissions.SubmTask from a value of type *SubmTaskResponseBody.
+func unmarshalSubmTaskResponseBodyToSubmissionsSubmTask(v *SubmTaskResponseBody) *submissions.SubmTask {
+	res := &submissions.SubmTask{
+		Name: *v.Name,
+		Code: *v.Code,
 	}
 
 	return res
@@ -490,7 +411,7 @@ func unmarshalSubmissionResponseToSubmissionsSubmission(v *SubmissionResponse) *
 	}
 	res.Evaluation = unmarshalEvaluationResponseToSubmissionsEvaluation(v.Evaluation)
 	res.Language = unmarshalProgrammingLangResponseToSubmissionsProgrammingLang(v.Language)
-	res.Task = unmarshalTaskResponseToSubmissionsTask(v.Task)
+	res.Task = unmarshalSubmTaskResponseToSubmissionsSubmTask(v.Task)
 
 	return res
 }
@@ -521,91 +442,12 @@ func unmarshalProgrammingLangResponseToSubmissionsProgrammingLang(v *Programming
 	return res
 }
 
-// unmarshalTaskResponseToSubmissionsTask builds a value of type
-// *submissions.Task from a value of type *TaskResponse.
-func unmarshalTaskResponseToSubmissionsTask(v *TaskResponse) *submissions.Task {
-	res := &submissions.Task{
-		PublishedTaskID:        *v.PublishedTaskID,
-		TaskFullName:           *v.TaskFullName,
-		MemoryLimitMegabytes:   *v.MemoryLimitMegabytes,
-		CPUTimeLimitSeconds:    *v.CPUTimeLimitSeconds,
-		OriginOlympiad:         *v.OriginOlympiad,
-		IllustrationImgURL:     v.IllustrationImgURL,
-		DifficultyRating:       *v.DifficultyRating,
-		DefaultPdfStatementURL: v.DefaultPdfStatementURL,
-	}
-	if v.DefaultMdStatement != nil {
-		res.DefaultMdStatement = unmarshalMarkdownStatementResponseToSubmissionsMarkdownStatement(v.DefaultMdStatement)
-	}
-	if v.Examples != nil {
-		res.Examples = make([]*submissions.Example, len(v.Examples))
-		for i, val := range v.Examples {
-			res.Examples[i] = unmarshalExampleResponseToSubmissionsExample(val)
-		}
-	}
-	if v.OriginNotes != nil {
-		res.OriginNotes = make(map[string]string, len(v.OriginNotes))
-		for key, val := range v.OriginNotes {
-			tk := key
-			tv := val
-			res.OriginNotes[tk] = tv
-		}
-	}
-	if v.VisibleInputSubtasks != nil {
-		res.VisibleInputSubtasks = make([]*submissions.StInputs, len(v.VisibleInputSubtasks))
-		for i, val := range v.VisibleInputSubtasks {
-			res.VisibleInputSubtasks[i] = unmarshalStInputsResponseToSubmissionsStInputs(val)
-		}
-	}
-
-	return res
-}
-
-// unmarshalMarkdownStatementResponseToSubmissionsMarkdownStatement builds a
-// value of type *submissions.MarkdownStatement from a value of type
-// *MarkdownStatementResponse.
-func unmarshalMarkdownStatementResponseToSubmissionsMarkdownStatement(v *MarkdownStatementResponse) *submissions.MarkdownStatement {
-	if v == nil {
-		return nil
-	}
-	res := &submissions.MarkdownStatement{
-		Story:   *v.Story,
-		Input:   *v.Input,
-		Output:  *v.Output,
-		Notes:   v.Notes,
-		Scoring: v.Scoring,
-	}
-
-	return res
-}
-
-// unmarshalExampleResponseToSubmissionsExample builds a value of type
-// *submissions.Example from a value of type *ExampleResponse.
-func unmarshalExampleResponseToSubmissionsExample(v *ExampleResponse) *submissions.Example {
-	if v == nil {
-		return nil
-	}
-	res := &submissions.Example{
-		Input:  *v.Input,
-		Output: *v.Output,
-		MdNote: v.MdNote,
-	}
-
-	return res
-}
-
-// unmarshalStInputsResponseToSubmissionsStInputs builds a value of type
-// *submissions.StInputs from a value of type *StInputsResponse.
-func unmarshalStInputsResponseToSubmissionsStInputs(v *StInputsResponse) *submissions.StInputs {
-	if v == nil {
-		return nil
-	}
-	res := &submissions.StInputs{
-		Subtask: *v.Subtask,
-	}
-	res.Inputs = make([]string, len(v.Inputs))
-	for i, val := range v.Inputs {
-		res.Inputs[i] = val
+// unmarshalSubmTaskResponseToSubmissionsSubmTask builds a value of type
+// *submissions.SubmTask from a value of type *SubmTaskResponse.
+func unmarshalSubmTaskResponseToSubmissionsSubmTask(v *SubmTaskResponse) *submissions.SubmTask {
+	res := &submissions.SubmTask{
+		Name: *v.Name,
+		Code: *v.Code,
 	}
 
 	return res

@@ -63,7 +63,7 @@ var Submission = dsl.Type("Submission", func() {
 	})
 	dsl.Attribute("evaluation", Evaluation, "Evaluation of the submission")
 	dsl.Attribute("language", ProgrammingLang, "Programming language of the submission")
-	dsl.Attribute("task", Task, "Task associated with the submission")
+	dsl.Attribute("task", SubmTask, "Task associated with the submission")
 	dsl.Required("uuid", "submission", "username", "createdAt", "evaluation", "language", "task")
 })
 

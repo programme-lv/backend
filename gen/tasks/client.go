@@ -28,6 +28,9 @@ func NewClient(listTasks, getTask goa.Endpoint) *Client {
 }
 
 // ListTasks calls the "listTasks" endpoint of the "tasks" service.
+// ListTasks may return the following errors:
+//   - "TaskNotFound" (type TaskNotFound)
+//   - error: internal error
 func (c *Client) ListTasks(ctx context.Context) (res []*Task, err error) {
 	var ires any
 	ires, err = c.ListTasksEndpoint(ctx, nil)
@@ -38,6 +41,9 @@ func (c *Client) ListTasks(ctx context.Context) (res []*Task, err error) {
 }
 
 // GetTask calls the "getTask" endpoint of the "tasks" service.
+// GetTask may return the following errors:
+//   - "TaskNotFound" (type TaskNotFound)
+//   - error: internal error
 func (c *Client) GetTask(ctx context.Context, p *GetTaskPayload) (res *Task, err error) {
 	var ires any
 	ires, err = c.GetTaskEndpoint(ctx, p)

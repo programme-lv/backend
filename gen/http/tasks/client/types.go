@@ -149,6 +149,14 @@ func NewListTasksTaskOK(body []*TaskResponse) []*tasks.Task {
 	return v
 }
 
+// NewListTasksTaskNotFound builds a tasks service listTasks endpoint
+// TaskNotFound error.
+func NewListTasksTaskNotFound(body string) tasks.TaskNotFound {
+	v := tasks.TaskNotFound(body)
+
+	return v
+}
+
 // NewGetTaskTaskOK builds a "tasks" service "getTask" endpoint result from a
 // HTTP "OK" response.
 func NewGetTaskTaskOK(body *GetTaskResponseBody) *tasks.Task {
@@ -185,6 +193,14 @@ func NewGetTaskTaskOK(body *GetTaskResponseBody) *tasks.Task {
 			v.VisibleInputSubtasks[i] = unmarshalStInputsResponseBodyToTasksStInputs(val)
 		}
 	}
+
+	return v
+}
+
+// NewGetTaskTaskNotFound builds a tasks service getTask endpoint TaskNotFound
+// error.
+func NewGetTaskTaskNotFound(body string) tasks.TaskNotFound {
+	v := tasks.TaskNotFound(body)
 
 	return v
 }

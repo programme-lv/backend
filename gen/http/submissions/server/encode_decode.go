@@ -286,95 +286,12 @@ func marshalSubmissionsProgrammingLangToProgrammingLangResponseBody(v *submissio
 	return res
 }
 
-// marshalSubmissionsTaskToTaskResponseBody builds a value of type
-// *TaskResponseBody from a value of type *submissions.Task.
-func marshalSubmissionsTaskToTaskResponseBody(v *submissions.Task) *TaskResponseBody {
-	res := &TaskResponseBody{
-		PublishedTaskID:        v.PublishedTaskID,
-		TaskFullName:           v.TaskFullName,
-		MemoryLimitMegabytes:   v.MemoryLimitMegabytes,
-		CPUTimeLimitSeconds:    v.CPUTimeLimitSeconds,
-		OriginOlympiad:         v.OriginOlympiad,
-		IllustrationImgURL:     v.IllustrationImgURL,
-		DifficultyRating:       v.DifficultyRating,
-		DefaultPdfStatementURL: v.DefaultPdfStatementURL,
-	}
-	if v.DefaultMdStatement != nil {
-		res.DefaultMdStatement = marshalSubmissionsMarkdownStatementToMarkdownStatementResponseBody(v.DefaultMdStatement)
-	}
-	if v.Examples != nil {
-		res.Examples = make([]*ExampleResponseBody, len(v.Examples))
-		for i, val := range v.Examples {
-			res.Examples[i] = marshalSubmissionsExampleToExampleResponseBody(val)
-		}
-	}
-	if v.OriginNotes != nil {
-		res.OriginNotes = make(map[string]string, len(v.OriginNotes))
-		for key, val := range v.OriginNotes {
-			tk := key
-			tv := val
-			res.OriginNotes[tk] = tv
-		}
-	}
-	if v.VisibleInputSubtasks != nil {
-		res.VisibleInputSubtasks = make([]*StInputsResponseBody, len(v.VisibleInputSubtasks))
-		for i, val := range v.VisibleInputSubtasks {
-			res.VisibleInputSubtasks[i] = marshalSubmissionsStInputsToStInputsResponseBody(val)
-		}
-	}
-
-	return res
-}
-
-// marshalSubmissionsMarkdownStatementToMarkdownStatementResponseBody builds a
-// value of type *MarkdownStatementResponseBody from a value of type
-// *submissions.MarkdownStatement.
-func marshalSubmissionsMarkdownStatementToMarkdownStatementResponseBody(v *submissions.MarkdownStatement) *MarkdownStatementResponseBody {
-	if v == nil {
-		return nil
-	}
-	res := &MarkdownStatementResponseBody{
-		Story:   v.Story,
-		Input:   v.Input,
-		Output:  v.Output,
-		Notes:   v.Notes,
-		Scoring: v.Scoring,
-	}
-
-	return res
-}
-
-// marshalSubmissionsExampleToExampleResponseBody builds a value of type
-// *ExampleResponseBody from a value of type *submissions.Example.
-func marshalSubmissionsExampleToExampleResponseBody(v *submissions.Example) *ExampleResponseBody {
-	if v == nil {
-		return nil
-	}
-	res := &ExampleResponseBody{
-		Input:  v.Input,
-		Output: v.Output,
-		MdNote: v.MdNote,
-	}
-
-	return res
-}
-
-// marshalSubmissionsStInputsToStInputsResponseBody builds a value of type
-// *StInputsResponseBody from a value of type *submissions.StInputs.
-func marshalSubmissionsStInputsToStInputsResponseBody(v *submissions.StInputs) *StInputsResponseBody {
-	if v == nil {
-		return nil
-	}
-	res := &StInputsResponseBody{
-		Subtask: v.Subtask,
-	}
-	if v.Inputs != nil {
-		res.Inputs = make([]string, len(v.Inputs))
-		for i, val := range v.Inputs {
-			res.Inputs[i] = val
-		}
-	} else {
-		res.Inputs = []string{}
+// marshalSubmissionsSubmTaskToSubmTaskResponseBody builds a value of type
+// *SubmTaskResponseBody from a value of type *submissions.SubmTask.
+func marshalSubmissionsSubmTaskToSubmTaskResponseBody(v *submissions.SubmTask) *SubmTaskResponseBody {
+	res := &SubmTaskResponseBody{
+		Name: v.Name,
+		Code: v.Code,
 	}
 
 	return res
@@ -396,7 +313,7 @@ func marshalSubmissionsSubmissionToSubmissionResponse(v *submissions.Submission)
 		res.Language = marshalSubmissionsProgrammingLangToProgrammingLangResponse(v.Language)
 	}
 	if v.Task != nil {
-		res.Task = marshalSubmissionsTaskToTaskResponse(v.Task)
+		res.Task = marshalSubmissionsSubmTaskToSubmTaskResponse(v.Task)
 	}
 
 	return res
@@ -428,95 +345,12 @@ func marshalSubmissionsProgrammingLangToProgrammingLangResponse(v *submissions.P
 	return res
 }
 
-// marshalSubmissionsTaskToTaskResponse builds a value of type *TaskResponse
-// from a value of type *submissions.Task.
-func marshalSubmissionsTaskToTaskResponse(v *submissions.Task) *TaskResponse {
-	res := &TaskResponse{
-		PublishedTaskID:        v.PublishedTaskID,
-		TaskFullName:           v.TaskFullName,
-		MemoryLimitMegabytes:   v.MemoryLimitMegabytes,
-		CPUTimeLimitSeconds:    v.CPUTimeLimitSeconds,
-		OriginOlympiad:         v.OriginOlympiad,
-		IllustrationImgURL:     v.IllustrationImgURL,
-		DifficultyRating:       v.DifficultyRating,
-		DefaultPdfStatementURL: v.DefaultPdfStatementURL,
-	}
-	if v.DefaultMdStatement != nil {
-		res.DefaultMdStatement = marshalSubmissionsMarkdownStatementToMarkdownStatementResponse(v.DefaultMdStatement)
-	}
-	if v.Examples != nil {
-		res.Examples = make([]*ExampleResponse, len(v.Examples))
-		for i, val := range v.Examples {
-			res.Examples[i] = marshalSubmissionsExampleToExampleResponse(val)
-		}
-	}
-	if v.OriginNotes != nil {
-		res.OriginNotes = make(map[string]string, len(v.OriginNotes))
-		for key, val := range v.OriginNotes {
-			tk := key
-			tv := val
-			res.OriginNotes[tk] = tv
-		}
-	}
-	if v.VisibleInputSubtasks != nil {
-		res.VisibleInputSubtasks = make([]*StInputsResponse, len(v.VisibleInputSubtasks))
-		for i, val := range v.VisibleInputSubtasks {
-			res.VisibleInputSubtasks[i] = marshalSubmissionsStInputsToStInputsResponse(val)
-		}
-	}
-
-	return res
-}
-
-// marshalSubmissionsMarkdownStatementToMarkdownStatementResponse builds a
-// value of type *MarkdownStatementResponse from a value of type
-// *submissions.MarkdownStatement.
-func marshalSubmissionsMarkdownStatementToMarkdownStatementResponse(v *submissions.MarkdownStatement) *MarkdownStatementResponse {
-	if v == nil {
-		return nil
-	}
-	res := &MarkdownStatementResponse{
-		Story:   v.Story,
-		Input:   v.Input,
-		Output:  v.Output,
-		Notes:   v.Notes,
-		Scoring: v.Scoring,
-	}
-
-	return res
-}
-
-// marshalSubmissionsExampleToExampleResponse builds a value of type
-// *ExampleResponse from a value of type *submissions.Example.
-func marshalSubmissionsExampleToExampleResponse(v *submissions.Example) *ExampleResponse {
-	if v == nil {
-		return nil
-	}
-	res := &ExampleResponse{
-		Input:  v.Input,
-		Output: v.Output,
-		MdNote: v.MdNote,
-	}
-
-	return res
-}
-
-// marshalSubmissionsStInputsToStInputsResponse builds a value of type
-// *StInputsResponse from a value of type *submissions.StInputs.
-func marshalSubmissionsStInputsToStInputsResponse(v *submissions.StInputs) *StInputsResponse {
-	if v == nil {
-		return nil
-	}
-	res := &StInputsResponse{
-		Subtask: v.Subtask,
-	}
-	if v.Inputs != nil {
-		res.Inputs = make([]string, len(v.Inputs))
-		for i, val := range v.Inputs {
-			res.Inputs[i] = val
-		}
-	} else {
-		res.Inputs = []string{}
+// marshalSubmissionsSubmTaskToSubmTaskResponse builds a value of type
+// *SubmTaskResponse from a value of type *submissions.SubmTask.
+func marshalSubmissionsSubmTaskToSubmTaskResponse(v *submissions.SubmTask) *SubmTaskResponse {
+	res := &SubmTaskResponse{
+		Name: v.Name,
+		Code: v.Code,
 	}
 
 	return res

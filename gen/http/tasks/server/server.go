@@ -112,7 +112,7 @@ func NewListTasksHandler(
 ) http.Handler {
 	var (
 		encodeResponse = EncodeListTasksResponse(encoder)
-		encodeError    = goahttp.ErrorEncoder(encoder, formatter)
+		encodeError    = EncodeListTasksError(encoder, formatter)
 	)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
@@ -157,7 +157,7 @@ func NewGetTaskHandler(
 	var (
 		decodeRequest  = DecodeGetTaskRequest(mux, decoder)
 		encodeResponse = EncodeGetTaskResponse(encoder)
-		encodeError    = goahttp.ErrorEncoder(encoder, formatter)
+		encodeError    = EncodeGetTaskError(encoder, formatter)
 	)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))

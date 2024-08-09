@@ -73,16 +73,6 @@ type Evaluation struct {
 	PossibleScore int
 }
 
-// Represents an example for a task
-type Example struct {
-	// Example input
-	Input string
-	// Example output
-	Output string
-	// Markdown note for the example
-	MdNote *string
-}
-
 // GetSubmissionPayload is the payload type of the submissions service
 // getSubmission method.
 type GetSubmissionPayload struct {
@@ -95,20 +85,6 @@ type InternalError string
 
 // Invalid submission details
 type InvalidSubmissionDetails string
-
-// Represents a markdown statement for a task
-type MarkdownStatement struct {
-	// Story section of the markdown statement
-	Story string
-	// Input section of the markdown statement
-	Input string
-	// Output section of the markdown statement
-	Output string
-	// Notes section of the markdown statement
-	Notes *string
-	// Scoring section of the markdown statement
-	Scoring *string
-}
 
 // Submission not found
 type NotFound string
@@ -123,12 +99,12 @@ type ProgrammingLang struct {
 	MonacoID string
 }
 
-// Represents subtask inputs for a task
-type StInputs struct {
-	// Subtask number
-	Subtask int
-	// Inputs for the subtask
-	Inputs []string
+// Represents a competitive programming task
+type SubmTask struct {
+	// Name of the task
+	Name string
+	// Code of the task
+	Code string
 }
 
 // Submission is the result type of the submissions service createSubmission
@@ -147,35 +123,7 @@ type Submission struct {
 	// Programming language of the submission
 	Language *ProgrammingLang
 	// Task associated with the submission
-	Task *Task
-}
-
-// Represents a competitive programming task
-type Task struct {
-	// ID of the published task
-	PublishedTaskID string
-	// Full name of the task
-	TaskFullName string
-	// Memory limit in megabytes
-	MemoryLimitMegabytes int
-	// CPU time limit in seconds
-	CPUTimeLimitSeconds float64
-	// Origin olympiad of the task
-	OriginOlympiad string
-	// URL of the illustration image
-	IllustrationImgURL *string
-	// Difficulty rating of the task
-	DifficultyRating int
-	// Default markdown statement of the task
-	DefaultMdStatement *MarkdownStatement
-	// Examples for the task
-	Examples []*Example
-	// URL of the default PDF statement
-	DefaultPdfStatementURL *string
-	// Origin notes for the task
-	OriginNotes map[string]string
-	// Visible input subtasks
-	VisibleInputSubtasks []*StInputs
+	Task *SubmTask
 }
 
 // Credentials are invalid

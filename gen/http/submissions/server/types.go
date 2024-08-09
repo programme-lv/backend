@@ -41,7 +41,7 @@ type CreateSubmissionResponseBody struct {
 	// Programming language of the submission
 	Language *ProgrammingLangResponseBody `form:"language" json:"language" xml:"language"`
 	// Task associated with the submission
-	Task *TaskResponseBody `form:"task" json:"task" xml:"task"`
+	Task *SubmTaskResponseBody `form:"task" json:"task" xml:"task"`
 }
 
 // ListSubmissionsResponseBody is the type of the "submissions" service
@@ -64,7 +64,7 @@ type GetSubmissionResponseBody struct {
 	// Programming language of the submission
 	Language *ProgrammingLangResponseBody `form:"language" json:"language" xml:"language"`
 	// Task associated with the submission
-	Task *TaskResponseBody `form:"task" json:"task" xml:"task"`
+	Task *SubmTaskResponseBody `form:"task" json:"task" xml:"task"`
 }
 
 // EvaluationResponseBody is used to define fields on response body types.
@@ -89,65 +89,12 @@ type ProgrammingLangResponseBody struct {
 	MonacoID string `form:"monacoId" json:"monacoId" xml:"monacoId"`
 }
 
-// TaskResponseBody is used to define fields on response body types.
-type TaskResponseBody struct {
-	// ID of the published task
-	PublishedTaskID string `form:"published_task_id" json:"published_task_id" xml:"published_task_id"`
-	// Full name of the task
-	TaskFullName string `form:"task_full_name" json:"task_full_name" xml:"task_full_name"`
-	// Memory limit in megabytes
-	MemoryLimitMegabytes int `form:"memory_limit_megabytes" json:"memory_limit_megabytes" xml:"memory_limit_megabytes"`
-	// CPU time limit in seconds
-	CPUTimeLimitSeconds float64 `form:"cpu_time_limit_seconds" json:"cpu_time_limit_seconds" xml:"cpu_time_limit_seconds"`
-	// Origin olympiad of the task
-	OriginOlympiad string `form:"origin_olympiad" json:"origin_olympiad" xml:"origin_olympiad"`
-	// URL of the illustration image
-	IllustrationImgURL *string `form:"illustration_img_url,omitempty" json:"illustration_img_url,omitempty" xml:"illustration_img_url,omitempty"`
-	// Difficulty rating of the task
-	DifficultyRating int `form:"difficulty_rating" json:"difficulty_rating" xml:"difficulty_rating"`
-	// Default markdown statement of the task
-	DefaultMdStatement *MarkdownStatementResponseBody `form:"default_md_statement,omitempty" json:"default_md_statement,omitempty" xml:"default_md_statement,omitempty"`
-	// Examples for the task
-	Examples []*ExampleResponseBody `form:"examples,omitempty" json:"examples,omitempty" xml:"examples,omitempty"`
-	// URL of the default PDF statement
-	DefaultPdfStatementURL *string `form:"default_pdf_statement_url,omitempty" json:"default_pdf_statement_url,omitempty" xml:"default_pdf_statement_url,omitempty"`
-	// Origin notes for the task
-	OriginNotes map[string]string `form:"origin_notes,omitempty" json:"origin_notes,omitempty" xml:"origin_notes,omitempty"`
-	// Visible input subtasks
-	VisibleInputSubtasks []*StInputsResponseBody `form:"visible_input_subtasks,omitempty" json:"visible_input_subtasks,omitempty" xml:"visible_input_subtasks,omitempty"`
-}
-
-// MarkdownStatementResponseBody is used to define fields on response body
-// types.
-type MarkdownStatementResponseBody struct {
-	// Story section of the markdown statement
-	Story string `form:"story" json:"story" xml:"story"`
-	// Input section of the markdown statement
-	Input string `form:"input" json:"input" xml:"input"`
-	// Output section of the markdown statement
-	Output string `form:"output" json:"output" xml:"output"`
-	// Notes section of the markdown statement
-	Notes *string `form:"notes,omitempty" json:"notes,omitempty" xml:"notes,omitempty"`
-	// Scoring section of the markdown statement
-	Scoring *string `form:"scoring,omitempty" json:"scoring,omitempty" xml:"scoring,omitempty"`
-}
-
-// ExampleResponseBody is used to define fields on response body types.
-type ExampleResponseBody struct {
-	// Example input
-	Input string `form:"input" json:"input" xml:"input"`
-	// Example output
-	Output string `form:"output" json:"output" xml:"output"`
-	// Markdown note for the example
-	MdNote *string `form:"md_note,omitempty" json:"md_note,omitempty" xml:"md_note,omitempty"`
-}
-
-// StInputsResponseBody is used to define fields on response body types.
-type StInputsResponseBody struct {
-	// Subtask number
-	Subtask int `form:"subtask" json:"subtask" xml:"subtask"`
-	// Inputs for the subtask
-	Inputs []string `form:"inputs" json:"inputs" xml:"inputs"`
+// SubmTaskResponseBody is used to define fields on response body types.
+type SubmTaskResponseBody struct {
+	// Name of the task
+	Name string `form:"name" json:"name" xml:"name"`
+	// Code of the task
+	Code string `form:"code" json:"code" xml:"code"`
 }
 
 // SubmissionResponse is used to define fields on response body types.
@@ -165,7 +112,7 @@ type SubmissionResponse struct {
 	// Programming language of the submission
 	Language *ProgrammingLangResponse `form:"language" json:"language" xml:"language"`
 	// Task associated with the submission
-	Task *TaskResponse `form:"task" json:"task" xml:"task"`
+	Task *SubmTaskResponse `form:"task" json:"task" xml:"task"`
 }
 
 // EvaluationResponse is used to define fields on response body types.
@@ -190,64 +137,12 @@ type ProgrammingLangResponse struct {
 	MonacoID string `form:"monacoId" json:"monacoId" xml:"monacoId"`
 }
 
-// TaskResponse is used to define fields on response body types.
-type TaskResponse struct {
-	// ID of the published task
-	PublishedTaskID string `form:"published_task_id" json:"published_task_id" xml:"published_task_id"`
-	// Full name of the task
-	TaskFullName string `form:"task_full_name" json:"task_full_name" xml:"task_full_name"`
-	// Memory limit in megabytes
-	MemoryLimitMegabytes int `form:"memory_limit_megabytes" json:"memory_limit_megabytes" xml:"memory_limit_megabytes"`
-	// CPU time limit in seconds
-	CPUTimeLimitSeconds float64 `form:"cpu_time_limit_seconds" json:"cpu_time_limit_seconds" xml:"cpu_time_limit_seconds"`
-	// Origin olympiad of the task
-	OriginOlympiad string `form:"origin_olympiad" json:"origin_olympiad" xml:"origin_olympiad"`
-	// URL of the illustration image
-	IllustrationImgURL *string `form:"illustration_img_url,omitempty" json:"illustration_img_url,omitempty" xml:"illustration_img_url,omitempty"`
-	// Difficulty rating of the task
-	DifficultyRating int `form:"difficulty_rating" json:"difficulty_rating" xml:"difficulty_rating"`
-	// Default markdown statement of the task
-	DefaultMdStatement *MarkdownStatementResponse `form:"default_md_statement,omitempty" json:"default_md_statement,omitempty" xml:"default_md_statement,omitempty"`
-	// Examples for the task
-	Examples []*ExampleResponse `form:"examples,omitempty" json:"examples,omitempty" xml:"examples,omitempty"`
-	// URL of the default PDF statement
-	DefaultPdfStatementURL *string `form:"default_pdf_statement_url,omitempty" json:"default_pdf_statement_url,omitempty" xml:"default_pdf_statement_url,omitempty"`
-	// Origin notes for the task
-	OriginNotes map[string]string `form:"origin_notes,omitempty" json:"origin_notes,omitempty" xml:"origin_notes,omitempty"`
-	// Visible input subtasks
-	VisibleInputSubtasks []*StInputsResponse `form:"visible_input_subtasks,omitempty" json:"visible_input_subtasks,omitempty" xml:"visible_input_subtasks,omitempty"`
-}
-
-// MarkdownStatementResponse is used to define fields on response body types.
-type MarkdownStatementResponse struct {
-	// Story section of the markdown statement
-	Story string `form:"story" json:"story" xml:"story"`
-	// Input section of the markdown statement
-	Input string `form:"input" json:"input" xml:"input"`
-	// Output section of the markdown statement
-	Output string `form:"output" json:"output" xml:"output"`
-	// Notes section of the markdown statement
-	Notes *string `form:"notes,omitempty" json:"notes,omitempty" xml:"notes,omitempty"`
-	// Scoring section of the markdown statement
-	Scoring *string `form:"scoring,omitempty" json:"scoring,omitempty" xml:"scoring,omitempty"`
-}
-
-// ExampleResponse is used to define fields on response body types.
-type ExampleResponse struct {
-	// Example input
-	Input string `form:"input" json:"input" xml:"input"`
-	// Example output
-	Output string `form:"output" json:"output" xml:"output"`
-	// Markdown note for the example
-	MdNote *string `form:"md_note,omitempty" json:"md_note,omitempty" xml:"md_note,omitempty"`
-}
-
-// StInputsResponse is used to define fields on response body types.
-type StInputsResponse struct {
-	// Subtask number
-	Subtask int `form:"subtask" json:"subtask" xml:"subtask"`
-	// Inputs for the subtask
-	Inputs []string `form:"inputs" json:"inputs" xml:"inputs"`
+// SubmTaskResponse is used to define fields on response body types.
+type SubmTaskResponse struct {
+	// Name of the task
+	Name string `form:"name" json:"name" xml:"name"`
+	// Code of the task
+	Code string `form:"code" json:"code" xml:"code"`
 }
 
 // NewCreateSubmissionResponseBody builds the HTTP response body from the
@@ -266,7 +161,7 @@ func NewCreateSubmissionResponseBody(res *submissions.Submission) *CreateSubmiss
 		body.Language = marshalSubmissionsProgrammingLangToProgrammingLangResponseBody(res.Language)
 	}
 	if res.Task != nil {
-		body.Task = marshalSubmissionsTaskToTaskResponseBody(res.Task)
+		body.Task = marshalSubmissionsSubmTaskToSubmTaskResponseBody(res.Task)
 	}
 	return body
 }
@@ -297,7 +192,7 @@ func NewGetSubmissionResponseBody(res *submissions.Submission) *GetSubmissionRes
 		body.Language = marshalSubmissionsProgrammingLangToProgrammingLangResponseBody(res.Language)
 	}
 	if res.Task != nil {
-		body.Task = marshalSubmissionsTaskToTaskResponseBody(res.Task)
+		body.Task = marshalSubmissionsSubmTaskToSubmTaskResponseBody(res.Task)
 	}
 	return body
 }

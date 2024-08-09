@@ -59,7 +59,7 @@ func (s *taskssrvc) GetTask(ctx context.Context, p *taskgen.GetTaskPayload) (res
 		return nil, fmt.Errorf("could not get task: %w", err)
 	}
 	if row == nil {
-		return nil, fmt.Errorf("task not found")
+		return nil, taskgen.TaskNotFound("task not found")
 	}
 
 	return ddbTaskRowToResponse(row)

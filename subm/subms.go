@@ -13,7 +13,9 @@ import (
 	"github.com/guregu/dynamo/v2"
 	"github.com/programme-lv/backend/auth"
 	submgen "github.com/programme-lv/backend/gen/submissions"
+	taskgen "github.com/programme-lv/backend/gen/tasks"
 	usergen "github.com/programme-lv/backend/gen/users"
+	"github.com/programme-lv/backend/task"
 	"github.com/programme-lv/backend/user"
 	"goa.design/clue/log"
 )
@@ -23,6 +25,7 @@ import (
 type submissionssrvc struct {
 	ddbSubmTable *DynamoDbSubmTable
 	userSrvc     usergen.Service
+	taskSrvc     taskgen.Service
 	jwtKey       []byte
 }
 
@@ -47,6 +50,7 @@ func NewSubmissions(ctx context.Context) submgen.Service {
 	return &submissionssrvc{
 		ddbSubmTable: NewDynamoDbSubmTable(dynamodbClient, "proglv_submissions"),
 		userSrvc:     user.NewUsers(ctx),
+		taskSrvc:     task.NewTasks(),
 		jwtKey:       []byte(jwtKey),
 	}
 }
@@ -100,9 +104,19 @@ func (s *submissionssrvc) CreateSubmission(ctx context.Context, p *submgen.Creat
 		return nil, submgen.Unauthorized("jwt claims uuid does not match username's user's uuid")
 	}
 
+	taskSrvTask, err := s.taskSrvc.GetTask(ctx, &taskgen.GetTaskPayload{
+		TaskID: p.TaskCodeID,
+	})
+	if err != nil {
+		log.Errorf(ctx, err, "error getting task: %+v", err.Error())
+		if e, ok := err.(taskgen.TaskNotFound); ok {
+			return nil, submgen.InvalidSubmissionDetails(string(e))
+		}
+		return nil, submgen.InternalError("error getting task")
+	}
+
 	// TODO: verify that the programming language is valid
 	// for now we could just hardcode language list
-	// TODO: verify that the task id is valid
 
 	uuid := uuid.New()
 	createdAt := time.Now()
@@ -136,7 +150,10 @@ func (s *submissionssrvc) CreateSubmission(ctx context.Context, p *submgen.Creat
 		CreatedAt:  createdAtRfc3339,
 		Evaluation: nil,
 		Language:   nil,
-		Task:       nil,
+		Task: &submgen.SubmTask{
+			Name: taskSrvTask.TaskFullName,
+			Code: taskSrvTask.PublishedTaskID,
+		},
 	}
 
 	return res, nil

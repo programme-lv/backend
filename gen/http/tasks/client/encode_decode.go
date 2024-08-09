@@ -37,6 +37,9 @@ func (c *Client) BuildListTasksRequest(ctx context.Context, v any) (*http.Reques
 // DecodeListTasksResponse returns a decoder for responses returned by the
 // tasks listTasks endpoint. restoreBody controls whether the response body
 // should be restored after having been read.
+// DecodeListTasksResponse may return the following errors:
+//   - "TaskNotFound" (type tasks.TaskNotFound): http.StatusNotFound
+//   - error: internal error
 func DecodeListTasksResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
 	return func(resp *http.Response) (any, error) {
 		if restoreBody {
@@ -73,6 +76,16 @@ func DecodeListTasksResponse(decoder func(*http.Response) goahttp.Decoder, resto
 			}
 			res := NewListTasksTaskOK(body)
 			return res, nil
+		case http.StatusNotFound:
+			var (
+				body string
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("tasks", "listTasks", err)
+			}
+			return nil, NewListTasksTaskNotFound(body)
 		default:
 			body, _ := io.ReadAll(resp.Body)
 			return nil, goahttp.ErrInvalidResponse("tasks", "listTasks", resp.StatusCode, string(body))
@@ -108,6 +121,9 @@ func (c *Client) BuildGetTaskRequest(ctx context.Context, v any) (*http.Request,
 // DecodeGetTaskResponse returns a decoder for responses returned by the tasks
 // getTask endpoint. restoreBody controls whether the response body should be
 // restored after having been read.
+// DecodeGetTaskResponse may return the following errors:
+//   - "TaskNotFound" (type tasks.TaskNotFound): http.StatusNotFound
+//   - error: internal error
 func DecodeGetTaskResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
 	return func(resp *http.Response) (any, error) {
 		if restoreBody {
@@ -138,6 +154,16 @@ func DecodeGetTaskResponse(decoder func(*http.Response) goahttp.Decoder, restore
 			}
 			res := NewGetTaskTaskOK(&body)
 			return res, nil
+		case http.StatusNotFound:
+			var (
+				body string
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("tasks", "getTask", err)
+			}
+			return nil, NewGetTaskTaskNotFound(body)
 		default:
 			body, _ := io.ReadAll(resp.Body)
 			return nil, goahttp.ErrInvalidResponse("tasks", "getTask", resp.StatusCode, string(body))

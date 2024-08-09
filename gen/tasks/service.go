@@ -100,3 +100,23 @@ type Task struct {
 	// Visible input subtasks
 	VisibleInputSubtasks []*StInputs
 }
+
+// Task not found
+type TaskNotFound string
+
+// Error returns an error description.
+func (e TaskNotFound) Error() string {
+	return "Task not found"
+}
+
+// ErrorName returns "TaskNotFound".
+//
+// Deprecated: Use GoaErrorName - https://github.com/goadesign/goa/issues/3105
+func (e TaskNotFound) ErrorName() string {
+	return e.GoaErrorName()
+}
+
+// GoaErrorName returns "TaskNotFound".
+func (e TaskNotFound) GoaErrorName() string {
+	return "TaskNotFound"
+}
