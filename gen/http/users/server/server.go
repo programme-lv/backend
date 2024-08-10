@@ -475,6 +475,22 @@ func HandleUsersOrigin(h http.Handler) http.Handler {
 			h.ServeHTTP(w, r)
 			return
 		}
+		if cors.MatchOrigin(origin, "https://www.programme.lv") {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+			w.Header().Set("Vary", "Origin")
+			w.Header().Set("Access-Control-Expose-Headers", "*")
+			w.Header().Set("Access-Control-Max-Age", "600")
+			w.Header().Set("Access-Control-Allow-Credentials", "true")
+			if acrm := r.Header.Get("Access-Control-Request-Method"); acrm != "" {
+				// We are handling a preflight request
+				w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+				w.Header().Set("Access-Control-Allow-Headers", "*")
+				w.WriteHeader(204)
+				return
+			}
+			h.ServeHTTP(w, r)
+			return
+		}
 		h.ServeHTTP(w, r)
 		return
 	})

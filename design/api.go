@@ -24,6 +24,13 @@ var _ = dsl.API("proglv", func() {
 		cors.MaxAge(600)
 		cors.Credentials()
 	})
+	cors.Origin("https://www.programme.lv", func() {
+		cors.Methods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+		cors.Headers("*")
+		cors.Expose("*")
+		cors.MaxAge(600)
+		cors.Credentials()
+	})
 })
 
 // JWTAuth defines a security scheme using JWT tokens.
