@@ -1,9 +1,5 @@
 package subm
 
-import (
-	"fmt"
-)
-
 // ProgrammingLang represents the structure of a programming language.
 type ProgrammingLang struct {
 	ID               string
@@ -114,11 +110,4 @@ int main() { std::cout << "Hello, World!" << std::endl; }`,
 // strPtr is a helper function to create a pointer to a string literal.
 func strPtr(s string) *string {
 	return &s
-}
-
-func main() {
-	languages := getHardcodedLanguageList()
-	for _, lang := range languages {
-		fmt.Printf("ID: %s, Full Name: %s, Enabled: %t\n", lang.ID, lang.FullName, lang.Enabled)
-	}
 }
