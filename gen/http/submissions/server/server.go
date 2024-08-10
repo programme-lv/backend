@@ -19,11 +19,12 @@ import (
 
 // Server lists the submissions service endpoint HTTP handlers.
 type Server struct {
-	Mounts           []*MountPoint
-	CreateSubmission http.Handler
-	ListSubmissions  http.Handler
-	GetSubmission    http.Handler
-	CORS             http.Handler
+	Mounts                   []*MountPoint
+	CreateSubmission         http.Handler
+	ListSubmissions          http.Handler
+	GetSubmission            http.Handler
+	ListProgrammingLanguages http.Handler
+	CORS                     http.Handler
 }
 
 // MountPoint holds information about the mounted endpoints.
@@ -56,13 +57,16 @@ func New(
 			{"CreateSubmission", "POST", "/submissions"},
 			{"ListSubmissions", "GET", "/submissions"},
 			{"GetSubmission", "GET", "/submissions/{uuid}"},
+			{"ListProgrammingLanguages", "GET", "/programming-languages"},
 			{"CORS", "OPTIONS", "/submissions"},
 			{"CORS", "OPTIONS", "/submissions/{uuid}"},
+			{"CORS", "OPTIONS", "/programming-languages"},
 		},
-		CreateSubmission: NewCreateSubmissionHandler(e.CreateSubmission, mux, decoder, encoder, errhandler, formatter),
-		ListSubmissions:  NewListSubmissionsHandler(e.ListSubmissions, mux, decoder, encoder, errhandler, formatter),
-		GetSubmission:    NewGetSubmissionHandler(e.GetSubmission, mux, decoder, encoder, errhandler, formatter),
-		CORS:             NewCORSHandler(),
+		CreateSubmission:         NewCreateSubmissionHandler(e.CreateSubmission, mux, decoder, encoder, errhandler, formatter),
+		ListSubmissions:          NewListSubmissionsHandler(e.ListSubmissions, mux, decoder, encoder, errhandler, formatter),
+		GetSubmission:            NewGetSubmissionHandler(e.GetSubmission, mux, decoder, encoder, errhandler, formatter),
+		ListProgrammingLanguages: NewListProgrammingLanguagesHandler(e.ListProgrammingLanguages, mux, decoder, encoder, errhandler, formatter),
+		CORS:                     NewCORSHandler(),
 	}
 }
 
@@ -74,6 +78,7 @@ func (s *Server) Use(m func(http.Handler) http.Handler) {
 	s.CreateSubmission = m(s.CreateSubmission)
 	s.ListSubmissions = m(s.ListSubmissions)
 	s.GetSubmission = m(s.GetSubmission)
+	s.ListProgrammingLanguages = m(s.ListProgrammingLanguages)
 	s.CORS = m(s.CORS)
 }
 
@@ -85,6 +90,7 @@ func Mount(mux goahttp.Muxer, h *Server) {
 	MountCreateSubmissionHandler(mux, h.CreateSubmission)
 	MountListSubmissionsHandler(mux, h.ListSubmissions)
 	MountGetSubmissionHandler(mux, h.GetSubmission)
+	MountListProgrammingLanguagesHandler(mux, h.ListProgrammingLanguages)
 	MountCORSHandler(mux, h.CORS)
 }
 
@@ -239,12 +245,58 @@ func NewGetSubmissionHandler(
 	})
 }
 
+// MountListProgrammingLanguagesHandler configures the mux to serve the
+// "submissions" service "listProgrammingLanguages" endpoint.
+func MountListProgrammingLanguagesHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := HandleSubmissionsOrigin(h).(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("GET", "/programming-languages", f)
+}
+
+// NewListProgrammingLanguagesHandler creates a HTTP handler which loads the
+// HTTP request and calls the "submissions" service "listProgrammingLanguages"
+// endpoint.
+func NewListProgrammingLanguagesHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(ctx context.Context, err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		encodeResponse = EncodeListProgrammingLanguagesResponse(encoder)
+		encodeError    = EncodeListProgrammingLanguagesError(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "listProgrammingLanguages")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "submissions")
+		var err error
+		res, err := endpoint(ctx, nil)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			errhandler(ctx, w, err)
+		}
+	})
+}
+
 // MountCORSHandler configures the mux to serve the CORS endpoints for the
 // service submissions.
 func MountCORSHandler(mux goahttp.Muxer, h http.Handler) {
 	h = HandleSubmissionsOrigin(h)
 	mux.Handle("OPTIONS", "/submissions", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/submissions/{uuid}", h.ServeHTTP)
+	mux.Handle("OPTIONS", "/programming-languages", h.ServeHTTP)
 }
 
 // NewCORSHandler creates a HTTP handler which returns a simple 204 response.

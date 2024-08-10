@@ -4,7 +4,7 @@ import (
 	"goa.design/goa/v3/dsl"
 )
 
-var ProgrammingLang = dsl.Type("ProgrammingLang", func() {
+var SubmProgrammingLang = dsl.Type("SubmProgrammingLang", func() {
 	dsl.Description("Represents a programming language")
 	dsl.Attribute("id", dsl.String, "ID of the programming language", func() {
 		dsl.Example("go")
@@ -62,7 +62,7 @@ var Submission = dsl.Type("Submission", func() {
 		dsl.Example("2024-08-08T10:30:00Z")
 	})
 	dsl.Attribute("evaluation", Evaluation, "Evaluation of the submission")
-	dsl.Attribute("language", ProgrammingLang, "Programming language of the submission")
+	dsl.Attribute("language", SubmProgrammingLang, "Programming language of the submission")
 	dsl.Attribute("task", SubmTask, "Task associated with the submission")
 	dsl.Required("uuid", "submission", "username", "createdAt", "evaluation", "language", "task")
 })
@@ -135,4 +135,48 @@ var _ = dsl.Service("submissions", func() {
 			dsl.Response(dsl.StatusOK)
 		})
 	})
+
+	dsl.Method("listProgrammingLanguages", func() {
+		dsl.Description("List all available programming languages")
+		dsl.Result(dsl.ArrayOf(ProgrammingLang))
+		dsl.HTTP(func() {
+			dsl.GET("/programming-languages")
+			dsl.Response(dsl.StatusOK)
+		})
+	})
+})
+
+var ProgrammingLang = dsl.Type("ProgrammingLang", func() {
+	dsl.Description("Represents a programming language")
+	dsl.Attribute("id", dsl.String, "ID of the programming language", func() {
+		dsl.Example("go")
+	})
+	dsl.Attribute("fullName", dsl.String, "Full name of the programming language", func() {
+		dsl.Example("Go")
+	})
+	dsl.Attribute("codeFilename", dsl.String, "Default code filename for the language", func() {
+		dsl.Example("main.go")
+	})
+	dsl.Attribute("compileCmd", dsl.String, "Compilation command for the language", func() {
+		dsl.Example("go build")
+	})
+	dsl.Attribute("executeCmd", dsl.String, "Execution command for the language", func() {
+		dsl.Example("go run")
+	})
+	dsl.Attribute("envVersionCmd", dsl.String, "Command to get environment version", func() {
+		dsl.Example("go version")
+	})
+	dsl.Attribute("helloWorldCode", dsl.String, "Hello World example code", func() {
+		dsl.Example("package main\n\nimport \"fmt\"\n\nfunc main() {\n    fmt.Println(\"Hello, World!\")\n}")
+	})
+	dsl.Attribute("monacoId", dsl.String, "Monaco editor ID for the programming language", func() {
+		dsl.Example("go")
+	})
+	dsl.Attribute("compiledFilename", dsl.String, "Name of the compiled output file", func() {
+		dsl.Example("main")
+	})
+	dsl.Attribute("enabled", dsl.Boolean, "Whether the language is enabled", func() {
+		dsl.Example(true)
+	})
+	dsl.Required("id", "fullName", "executeCmd", "envVersionCmd", "helloWorldCode", "monacoId", "enabled")
 })

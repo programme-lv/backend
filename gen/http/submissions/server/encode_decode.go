@@ -260,6 +260,66 @@ func EncodeGetSubmissionError(encoder func(context.Context, http.ResponseWriter)
 	}
 }
 
+// EncodeListProgrammingLanguagesResponse returns an encoder for responses
+// returned by the submissions listProgrammingLanguages endpoint.
+func EncodeListProgrammingLanguagesResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+	return func(ctx context.Context, w http.ResponseWriter, v any) error {
+		res, _ := v.([]*submissions.ProgrammingLang)
+		enc := encoder(ctx, w)
+		body := NewListProgrammingLanguagesResponseBody(res)
+		w.WriteHeader(http.StatusOK)
+		return enc.Encode(body)
+	}
+}
+
+// EncodeListProgrammingLanguagesError returns an encoder for errors returned
+// by the listProgrammingLanguages submissions endpoint.
+func EncodeListProgrammingLanguagesError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+	encodeError := goahttp.ErrorEncoder(encoder, formatter)
+	return func(ctx context.Context, w http.ResponseWriter, v error) error {
+		var en goa.GoaErrorNamer
+		if !errors.As(v, &en) {
+			return encodeError(ctx, w, v)
+		}
+		switch en.GoaErrorName() {
+		case "InternalError":
+			var res submissions.InternalError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			body := res
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusInternalServerError)
+			return enc.Encode(body)
+		case "InvalidSubmissionDetails":
+			var res submissions.InvalidSubmissionDetails
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			body := res
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusBadRequest)
+			return enc.Encode(body)
+		case "NotFound":
+			var res submissions.NotFound
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			body := res
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusNotFound)
+			return enc.Encode(body)
+		case "unauthorized":
+			var res submissions.Unauthorized
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			body := res
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusUnauthorized)
+			return enc.Encode(body)
+		default:
+			return encodeError(ctx, w, v)
+		}
+	}
+}
+
 // marshalSubmissionsEvaluationToEvaluationResponseBody builds a value of type
 // *EvaluationResponseBody from a value of type *submissions.Evaluation.
 func marshalSubmissionsEvaluationToEvaluationResponseBody(v *submissions.Evaluation) *EvaluationResponseBody {
@@ -273,11 +333,11 @@ func marshalSubmissionsEvaluationToEvaluationResponseBody(v *submissions.Evaluat
 	return res
 }
 
-// marshalSubmissionsProgrammingLangToProgrammingLangResponseBody builds a
-// value of type *ProgrammingLangResponseBody from a value of type
-// *submissions.ProgrammingLang.
-func marshalSubmissionsProgrammingLangToProgrammingLangResponseBody(v *submissions.ProgrammingLang) *ProgrammingLangResponseBody {
-	res := &ProgrammingLangResponseBody{
+// marshalSubmissionsSubmProgrammingLangToSubmProgrammingLangResponseBody
+// builds a value of type *SubmProgrammingLangResponseBody from a value of type
+// *submissions.SubmProgrammingLang.
+func marshalSubmissionsSubmProgrammingLangToSubmProgrammingLangResponseBody(v *submissions.SubmProgrammingLang) *SubmProgrammingLangResponseBody {
+	res := &SubmProgrammingLangResponseBody{
 		ID:       v.ID,
 		FullName: v.FullName,
 		MonacoID: v.MonacoID,
@@ -310,7 +370,7 @@ func marshalSubmissionsSubmissionToSubmissionResponse(v *submissions.Submission)
 		res.Evaluation = marshalSubmissionsEvaluationToEvaluationResponse(v.Evaluation)
 	}
 	if v.Language != nil {
-		res.Language = marshalSubmissionsProgrammingLangToProgrammingLangResponse(v.Language)
+		res.Language = marshalSubmissionsSubmProgrammingLangToSubmProgrammingLangResponse(v.Language)
 	}
 	if v.Task != nil {
 		res.Task = marshalSubmissionsSubmTaskToSubmTaskResponse(v.Task)
@@ -332,11 +392,11 @@ func marshalSubmissionsEvaluationToEvaluationResponse(v *submissions.Evaluation)
 	return res
 }
 
-// marshalSubmissionsProgrammingLangToProgrammingLangResponse builds a value of
-// type *ProgrammingLangResponse from a value of type
-// *submissions.ProgrammingLang.
-func marshalSubmissionsProgrammingLangToProgrammingLangResponse(v *submissions.ProgrammingLang) *ProgrammingLangResponse {
-	res := &ProgrammingLangResponse{
+// marshalSubmissionsSubmProgrammingLangToSubmProgrammingLangResponse builds a
+// value of type *SubmProgrammingLangResponse from a value of type
+// *submissions.SubmProgrammingLang.
+func marshalSubmissionsSubmProgrammingLangToSubmProgrammingLangResponse(v *submissions.SubmProgrammingLang) *SubmProgrammingLangResponse {
+	res := &SubmProgrammingLangResponse{
 		ID:       v.ID,
 		FullName: v.FullName,
 		MonacoID: v.MonacoID,
@@ -351,6 +411,26 @@ func marshalSubmissionsSubmTaskToSubmTaskResponse(v *submissions.SubmTask) *Subm
 	res := &SubmTaskResponse{
 		Name: v.Name,
 		Code: v.Code,
+	}
+
+	return res
+}
+
+// marshalSubmissionsProgrammingLangToProgrammingLangResponse builds a value of
+// type *ProgrammingLangResponse from a value of type
+// *submissions.ProgrammingLang.
+func marshalSubmissionsProgrammingLangToProgrammingLangResponse(v *submissions.ProgrammingLang) *ProgrammingLangResponse {
+	res := &ProgrammingLangResponse{
+		ID:               v.ID,
+		FullName:         v.FullName,
+		CodeFilename:     v.CodeFilename,
+		CompileCmd:       v.CompileCmd,
+		ExecuteCmd:       v.ExecuteCmd,
+		EnvVersionCmd:    v.EnvVersionCmd,
+		HelloWorldCode:   v.HelloWorldCode,
+		MonacoID:         v.MonacoID,
+		CompiledFilename: v.CompiledFilename,
+		Enabled:          v.Enabled,
 	}
 
 	return res

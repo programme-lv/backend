@@ -363,6 +363,114 @@ func DecodeGetSubmissionResponse(decoder func(*http.Response) goahttp.Decoder, r
 	}
 }
 
+// BuildListProgrammingLanguagesRequest instantiates a HTTP request object with
+// method and path set to call the "submissions" service
+// "listProgrammingLanguages" endpoint
+func (c *Client) BuildListProgrammingLanguagesRequest(ctx context.Context, v any) (*http.Request, error) {
+	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: ListProgrammingLanguagesSubmissionsPath()}
+	req, err := http.NewRequest("GET", u.String(), nil)
+	if err != nil {
+		return nil, goahttp.ErrInvalidURL("submissions", "listProgrammingLanguages", u.String(), err)
+	}
+	if ctx != nil {
+		req = req.WithContext(ctx)
+	}
+
+	return req, nil
+}
+
+// DecodeListProgrammingLanguagesResponse returns a decoder for responses
+// returned by the submissions listProgrammingLanguages endpoint. restoreBody
+// controls whether the response body should be restored after having been read.
+// DecodeListProgrammingLanguagesResponse may return the following errors:
+//   - "InternalError" (type submissions.InternalError): http.StatusInternalServerError
+//   - "InvalidSubmissionDetails" (type submissions.InvalidSubmissionDetails): http.StatusBadRequest
+//   - "NotFound" (type submissions.NotFound): http.StatusNotFound
+//   - "unauthorized" (type submissions.Unauthorized): http.StatusUnauthorized
+//   - error: internal error
+func DecodeListProgrammingLanguagesResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
+	return func(resp *http.Response) (any, error) {
+		if restoreBody {
+			b, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return nil, err
+			}
+			resp.Body = io.NopCloser(bytes.NewBuffer(b))
+			defer func() {
+				resp.Body = io.NopCloser(bytes.NewBuffer(b))
+			}()
+		} else {
+			defer resp.Body.Close()
+		}
+		switch resp.StatusCode {
+		case http.StatusOK:
+			var (
+				body ListProgrammingLanguagesResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("submissions", "listProgrammingLanguages", err)
+			}
+			for _, e := range body {
+				if e != nil {
+					if err2 := ValidateProgrammingLangResponse(e); err2 != nil {
+						err = goa.MergeErrors(err, err2)
+					}
+				}
+			}
+			if err != nil {
+				return nil, goahttp.ErrValidationError("submissions", "listProgrammingLanguages", err)
+			}
+			res := NewListProgrammingLanguagesProgrammingLangOK(body)
+			return res, nil
+		case http.StatusInternalServerError:
+			var (
+				body string
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("submissions", "listProgrammingLanguages", err)
+			}
+			return nil, NewListProgrammingLanguagesInternalError(body)
+		case http.StatusBadRequest:
+			var (
+				body string
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("submissions", "listProgrammingLanguages", err)
+			}
+			return nil, NewListProgrammingLanguagesInvalidSubmissionDetails(body)
+		case http.StatusNotFound:
+			var (
+				body string
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("submissions", "listProgrammingLanguages", err)
+			}
+			return nil, NewListProgrammingLanguagesNotFound(body)
+		case http.StatusUnauthorized:
+			var (
+				body string
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("submissions", "listProgrammingLanguages", err)
+			}
+			return nil, NewListProgrammingLanguagesUnauthorized(body)
+		default:
+			body, _ := io.ReadAll(resp.Body)
+			return nil, goahttp.ErrInvalidResponse("submissions", "listProgrammingLanguages", resp.StatusCode, string(body))
+		}
+	}
+}
+
 // unmarshalEvaluationResponseBodyToSubmissionsEvaluation builds a value of
 // type *submissions.Evaluation from a value of type *EvaluationResponseBody.
 func unmarshalEvaluationResponseBodyToSubmissionsEvaluation(v *EvaluationResponseBody) *submissions.Evaluation {
@@ -376,11 +484,11 @@ func unmarshalEvaluationResponseBodyToSubmissionsEvaluation(v *EvaluationRespons
 	return res
 }
 
-// unmarshalProgrammingLangResponseBodyToSubmissionsProgrammingLang builds a
-// value of type *submissions.ProgrammingLang from a value of type
-// *ProgrammingLangResponseBody.
-func unmarshalProgrammingLangResponseBodyToSubmissionsProgrammingLang(v *ProgrammingLangResponseBody) *submissions.ProgrammingLang {
-	res := &submissions.ProgrammingLang{
+// unmarshalSubmProgrammingLangResponseBodyToSubmissionsSubmProgrammingLang
+// builds a value of type *submissions.SubmProgrammingLang from a value of type
+// *SubmProgrammingLangResponseBody.
+func unmarshalSubmProgrammingLangResponseBodyToSubmissionsSubmProgrammingLang(v *SubmProgrammingLangResponseBody) *submissions.SubmProgrammingLang {
+	res := &submissions.SubmProgrammingLang{
 		ID:       *v.ID,
 		FullName: *v.FullName,
 		MonacoID: *v.MonacoID,
@@ -410,7 +518,7 @@ func unmarshalSubmissionResponseToSubmissionsSubmission(v *SubmissionResponse) *
 		CreatedAt:  *v.CreatedAt,
 	}
 	res.Evaluation = unmarshalEvaluationResponseToSubmissionsEvaluation(v.Evaluation)
-	res.Language = unmarshalProgrammingLangResponseToSubmissionsProgrammingLang(v.Language)
+	res.Language = unmarshalSubmProgrammingLangResponseToSubmissionsSubmProgrammingLang(v.Language)
 	res.Task = unmarshalSubmTaskResponseToSubmissionsSubmTask(v.Task)
 
 	return res
@@ -429,11 +537,11 @@ func unmarshalEvaluationResponseToSubmissionsEvaluation(v *EvaluationResponse) *
 	return res
 }
 
-// unmarshalProgrammingLangResponseToSubmissionsProgrammingLang builds a value
-// of type *submissions.ProgrammingLang from a value of type
-// *ProgrammingLangResponse.
-func unmarshalProgrammingLangResponseToSubmissionsProgrammingLang(v *ProgrammingLangResponse) *submissions.ProgrammingLang {
-	res := &submissions.ProgrammingLang{
+// unmarshalSubmProgrammingLangResponseToSubmissionsSubmProgrammingLang builds
+// a value of type *submissions.SubmProgrammingLang from a value of type
+// *SubmProgrammingLangResponse.
+func unmarshalSubmProgrammingLangResponseToSubmissionsSubmProgrammingLang(v *SubmProgrammingLangResponse) *submissions.SubmProgrammingLang {
+	res := &submissions.SubmProgrammingLang{
 		ID:       *v.ID,
 		FullName: *v.FullName,
 		MonacoID: *v.MonacoID,
@@ -448,6 +556,26 @@ func unmarshalSubmTaskResponseToSubmissionsSubmTask(v *SubmTaskResponse) *submis
 	res := &submissions.SubmTask{
 		Name: *v.Name,
 		Code: *v.Code,
+	}
+
+	return res
+}
+
+// unmarshalProgrammingLangResponseToSubmissionsProgrammingLang builds a value
+// of type *submissions.ProgrammingLang from a value of type
+// *ProgrammingLangResponse.
+func unmarshalProgrammingLangResponseToSubmissionsProgrammingLang(v *ProgrammingLangResponse) *submissions.ProgrammingLang {
+	res := &submissions.ProgrammingLang{
+		ID:               *v.ID,
+		FullName:         *v.FullName,
+		CodeFilename:     v.CodeFilename,
+		CompileCmd:       v.CompileCmd,
+		ExecuteCmd:       *v.ExecuteCmd,
+		EnvVersionCmd:    *v.EnvVersionCmd,
+		HelloWorldCode:   *v.HelloWorldCode,
+		MonacoID:         *v.MonacoID,
+		CompiledFilename: v.CompiledFilename,
+		Enabled:          *v.Enabled,
 	}
 
 	return res

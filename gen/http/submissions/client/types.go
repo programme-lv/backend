@@ -39,7 +39,7 @@ type CreateSubmissionResponseBody struct {
 	// Evaluation of the submission
 	Evaluation *EvaluationResponseBody `form:"evaluation,omitempty" json:"evaluation,omitempty" xml:"evaluation,omitempty"`
 	// Programming language of the submission
-	Language *ProgrammingLangResponseBody `form:"language,omitempty" json:"language,omitempty" xml:"language,omitempty"`
+	Language *SubmProgrammingLangResponseBody `form:"language,omitempty" json:"language,omitempty" xml:"language,omitempty"`
 	// Task associated with the submission
 	Task *SubmTaskResponseBody `form:"task,omitempty" json:"task,omitempty" xml:"task,omitempty"`
 }
@@ -62,10 +62,14 @@ type GetSubmissionResponseBody struct {
 	// Evaluation of the submission
 	Evaluation *EvaluationResponseBody `form:"evaluation,omitempty" json:"evaluation,omitempty" xml:"evaluation,omitempty"`
 	// Programming language of the submission
-	Language *ProgrammingLangResponseBody `form:"language,omitempty" json:"language,omitempty" xml:"language,omitempty"`
+	Language *SubmProgrammingLangResponseBody `form:"language,omitempty" json:"language,omitempty" xml:"language,omitempty"`
 	// Task associated with the submission
 	Task *SubmTaskResponseBody `form:"task,omitempty" json:"task,omitempty" xml:"task,omitempty"`
 }
+
+// ListProgrammingLanguagesResponseBody is the type of the "submissions"
+// service "listProgrammingLanguages" endpoint HTTP response body.
+type ListProgrammingLanguagesResponseBody []*ProgrammingLangResponse
 
 // EvaluationResponseBody is used to define fields on response body types.
 type EvaluationResponseBody struct {
@@ -79,8 +83,9 @@ type EvaluationResponseBody struct {
 	PossibleScore *int `form:"possibleScore,omitempty" json:"possibleScore,omitempty" xml:"possibleScore,omitempty"`
 }
 
-// ProgrammingLangResponseBody is used to define fields on response body types.
-type ProgrammingLangResponseBody struct {
+// SubmProgrammingLangResponseBody is used to define fields on response body
+// types.
+type SubmProgrammingLangResponseBody struct {
 	// ID of the programming language
 	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
 	// Full name of the programming language
@@ -110,7 +115,7 @@ type SubmissionResponse struct {
 	// Evaluation of the submission
 	Evaluation *EvaluationResponse `form:"evaluation,omitempty" json:"evaluation,omitempty" xml:"evaluation,omitempty"`
 	// Programming language of the submission
-	Language *ProgrammingLangResponse `form:"language,omitempty" json:"language,omitempty" xml:"language,omitempty"`
+	Language *SubmProgrammingLangResponse `form:"language,omitempty" json:"language,omitempty" xml:"language,omitempty"`
 	// Task associated with the submission
 	Task *SubmTaskResponse `form:"task,omitempty" json:"task,omitempty" xml:"task,omitempty"`
 }
@@ -127,8 +132,8 @@ type EvaluationResponse struct {
 	PossibleScore *int `form:"possibleScore,omitempty" json:"possibleScore,omitempty" xml:"possibleScore,omitempty"`
 }
 
-// ProgrammingLangResponse is used to define fields on response body types.
-type ProgrammingLangResponse struct {
+// SubmProgrammingLangResponse is used to define fields on response body types.
+type SubmProgrammingLangResponse struct {
 	// ID of the programming language
 	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
 	// Full name of the programming language
@@ -143,6 +148,30 @@ type SubmTaskResponse struct {
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
 	// Code of the task
 	Code *string `form:"code,omitempty" json:"code,omitempty" xml:"code,omitempty"`
+}
+
+// ProgrammingLangResponse is used to define fields on response body types.
+type ProgrammingLangResponse struct {
+	// ID of the programming language
+	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
+	// Full name of the programming language
+	FullName *string `form:"fullName,omitempty" json:"fullName,omitempty" xml:"fullName,omitempty"`
+	// Default code filename for the language
+	CodeFilename *string `form:"codeFilename,omitempty" json:"codeFilename,omitempty" xml:"codeFilename,omitempty"`
+	// Compilation command for the language
+	CompileCmd *string `form:"compileCmd,omitempty" json:"compileCmd,omitempty" xml:"compileCmd,omitempty"`
+	// Execution command for the language
+	ExecuteCmd *string `form:"executeCmd,omitempty" json:"executeCmd,omitempty" xml:"executeCmd,omitempty"`
+	// Command to get environment version
+	EnvVersionCmd *string `form:"envVersionCmd,omitempty" json:"envVersionCmd,omitempty" xml:"envVersionCmd,omitempty"`
+	// Hello World example code
+	HelloWorldCode *string `form:"helloWorldCode,omitempty" json:"helloWorldCode,omitempty" xml:"helloWorldCode,omitempty"`
+	// Monaco editor ID for the programming language
+	MonacoID *string `form:"monacoId,omitempty" json:"monacoId,omitempty" xml:"monacoId,omitempty"`
+	// Name of the compiled output file
+	CompiledFilename *string `form:"compiledFilename,omitempty" json:"compiledFilename,omitempty" xml:"compiledFilename,omitempty"`
+	// Whether the language is enabled
+	Enabled *bool `form:"enabled,omitempty" json:"enabled,omitempty" xml:"enabled,omitempty"`
 }
 
 // NewCreateSubmissionRequestBody builds the HTTP request body from the payload
@@ -167,7 +196,7 @@ func NewCreateSubmissionSubmissionCreated(body *CreateSubmissionResponseBody) *s
 		CreatedAt:  *body.CreatedAt,
 	}
 	v.Evaluation = unmarshalEvaluationResponseBodyToSubmissionsEvaluation(body.Evaluation)
-	v.Language = unmarshalProgrammingLangResponseBodyToSubmissionsProgrammingLang(body.Language)
+	v.Language = unmarshalSubmProgrammingLangResponseBodyToSubmissionsSubmProgrammingLang(body.Language)
 	v.Task = unmarshalSubmTaskResponseBodyToSubmissionsSubmTask(body.Task)
 
 	return v
@@ -258,7 +287,7 @@ func NewGetSubmissionSubmissionOK(body *GetSubmissionResponseBody) *submissions.
 		CreatedAt:  *body.CreatedAt,
 	}
 	v.Evaluation = unmarshalEvaluationResponseBodyToSubmissionsEvaluation(body.Evaluation)
-	v.Language = unmarshalProgrammingLangResponseBodyToSubmissionsProgrammingLang(body.Language)
+	v.Language = unmarshalSubmProgrammingLangResponseBodyToSubmissionsSubmProgrammingLang(body.Language)
 	v.Task = unmarshalSubmTaskResponseBodyToSubmissionsSubmTask(body.Task)
 
 	return v
@@ -291,6 +320,49 @@ func NewGetSubmissionNotFound(body string) submissions.NotFound {
 // NewGetSubmissionUnauthorized builds a submissions service getSubmission
 // endpoint unauthorized error.
 func NewGetSubmissionUnauthorized(body string) submissions.Unauthorized {
+	v := submissions.Unauthorized(body)
+
+	return v
+}
+
+// NewListProgrammingLanguagesProgrammingLangOK builds a "submissions" service
+// "listProgrammingLanguages" endpoint result from a HTTP "OK" response.
+func NewListProgrammingLanguagesProgrammingLangOK(body []*ProgrammingLangResponse) []*submissions.ProgrammingLang {
+	v := make([]*submissions.ProgrammingLang, len(body))
+	for i, val := range body {
+		v[i] = unmarshalProgrammingLangResponseToSubmissionsProgrammingLang(val)
+	}
+
+	return v
+}
+
+// NewListProgrammingLanguagesInternalError builds a submissions service
+// listProgrammingLanguages endpoint InternalError error.
+func NewListProgrammingLanguagesInternalError(body string) submissions.InternalError {
+	v := submissions.InternalError(body)
+
+	return v
+}
+
+// NewListProgrammingLanguagesInvalidSubmissionDetails builds a submissions
+// service listProgrammingLanguages endpoint InvalidSubmissionDetails error.
+func NewListProgrammingLanguagesInvalidSubmissionDetails(body string) submissions.InvalidSubmissionDetails {
+	v := submissions.InvalidSubmissionDetails(body)
+
+	return v
+}
+
+// NewListProgrammingLanguagesNotFound builds a submissions service
+// listProgrammingLanguages endpoint NotFound error.
+func NewListProgrammingLanguagesNotFound(body string) submissions.NotFound {
+	v := submissions.NotFound(body)
+
+	return v
+}
+
+// NewListProgrammingLanguagesUnauthorized builds a submissions service
+// listProgrammingLanguages endpoint unauthorized error.
+func NewListProgrammingLanguagesUnauthorized(body string) submissions.Unauthorized {
 	v := submissions.Unauthorized(body)
 
 	return v
@@ -329,7 +401,7 @@ func ValidateCreateSubmissionResponseBody(body *CreateSubmissionResponseBody) (e
 		}
 	}
 	if body.Language != nil {
-		if err2 := ValidateProgrammingLangResponseBody(body.Language); err2 != nil {
+		if err2 := ValidateSubmProgrammingLangResponseBody(body.Language); err2 != nil {
 			err = goa.MergeErrors(err, err2)
 		}
 	}
@@ -374,7 +446,7 @@ func ValidateGetSubmissionResponseBody(body *GetSubmissionResponseBody) (err err
 		}
 	}
 	if body.Language != nil {
-		if err2 := ValidateProgrammingLangResponseBody(body.Language); err2 != nil {
+		if err2 := ValidateSubmProgrammingLangResponseBody(body.Language); err2 != nil {
 			err = goa.MergeErrors(err, err2)
 		}
 	}
@@ -404,9 +476,9 @@ func ValidateEvaluationResponseBody(body *EvaluationResponseBody) (err error) {
 	return
 }
 
-// ValidateProgrammingLangResponseBody runs the validations defined on
-// ProgrammingLangResponseBody
-func ValidateProgrammingLangResponseBody(body *ProgrammingLangResponseBody) (err error) {
+// ValidateSubmProgrammingLangResponseBody runs the validations defined on
+// SubmProgrammingLangResponseBody
+func ValidateSubmProgrammingLangResponseBody(body *SubmProgrammingLangResponseBody) (err error) {
 	if body.ID == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
 	}
@@ -463,7 +535,7 @@ func ValidateSubmissionResponse(body *SubmissionResponse) (err error) {
 		}
 	}
 	if body.Language != nil {
-		if err2 := ValidateProgrammingLangResponse(body.Language); err2 != nil {
+		if err2 := ValidateSubmProgrammingLangResponse(body.Language); err2 != nil {
 			err = goa.MergeErrors(err, err2)
 		}
 	}
@@ -492,9 +564,9 @@ func ValidateEvaluationResponse(body *EvaluationResponse) (err error) {
 	return
 }
 
-// ValidateProgrammingLangResponse runs the validations defined on
-// ProgrammingLangResponse
-func ValidateProgrammingLangResponse(body *ProgrammingLangResponse) (err error) {
+// ValidateSubmProgrammingLangResponse runs the validations defined on
+// SubmProgrammingLangResponse
+func ValidateSubmProgrammingLangResponse(body *SubmProgrammingLangResponse) (err error) {
 	if body.ID == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
 	}
@@ -514,6 +586,33 @@ func ValidateSubmTaskResponse(body *SubmTaskResponse) (err error) {
 	}
 	if body.Code == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
+	}
+	return
+}
+
+// ValidateProgrammingLangResponse runs the validations defined on
+// ProgrammingLangResponse
+func ValidateProgrammingLangResponse(body *ProgrammingLangResponse) (err error) {
+	if body.ID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
+	}
+	if body.FullName == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("fullName", "body"))
+	}
+	if body.ExecuteCmd == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("executeCmd", "body"))
+	}
+	if body.EnvVersionCmd == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("envVersionCmd", "body"))
+	}
+	if body.HelloWorldCode == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("helloWorldCode", "body"))
+	}
+	if body.MonacoID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("monacoId", "body"))
+	}
+	if body.Enabled == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("enabled", "body"))
 	}
 	return
 }

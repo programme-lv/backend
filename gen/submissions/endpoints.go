@@ -16,9 +16,10 @@ import (
 
 // Endpoints wraps the "submissions" service endpoints.
 type Endpoints struct {
-	CreateSubmission goa.Endpoint
-	ListSubmissions  goa.Endpoint
-	GetSubmission    goa.Endpoint
+	CreateSubmission         goa.Endpoint
+	ListSubmissions          goa.Endpoint
+	GetSubmission            goa.Endpoint
+	ListProgrammingLanguages goa.Endpoint
 }
 
 // NewEndpoints wraps the methods of the "submissions" service with endpoints.
@@ -26,9 +27,10 @@ func NewEndpoints(s Service) *Endpoints {
 	// Casting service to Auther interface
 	a := s.(Auther)
 	return &Endpoints{
-		CreateSubmission: NewCreateSubmissionEndpoint(s, a.JWTAuth),
-		ListSubmissions:  NewListSubmissionsEndpoint(s),
-		GetSubmission:    NewGetSubmissionEndpoint(s),
+		CreateSubmission:         NewCreateSubmissionEndpoint(s, a.JWTAuth),
+		ListSubmissions:          NewListSubmissionsEndpoint(s),
+		GetSubmission:            NewGetSubmissionEndpoint(s),
+		ListProgrammingLanguages: NewListProgrammingLanguagesEndpoint(s),
 	}
 }
 
@@ -37,6 +39,7 @@ func (e *Endpoints) Use(m func(goa.Endpoint) goa.Endpoint) {
 	e.CreateSubmission = m(e.CreateSubmission)
 	e.ListSubmissions = m(e.ListSubmissions)
 	e.GetSubmission = m(e.GetSubmission)
+	e.ListProgrammingLanguages = m(e.ListProgrammingLanguages)
 }
 
 // NewCreateSubmissionEndpoint returns an endpoint function that calls the
@@ -72,5 +75,13 @@ func NewGetSubmissionEndpoint(s Service) goa.Endpoint {
 	return func(ctx context.Context, req any) (any, error) {
 		p := req.(*GetSubmissionPayload)
 		return s.GetSubmission(ctx, p)
+	}
+}
+
+// NewListProgrammingLanguagesEndpoint returns an endpoint function that calls
+// the method "listProgrammingLanguages" of service "submissions".
+func NewListProgrammingLanguagesEndpoint(s Service) goa.Endpoint {
+	return func(ctx context.Context, req any) (any, error) {
+		return s.ListProgrammingLanguages(ctx)
 	}
 }

@@ -24,7 +24,7 @@ import (
 //
 //	command (subcommand1|subcommand2|...)
 func UsageCommands() string {
-	return `submissions (create-submission|list-submissions|get-submission)
+	return `submissions (create-submission|list-submissions|get-submission|list-programming-languages)
 tasks (list-tasks|get-task)
 users (list-users|get-user|create-user|delete-user|login|query-current-jwt)
 `
@@ -37,7 +37,7 @@ func UsageExamples() string {
       "submission": "print(factorial(5))",
       "task_code_id": "kvadrputekl",
       "username": "coder123"
-   }' --token "Illo officia."` + "\n" +
+   }' --token "Natus numquam tempore consequuntur et nulla."` + "\n" +
 		os.Args[0] + ` tasks list-tasks` + "\n" +
 		os.Args[0] + ` users list-users --token "jwt_token"` + "\n" +
 		""
@@ -63,6 +63,8 @@ func ParseEndpoint(
 
 		submissionsGetSubmissionFlags    = flag.NewFlagSet("get-submission", flag.ExitOnError)
 		submissionsGetSubmissionUUIDFlag = submissionsGetSubmissionFlags.String("uuid", "REQUIRED", "UUID of the submission")
+
+		submissionsListProgrammingLanguagesFlags = flag.NewFlagSet("list-programming-languages", flag.ExitOnError)
 
 		tasksFlags = flag.NewFlagSet("tasks", flag.ContinueOnError)
 
@@ -97,6 +99,7 @@ func ParseEndpoint(
 	submissionsCreateSubmissionFlags.Usage = submissionsCreateSubmissionUsage
 	submissionsListSubmissionsFlags.Usage = submissionsListSubmissionsUsage
 	submissionsGetSubmissionFlags.Usage = submissionsGetSubmissionUsage
+	submissionsListProgrammingLanguagesFlags.Usage = submissionsListProgrammingLanguagesUsage
 
 	tasksFlags.Usage = tasksUsage
 	tasksListTasksFlags.Usage = tasksListTasksUsage
@@ -156,6 +159,9 @@ func ParseEndpoint(
 
 			case "get-submission":
 				epf = submissionsGetSubmissionFlags
+
+			case "list-programming-languages":
+				epf = submissionsListProgrammingLanguagesFlags
 
 			}
 
@@ -222,6 +228,8 @@ func ParseEndpoint(
 			case "get-submission":
 				endpoint = c.GetSubmission()
 				data, err = submissionsc.BuildGetSubmissionPayload(*submissionsGetSubmissionUUIDFlag)
+			case "list-programming-languages":
+				endpoint = c.ListProgrammingLanguages()
 			}
 		case "tasks":
 			c := tasksc.NewClient(scheme, host, doer, enc, dec, restore)
@@ -274,6 +282,7 @@ COMMAND:
     create-submission: Create a new submission
     list-submissions: List all submissions
     get-submission: Get a submission by UUID
+    list-programming-languages: List all available programming languages
 
 Additional help:
     %[1]s submissions COMMAND --help
@@ -292,7 +301,7 @@ Example:
       "submission": "print(factorial(5))",
       "task_code_id": "kvadrputekl",
       "username": "coder123"
-   }' --token "Illo officia."
+   }' --token "Natus numquam tempore consequuntur et nulla."
 `, os.Args[0])
 }
 
@@ -314,6 +323,16 @@ Get a submission by UUID
 
 Example:
     %[1]s submissions get-submission --uuid "123e4567-e89b-12d3-a456-426614174000"
+`, os.Args[0])
+}
+
+func submissionsListProgrammingLanguagesUsage() {
+	fmt.Fprintf(os.Stderr, `%[1]s [flags] submissions list-programming-languages
+
+List all available programming languages
+
+Example:
+    %[1]s submissions list-programming-languages
 `, os.Args[0])
 }
 
@@ -443,6 +462,6 @@ Query current JWT
     -token STRING: 
 
 Example:
-    %[1]s users query-current-jwt --token "Dolorum commodi."
+    %[1]s users query-current-jwt --token "Illo perferendis quos aut consequatur eveniet."
 `, os.Args[0])
 }

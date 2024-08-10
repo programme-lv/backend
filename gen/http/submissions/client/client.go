@@ -29,6 +29,10 @@ type Client struct {
 	// getSubmission endpoint.
 	GetSubmissionDoer goahttp.Doer
 
+	// ListProgrammingLanguages Doer is the HTTP client used to make requests to
+	// the listProgrammingLanguages endpoint.
+	ListProgrammingLanguagesDoer goahttp.Doer
+
 	// CORS Doer is the HTTP client used to make requests to the  endpoint.
 	CORSDoer goahttp.Doer
 
@@ -52,15 +56,16 @@ func NewClient(
 	restoreBody bool,
 ) *Client {
 	return &Client{
-		CreateSubmissionDoer: doer,
-		ListSubmissionsDoer:  doer,
-		GetSubmissionDoer:    doer,
-		CORSDoer:             doer,
-		RestoreResponseBody:  restoreBody,
-		scheme:               scheme,
-		host:                 host,
-		decoder:              dec,
-		encoder:              enc,
+		CreateSubmissionDoer:         doer,
+		ListSubmissionsDoer:          doer,
+		GetSubmissionDoer:            doer,
+		ListProgrammingLanguagesDoer: doer,
+		CORSDoer:                     doer,
+		RestoreResponseBody:          restoreBody,
+		scheme:                       scheme,
+		host:                         host,
+		decoder:                      dec,
+		encoder:                      enc,
 	}
 }
 
@@ -121,6 +126,25 @@ func (c *Client) GetSubmission() goa.Endpoint {
 		resp, err := c.GetSubmissionDoer.Do(req)
 		if err != nil {
 			return nil, goahttp.ErrRequestError("submissions", "getSubmission", err)
+		}
+		return decodeResponse(resp)
+	}
+}
+
+// ListProgrammingLanguages returns an endpoint that makes HTTP requests to the
+// submissions service listProgrammingLanguages server.
+func (c *Client) ListProgrammingLanguages() goa.Endpoint {
+	var (
+		decodeResponse = DecodeListProgrammingLanguagesResponse(c.decoder, c.RestoreResponseBody)
+	)
+	return func(ctx context.Context, v any) (any, error) {
+		req, err := c.BuildListProgrammingLanguagesRequest(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := c.ListProgrammingLanguagesDoer.Do(req)
+		if err != nil {
+			return nil, goahttp.ErrRequestError("submissions", "listProgrammingLanguages", err)
 		}
 		return decodeResponse(resp)
 	}

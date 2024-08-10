@@ -25,3 +25,8 @@ func ListSubmissionsSubmissionsPath() string {
 func GetSubmissionSubmissionsPath(uuid string) string {
 	return fmt.Sprintf("/submissions/%v", uuid)
 }
+
+// ListProgrammingLanguagesSubmissionsPath returns the URL path to the submissions service listProgrammingLanguages HTTP endpoint.
+func ListProgrammingLanguagesSubmissionsPath() string {
+	return "/programming-languages"
+}

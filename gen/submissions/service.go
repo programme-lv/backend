@@ -22,6 +22,8 @@ type Service interface {
 	ListSubmissions(context.Context) (res []*Submission, err error)
 	// Get a submission by UUID
 	GetSubmission(context.Context, *GetSubmissionPayload) (res *Submission, err error)
+	// List all available programming languages
+	ListProgrammingLanguages(context.Context) (res []*ProgrammingLang, err error)
 }
 
 // Auther defines the authorization functions to be implemented by the service.
@@ -44,7 +46,7 @@ const ServiceName = "submissions"
 // MethodNames lists the service method names as defined in the design. These
 // are the same values that are set in the endpoint request contexts under the
 // MethodKey key.
-var MethodNames = [3]string{"createSubmission", "listSubmissions", "getSubmission"}
+var MethodNames = [4]string{"createSubmission", "listSubmissions", "getSubmission", "listProgrammingLanguages"}
 
 // CreateSubmissionPayload is the payload type of the submissions service
 // createSubmission method.
@@ -95,6 +97,30 @@ type ProgrammingLang struct {
 	ID string
 	// Full name of the programming language
 	FullName string
+	// Default code filename for the language
+	CodeFilename *string
+	// Compilation command for the language
+	CompileCmd *string
+	// Execution command for the language
+	ExecuteCmd string
+	// Command to get environment version
+	EnvVersionCmd string
+	// Hello World example code
+	HelloWorldCode string
+	// Monaco editor ID for the programming language
+	MonacoID string
+	// Name of the compiled output file
+	CompiledFilename *string
+	// Whether the language is enabled
+	Enabled bool
+}
+
+// Represents a programming language
+type SubmProgrammingLang struct {
+	// ID of the programming language
+	ID string
+	// Full name of the programming language
+	FullName string
 	// Monaco editor ID for the programming language
 	MonacoID string
 }
@@ -121,7 +147,7 @@ type Submission struct {
 	// Evaluation of the submission
 	Evaluation *Evaluation
 	// Programming language of the submission
-	Language *ProgrammingLang
+	Language *SubmProgrammingLang
 	// Task associated with the submission
 	Task *SubmTask
 }

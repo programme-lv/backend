@@ -39,7 +39,7 @@ type CreateSubmissionResponseBody struct {
 	// Evaluation of the submission
 	Evaluation *EvaluationResponseBody `form:"evaluation" json:"evaluation" xml:"evaluation"`
 	// Programming language of the submission
-	Language *ProgrammingLangResponseBody `form:"language" json:"language" xml:"language"`
+	Language *SubmProgrammingLangResponseBody `form:"language" json:"language" xml:"language"`
 	// Task associated with the submission
 	Task *SubmTaskResponseBody `form:"task" json:"task" xml:"task"`
 }
@@ -62,10 +62,14 @@ type GetSubmissionResponseBody struct {
 	// Evaluation of the submission
 	Evaluation *EvaluationResponseBody `form:"evaluation" json:"evaluation" xml:"evaluation"`
 	// Programming language of the submission
-	Language *ProgrammingLangResponseBody `form:"language" json:"language" xml:"language"`
+	Language *SubmProgrammingLangResponseBody `form:"language" json:"language" xml:"language"`
 	// Task associated with the submission
 	Task *SubmTaskResponseBody `form:"task" json:"task" xml:"task"`
 }
+
+// ListProgrammingLanguagesResponseBody is the type of the "submissions"
+// service "listProgrammingLanguages" endpoint HTTP response body.
+type ListProgrammingLanguagesResponseBody []*ProgrammingLangResponse
 
 // EvaluationResponseBody is used to define fields on response body types.
 type EvaluationResponseBody struct {
@@ -79,8 +83,9 @@ type EvaluationResponseBody struct {
 	PossibleScore int `form:"possibleScore" json:"possibleScore" xml:"possibleScore"`
 }
 
-// ProgrammingLangResponseBody is used to define fields on response body types.
-type ProgrammingLangResponseBody struct {
+// SubmProgrammingLangResponseBody is used to define fields on response body
+// types.
+type SubmProgrammingLangResponseBody struct {
 	// ID of the programming language
 	ID string `form:"id" json:"id" xml:"id"`
 	// Full name of the programming language
@@ -110,7 +115,7 @@ type SubmissionResponse struct {
 	// Evaluation of the submission
 	Evaluation *EvaluationResponse `form:"evaluation" json:"evaluation" xml:"evaluation"`
 	// Programming language of the submission
-	Language *ProgrammingLangResponse `form:"language" json:"language" xml:"language"`
+	Language *SubmProgrammingLangResponse `form:"language" json:"language" xml:"language"`
 	// Task associated with the submission
 	Task *SubmTaskResponse `form:"task" json:"task" xml:"task"`
 }
@@ -127,8 +132,8 @@ type EvaluationResponse struct {
 	PossibleScore int `form:"possibleScore" json:"possibleScore" xml:"possibleScore"`
 }
 
-// ProgrammingLangResponse is used to define fields on response body types.
-type ProgrammingLangResponse struct {
+// SubmProgrammingLangResponse is used to define fields on response body types.
+type SubmProgrammingLangResponse struct {
 	// ID of the programming language
 	ID string `form:"id" json:"id" xml:"id"`
 	// Full name of the programming language
@@ -145,6 +150,30 @@ type SubmTaskResponse struct {
 	Code string `form:"code" json:"code" xml:"code"`
 }
 
+// ProgrammingLangResponse is used to define fields on response body types.
+type ProgrammingLangResponse struct {
+	// ID of the programming language
+	ID string `form:"id" json:"id" xml:"id"`
+	// Full name of the programming language
+	FullName string `form:"fullName" json:"fullName" xml:"fullName"`
+	// Default code filename for the language
+	CodeFilename *string `form:"codeFilename,omitempty" json:"codeFilename,omitempty" xml:"codeFilename,omitempty"`
+	// Compilation command for the language
+	CompileCmd *string `form:"compileCmd,omitempty" json:"compileCmd,omitempty" xml:"compileCmd,omitempty"`
+	// Execution command for the language
+	ExecuteCmd string `form:"executeCmd" json:"executeCmd" xml:"executeCmd"`
+	// Command to get environment version
+	EnvVersionCmd string `form:"envVersionCmd" json:"envVersionCmd" xml:"envVersionCmd"`
+	// Hello World example code
+	HelloWorldCode string `form:"helloWorldCode" json:"helloWorldCode" xml:"helloWorldCode"`
+	// Monaco editor ID for the programming language
+	MonacoID string `form:"monacoId" json:"monacoId" xml:"monacoId"`
+	// Name of the compiled output file
+	CompiledFilename *string `form:"compiledFilename,omitempty" json:"compiledFilename,omitempty" xml:"compiledFilename,omitempty"`
+	// Whether the language is enabled
+	Enabled bool `form:"enabled" json:"enabled" xml:"enabled"`
+}
+
 // NewCreateSubmissionResponseBody builds the HTTP response body from the
 // result of the "createSubmission" endpoint of the "submissions" service.
 func NewCreateSubmissionResponseBody(res *submissions.Submission) *CreateSubmissionResponseBody {
@@ -158,7 +187,7 @@ func NewCreateSubmissionResponseBody(res *submissions.Submission) *CreateSubmiss
 		body.Evaluation = marshalSubmissionsEvaluationToEvaluationResponseBody(res.Evaluation)
 	}
 	if res.Language != nil {
-		body.Language = marshalSubmissionsProgrammingLangToProgrammingLangResponseBody(res.Language)
+		body.Language = marshalSubmissionsSubmProgrammingLangToSubmProgrammingLangResponseBody(res.Language)
 	}
 	if res.Task != nil {
 		body.Task = marshalSubmissionsSubmTaskToSubmTaskResponseBody(res.Task)
@@ -189,10 +218,21 @@ func NewGetSubmissionResponseBody(res *submissions.Submission) *GetSubmissionRes
 		body.Evaluation = marshalSubmissionsEvaluationToEvaluationResponseBody(res.Evaluation)
 	}
 	if res.Language != nil {
-		body.Language = marshalSubmissionsProgrammingLangToProgrammingLangResponseBody(res.Language)
+		body.Language = marshalSubmissionsSubmProgrammingLangToSubmProgrammingLangResponseBody(res.Language)
 	}
 	if res.Task != nil {
 		body.Task = marshalSubmissionsSubmTaskToSubmTaskResponseBody(res.Task)
+	}
+	return body
+}
+
+// NewListProgrammingLanguagesResponseBody builds the HTTP response body from
+// the result of the "listProgrammingLanguages" endpoint of the "submissions"
+// service.
+func NewListProgrammingLanguagesResponseBody(res []*submissions.ProgrammingLang) ListProgrammingLanguagesResponseBody {
+	body := make([]*ProgrammingLangResponse, len(res))
+	for i, val := range res {
+		body[i] = marshalSubmissionsProgrammingLangToProgrammingLangResponse(val)
 	}
 	return body
 }

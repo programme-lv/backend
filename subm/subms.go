@@ -171,3 +171,24 @@ func (s *submissionssrvc) GetSubmission(ctx context.Context, p *submgen.GetSubmi
 	log.Printf(ctx, "submissions.getSubmission")
 	return
 }
+
+// ListProgrammingLanguages implements submissions.Service.
+func (s *submissionssrvc) ListProgrammingLanguages(context.Context) (res []*submgen.ProgrammingLang, err error) {
+	res = make([]*submgen.ProgrammingLang, 0)
+	langs := getHardcodedLanguageList()
+	for _, lang := range langs {
+		res = append(res, &submgen.ProgrammingLang{
+			ID:               lang.ID,
+			FullName:         lang.FullName,
+			CodeFilename:     &lang.CodeFilename,
+			CompileCmd:       lang.CompileCmd,
+			ExecuteCmd:       lang.ExecuteCmd,
+			EnvVersionCmd:    lang.EnvVersionCmd,
+			HelloWorldCode:   lang.HelloWorldCode,
+			MonacoID:         lang.MonacoId,
+			CompiledFilename: lang.CompiledFilename,
+			Enabled:          lang.Enabled,
+		})
+	}
+	return res, nil
+}

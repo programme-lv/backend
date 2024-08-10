@@ -15,17 +15,19 @@ import (
 
 // Client is the "submissions" service client.
 type Client struct {
-	CreateSubmissionEndpoint goa.Endpoint
-	ListSubmissionsEndpoint  goa.Endpoint
-	GetSubmissionEndpoint    goa.Endpoint
+	CreateSubmissionEndpoint         goa.Endpoint
+	ListSubmissionsEndpoint          goa.Endpoint
+	GetSubmissionEndpoint            goa.Endpoint
+	ListProgrammingLanguagesEndpoint goa.Endpoint
 }
 
 // NewClient initializes a "submissions" service client given the endpoints.
-func NewClient(createSubmission, listSubmissions, getSubmission goa.Endpoint) *Client {
+func NewClient(createSubmission, listSubmissions, getSubmission, listProgrammingLanguages goa.Endpoint) *Client {
 	return &Client{
-		CreateSubmissionEndpoint: createSubmission,
-		ListSubmissionsEndpoint:  listSubmissions,
-		GetSubmissionEndpoint:    getSubmission,
+		CreateSubmissionEndpoint:         createSubmission,
+		ListSubmissionsEndpoint:          listSubmissions,
+		GetSubmissionEndpoint:            getSubmission,
+		ListProgrammingLanguagesEndpoint: listProgrammingLanguages,
 	}
 }
 
@@ -78,4 +80,21 @@ func (c *Client) GetSubmission(ctx context.Context, p *GetSubmissionPayload) (re
 		return
 	}
 	return ires.(*Submission), nil
+}
+
+// ListProgrammingLanguages calls the "listProgrammingLanguages" endpoint of
+// the "submissions" service.
+// ListProgrammingLanguages may return the following errors:
+//   - "unauthorized" (type Unauthorized)
+//   - "InvalidSubmissionDetails" (type InvalidSubmissionDetails)
+//   - "NotFound" (type NotFound)
+//   - "InternalError" (type InternalError)
+//   - error: internal error
+func (c *Client) ListProgrammingLanguages(ctx context.Context) (res []*ProgrammingLang, err error) {
+	var ires any
+	ires, err = c.ListProgrammingLanguagesEndpoint(ctx, nil)
+	if err != nil {
+		return
+	}
+	return ires.([]*ProgrammingLang), nil
 }
