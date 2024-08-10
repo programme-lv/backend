@@ -23,55 +23,54 @@ paths:
                                 $ref: '#/components/schemas/JWTClaims'
                             example:
                                 audience:
-                                    - Fugiat error rerum soluta at dolorem.
-                                    - Fugit hic impedit minus.
-                                    - Nulla dolor quae rerum cupiditate.
-                                email: Velit inventore assumenda.
-                                expires_at: Qui fugit.
-                                firstname: Reprehenderit suscipit quibusdam qui sunt.
-                                issued_at: Ut similique natus qui non consectetur et.
-                                issuer: Molestiae voluptas qui.
-                                lastname: Ut voluptas velit autem praesentium nihil.
-                                not_before: Et earum sed error perferendis est.
+                                    - Id molestiae illo perferendis quos aut consequatur.
+                                    - Consequatur doloremque excepturi.
+                                    - Voluptas reprehenderit.
+                                email: Doloremque quisquam aspernatur repellat voluptates perspiciatis.
+                                expires_at: Quibusdam qui sunt nihil.
+                                firstname: Maiores deleniti.
+                                issued_at: Voluptas velit autem praesentium.
+                                issuer: Consequatur et molestias officiis omnis explicabo.
+                                lastname: Delectus vero.
+                                not_before: Eveniet velit inventore.
                                 scopes:
-                                    - Sunt deleniti nihil ad optio beatae.
-                                    - Omnis eos quisquam.
-                                    - Sint non assumenda et voluptatem doloribus velit.
-                                subject: Illum voluptatem.
-                                username: Doloremque excepturi deserunt.
-                                uuid: Soluta quia maxime possimus.
+                                    - Fugiat et velit est ullam aut.
+                                    - Amet molestiae quidem deleniti.
+                                subject: Facere quis iure assumenda numquam officia dolores.
+                                username: Ut nam est sit repellendus.
+                                uuid: Occaecati voluptas quaerat modi voluptas rerum aut.
                 "400":
                     description: 'InvalidUserDetails: Bad Request response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Sint ad et maiores quia est.
-                            example: Et sunt eaque corporis.
+                                example: Aut consequatur dolorem aut quisquam.
+                            example: Aut maiores.
                 "401":
                     description: 'InvalidCredentials: Unauthorized response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Doloribus aspernatur quia minima.
-                            example: Eum asperiores doloribus et iste nulla voluptatem.
+                                example: Aliquam nobis hic qui.
+                            example: Ut qui.
                 "404":
                     description: 'NotFound: Not Found response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Est et iste et placeat consequatur eaque.
-                            example: Suscipit culpa.
+                                example: Et aut vero deleniti consequuntur ad omnis.
+                            example: Quia in enim aut voluptatem dolor.
                 "409":
                     description: 'EmailExistsConflict: Conflict response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Expedita alias eveniet expedita vitae occaecati temporibus.
-                            example: Sit odit omnis repellendus.
+                                example: Tenetur quo.
+                            example: Sit dolor earum labore amet.
             security:
                 - jwt_header_Authorization: []
     /auth/login:
@@ -106,7 +105,7 @@ paths:
                             schema:
                                 type: string
                                 example: jwt_token
-                            example: Nobis laborum sit qui enim.
+                            example: Ut est enim.
                 "401":
                     description: 'InvalidCredentials: Unauthorized response.'
                     content:
@@ -114,23 +113,23 @@ paths:
                             schema:
                                 type: string
                                 example: jwt_token
-                            example: Ullam quia.
+                            example: Sunt exercitationem.
                 "404":
                     description: 'NotFound: Not Found response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Ea beatae dolor excepturi est.
-                            example: Reiciendis facilis ut facere aut iusto.
+                                example: Maxime quis qui expedita sed deserunt consequatur.
+                            example: Libero officia doloremque in recusandae rerum architecto.
                 "409":
                     description: 'EmailExistsConflict: Conflict response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Ut fugit iusto molestiae.
-                            example: Corporis quae quia iure autem sed.
+                                example: Delectus iste autem.
+                            example: Enim mollitia dolorum aliquam aut est.
     /programming-languages:
         get:
             tags:
@@ -199,24 +198,24 @@ paths:
                                         }
                                       id: go
                                       monacoId: go
-                                    - codeFilename: main.go
-                                      compileCmd: go build
-                                      compiledFilename: main
-                                      enabled: true
-                                      envVersionCmd: go version
-                                      executeCmd: go run
-                                      fullName: Go
-                                      helloWorldCode: |-
-                                        package main
-
-                                        import "fmt"
-
-                                        func main() {
-                                            fmt.Println("Hello, World!")
-                                        }
-                                      id: go
-                                      monacoId: go
                             example:
+                                - codeFilename: main.go
+                                  compileCmd: go build
+                                  compiledFilename: main
+                                  enabled: true
+                                  envVersionCmd: go version
+                                  executeCmd: go run
+                                  fullName: Go
+                                  helloWorldCode: |-
+                                    package main
+
+                                    import "fmt"
+
+                                    func main() {
+                                        fmt.Println("Hello, World!")
+                                    }
+                                  id: go
+                                  monacoId: go
                                 - codeFilename: main.go
                                   compileCmd: go build
                                   compiledFilename: main
@@ -257,32 +256,32 @@ paths:
                         application/json:
                             schema:
                                 type: string
-                                example: Possimus voluptates ea dolores sequi.
-                            example: Qui sunt exercitationem nisi.
+                                example: Quidem quo explicabo occaecati reprehenderit reiciendis.
+                            example: Qui aliquam quisquam doloribus aspernatur quia minima.
                 "401":
                     description: 'unauthorized: Unauthorized response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Modi tenetur.
-                            example: Laborum vero eligendi.
+                                example: Fugiat quam molestiae ea enim.
+                            example: Dolorem nam provident hic.
                 "404":
                     description: 'NotFound: Not Found response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Consectetur aliquam.
-                            example: Est enim.
+                                example: Excepturi provident facilis incidunt.
+                            example: Sint ad et maiores quia est.
                 "500":
                     description: 'InternalError: Internal Server Error response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Et ut similique fugiat harum corporis voluptas.
-                            example: Libero officia doloremque in recusandae rerum architecto.
+                                example: Qui numquam.
+                            example: Est et iste et placeat consequatur eaque.
     /submissions:
         get:
             tags:
@@ -332,39 +331,23 @@ paths:
                                         name: Factorial Calculation
                                       username: coder123
                                       uuid: 123e4567-e89b-12d3-a456-426614174000
-                                    - createdAt: "2024-08-08T10:30:00Z"
-                                      evaluation:
-                                        possibleScore: 100
-                                        receivedScore: 85
-                                        status: completed
-                                        uuid: 123e4567-e89b-12d3-a456-426614174000
-                                      language:
-                                        fullName: Go
-                                        id: go
-                                        monacoId: go
-                                      submission: print(factorial(5))
-                                      task:
-                                        code: fact001
-                                        name: Factorial Calculation
-                                      username: coder123
-                                      uuid: 123e4567-e89b-12d3-a456-426614174000
-                                    - createdAt: "2024-08-08T10:30:00Z"
-                                      evaluation:
-                                        possibleScore: 100
-                                        receivedScore: 85
-                                        status: completed
-                                        uuid: 123e4567-e89b-12d3-a456-426614174000
-                                      language:
-                                        fullName: Go
-                                        id: go
-                                        monacoId: go
-                                      submission: print(factorial(5))
-                                      task:
-                                        code: fact001
-                                        name: Factorial Calculation
-                                      username: coder123
-                                      uuid: 123e4567-e89b-12d3-a456-426614174000
                             example:
+                                - createdAt: "2024-08-08T10:30:00Z"
+                                  evaluation:
+                                    possibleScore: 100
+                                    receivedScore: 85
+                                    status: completed
+                                    uuid: 123e4567-e89b-12d3-a456-426614174000
+                                  language:
+                                    fullName: Go
+                                    id: go
+                                    monacoId: go
+                                  submission: print(factorial(5))
+                                  task:
+                                    code: fact001
+                                    name: Factorial Calculation
+                                  username: coder123
+                                  uuid: 123e4567-e89b-12d3-a456-426614174000
                                 - createdAt: "2024-08-08T10:30:00Z"
                                   evaluation:
                                     possibleScore: 100
@@ -403,32 +386,32 @@ paths:
                         application/json:
                             schema:
                                 type: string
-                                example: Ratione quo labore.
-                            example: Est quas id tempora repellat.
+                                example: Aut totam praesentium dolor aspernatur doloremque.
+                            example: Possimus fugiat et ut et deleniti.
                 "401":
                     description: 'unauthorized: Unauthorized response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Ut iste alias minus nobis doloremque dolorem.
-                            example: Et adipisci sit velit.
+                                example: Et occaecati rem eius.
+                            example: Aut rem non dolorem expedita.
                 "404":
                     description: 'NotFound: Not Found response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Voluptatum molestiae qui amet quod enim ipsum.
-                            example: Voluptatem sed repellat.
+                                example: Et illum eveniet omnis aut a.
+                            example: Iusto ex nemo doloremque rerum.
                 "500":
                     description: 'InternalError: Internal Server Error response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Quod molestiae.
-                            example: Provident blanditiis est.
+                                example: Blanditiis deserunt soluta laborum quia repellat.
+                            example: Incidunt architecto in quis sunt.
         post:
             tags:
                 - submissions
@@ -476,32 +459,32 @@ paths:
                         application/json:
                             schema:
                                 type: string
-                                example: Minus earum fugiat quam molestiae ea.
-                            example: Eligendi quae tempora qui hic quo.
+                                example: Quod est laudantium et aliquid quo magni.
+                            example: Reprehenderit distinctio quasi unde eveniet.
                 "401":
                     description: 'unauthorized: Unauthorized response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Consequuntur quidem quo explicabo.
-                            example: Repudiandae distinctio amet et et.
+                                example: Mollitia explicabo occaecati aperiam.
+                            example: Tempore expedita ut autem veniam.
                 "404":
                     description: 'NotFound: Not Found response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Reprehenderit reiciendis necessitatibus excepturi provident.
-                            example: Molestiae ut animi.
+                                example: Et consectetur iure quibusdam.
+                            example: Ipsam totam ea repellat.
                 "500":
                     description: 'InternalError: Internal Server Error response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Incidunt quibusdam qui.
-                            example: Modi ratione quod.
+                                example: Molestias explicabo odio quasi est.
+                            example: In sint non quisquam.
             security:
                 - jwt_header_Authorization: []
     /submissions/{uuid}:
@@ -551,32 +534,32 @@ paths:
                         application/json:
                             schema:
                                 type: string
-                                example: Quia debitis.
-                            example: Ut tenetur rerum provident modi voluptatem odio.
+                                example: Hic esse amet voluptatem quia cumque.
+                            example: Sint perspiciatis cum quis.
                 "401":
                     description: 'unauthorized: Unauthorized response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Aliquam et sunt officia consequatur quia cum.
-                            example: Sint ullam pariatur aliquam tempore in.
+                                example: Quia voluptas possimus laudantium qui labore corrupti.
+                            example: Sed ipsum.
                 "404":
                     description: 'NotFound: Not Found response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Est dolorum quaerat qui.
-                            example: Distinctio ad ex deleniti possimus et.
+                                example: Est reiciendis porro magni quod distinctio optio.
+                            example: Error sed beatae non repudiandae a.
                 "500":
                     description: 'InternalError: Internal Server Error response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Et dolorum suscipit.
-                            example: Quia ut.
+                                example: Exercitationem neque numquam animi laudantium.
+                            example: Tenetur velit eligendi nostrum et.
     /tasks:
         get:
             tags:
@@ -1399,8 +1382,8 @@ paths:
                         application/json:
                             schema:
                                 type: string
-                                example: Eveniet exercitationem sequi quasi ex et.
-                            example: Amet quia voluptate.
+                                example: Ea dolores sequi atque consectetur aliquam.
+                            example: Alias eveniet expedita.
     /tasks/{task_id}:
         get:
             tags:
@@ -1590,96 +1573,9 @@ paths:
                         application/json:
                             schema:
                                 type: string
-                                example: Quidem tenetur explicabo qui in enim quia.
-                            example: Sint qui enim mollitia dolorum.
+                                example: Et ut similique fugiat harum corporis voluptas.
+                            example: Occaecati temporibus non quis at aut cupiditate.
     /users:
-        get:
-            tags:
-                - users
-            summary: listUsers users
-            description: List all users
-            operationId: users#listUsers
-            parameters:
-                - name: Authorization
-                  in: query
-                  description: JWT token used for authentication
-                  allowEmptyValue: true
-                  schema:
-                    type: string
-                    description: JWT token used for authentication
-                    example: jwt_token
-                  example: jwt_token
-            responses:
-                "200":
-                    description: OK response.
-                    content:
-                        application/json:
-                            schema:
-                                type: array
-                                items:
-                                    $ref: '#/components/schemas/User'
-                                example:
-                                    - email: johndoe@example.com
-                                      firstname: John
-                                      lastname: Doe
-                                      username: johndoe
-                                      uuid: 550e8400-e29b-41d4-a716-446655440000
-                                    - email: johndoe@example.com
-                                      firstname: John
-                                      lastname: Doe
-                                      username: johndoe
-                                      uuid: 550e8400-e29b-41d4-a716-446655440000
-                                    - email: johndoe@example.com
-                                      firstname: John
-                                      lastname: Doe
-                                      username: johndoe
-                                      uuid: 550e8400-e29b-41d4-a716-446655440000
-                            example:
-                                - email: johndoe@example.com
-                                  firstname: John
-                                  lastname: Doe
-                                  username: johndoe
-                                  uuid: 550e8400-e29b-41d4-a716-446655440000
-                                - email: johndoe@example.com
-                                  firstname: John
-                                  lastname: Doe
-                                  username: johndoe
-                                  uuid: 550e8400-e29b-41d4-a716-446655440000
-                "400":
-                    description: 'InvalidUserDetails: Bad Request response.'
-                    content:
-                        application/json:
-                            schema:
-                                type: string
-                                example: Ut nostrum quod corporis.
-                            example: Beatae quia in enim.
-                "401":
-                    description: 'InvalidCredentials: Unauthorized response.'
-                    content:
-                        application/json:
-                            schema:
-                                type: string
-                                example: Voluptatem quo voluptatem iure ab sapiente autem.
-                            example: Est et ut qui est aut.
-                "404":
-                    description: 'NotFound: Not Found response.'
-                    content:
-                        application/json:
-                            schema:
-                                type: string
-                                example: Iste architecto et amet sint.
-                            example: Voluptatem dolor nulla ut laudantium.
-                "409":
-                    description: 'EmailExistsConflict: Conflict response.'
-                    content:
-                        application/json:
-                            schema:
-                                type: string
-                                example: Itaque provident soluta architecto maxime maxime quis.
-                            example: Sint fugiat sed.
-            security:
-                - jwt_query_Authorization:
-                    - users:read
         post:
             tags:
                 - users
@@ -1717,32 +1613,32 @@ paths:
                         application/json:
                             schema:
                                 type: string
-                                example: Sequi eveniet non non.
-                            example: Quaerat voluptatem.
+                                example: Officia voluptatem dignissimos.
+                            example: Sit velit.
                 "401":
                     description: 'InvalidCredentials: Unauthorized response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Sint et.
-                            example: At id debitis qui et corporis rerum.
+                                example: Eum facere delectus ullam sit unde.
+                            example: Provident blanditiis est.
                 "404":
                     description: 'NotFound: Not Found response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Autem fuga quibusdam sunt.
-                            example: Vel eaque.
+                                example: Exercitationem sequi quasi ex et ut.
+                            example: Sint ullam pariatur aliquam tempore in.
                 "409":
                     description: 'EmailExistsConflict: Conflict response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Aut quos aspernatur officiis blanditiis.
-                            example: Sapiente quia.
+                                example: Tempora unde.
+                            example: Voluptatem sed repellat.
     /users/{uuid}:
         delete:
             tags:
@@ -1779,32 +1675,32 @@ paths:
                         application/json:
                             schema:
                                 type: string
-                                example: Consequatur aut nostrum enim molestiae doloremque iusto.
-                            example: Fugit voluptate reiciendis illum.
+                                example: Voluptatem iure ab.
+                            example: Quia ut.
                 "401":
                     description: 'InvalidCredentials: Unauthorized response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Placeat velit eum ut libero fugiat.
-                            example: Nesciunt sit aut qui laboriosam quia.
+                                example: Quia et dolor voluptatem.
+                            example: Distinctio ad ex deleniti possimus et.
                 "404":
                     description: 'NotFound: Not Found response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Atque enim consequatur aperiam quis.
-                            example: Eligendi dicta non perferendis provident iusto.
+                                example: Tenetur explicabo qui in.
+                            example: Ut tenetur rerum provident modi voluptatem odio.
                 "409":
                     description: 'EmailExistsConflict: Conflict response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Soluta dignissimos impedit dolores quis voluptas.
-                            example: Omnis excepturi.
+                                example: Autem repudiandae ut nostrum quod corporis repellendus.
+                            example: Eligendi dolor.
             security:
                 - jwt_query_Authorization:
                     - users:write
@@ -1853,32 +1749,32 @@ paths:
                         application/json:
                             schema:
                                 type: string
-                                example: Beatae similique.
-                            example: Recusandae cum hic vel nesciunt esse nemo.
+                                example: Et voluptate recusandae et perferendis modi.
+                            example: Distinctio amet et et.
                 "401":
                     description: 'InvalidCredentials: Unauthorized response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Autem fugit animi aut eligendi.
-                            example: Voluptate molestiae officia totam sit porro.
+                                example: Quisquam ut eaque sunt amet voluptatem est.
+                            example: Quae tempora qui hic quo reiciendis.
                 "404":
                     description: 'NotFound: Not Found response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Quam illo id.
-                            example: Quibusdam cumque ut magnam.
+                                example: Quidem laborum voluptas.
+                            example: Molestiae ut animi.
                 "409":
                     description: 'EmailExistsConflict: Conflict response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Ut iure omnis et recusandae.
-                            example: Dolores perspiciatis debitis quo.
+                                example: Consequatur a et qui.
+                            example: Et et.
             security:
                 - jwt_query_Authorization:
                     - users:read
@@ -1997,7 +1893,7 @@ components:
                 md_note:
                     type: string
                     description: Markdown note for the example
-                    example: Laudantium saepe omnis asperiores ut ipsa consequatur.
+                    example: Aliquam et sunt officia consequatur quia cum.
                 output:
                     type: string
                     description: Example output
@@ -2012,7 +1908,7 @@ components:
                     .XXX.XX..
                     X.X.X..X.
                     ...XX....
-                md_note: Officia voluptatem dignissimos.
+                md_note: Quia debitis.
                 output: |
                     10
             required:
@@ -2025,69 +1921,69 @@ components:
                     type: array
                     items:
                         type: string
-                        example: Hic quia.
+                        example: Impedit dolores quis voluptas.
                     example:
-                        - Sit omnis unde natus ut cum sed.
-                        - Voluptas eos libero.
-                        - Autem dignissimos quis dolores quaerat autem.
+                        - Illo eum sit nobis incidunt aliquam.
+                        - Molestias aperiam omnis earum.
+                        - Cum ratione architecto iusto quibusdam qui ut.
                 email:
                     type: string
-                    example: Aut est pariatur repudiandae dolores alias.
+                    example: Delectus a.
                 expires_at:
                     type: string
-                    example: Aperiam ut aliquam.
+                    example: Ea beatae dolor excepturi est.
                 firstname:
                     type: string
-                    example: Sit non modi quia ipsam eius et.
+                    example: Quam illo id.
                 issued_at:
                     type: string
-                    example: Hic qui quia aut consequatur dolorem aut.
+                    example: Ut fugit iusto molestiae.
                 issuer:
                     type: string
-                    example: Ea impedit veritatis vitae eum.
+                    example: Libero fugiat quas consequatur.
                 lastname:
                     type: string
-                    example: Explicabo error enim reprehenderit nulla.
+                    example: Ut iure omnis et recusandae.
                 not_before:
                     type: string
-                    example: Ut et aut vero deleniti consequuntur ad.
+                    example: Dolores sit in.
                 scopes:
                     type: array
                     items:
                         type: string
-                        example: Suscipit autem est doloribus similique voluptas.
+                        example: Aut quos aspernatur officiis blanditiis.
                     example:
-                        - Aut rerum qui.
-                        - Occaecati sunt ipsam maxime quia.
-                        - Itaque ab maxime.
+                        - Voluptas id sint.
+                        - Animi autem fuga quibusdam sunt voluptas atque.
+                        - Consequatur aperiam quis cupiditate.
+                        - Velit eum.
                 subject:
                     type: string
-                    example: Facere nulla sed.
+                    example: Nostrum enim molestiae doloremque iusto eos soluta.
                 username:
                     type: string
-                    example: Laudantium eaque optio nobis facere.
+                    example: Beatae similique.
                 uuid:
                     type: string
-                    example: Odit dignissimos officiis soluta sunt.
+                    example: Sequi eveniet non non.
             example:
                 audience:
-                    - Quis sunt rem sed ipsum.
-                    - Sint perspiciatis cum quis.
-                    - Error sed beatae non repudiandae a.
-                email: Expedita ut autem veniam.
-                expires_at: Tenetur velit eligendi nostrum et.
-                firstname: Sed autem aspernatur magni non molestiae.
-                issued_at: Dignissimos dolorem.
-                issuer: Nihil iusto ex nemo.
-                lastname: Aspernatur reprehenderit distinctio quasi unde eveniet consequatur.
-                not_before: Provident hic quisquam qui aliquam.
+                    - Nulla sed doloribus.
+                    - Quia voluptatibus non sit.
+                email: Aut est pariatur repudiandae dolores alias.
+                expires_at: Unde natus ut cum sed illo voluptas.
+                firstname: Sit non modi quia ipsam eius et.
+                issued_at: Libero cupiditate autem dignissimos quis dolores.
+                issuer: Itaque ab maxime.
+                lastname: Explicabo error enim reprehenderit nulla.
+                not_before: Autem mollitia aperiam.
                 scopes:
-                    - Sint non quisquam cupiditate similique.
-                    - Rem non dolorem.
-                    - Nihil possimus fugiat et ut et.
-                subject: Rerum aut incidunt.
-                username: Autem tenetur.
-                uuid: Ipsam totam ea repellat.
+                    - Autem est doloribus similique voluptas doloribus illo.
+                    - Rerum qui adipisci occaecati.
+                    - Ipsam maxime quia.
+                subject: Ea impedit veritatis vitae eum.
+                username: Laudantium eaque optio nobis facere.
+                uuid: Odit dignissimos officiis soluta sunt.
         LoginRequestBody:
             type: object
             properties:
@@ -2115,7 +2011,7 @@ components:
                 notes:
                     type: string
                     description: Notes section of the markdown statement
-                    example: Quisquam ut eaque sunt amet voluptatem est.
+                    example: Ut iste alias minus nobis doloremque dolorem.
                 output:
                     type: string
                     description: Output section of the markdown statement
@@ -2123,7 +2019,7 @@ components:
                 scoring:
                     type: string
                     description: Scoring section of the markdown statement
-                    example: Et voluptate recusandae et perferendis modi.
+                    example: Ratione quo labore.
                 story:
                     type: string
                     description: Story section of the markdown statement
@@ -2131,9 +2027,9 @@ components:
             description: Represents a markdown statement for a task
             example:
                 input: Ievaddatu pirmajā rindā dotas trīs naturālu skaitļu...
-                notes: Quidem laborum voluptas.
+                notes: Voluptatum molestiae qui amet quod enim ipsum.
                 output: Izvaddatu vienīgajā rindā jābūt veselam skaitlim...
-                scoring: Consequatur a et qui.
+                scoring: Quod molestiae.
                 story: Krišjānis ir uzkonstruējis kvadrātveida putekļsūcēju (saīsināti – KP), kas ir neaizstājams palīgs viņa darbnīcas uzkopšanā...
             required:
                 - story
@@ -2223,7 +2119,7 @@ components:
                     type: array
                     items:
                         type: string
-                        example: Voluptatibus minus doloremque eum.
+                        example: Suscipit accusantium praesentium.
                     description: Inputs for the subtask
                     example:
                         - |
@@ -2438,16 +2334,6 @@ components:
                           md_note: Harum et nihil consequuntur modi.
                           output: |
                             10
-                        - input: |
-                            5 9 3
-                            A....X..B
-                            ..X..X.X.
-                            .XXX.XX..
-                            X.X.X..X.
-                            ...XX....
-                          md_note: Harum et nihil consequuntur modi.
-                          output: |
-                            10
                 illustration_img_url:
                     type: string
                     description: URL of the illustration image
@@ -2464,7 +2350,7 @@ components:
                         lv: Uzdevums parādījās Latvijas 37. informātikas olimpiādes (2023./2024. gads) skolas kārtā.
                     additionalProperties:
                         type: string
-                        example: Unde aspernatur laboriosam aut.
+                        example: Dolorum quaerat qui voluptatibus et.
                 origin_olympiad:
                     type: string
                     description: Origin olympiad of the task
@@ -2483,31 +2369,6 @@ components:
                         $ref: '#/components/schemas/StInputs'
                     description: Visible input subtasks
                     example:
-                        - inputs:
-                            - |
-                              5 5 3
-                              A.X..
-                              X.B.X
-                              ....X
-                              XX...
-                              X.XXX
-                            - |
-                              6 3 1
-                              ...
-                              XA.
-                              .X.
-                              X..
-                              B..
-                              ...
-                            - |
-                              6 4 2
-                              X...
-                              .AXX
-                              X..X
-                              .X.X
-                              XXXX
-                              X.BX
-                          subtask: 1
                         - inputs:
                             - |
                               5 5 3
@@ -2693,31 +2554,6 @@ components:
                           XXXX
                           X.BX
                       subtask: 1
-                    - inputs:
-                        - |
-                          5 5 3
-                          A.X..
-                          X.B.X
-                          ....X
-                          XX...
-                          X.XXX
-                        - |
-                          6 3 1
-                          ...
-                          XA.
-                          .X.
-                          X..
-                          B..
-                          ...
-                        - |
-                          6 4 2
-                          X...
-                          .AXX
-                          X..X
-                          .X.X
-                          XXXX
-                          X.BX
-                      subtask: 1
             required:
                 - published_task_id
                 - task_full_name
@@ -2749,7 +2585,6 @@ components:
                     type: string
                     description: Unique user UUID
                     example: 550e8400-e29b-41d4-a716-446655440000
-            description: User representation
             example:
                 email: johndoe@example.com
                 firstname: John

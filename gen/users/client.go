@@ -47,9 +47,9 @@ func NewClient(listUsers, getUser, getUserByUsername, createUser, deleteUser, lo
 //   - "EmailExistsConflict" (type EmailExistsConflict)
 //   - "InternalError" (type InternalError)
 //   - error: internal error
-func (c *Client) ListUsers(ctx context.Context, p *ListUsersPayload) (res []*User, err error) {
+func (c *Client) ListUsers(ctx context.Context) (res []*User, err error) {
 	var ires any
-	ires, err = c.ListUsersEndpoint(ctx, p)
+	ires, err = c.ListUsersEndpoint(ctx, nil)
 	if err != nil {
 		return
 	}

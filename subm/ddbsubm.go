@@ -15,6 +15,7 @@ type SubmissionRow struct {
 	Version    int64  `dynamo:"version"` // For optimistic locking
 	AuthorUuid string `dynamo:"author_uuid"`
 	ProgLangId string `dynamo:"prog_lang_id"`
+	TaskId     string `dynamo:"task_id"`
 }
 
 // DynamoDbSubmTable represents the DynamoDB table.
@@ -43,4 +44,14 @@ func (ddb *DynamoDbSubmTable) Save(ctx context.Context, subm *SubmissionRow) err
 
 	put := ddb.submTable.Put(subm).If("attribute_not_exists(version) OR version = ?", subm.Version-1)
 	return put.Run(ctx)
+}
+
+func (ddb *DynamoDbSubmTable) List(ctx context.Context) ([]*SubmissionRow, error) {
+	var submissions []*SubmissionRow
+	err := ddb.submTable.Scan().All(ctx, &submissions)
+	if err != nil {
+		return nil, err
+	}
+
+	return submissions, nil
 }

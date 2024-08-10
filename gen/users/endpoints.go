@@ -30,7 +30,7 @@ func NewEndpoints(s Service) *Endpoints {
 	// Casting service to Auther interface
 	a := s.(Auther)
 	return &Endpoints{
-		ListUsers:         NewListUsersEndpoint(s, a.JWTAuth),
+		ListUsers:         NewListUsersEndpoint(s),
 		GetUser:           NewGetUserEndpoint(s, a.JWTAuth),
 		GetUserByUsername: NewGetUserByUsernameEndpoint(s),
 		CreateUser:        NewCreateUserEndpoint(s),
@@ -53,24 +53,9 @@ func (e *Endpoints) Use(m func(goa.Endpoint) goa.Endpoint) {
 
 // NewListUsersEndpoint returns an endpoint function that calls the method
 // "listUsers" of service "users".
-func NewListUsersEndpoint(s Service, authJWTFn security.AuthJWTFunc) goa.Endpoint {
+func NewListUsersEndpoint(s Service) goa.Endpoint {
 	return func(ctx context.Context, req any) (any, error) {
-		p := req.(*ListUsersPayload)
-		var err error
-		sc := security.JWTScheme{
-			Name:           "jwt",
-			Scopes:         []string{"users:read", "users:write"},
-			RequiredScopes: []string{"users:read"},
-		}
-		var token string
-		if p.Token != nil {
-			token = *p.Token
-		}
-		ctx, err = authJWTFn(ctx, token, &sc)
-		if err != nil {
-			return nil, err
-		}
-		return s.ListUsers(ctx, p)
+		return s.ListUsers(ctx)
 	}
 }
 

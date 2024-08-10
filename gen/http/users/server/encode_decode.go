@@ -19,91 +19,6 @@ import (
 	goa "goa.design/goa/v3/pkg"
 )
 
-// EncodeListUsersResponse returns an encoder for responses returned by the
-// users listUsers endpoint.
-func EncodeListUsersResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
-	return func(ctx context.Context, w http.ResponseWriter, v any) error {
-		res, _ := v.([]*users.User)
-		enc := encoder(ctx, w)
-		body := NewListUsersResponseBody(res)
-		w.WriteHeader(http.StatusOK)
-		return enc.Encode(body)
-	}
-}
-
-// DecodeListUsersRequest returns a decoder for requests sent to the users
-// listUsers endpoint.
-func DecodeListUsersRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
-	return func(r *http.Request) (any, error) {
-		var (
-			token *string
-		)
-		tokenRaw := r.URL.Query().Get("Authorization")
-		if tokenRaw != "" {
-			token = &tokenRaw
-		}
-		payload := NewListUsersPayload(token)
-
-		return payload, nil
-	}
-}
-
-// EncodeListUsersError returns an encoder for errors returned by the listUsers
-// users endpoint.
-func EncodeListUsersError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
-	encodeError := goahttp.ErrorEncoder(encoder, formatter)
-	return func(ctx context.Context, w http.ResponseWriter, v error) error {
-		var en goa.GoaErrorNamer
-		if !errors.As(v, &en) {
-			return encodeError(ctx, w, v)
-		}
-		switch en.GoaErrorName() {
-		case "EmailExistsConflict":
-			var res users.EmailExistsConflict
-			errors.As(v, &res)
-			enc := encoder(ctx, w)
-			body := res
-			w.Header().Set("goa-error", res.GoaErrorName())
-			w.WriteHeader(http.StatusConflict)
-			return enc.Encode(body)
-		case "UsernameExistsConflict":
-			var res users.UsernameExistsConflict
-			errors.As(v, &res)
-			enc := encoder(ctx, w)
-			body := res
-			w.Header().Set("goa-error", res.GoaErrorName())
-			w.WriteHeader(http.StatusConflict)
-			return enc.Encode(body)
-		case "InvalidCredentials":
-			var res users.InvalidCredentials
-			errors.As(v, &res)
-			enc := encoder(ctx, w)
-			body := res
-			w.Header().Set("goa-error", res.GoaErrorName())
-			w.WriteHeader(http.StatusUnauthorized)
-			return enc.Encode(body)
-		case "InvalidUserDetails":
-			var res users.InvalidUserDetails
-			errors.As(v, &res)
-			enc := encoder(ctx, w)
-			body := res
-			w.Header().Set("goa-error", res.GoaErrorName())
-			w.WriteHeader(http.StatusBadRequest)
-			return enc.Encode(body)
-		case "NotFound":
-			var res users.NotFound
-			errors.As(v, &res)
-			enc := encoder(ctx, w)
-			body := res
-			w.Header().Set("goa-error", res.GoaErrorName())
-			w.WriteHeader(http.StatusNotFound)
-			return enc.Encode(body)
-		default:
-			return encodeError(ctx, w, v)
-		}
-	}
-}
-
 // EncodeGetUserResponse returns an encoder for responses returned by the users
 // getUser endpoint.
 func EncodeGetUserResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
@@ -573,18 +488,4 @@ func EncodeQueryCurrentJWTError(encoder func(context.Context, http.ResponseWrite
 			return encodeError(ctx, w, v)
 		}
 	}
-}
-
-// marshalUsersUserToUserResponse builds a value of type *UserResponse from a
-// value of type *users.User.
-func marshalUsersUserToUserResponse(v *users.User) *UserResponse {
-	res := &UserResponse{
-		UUID:      v.UUID,
-		Username:  v.Username,
-		Email:     v.Email,
-		Firstname: v.Firstname,
-		Lastname:  v.Lastname,
-	}
-
-	return res
 }

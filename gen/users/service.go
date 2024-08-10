@@ -17,7 +17,7 @@ import (
 // Service to manage users
 type Service interface {
 	// List all users
-	ListUsers(context.Context, *ListUsersPayload) (res []*User, err error)
+	ListUsers(context.Context) (res []*User, err error)
 	// Get a user by UUID
 	GetUser(context.Context, *SecureUUIDPayload) (res *User, err error)
 	// Get a user by username
@@ -87,12 +87,6 @@ type JWTClaims struct {
 	ExpiresAt *string
 	IssuedAt  *string
 	NotBefore *string
-}
-
-// ListUsersPayload is the payload type of the users service listUsers method.
-type ListUsersPayload struct {
-	// JWT token used for authentication
-	Token *string
 }
 
 // LoginPayload is the payload type of the users service login method.

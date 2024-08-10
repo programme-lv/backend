@@ -26,7 +26,7 @@ import (
 func UsageCommands() string {
 	return `submissions (create-submission|list-submissions|get-submission|list-programming-languages)
 tasks (list-tasks|get-task)
-users (list-users|get-user|create-user|delete-user|login|query-current-jwt)
+users (get-user|create-user|delete-user|login|query-current-jwt)
 `
 }
 
@@ -39,7 +39,7 @@ func UsageExamples() string {
       "username": "coder123"
    }' --token "Natus numquam tempore consequuntur et nulla."` + "\n" +
 		os.Args[0] + ` tasks list-tasks` + "\n" +
-		os.Args[0] + ` users list-users --token "jwt_token"` + "\n" +
+		os.Args[0] + ` users get-user --uuid "550e8400-e29b-41d4-a716-446655440000" --token "jwt_token"` + "\n" +
 		""
 }
 
@@ -75,9 +75,6 @@ func ParseEndpoint(
 
 		usersFlags = flag.NewFlagSet("users", flag.ContinueOnError)
 
-		usersListUsersFlags     = flag.NewFlagSet("list-users", flag.ExitOnError)
-		usersListUsersTokenFlag = usersListUsersFlags.String("token", "", "")
-
 		usersGetUserFlags     = flag.NewFlagSet("get-user", flag.ExitOnError)
 		usersGetUserUUIDFlag  = usersGetUserFlags.String("uuid", "REQUIRED", "UUID of the user")
 		usersGetUserTokenFlag = usersGetUserFlags.String("token", "REQUIRED", "")
@@ -106,7 +103,6 @@ func ParseEndpoint(
 	tasksGetTaskFlags.Usage = tasksGetTaskUsage
 
 	usersFlags.Usage = usersUsage
-	usersListUsersFlags.Usage = usersListUsersUsage
 	usersGetUserFlags.Usage = usersGetUserUsage
 	usersCreateUserFlags.Usage = usersCreateUserUsage
 	usersDeleteUserFlags.Usage = usersDeleteUserUsage
@@ -177,9 +173,6 @@ func ParseEndpoint(
 
 		case "users":
 			switch epn {
-			case "list-users":
-				epf = usersListUsersFlags
-
 			case "get-user":
 				epf = usersGetUserFlags
 
@@ -243,9 +236,6 @@ func ParseEndpoint(
 		case "users":
 			c := usersc.NewClient(scheme, host, doer, enc, dec, restore)
 			switch epn {
-			case "list-users":
-				endpoint = c.ListUsers()
-				data, err = usersc.BuildListUsersPayload(*usersListUsersTokenFlag)
 			case "get-user":
 				endpoint = c.GetUser()
 				data, err = usersc.BuildGetUserPayload(*usersGetUserUUIDFlag, *usersGetUserTokenFlag)
@@ -378,7 +368,6 @@ Usage:
     %[1]s [globalflags] users COMMAND [flags]
 
 COMMAND:
-    list-users: List all users
     get-user: Get a user by UUID
     create-user: Create a new user
     delete-user: Delete a user
@@ -389,17 +378,6 @@ Additional help:
     %[1]s users COMMAND --help
 `, os.Args[0])
 }
-func usersListUsersUsage() {
-	fmt.Fprintf(os.Stderr, `%[1]s [flags] users list-users -token STRING
-
-List all users
-    -token STRING: 
-
-Example:
-    %[1]s users list-users --token "jwt_token"
-`, os.Args[0])
-}
-
 func usersGetUserUsage() {
 	fmt.Fprintf(os.Stderr, `%[1]s [flags] users get-user -uuid STRING -token STRING
 
@@ -462,6 +440,6 @@ Query current JWT
     -token STRING: 
 
 Example:
-    %[1]s users query-current-jwt --token "Illo perferendis quos aut consequatur eveniet."
+    %[1]s users query-current-jwt --token "Enim et voluptatem consequatur laboriosam."
 `, os.Args[0])
 }

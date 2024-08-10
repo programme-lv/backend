@@ -107,20 +107,7 @@ var _ = dsl.Service("users", func() {
 
 	dsl.Method("listUsers", func() {
 		dsl.Description("List all users")
-		dsl.Security(JWTAuth, func() {
-			dsl.Scope("users:read")
-		})
-		dsl.Payload(func() {
-			dsl.Token("token", dsl.String, "JWT token used for authentication", func() {
-				dsl.Example("jwt_token")
-			})
-		})
 		dsl.Result(dsl.ArrayOf(User))
-		dsl.HTTP(func() {
-			dsl.GET("/users")
-			dsl.Param("token:Authorization")
-			dsl.Response(dsl.StatusOK)
-		})
 	})
 
 	dsl.Method("getUser", func() {

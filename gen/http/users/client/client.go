@@ -17,10 +17,6 @@ import (
 
 // Client lists the users service endpoint HTTP clients.
 type Client struct {
-	// ListUsers Doer is the HTTP client used to make requests to the listUsers
-	// endpoint.
-	ListUsersDoer goahttp.Doer
-
 	// GetUser Doer is the HTTP client used to make requests to the getUser
 	// endpoint.
 	GetUserDoer goahttp.Doer
@@ -63,7 +59,6 @@ func NewClient(
 	restoreBody bool,
 ) *Client {
 	return &Client{
-		ListUsersDoer:       doer,
 		GetUserDoer:         doer,
 		CreateUserDoer:      doer,
 		DeleteUserDoer:      doer,
@@ -75,30 +70,6 @@ func NewClient(
 		host:                host,
 		decoder:             dec,
 		encoder:             enc,
-	}
-}
-
-// ListUsers returns an endpoint that makes HTTP requests to the users service
-// listUsers server.
-func (c *Client) ListUsers() goa.Endpoint {
-	var (
-		encodeRequest  = EncodeListUsersRequest(c.encoder)
-		decodeResponse = DecodeListUsersResponse(c.decoder, c.RestoreResponseBody)
-	)
-	return func(ctx context.Context, v any) (any, error) {
-		req, err := c.BuildListUsersRequest(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-		err = encodeRequest(req, v)
-		if err != nil {
-			return nil, err
-		}
-		resp, err := c.ListUsersDoer.Do(req)
-		if err != nil {
-			return nil, goahttp.ErrRequestError("users", "listUsers", err)
-		}
-		return decodeResponse(resp)
 	}
 }
 

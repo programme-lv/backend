@@ -11,11 +11,6 @@ import (
 	"fmt"
 )
 
-// ListUsersUsersPath returns the URL path to the users service listUsers HTTP endpoint.
-func ListUsersUsersPath() string {
-	return "/users"
-}
-
 // GetUserUsersPath returns the URL path to the users service getUser HTTP endpoint.
 func GetUserUsersPath(uuid string) string {
 	return fmt.Sprintf("/users/%v", uuid)

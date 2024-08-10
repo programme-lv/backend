@@ -36,10 +36,6 @@ type LoginRequestBody struct {
 	Password *string `form:"password,omitempty" json:"password,omitempty" xml:"password,omitempty"`
 }
 
-// ListUsersResponseBody is the type of the "users" service "listUsers"
-// endpoint HTTP response body.
-type ListUsersResponseBody []*UserResponse
-
 // GetUserResponseBody is the type of the "users" service "getUser" endpoint
 // HTTP response body.
 type GetUserResponseBody struct {
@@ -85,30 +81,6 @@ type QueryCurrentJWTResponseBody struct {
 	ExpiresAt *string  `form:"expires_at,omitempty" json:"expires_at,omitempty" xml:"expires_at,omitempty"`
 	IssuedAt  *string  `form:"issued_at,omitempty" json:"issued_at,omitempty" xml:"issued_at,omitempty"`
 	NotBefore *string  `form:"not_before,omitempty" json:"not_before,omitempty" xml:"not_before,omitempty"`
-}
-
-// UserResponse is used to define fields on response body types.
-type UserResponse struct {
-	// Unique user UUID
-	UUID string `form:"uuid" json:"uuid" xml:"uuid"`
-	// Username of the user
-	Username string `form:"username" json:"username" xml:"username"`
-	// Email of the user
-	Email string `form:"email" json:"email" xml:"email"`
-	// First name of the user
-	Firstname string `form:"firstname" json:"firstname" xml:"firstname"`
-	// Last name of the user
-	Lastname string `form:"lastname" json:"lastname" xml:"lastname"`
-}
-
-// NewListUsersResponseBody builds the HTTP response body from the result of
-// the "listUsers" endpoint of the "users" service.
-func NewListUsersResponseBody(res []*users.User) ListUsersResponseBody {
-	body := make([]*UserResponse, len(res))
-	for i, val := range res {
-		body[i] = marshalUsersUserToUserResponse(val)
-	}
-	return body
 }
 
 // NewGetUserResponseBody builds the HTTP response body from the result of the
@@ -165,14 +137,6 @@ func NewQueryCurrentJWTResponseBody(res *users.JWTClaims) *QueryCurrentJWTRespon
 		}
 	}
 	return body
-}
-
-// NewListUsersPayload builds a users service listUsers endpoint payload.
-func NewListUsersPayload(token *string) *users.ListUsersPayload {
-	v := &users.ListUsersPayload{}
-	v.Token = token
-
-	return v
 }
 
 // NewGetUserSecureUUIDPayload builds a users service getUser endpoint payload.

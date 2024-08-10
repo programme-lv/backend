@@ -36,10 +36,6 @@ type LoginRequestBody struct {
 	Password string `form:"password" json:"password" xml:"password"`
 }
 
-// ListUsersResponseBody is the type of the "users" service "listUsers"
-// endpoint HTTP response body.
-type ListUsersResponseBody []*UserResponse
-
 // GetUserResponseBody is the type of the "users" service "getUser" endpoint
 // HTTP response body.
 type GetUserResponseBody struct {
@@ -87,20 +83,6 @@ type QueryCurrentJWTResponseBody struct {
 	NotBefore *string  `form:"not_before,omitempty" json:"not_before,omitempty" xml:"not_before,omitempty"`
 }
 
-// UserResponse is used to define fields on response body types.
-type UserResponse struct {
-	// Unique user UUID
-	UUID *string `form:"uuid,omitempty" json:"uuid,omitempty" xml:"uuid,omitempty"`
-	// Username of the user
-	Username *string `form:"username,omitempty" json:"username,omitempty" xml:"username,omitempty"`
-	// Email of the user
-	Email *string `form:"email,omitempty" json:"email,omitempty" xml:"email,omitempty"`
-	// First name of the user
-	Firstname *string `form:"firstname,omitempty" json:"firstname,omitempty" xml:"firstname,omitempty"`
-	// Last name of the user
-	Lastname *string `form:"lastname,omitempty" json:"lastname,omitempty" xml:"lastname,omitempty"`
-}
-
 // NewCreateUserRequestBody builds the HTTP request body from the payload of
 // the "createUser" endpoint of the "users" service.
 func NewCreateUserRequestBody(p *users.UserPayload) *CreateUserRequestBody {
@@ -122,57 +104,6 @@ func NewLoginRequestBody(p *users.LoginPayload) *LoginRequestBody {
 		Password: p.Password,
 	}
 	return body
-}
-
-// NewListUsersUserOK builds a "users" service "listUsers" endpoint result from
-// a HTTP "OK" response.
-func NewListUsersUserOK(body []*UserResponse) []*users.User {
-	v := make([]*users.User, len(body))
-	for i, val := range body {
-		v[i] = unmarshalUserResponseToUsersUser(val)
-	}
-
-	return v
-}
-
-// NewListUsersEmailExistsConflict builds a users service listUsers endpoint
-// EmailExistsConflict error.
-func NewListUsersEmailExistsConflict(body string) users.EmailExistsConflict {
-	v := users.EmailExistsConflict(body)
-
-	return v
-}
-
-// NewListUsersUsernameExistsConflict builds a users service listUsers endpoint
-// UsernameExistsConflict error.
-func NewListUsersUsernameExistsConflict(body string) users.UsernameExistsConflict {
-	v := users.UsernameExistsConflict(body)
-
-	return v
-}
-
-// NewListUsersInvalidCredentials builds a users service listUsers endpoint
-// InvalidCredentials error.
-func NewListUsersInvalidCredentials(body string) users.InvalidCredentials {
-	v := users.InvalidCredentials(body)
-
-	return v
-}
-
-// NewListUsersInvalidUserDetails builds a users service listUsers endpoint
-// InvalidUserDetails error.
-func NewListUsersInvalidUserDetails(body string) users.InvalidUserDetails {
-	v := users.InvalidUserDetails(body)
-
-	return v
-}
-
-// NewListUsersNotFound builds a users service listUsers endpoint NotFound
-// error.
-func NewListUsersNotFound(body string) users.NotFound {
-	v := users.NotFound(body)
-
-	return v
 }
 
 // NewGetUserUserOK builds a "users" service "getUser" endpoint result from a
@@ -459,29 +390,6 @@ func ValidateGetUserResponseBody(body *GetUserResponseBody) (err error) {
 // ValidateCreateUserResponseBody runs the validations defined on
 // CreateUserResponseBody
 func ValidateCreateUserResponseBody(body *CreateUserResponseBody) (err error) {
-	if body.UUID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("uuid", "body"))
-	}
-	if body.Username == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("username", "body"))
-	}
-	if body.Email == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("email", "body"))
-	}
-	if body.Firstname == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("firstname", "body"))
-	}
-	if body.Lastname == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("lastname", "body"))
-	}
-	if body.Email != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.email", *body.Email, goa.FormatEmail))
-	}
-	return
-}
-
-// ValidateUserResponse runs the validations defined on UserResponse
-func ValidateUserResponse(body *UserResponse) (err error) {
 	if body.UUID == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("uuid", "body"))
 	}

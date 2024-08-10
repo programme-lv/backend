@@ -20,7 +20,6 @@ import (
 // Server lists the users service endpoint HTTP handlers.
 type Server struct {
 	Mounts          []*MountPoint
-	ListUsers       http.Handler
 	GetUser         http.Handler
 	CreateUser      http.Handler
 	DeleteUser      http.Handler
@@ -56,18 +55,16 @@ func New(
 ) *Server {
 	return &Server{
 		Mounts: []*MountPoint{
-			{"ListUsers", "GET", "/users"},
 			{"GetUser", "GET", "/users/{uuid}"},
 			{"CreateUser", "POST", "/users"},
 			{"DeleteUser", "DELETE", "/users/{uuid}"},
 			{"Login", "POST", "/auth/login"},
 			{"QueryCurrentJWT", "GET", "/auth/current/jwt"},
-			{"CORS", "OPTIONS", "/users"},
 			{"CORS", "OPTIONS", "/users/{uuid}"},
+			{"CORS", "OPTIONS", "/users"},
 			{"CORS", "OPTIONS", "/auth/login"},
 			{"CORS", "OPTIONS", "/auth/current/jwt"},
 		},
-		ListUsers:       NewListUsersHandler(e.ListUsers, mux, decoder, encoder, errhandler, formatter),
 		GetUser:         NewGetUserHandler(e.GetUser, mux, decoder, encoder, errhandler, formatter),
 		CreateUser:      NewCreateUserHandler(e.CreateUser, mux, decoder, encoder, errhandler, formatter),
 		DeleteUser:      NewDeleteUserHandler(e.DeleteUser, mux, decoder, encoder, errhandler, formatter),
@@ -82,7 +79,6 @@ func (s *Server) Service() string { return "users" }
 
 // Use wraps the server handlers with the given middleware.
 func (s *Server) Use(m func(http.Handler) http.Handler) {
-	s.ListUsers = m(s.ListUsers)
 	s.GetUser = m(s.GetUser)
 	s.CreateUser = m(s.CreateUser)
 	s.DeleteUser = m(s.DeleteUser)
@@ -96,7 +92,6 @@ func (s *Server) MethodNames() []string { return users.MethodNames[:] }
 
 // Mount configures the mux to serve the users endpoints.
 func Mount(mux goahttp.Muxer, h *Server) {
-	MountListUsersHandler(mux, h.ListUsers)
 	MountGetUserHandler(mux, h.GetUser)
 	MountCreateUserHandler(mux, h.CreateUser)
 	MountDeleteUserHandler(mux, h.DeleteUser)
@@ -108,57 +103,6 @@ func Mount(mux goahttp.Muxer, h *Server) {
 // Mount configures the mux to serve the users endpoints.
 func (s *Server) Mount(mux goahttp.Muxer) {
 	Mount(mux, s)
-}
-
-// MountListUsersHandler configures the mux to serve the "users" service
-// "listUsers" endpoint.
-func MountListUsersHandler(mux goahttp.Muxer, h http.Handler) {
-	f, ok := HandleUsersOrigin(h).(http.HandlerFunc)
-	if !ok {
-		f = func(w http.ResponseWriter, r *http.Request) {
-			h.ServeHTTP(w, r)
-		}
-	}
-	mux.Handle("GET", "/users", f)
-}
-
-// NewListUsersHandler creates a HTTP handler which loads the HTTP request and
-// calls the "users" service "listUsers" endpoint.
-func NewListUsersHandler(
-	endpoint goa.Endpoint,
-	mux goahttp.Muxer,
-	decoder func(*http.Request) goahttp.Decoder,
-	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
-	errhandler func(context.Context, http.ResponseWriter, error),
-	formatter func(ctx context.Context, err error) goahttp.Statuser,
-) http.Handler {
-	var (
-		decodeRequest  = DecodeListUsersRequest(mux, decoder)
-		encodeResponse = EncodeListUsersResponse(encoder)
-		encodeError    = EncodeListUsersError(encoder, formatter)
-	)
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
-		ctx = context.WithValue(ctx, goa.MethodKey, "listUsers")
-		ctx = context.WithValue(ctx, goa.ServiceKey, "users")
-		payload, err := decodeRequest(r)
-		if err != nil {
-			if err := encodeError(ctx, w, err); err != nil {
-				errhandler(ctx, w, err)
-			}
-			return
-		}
-		res, err := endpoint(ctx, payload)
-		if err != nil {
-			if err := encodeError(ctx, w, err); err != nil {
-				errhandler(ctx, w, err)
-			}
-			return
-		}
-		if err := encodeResponse(ctx, w, res); err != nil {
-			errhandler(ctx, w, err)
-		}
-	})
 }
 
 // MountGetUserHandler configures the mux to serve the "users" service
@@ -420,8 +364,8 @@ func NewQueryCurrentJWTHandler(
 // service users.
 func MountCORSHandler(mux goahttp.Muxer, h http.Handler) {
 	h = HandleUsersOrigin(h)
-	mux.Handle("OPTIONS", "/users", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/users/{uuid}", h.ServeHTTP)
+	mux.Handle("OPTIONS", "/users", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/auth/login", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/auth/current/jwt", h.ServeHTTP)
 }

@@ -15,21 +15,6 @@ import (
 	goa "goa.design/goa/v3/pkg"
 )
 
-// BuildListUsersPayload builds the payload for the users listUsers endpoint
-// from CLI flags.
-func BuildListUsersPayload(usersListUsersToken string) (*users.ListUsersPayload, error) {
-	var token *string
-	{
-		if usersListUsersToken != "" {
-			token = &usersListUsersToken
-		}
-	}
-	v := &users.ListUsersPayload{}
-	v.Token = token
-
-	return v, nil
-}
-
 // BuildGetUserPayload builds the payload for the users getUser endpoint from
 // CLI flags.
 func BuildGetUserPayload(usersGetUserUUID string, usersGetUserToken string) (*users.SecureUUIDPayload, error) {
