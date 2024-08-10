@@ -115,8 +115,17 @@ func (s *submissionssrvc) CreateSubmission(ctx context.Context, p *submgen.Creat
 		return nil, submgen.InternalError("error getting task")
 	}
 
-	// TODO: verify that the programming language is valid
-	// for now we could just hardcode language list
+	langs := getHardcodedLanguageList()
+	var foundPLang *ProgrammingLang = nil
+	for _, lang := range langs {
+		if lang.ID == p.ProgrammingLangID {
+			foundPLang = &lang
+		}
+	}
+
+	if foundPLang == nil {
+		return nil, submgen.InvalidSubmissionDetails("invalid programming language")
+	}
 
 	uuid := uuid.New()
 	createdAt := time.Now()
@@ -126,7 +135,7 @@ func (s *submissionssrvc) CreateSubmission(ctx context.Context, p *submgen.Creat
 		Content:    submContent.String(),
 		Version:    0,
 		AuthorUuid: userSrvcUser.UUID,
-		ProgLangId: "",
+		ProgLangId: foundPLang.ID,
 	}
 
 	err = s.ddbSubmTable.Save(ctx, row)
@@ -149,7 +158,11 @@ func (s *submissionssrvc) CreateSubmission(ctx context.Context, p *submgen.Creat
 		Username:   userSrvcUser.Username,
 		CreatedAt:  createdAtRfc3339,
 		Evaluation: nil,
-		Language:   nil,
+		Language: &submgen.SubmProgrammingLang{
+			ID:       foundPLang.ID,
+			FullName: foundPLang.FullName,
+			MonacoID: foundPLang.MonacoId,
+		},
 		Task: &submgen.SubmTask{
 			Name: taskSrvTask.TaskFullName,
 			Code: taskSrvTask.PublishedTaskID,

@@ -49,6 +49,6 @@ Content-Type: application/json
 {
   "submission": "print(factorial(5))",
   "username": "abc",
-  "programming_lang_id": "go",
+  "programming_lang_id": "python3.10",
   "task_code_id": "kvadrputekl"
 }
