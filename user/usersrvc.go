@@ -38,10 +38,17 @@ func NewUsers(ctx context.Context) usergen.Service {
 	}
 	dynamodbClient := dynamodb.NewFromConfig(cfg)
 
+	userTableName := os.Getenv("DDB_USER_TABLE_NAME")
+	if userTableName == "" {
+		log.Fatalf(ctx,
+			errors.New("DDB_USER_TABLE_NAME is not set"),
+			"cant read DDB_USER_TABLE_NAME from env in new user service constructor")
+	}
+
 	return &userssrvc{
 		jwtKey: []byte(jwtKey),
 		ddbUserTable: NewDynamoDbUsersTable(
-			dynamodbClient, "ProglvUsers"),
+			dynamodbClient, userTableName),
 	}
 }
 

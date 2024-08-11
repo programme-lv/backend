@@ -2,8 +2,12 @@ package task
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"os"
 	"strings"
+
+	"goa.design/clue/log"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
@@ -17,7 +21,7 @@ type taskssrvc struct {
 }
 
 // NewTasks returns the tasks service implementation.
-func NewTasks() taskgen.Service {
+func NewTasks(ctx context.Context) taskgen.Service {
 	cfg, err := config.LoadDefaultConfig(context.TODO(),
 		config.WithRegion("eu-central-1"),
 		config.WithSharedConfigProfile("kp"),
@@ -27,8 +31,15 @@ func NewTasks() taskgen.Service {
 	}
 	dynamodbClient := dynamodb.NewFromConfig(cfg)
 
+	taskTableName := os.Getenv("DDB_TASK_TABLE_NAME")
+	if taskTableName == "" {
+		log.Fatalf(ctx,
+			errors.New("DDB_TASK_TABLE_NAME is not set"),
+			"cant read DDB_TASK_TABLE_NAME from env in new tasks service constructor")
+	}
+
 	return &taskssrvc{
-		ddbTaskTable: NewDynamoDbTaskTable(dynamodbClient, "ProglvTasks"),
+		ddbTaskTable: NewDynamoDbTaskTable(dynamodbClient, taskTableName),
 	}
 }
 

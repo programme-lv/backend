@@ -47,10 +47,17 @@ func NewSubmissions(ctx context.Context) submgen.Service {
 			"cant read JWT_KEY from env in new user service constructor")
 	}
 
+	submTableName := os.Getenv("DDB_SUBM_TABLE_NAME")
+	if submTableName == "" {
+		log.Fatalf(ctx,
+			errors.New("DDB_SUBM_TABLE_NAME is not set"),
+			"cant read DDB_SUBM_TABLE_NAME from env in new user service constructor")
+	}
+
 	return &submissionssrvc{
-		ddbSubmTable: NewDynamoDbSubmTable(dynamodbClient, "proglv_submissions"),
+		ddbSubmTable: NewDynamoDbSubmTable(dynamodbClient, submTableName),
 		userSrvc:     user.NewUsers(ctx),
-		taskSrvc:     task.NewTasks(),
+		taskSrvc:     task.NewTasks(ctx),
 		jwtKey:       []byte(jwtKey),
 	}
 }

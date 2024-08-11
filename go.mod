@@ -10,6 +10,7 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/google/uuid v1.6.0
 	github.com/guregu/dynamo/v2 v2.1.1
+	github.com/joho/godotenv v1.5.1
 	github.com/pelletier/go-toml/v2 v2.2.2
 	goa.design/clue v1.0.6
 	goa.design/goa/v3 v3.18.2

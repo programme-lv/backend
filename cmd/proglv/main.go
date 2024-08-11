@@ -11,6 +11,7 @@ import (
 	"sync"
 	"syscall"
 
+	"github.com/joho/godotenv"
 	subms "github.com/programme-lv/backend/gen/submissions"
 	tasks "github.com/programme-lv/backend/gen/tasks"
 	users "github.com/programme-lv/backend/gen/users"
@@ -22,6 +23,11 @@ import (
 )
 
 func main() {
+	err := godotenv.Load()
+	if err != nil {
+		panic("Error loading .env file")
+	}
+
 	// Define command line flags, add any other flag required to configure the
 	// service.
 	var (
@@ -52,7 +58,7 @@ func main() {
 		submsSvr subms.Service
 	)
 	{
-		tasksSvc = task.NewTasks()
+		tasksSvc = task.NewTasks(ctx)
 		usersSvc = user.NewUsers(ctx)
 		submsSvr = subm.NewSubmissions(ctx)
 	}
