@@ -42,6 +42,21 @@ var Task = dsl.Type("Task", func() {
 	dsl.Required("published_task_id", "task_full_name", "memory_limit_megabytes", "cpu_time_limit_seconds", "origin_olympiad", "difficulty_rating")
 })
 
+var TaskSubmEvalData = dsl.Type("TaskSubmEvalData", func() {
+	dsl.Attribute("memory_limit_megabytes", dsl.Int, "Memory limit in megabytes")
+	dsl.Attribute("cpu_time_limit_seconds", dsl.Float64, "CPU time limit in seconds")
+	dsl.Attribute("tests", dsl.ArrayOf(TaskEvalTestInformation), "Tests for submission evaluation")
+	dsl.Required("memory_limit_megabytes", "cpu_time_limit_seconds", "tests")
+})
+
+var TaskEvalTestInformation = dsl.Type("TaskEvalTestInformation", func() {
+	dsl.Attribute("full_input_s3_uri", dsl.String, "Full input S3 URI")
+	dsl.Attribute("full_answer_s3_uri", dsl.String, "Full answer S3 URI")
+	dsl.Attribute("subtasks", dsl.ArrayOf(dsl.Int), "Subtasks that the test is part of")
+	dsl.Attribute("test_group", dsl.Int, "Test group that the test is part of")
+	dsl.Required("full_input_s3_uri", "full_answer_s3_uri")
+})
+
 var MarkdownStatement = dsl.Type("MarkdownStatement", func() {
 	dsl.Description("Represents a markdown statement for a task")
 	dsl.Attribute("story", dsl.String, "Story section of the markdown statement", func() {
@@ -112,5 +127,16 @@ var _ = dsl.Service("tasks", func() {
 			dsl.GET("/tasks/{task_id}")
 			dsl.Response(dsl.StatusOK)
 		})
+	})
+
+	dsl.Method("getTaskSubmEvalData", func() {
+		dsl.Description("Get submission evaluation data for a task by its ID")
+		dsl.Payload(func() {
+			dsl.Attribute("task_id", dsl.String, "ID of the task", func() {
+				dsl.Example("kvadrputekl")
+			})
+			dsl.Required("task_id")
+		})
+		dsl.Result(TaskSubmEvalData)
 	})
 })

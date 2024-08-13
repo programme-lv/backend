@@ -15,15 +15,17 @@ import (
 
 // Endpoints wraps the "tasks" service endpoints.
 type Endpoints struct {
-	ListTasks goa.Endpoint
-	GetTask   goa.Endpoint
+	ListTasks           goa.Endpoint
+	GetTask             goa.Endpoint
+	GetTaskSubmEvalData goa.Endpoint
 }
 
 // NewEndpoints wraps the methods of the "tasks" service with endpoints.
 func NewEndpoints(s Service) *Endpoints {
 	return &Endpoints{
-		ListTasks: NewListTasksEndpoint(s),
-		GetTask:   NewGetTaskEndpoint(s),
+		ListTasks:           NewListTasksEndpoint(s),
+		GetTask:             NewGetTaskEndpoint(s),
+		GetTaskSubmEvalData: NewGetTaskSubmEvalDataEndpoint(s),
 	}
 }
 
@@ -31,6 +33,7 @@ func NewEndpoints(s Service) *Endpoints {
 func (e *Endpoints) Use(m func(goa.Endpoint) goa.Endpoint) {
 	e.ListTasks = m(e.ListTasks)
 	e.GetTask = m(e.GetTask)
+	e.GetTaskSubmEvalData = m(e.GetTaskSubmEvalData)
 }
 
 // NewListTasksEndpoint returns an endpoint function that calls the method
@@ -47,5 +50,14 @@ func NewGetTaskEndpoint(s Service) goa.Endpoint {
 	return func(ctx context.Context, req any) (any, error) {
 		p := req.(*GetTaskPayload)
 		return s.GetTask(ctx, p)
+	}
+}
+
+// NewGetTaskSubmEvalDataEndpoint returns an endpoint function that calls the
+// method "getTaskSubmEvalData" of service "tasks".
+func NewGetTaskSubmEvalDataEndpoint(s Service) goa.Endpoint {
+	return func(ctx context.Context, req any) (any, error) {
+		p := req.(*GetTaskSubmEvalDataPayload)
+		return s.GetTaskSubmEvalData(ctx, p)
 	}
 }

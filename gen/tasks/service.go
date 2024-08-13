@@ -17,6 +17,8 @@ type Service interface {
 	ListTasks(context.Context) (res []*Task, err error)
 	// Get a task by its ID
 	GetTask(context.Context, *GetTaskPayload) (res *Task, err error)
+	// Get submission evaluation data for a task by its ID
+	GetTaskSubmEvalData(context.Context, *GetTaskSubmEvalDataPayload) (res *TaskSubmEvalData, err error)
 }
 
 // APIName is the name of the API as defined in the design.
@@ -33,7 +35,7 @@ const ServiceName = "tasks"
 // MethodNames lists the service method names as defined in the design. These
 // are the same values that are set in the endpoint request contexts under the
 // MethodKey key.
-var MethodNames = [2]string{"listTasks", "getTask"}
+var MethodNames = [3]string{"listTasks", "getTask", "getTaskSubmEvalData"}
 
 // Represents an example for a task
 type Example struct {
@@ -47,6 +49,13 @@ type Example struct {
 
 // GetTaskPayload is the payload type of the tasks service getTask method.
 type GetTaskPayload struct {
+	// ID of the task
+	TaskID string
+}
+
+// GetTaskSubmEvalDataPayload is the payload type of the tasks service
+// getTaskSubmEvalData method.
+type GetTaskSubmEvalDataPayload struct {
 	// ID of the task
 	TaskID string
 }
@@ -101,8 +110,30 @@ type Task struct {
 	VisibleInputSubtasks []*StInputs
 }
 
+type TaskEvalTestInformation struct {
+	// Full input S3 URI
+	FullInputS3URI string
+	// Full answer S3 URI
+	FullAnswerS3URI string
+	// Subtasks that the test is part of
+	Subtasks []int
+	// Test group that the test is part of
+	TestGroup *int
+}
+
 // Task not found
 type TaskNotFound string
+
+// TaskSubmEvalData is the result type of the tasks service getTaskSubmEvalData
+// method.
+type TaskSubmEvalData struct {
+	// Memory limit in megabytes
+	MemoryLimitMegabytes int
+	// CPU time limit in seconds
+	CPUTimeLimitSeconds float64
+	// Tests for submission evaluation
+	Tests []*TaskEvalTestInformation
+}
 
 // Error returns an error description.
 func (e TaskNotFound) Error() string {

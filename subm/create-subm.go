@@ -66,17 +66,31 @@ func (s *submissionssrvc) CreateSubmission(ctx context.Context, p *submgen.Creat
 		return nil, submgen.InvalidSubmissionDetails("invalid programming language")
 	}
 
-	uuid := uuid.New()
 	createdAt := time.Now()
-	row := &SubmissionRow{
-		Uuid:       uuid.String(),
-		UnixTime:   createdAt.Unix(),
-		Content:    submContent.String(),
-		Version:    0,
-		AuthorUuid: userSrvcUser.UUID,
-		ProgLangId: foundPLang.ID,
-		TaskId:     taskSrvTask.PublishedTaskID,
+	submUuid := uuid.New()
+	evalUuid := uuid.New()
+	evaluationDetailsRow := &SubmissionEvaluationDetailsRow{
+		SubmUuid:           submUuid.String(),
+		SortKey:            fmt.Sprintf("evaluation#%s#details", evalUuid.String()),
+		EvaluationStage:    "waiting",
+		TestlibCheckerCode: 
+		SystemInformation:  new(string),
+		SubmCompileData:    &RuntimeData{},
+		CreatedAtRfc3339:   "",
+		Version:            0,
 	}
+
+	// uuid := uuid.New()
+	// createdAt := time.Now()
+	// row := &SubmissionRow{
+	// 	Uuid:       uuid.String(),
+	// 	UnixTime:   createdAt.Unix(),
+	// 	Content:    submContent.String(),
+	// 	Version:    0,
+	// 	AuthorUuid: userSrvcUser.UUID,
+	// 	ProgLangId: foundPLang.ID,
+	// 	TaskId:     taskSrvTask.PublishedTaskID,
+	// }
 
 	err = s.ddbSubmTable.Save(ctx, row)
 	if err != nil {

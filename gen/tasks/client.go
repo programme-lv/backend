@@ -15,15 +15,17 @@ import (
 
 // Client is the "tasks" service client.
 type Client struct {
-	ListTasksEndpoint goa.Endpoint
-	GetTaskEndpoint   goa.Endpoint
+	ListTasksEndpoint           goa.Endpoint
+	GetTaskEndpoint             goa.Endpoint
+	GetTaskSubmEvalDataEndpoint goa.Endpoint
 }
 
 // NewClient initializes a "tasks" service client given the endpoints.
-func NewClient(listTasks, getTask goa.Endpoint) *Client {
+func NewClient(listTasks, getTask, getTaskSubmEvalData goa.Endpoint) *Client {
 	return &Client{
-		ListTasksEndpoint: listTasks,
-		GetTaskEndpoint:   getTask,
+		ListTasksEndpoint:           listTasks,
+		GetTaskEndpoint:             getTask,
+		GetTaskSubmEvalDataEndpoint: getTaskSubmEvalData,
 	}
 }
 
@@ -51,4 +53,18 @@ func (c *Client) GetTask(ctx context.Context, p *GetTaskPayload) (res *Task, err
 		return
 	}
 	return ires.(*Task), nil
+}
+
+// GetTaskSubmEvalData calls the "getTaskSubmEvalData" endpoint of the "tasks"
+// service.
+// GetTaskSubmEvalData may return the following errors:
+//   - "TaskNotFound" (type TaskNotFound)
+//   - error: internal error
+func (c *Client) GetTaskSubmEvalData(ctx context.Context, p *GetTaskSubmEvalDataPayload) (res *TaskSubmEvalData, err error) {
+	var ires any
+	ires, err = c.GetTaskSubmEvalDataEndpoint(ctx, p)
+	if err != nil {
+		return
+	}
+	return ires.(*TaskSubmEvalData), nil
 }
