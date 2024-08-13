@@ -73,7 +73,7 @@ func (s *submissionssrvc) CreateSubmission(ctx context.Context, p *submgen.Creat
 		SubmUuid:           submUuid.String(),
 		SortKey:            fmt.Sprintf("evaluation#%s#details", evalUuid.String()),
 		EvaluationStage:    "waiting",
-		TestlibCheckerCode: 
+		TestlibCheckerCode: "", // TODO: get from task
 		SystemInformation:  new(string),
 		SubmCompileData:    &RuntimeData{},
 		CreatedAtRfc3339:   "",

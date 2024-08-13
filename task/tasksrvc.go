@@ -160,3 +160,8 @@ func ddbTaskRowToResponse(row *TaskRow) (res *taskgen.Task, err error) {
 
 	return
 }
+
+// GetTaskSubmEvalData implements tasks.Service.
+func (s *taskssrvc) GetTaskSubmEvalData(context.Context, *taskgen.GetTaskSubmEvalDataPayload) (res *taskgen.TaskSubmEvalData, err error) {
+	panic("unimplemented")
+}
