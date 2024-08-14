@@ -2,9 +2,13 @@ package subm
 
 import (
 	"context"
+	"errors"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/guregu/dynamo/v2"
+	"goa.design/clue/log"
 )
 
 type SubmissionDetailsRow struct {
@@ -127,7 +131,8 @@ func (ddb *DynamoDbSubmTableV2) SaveSubmissionDetails(ctx context.Context, subm 
 	subm.Version++
 
 	put := ddb.submTable.Put(subm).If("attribute_not_exists(version) OR version = ?", subm.Version-1)
-	return put.Run(ctx)
+	err := put.Run(ctx)
+	return err
 }
 
 func (ddb *DynamoDbSubmTableV2) SaveSubmissionEvaluationDetails(ctx context.Context, eval *SubmissionEvaluationDetailsRow) error {
@@ -139,12 +144,29 @@ func (ddb *DynamoDbSubmTableV2) SaveSubmissionEvaluationDetails(ctx context.Cont
 }
 
 func (ddb *DynamoDbSubmTableV2) BatchSaveEvaluationTestRows(ctx context.Context, tests []*SubmissionEvaluationTestRow) error {
-	var items []interface{}
-	for _, test := range tests {
-		items = append(items, test)
+	for i := range (len(tests) + 24) / 25 {
+		batch := make([]interface{}, 0)
+		for j := range 25 {
+			if i*25+j >= len(tests) {
+				break
+			}
+			batch = append(batch, *tests[i*25+j])
+		}
+		_, err := ddb.submTable.Batch().Write().Put(batch...).Run(ctx)
+		if err != nil {
+			// check for The level of configured provisioned throughput for the table was exceeded. Consider increasing your provisioning level with the UpdateTable API.
+			//types.ProvisionedThroughputExceededException
+			var pte *types.ProvisionedThroughputExceededException
+			if errors.As(err, &pte) {
+				// backoff and retry
+				log.Printf(ctx, "ProvisionedThroughputExceededException: %v", err)
+				time.Sleep(1 * time.Second)
+				i -= 1
+				continue
+			}
+
+			return err
+		}
 	}
-	put := ddb.submTable.Batch().Write().Put(items...)
-	_, err := put.Run(ctx)
-	// TODO: handle writen amount and unprocessed items
-	return err
+	return nil
 }

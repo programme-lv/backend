@@ -112,11 +112,12 @@ func (s *submissionssrvc) CreateSubmission(ctx context.Context, p *submgen.Creat
 	}
 	err = s.ddbSubmTable.BatchSaveEvaluationTestRows(ctx, evaluationTestRows)
 	if err != nil {
+		log.Printf(ctx, "error saving submission evaluation test rows: %+v", err)
 		return nil, submgen.InternalError("error saving submission evaluation test rows")
 	}
 
 	// TODO: extract the scoring logic into seperated section of the code
-	var scores []ScoreGroup
+	var scores []ScoreGroup = make([]ScoreGroup, 0)
 
 	// if it has subtasks, then those are the groups
 	// otherwise it's just one big group
@@ -139,6 +140,9 @@ func (s *submissionssrvc) CreateSubmission(ctx context.Context, p *submgen.Creat
 	subtaskToTests := make(map[int][]*taskgen.TaskEvalTestInformation)
 	for _, test := range taskEvalData.Tests {
 		for _, subtask := range test.Subtasks {
+			if _, ok := subtaskToTests[subtask]; !ok {
+				subtaskToTests[subtask] = make([]*taskgen.TaskEvalTestInformation, 0)
+			}
 			subtaskToTests[subtask] = append(subtaskToTests[subtask], test)
 		}
 	}

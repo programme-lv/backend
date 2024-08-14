@@ -162,6 +162,67 @@ func ddbTaskRowToResponse(row *TaskRow) (res *taskgen.Task, err error) {
 }
 
 // GetTaskSubmEvalData implements tasks.Service.
-func (s *taskssrvc) GetTaskSubmEvalData(context.Context, *taskgen.GetTaskSubmEvalDataPayload) (res *taskgen.TaskSubmEvalData, err error) {
-	panic("unimplemented")
+func (s *taskssrvc) GetTaskSubmEvalData(ctx context.Context, p *taskgen.GetTaskSubmEvalDataPayload) (res *taskgen.TaskSubmEvalData, err error) {
+	row, err := s.ddbTaskTable.Get(ctx, p.TaskID)
+	if err != nil {
+		return nil, fmt.Errorf("could not get task: %w", err)
+	}
+	if row == nil {
+		return nil, taskgen.TaskNotFound("task not found")
+	}
+
+	taskManifest, err := ParseTaskTomlManifest(row.TomlManifest)
+	if err != nil {
+		return nil, fmt.Errorf("could not parse task toml manifest: %w", err)
+	}
+
+	tests := make([]*taskgen.TaskEvalTestInformation, 0)
+	testToTestGroupMap := make(map[int]*TestGroup)
+	for j, testGroup := range taskManifest.TestGroups {
+		for i := range testGroup.TestIDs {
+			testToTestGroupMap[testGroup.TestIDs[i]] = &taskManifest.TestGroups[j]
+		}
+	}
+
+	for i, test := range taskManifest.Tests {
+		// TODO: as of now subtasks without testgroups are not implemented
+		// currently test subtasks are determined by the testgroup that they belong to
+		subtasks := make([]int, 0)
+		if testGroup, ok := testToTestGroupMap[i]; ok {
+			subtasks = append(subtasks, testGroup.Subtask)
+		}
+		var testGroupId *int = nil
+		if testGroup, ok := testToTestGroupMap[i]; ok {
+			testGroupId = &testGroup.GroupID
+		}
+		tests = append(tests, &taskgen.TaskEvalTestInformation{
+			TestID:          i + 1,
+			FullInputS3URI:  fmt.Sprintf("s3://proglv-tests/%s.zst", test.InputSHA256),
+			FullAnswerS3URI: fmt.Sprintf("s3://proglv-tests/%s.zst", test.AnswerSHA256),
+			Subtasks:        subtasks,
+			TestGroup:       testGroupId,
+		})
+	}
+
+	testgroups := make([]*taskgen.TaskEvalTestGroupInformation, 0)
+	for _, testGroup := range taskManifest.TestGroups {
+		testgroups = append(testgroups, &taskgen.TaskEvalTestGroupInformation{
+			TestGroupID: testGroup.GroupID,
+			Score:       testGroup.Points,
+			Subtask:     testGroup.Subtask,
+		})
+	}
+
+	res = &taskgen.TaskSubmEvalData{
+		PublishedTaskID:      row.Id,
+		TaskFullName:         taskManifest.FullName,
+		MemoryLimitMegabytes: taskManifest.Contraints.MemoryLimMB,
+		CPUTimeLimitSeconds:  taskManifest.Contraints.CpuTimeInSecs,
+		Tests:                tests,
+		TestlibCheckerCode:   testlib_default_checker,
+		SubtaskScores:        []*taskgen.TaskEvalSubtaskScore{},
+		TestGroupInformation: testgroups,
+	}
+
+	return res, nil
 }
