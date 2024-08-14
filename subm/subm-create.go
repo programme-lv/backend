@@ -118,8 +118,8 @@ func (s *submissionssrvc) CreateSubmission(ctx context.Context, p *submgen.Creat
 		Possible: 100,
 		Finished: false,
 	}
+
 	// if it has subtasks, then those are the groups
-	// else if it has test groups, then those are the groups
 	// else it's just one group
 
 	/*
@@ -147,9 +147,10 @@ func (s *submissionssrvc) CreateSubmission(ctx context.Context, p *submgen.Creat
 	if len(subtaskToTests) > 0 {
 		// groups are subtasks
 		// possible score is calculated as
-		// if there are testgroups then by their points
-		// else by the number of tests
-
+		// if the subtask has a score specified then that
+		// if there are testgroups that belong to the subtask
+		//   sum of their scores
+		// if there are tests that don't belong to a testgroup then the sum of those
 	}
 
 	// TODO: calculate scores

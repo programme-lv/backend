@@ -110,6 +110,22 @@ type Task struct {
 	VisibleInputSubtasks []*StInputs
 }
 
+type TaskEvalSubtaskScore struct {
+	// Subtask ID
+	SubtaskID int
+	// Score for the subtask
+	Score int
+}
+
+type TaskEvalTestGroupInformation struct {
+	// Test group ID
+	TestGroupID int
+	// Score for the test group
+	Score int
+	// Subtask that the test group is part of
+	Subtask int
+}
+
 type TaskEvalTestInformation struct {
 	// Test ID
 	TestID int
@@ -141,6 +157,10 @@ type TaskSubmEvalData struct {
 	Tests []*TaskEvalTestInformation
 	// C++ code of testlib.h checker
 	TestlibCheckerCode string
+	// Subtask scores
+	SubtaskScores []*TaskEvalSubtaskScore
+	// Test group information
+	TestGroupInformation []*TaskEvalTestGroupInformation
 }
 
 // Error returns an error description.

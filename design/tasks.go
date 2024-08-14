@@ -49,8 +49,29 @@ var TaskSubmEvalData = dsl.Type("TaskSubmEvalData", func() {
 	dsl.Attribute("cpu_time_limit_seconds", dsl.Float64, "CPU time limit in seconds")
 	dsl.Attribute("tests", dsl.ArrayOf(TaskEvalTestInformation), "Tests for submission evaluation")
 	dsl.Attribute("testlib_checker_code", dsl.String, "C++ code of testlib.h checker")
+	dsl.Attribute("subtask_scores", dsl.ArrayOf(TaskEvalSubtaskScore), "Subtask scores")
+	dsl.Attribute("test_group_information", dsl.ArrayOf(TaskEvalTestGroupInformation), "Test group information")
 	dsl.Required("memory_limit_megabytes", "cpu_time_limit_seconds", "tests", "testlib_checker_code", "published_task_id", "task_full_name")
 })
+
+var TaskEvalSubtaskScore = dsl.Type("TaskEvalSubtaskScore", func() {
+	dsl.Attribute("subtask_id", dsl.Int, "Subtask ID")
+	dsl.Attribute("score", dsl.Int, "Score for the subtask")
+	dsl.Required("subtask_id", "score")
+	// If testgroups are present subtasks score is calculated as the sum of the scores of the testgroups
+})
+
+var TaskEvalTestGroupInformation = dsl.Type("TaskEvalTestGroupInformation", func() {
+	dsl.Attribute("test_group_id", dsl.Int, "Test group ID")
+	dsl.Attribute("score", dsl.Int, "Score for the test group")
+	dsl.Attribute("subtask", dsl.Int, "Subtask that the test group is part of")
+	dsl.Required("test_group_id", "score", "subtask")
+	// Testgroups always belong to a subtask
+})
+
+// The difference between subtasks and test groups is that subtasks are
+// a part of the task statement, they have a public description so the solver
+// knows what kinds of inputs to expect in the subtask.
 
 var TaskEvalTestInformation = dsl.Type("TaskEvalTestInformation", func() {
 	dsl.Attribute("test_id", dsl.Int, "Test ID")

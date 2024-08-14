@@ -23,56 +23,57 @@ paths:
                                 $ref: '#/components/schemas/JWTClaims'
                             example:
                                 audience:
-                                    - Omnis eos quisquam.
-                                    - Sint non assumenda et voluptatem doloribus velit.
+                                    - Necessitatibus ut similique natus qui non.
+                                    - Et nisi et earum sed error perferendis.
+                                    - Asperiores et.
+                                    - Voluptas labore aut.
+                                email: Illo sunt deleniti nihil ad optio.
+                                expires_at: Numquam in.
+                                firstname: Velit inventore assumenda.
+                                issued_at: Molestiae ut odit.
+                                issuer: At dolorem dolorem fugit hic impedit.
+                                lastname: Soluta quia maxime possimus.
+                                not_before: Sit velit quas aliquid incidunt.
+                                scopes:
+                                    - Et voluptatem doloribus velit.
                                     - Molestiae voluptas qui.
                                     - Illum voluptatem.
-                                email: Illo perferendis quos aut consequatur eveniet.
-                                expires_at: Libero fugiat error rerum.
-                                firstname: Facere quis iure assumenda numquam officia dolores.
-                                issued_at: At dolorem dolorem fugit hic impedit.
-                                issuer: Quasi soluta quia maxime.
-                                lastname: Ut id.
-                                not_before: Accusantium nulla dolor quae rerum cupiditate dolores.
-                                scopes:
-                                    - Suscipit quibusdam qui.
-                                    - Nihil ut voluptas.
-                                    - Autem praesentium nihil eveniet velit inventore.
-                                subject: Sed illo sunt deleniti nihil ad optio.
-                                username: Consequatur et molestias officiis omnis explicabo.
-                                uuid: Doloremque excepturi deserunt.
+                                    - Libero fugiat error rerum.
+                                subject: Accusantium nulla dolor quae rerum cupiditate dolores.
+                                username: Ut voluptas velit autem praesentium nihil.
+                                uuid: Dolorum omnis eos quisquam qui sint.
                 "400":
                     description: 'InvalidUserDetails: Bad Request response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Expedita ut autem veniam.
-                            example: Voluptate molestiae officia totam sit porro.
+                                example: Sint perspiciatis cum quis.
+                            example: Sapiente quia.
                 "401":
                     description: 'InvalidCredentials: Unauthorized response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Aspernatur reprehenderit distinctio quasi unde eveniet consequatur.
-                            example: Sint fugiat sed.
+                                example: Sed ipsum.
+                            example: Ut sed.
                 "404":
                     description: 'NotFound: Not Found response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Ipsam totam ea repellat.
-                            example: Recusandae cum hic vel nesciunt esse nemo.
+                                example: Error sed beatae non repudiandae a.
+                            example: At id debitis qui et corporis rerum.
                 "409":
                     description: 'EmailExistsConflict: Conflict response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: In sint non quisquam.
-                            example: Natus itaque accusantium tempora.
+                                example: Tenetur velit eligendi nostrum et.
+                            example: Eligendi dicta non perferendis provident iusto.
             security:
                 - jwt_header_Authorization: []
     /auth/login:
@@ -107,7 +108,7 @@ paths:
                             schema:
                                 type: string
                                 example: jwt_token
-                            example: Aut maiores.
+                            example: Quibusdam cumque ut magnam.
                 "401":
                     description: 'InvalidCredentials: Unauthorized response.'
                     content:
@@ -115,23 +116,23 @@ paths:
                             schema:
                                 type: string
                                 example: jwt_token
-                            example: Ut qui.
+                            example: Recusandae cum hic vel nesciunt esse nemo.
                 "404":
                     description: 'NotFound: Not Found response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Sequi eveniet non non.
-                            example: Quia in enim aut voluptatem dolor.
+                                example: Atque enim consequatur aperiam quis.
+                            example: Natus itaque accusantium tempora.
                 "409":
                     description: 'EmailExistsConflict: Conflict response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Aut quos aspernatur officiis blanditiis.
-                            example: Sit dolor earum labore amet.
+                                example: Placeat velit eum ut libero fugiat.
+                            example: Quaerat voluptatem.
     /programming-languages:
         get:
             tags:
@@ -183,24 +184,41 @@ paths:
                                         }
                                       id: go
                                       monacoId: go
+                                    - codeFilename: main.go
+                                      compileCmd: go build
+                                      compiledFilename: main
+                                      enabled: true
+                                      envVersionCmd: go version
+                                      executeCmd: go run
+                                      fullName: Go
+                                      helloWorldCode: |-
+                                        package main
+
+                                        import "fmt"
+
+                                        func main() {
+                                            fmt.Println("Hello, World!")
+                                        }
+                                      id: go
+                                      monacoId: go
+                                    - codeFilename: main.go
+                                      compileCmd: go build
+                                      compiledFilename: main
+                                      enabled: true
+                                      envVersionCmd: go version
+                                      executeCmd: go run
+                                      fullName: Go
+                                      helloWorldCode: |-
+                                        package main
+
+                                        import "fmt"
+
+                                        func main() {
+                                            fmt.Println("Hello, World!")
+                                        }
+                                      id: go
+                                      monacoId: go
                             example:
-                                - codeFilename: main.go
-                                  compileCmd: go build
-                                  compiledFilename: main
-                                  enabled: true
-                                  envVersionCmd: go version
-                                  executeCmd: go run
-                                  fullName: Go
-                                  helloWorldCode: |-
-                                    package main
-
-                                    import "fmt"
-
-                                    func main() {
-                                        fmt.Println("Hello, World!")
-                                    }
-                                  id: go
-                                  monacoId: go
                                 - codeFilename: main.go
                                   compileCmd: go build
                                   compiledFilename: main
@@ -241,32 +259,32 @@ paths:
                         application/json:
                             schema:
                                 type: string
-                                example: Consequatur quia cum ipsam.
-                            example: Occaecati temporibus non quis at aut cupiditate.
+                                example: Consectetur aliquam.
+                            example: Repellat voluptatem voluptatem sed.
                 "401":
                     description: 'unauthorized: Unauthorized response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Et sunt.
-                            example: Alias eveniet expedita.
+                                example: Possimus voluptates ea dolores sequi.
+                            example: Quas id.
                 "404":
                     description: 'NotFound: Not Found response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Debitis ea est dolorum.
-                            example: Quae tempora qui hic quo reiciendis.
+                                example: Et ut similique fugiat harum corporis voluptas.
+                            example: Exercitationem provident blanditiis est et sint ullam.
                 "500":
                     description: 'InternalError: Internal Server Error response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Qui voluptatibus et dolorum suscipit accusantium.
-                            example: Distinctio amet et et.
+                                example: Quisquam ut eaque sunt amet voluptatem est.
+                            example: Aliquam tempore in.
     /submissions:
         get:
             tags:
@@ -316,22 +334,6 @@ paths:
                                         name: Factorial Calculation
                                       username: coder123
                                       uuid: 123e4567-e89b-12d3-a456-426614174000
-                                    - createdAt: "2024-08-08T10:30:00Z"
-                                      evaluation:
-                                        possibleScore: 100
-                                        receivedScore: 85
-                                        status: completed
-                                        uuid: 123e4567-e89b-12d3-a456-426614174000
-                                      language:
-                                        fullName: Go
-                                        id: go
-                                        monacoId: go
-                                      submission: print(factorial(5))
-                                      task:
-                                        code: fact001
-                                        name: Factorial Calculation
-                                      username: coder123
-                                      uuid: 123e4567-e89b-12d3-a456-426614174000
                             example:
                                 - createdAt: "2024-08-08T10:30:00Z"
                                   evaluation:
@@ -387,32 +389,32 @@ paths:
                         application/json:
                             schema:
                                 type: string
-                                example: Quidem quo explicabo occaecati reprehenderit reiciendis.
-                            example: Sunt error sed beatae non repudiandae a.
+                                example: Labore aut voluptatum molestiae qui.
+                            example: Occaecati temporibus non quis at aut cupiditate.
                 "401":
                     description: 'unauthorized: Unauthorized response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Fugiat quam molestiae ea enim.
-                            example: Perspiciatis cum.
+                                example: Doloremque dolorem ut ratione.
+                            example: Alias eveniet expedita.
                 "404":
                     description: 'NotFound: Not Found response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Excepturi provident facilis incidunt.
-                            example: Tenetur velit eligendi nostrum et.
+                                example: Quod enim ipsum et quod molestiae.
+                            example: Quae tempora qui hic quo reiciendis.
                 "500":
                     description: 'InternalError: Internal Server Error response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Qui numquam.
-                            example: Dignissimos dolorem.
+                                example: Aliquam et sunt officia consequatur quia cum.
+                            example: Distinctio amet et et.
         post:
             tags:
                 - submissions
@@ -460,32 +462,32 @@ paths:
                         application/json:
                             schema:
                                 type: string
-                                example: Laudantium qui labore corrupti.
-                            example: Possimus fugiat et ut et deleniti.
+                                example: Consequuntur quidem quo explicabo.
+                            example: Provident hic quisquam qui aliquam.
                 "401":
                     description: 'unauthorized: Unauthorized response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Hic esse amet voluptatem quia cumque.
-                            example: Iusto ex nemo doloremque rerum.
+                                example: Reprehenderit reiciendis necessitatibus excepturi provident.
+                            example: Doloribus aspernatur quia minima.
                 "404":
                     description: 'NotFound: Not Found response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Est reiciendis porro magni quod distinctio optio.
-                            example: Incidunt architecto in quis sunt.
+                                example: Incidunt quibusdam qui.
+                            example: Sint ad et maiores quia est.
                 "500":
                     description: 'InternalError: Internal Server Error response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Exercitationem neque numquam animi laudantium.
-                            example: Sed ipsum.
+                                example: Inventore ut iste alias.
+                            example: Est et iste et placeat consequatur eaque.
             security:
                 - jwt_header_Authorization: []
     /submissions/{uuid}:
@@ -535,32 +537,32 @@ paths:
                         application/json:
                             schema:
                                 type: string
-                                example: Ratione quo labore.
-                            example: Doloribus aspernatur quia minima.
+                                example: Est dolorum quaerat qui.
+                            example: Modi ratione quod.
                 "401":
                     description: 'unauthorized: Unauthorized response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Ut iste alias minus nobis doloremque dolorem.
-                            example: Provident hic quisquam qui aliquam.
+                                example: Quia debitis.
+                            example: Molestiae ut animi.
                 "404":
                     description: 'NotFound: Not Found response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Voluptatum molestiae qui amet quod enim ipsum.
-                            example: Sint ad et maiores quia est.
+                                example: Et dolorum suscipit.
+                            example: Et et.
                 "500":
                     description: 'InternalError: Internal Server Error response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Quod molestiae.
-                            example: Est et iste et placeat consequatur eaque.
+                                example: Praesentium modi.
+                            example: Sit velit.
     /tasks:
         get:
             tags:
@@ -581,9 +583,9 @@ paths:
                                     - cpu_time_limit_seconds: 0.5
                                       default_md_statement:
                                         input: Ievaddatu pirmajā rindā dotas trīs naturālu skaitļu...
-                                        notes: Dicta aspernatur est quia ea sequi architecto.
+                                        notes: Hic quam.
                                         output: Izvaddatu vienīgajā rindā jābūt veselam skaitlim...
-                                        scoring: Et dolores quas dolorum voluptas.
+                                        scoring: Consequatur eveniet nostrum blanditiis dignissimos.
                                         story: Krišjānis ir uzkonstruējis kvadrātveida putekļsūcēju (saīsināti – KP), kas ir neaizstājams palīgs viņa darbnīcas uzkopšanā...
                                       default_pdf_statement_url: https://dvhk4hiwp1rmf.cloudfront.net/task-pdf-statements/f27386f1b69f3c020335fe7c84316c5da099933832043e6a5820bcdb0cd66a81.pdf
                                       difficulty_rating: 3
@@ -595,7 +597,7 @@ paths:
                                             .XXX.XX..
                                             X.X.X..X.
                                             ...XX....
-                                          md_note: Rerum excepturi.
+                                          md_note: Eius sint quod accusantium.
                                           output: |
                                             10
                                         - input: |
@@ -605,7 +607,27 @@ paths:
                                             .XXX.XX..
                                             X.X.X..X.
                                             ...XX....
-                                          md_note: Rerum excepturi.
+                                          md_note: Eius sint quod accusantium.
+                                          output: |
+                                            10
+                                        - input: |
+                                            5 9 3
+                                            A....X..B
+                                            ..X..X.X.
+                                            .XXX.XX..
+                                            X.X.X..X.
+                                            ...XX....
+                                          md_note: Eius sint quod accusantium.
+                                          output: |
+                                            10
+                                        - input: |
+                                            5 9 3
+                                            A....X..B
+                                            ..X..X.X.
+                                            .XXX.XX..
+                                            X.X.X..X.
+                                            ...XX....
+                                          md_note: Eius sint quod accusantium.
                                           output: |
                                             10
                                       illustration_img_url: https://dvhk4hiwp1rmf.cloudfront.net/task-illustrations/bafcc0aa1b4c56faa44f5f3b2a5abd9529af941eb9a9b10f541b436762d4948a.png
@@ -616,6 +638,31 @@ paths:
                                       published_task_id: kvadrputekl
                                       task_full_name: Kvadrātveida putekļsūcējs
                                       visible_input_subtasks:
+                                        - inputs:
+                                            - |
+                                              5 5 3
+                                              A.X..
+                                              X.B.X
+                                              ....X
+                                              XX...
+                                              X.XXX
+                                            - |
+                                              6 3 1
+                                              ...
+                                              XA.
+                                              .X.
+                                              X..
+                                              B..
+                                              ...
+                                            - |
+                                              6 4 2
+                                              X...
+                                              .AXX
+                                              X..X
+                                              .X.X
+                                              XXXX
+                                              X.BX
+                                          subtask: 1
                                         - inputs:
                                             - |
                                               5 5 3
@@ -694,9 +741,9 @@ paths:
                                     - cpu_time_limit_seconds: 0.5
                                       default_md_statement:
                                         input: Ievaddatu pirmajā rindā dotas trīs naturālu skaitļu...
-                                        notes: Dicta aspernatur est quia ea sequi architecto.
+                                        notes: Hic quam.
                                         output: Izvaddatu vienīgajā rindā jābūt veselam skaitlim...
-                                        scoring: Et dolores quas dolorum voluptas.
+                                        scoring: Consequatur eveniet nostrum blanditiis dignissimos.
                                         story: Krišjānis ir uzkonstruējis kvadrātveida putekļsūcēju (saīsināti – KP), kas ir neaizstājams palīgs viņa darbnīcas uzkopšanā...
                                       default_pdf_statement_url: https://dvhk4hiwp1rmf.cloudfront.net/task-pdf-statements/f27386f1b69f3c020335fe7c84316c5da099933832043e6a5820bcdb0cd66a81.pdf
                                       difficulty_rating: 3
@@ -708,7 +755,7 @@ paths:
                                             .XXX.XX..
                                             X.X.X..X.
                                             ...XX....
-                                          md_note: Rerum excepturi.
+                                          md_note: Eius sint quod accusantium.
                                           output: |
                                             10
                                         - input: |
@@ -718,7 +765,27 @@ paths:
                                             .XXX.XX..
                                             X.X.X..X.
                                             ...XX....
-                                          md_note: Rerum excepturi.
+                                          md_note: Eius sint quod accusantium.
+                                          output: |
+                                            10
+                                        - input: |
+                                            5 9 3
+                                            A....X..B
+                                            ..X..X.X.
+                                            .XXX.XX..
+                                            X.X.X..X.
+                                            ...XX....
+                                          md_note: Eius sint quod accusantium.
+                                          output: |
+                                            10
+                                        - input: |
+                                            5 9 3
+                                            A....X..B
+                                            ..X..X.X.
+                                            .XXX.XX..
+                                            X.X.X..X.
+                                            ...XX....
+                                          md_note: Eius sint quod accusantium.
                                           output: |
                                             10
                                       illustration_img_url: https://dvhk4hiwp1rmf.cloudfront.net/task-illustrations/bafcc0aa1b4c56faa44f5f3b2a5abd9529af941eb9a9b10f541b436762d4948a.png
@@ -729,6 +796,31 @@ paths:
                                       published_task_id: kvadrputekl
                                       task_full_name: Kvadrātveida putekļsūcējs
                                       visible_input_subtasks:
+                                        - inputs:
+                                            - |
+                                              5 5 3
+                                              A.X..
+                                              X.B.X
+                                              ....X
+                                              XX...
+                                              X.XXX
+                                            - |
+                                              6 3 1
+                                              ...
+                                              XA.
+                                              .X.
+                                              X..
+                                              B..
+                                              ...
+                                            - |
+                                              6 4 2
+                                              X...
+                                              .AXX
+                                              X..X
+                                              .X.X
+                                              XXXX
+                                              X.BX
+                                          subtask: 1
                                         - inputs:
                                             - |
                                               5 5 3
@@ -807,9 +899,9 @@ paths:
                                     - cpu_time_limit_seconds: 0.5
                                       default_md_statement:
                                         input: Ievaddatu pirmajā rindā dotas trīs naturālu skaitļu...
-                                        notes: Dicta aspernatur est quia ea sequi architecto.
+                                        notes: Hic quam.
                                         output: Izvaddatu vienīgajā rindā jābūt veselam skaitlim...
-                                        scoring: Et dolores quas dolorum voluptas.
+                                        scoring: Consequatur eveniet nostrum blanditiis dignissimos.
                                         story: Krišjānis ir uzkonstruējis kvadrātveida putekļsūcēju (saīsināti – KP), kas ir neaizstājams palīgs viņa darbnīcas uzkopšanā...
                                       default_pdf_statement_url: https://dvhk4hiwp1rmf.cloudfront.net/task-pdf-statements/f27386f1b69f3c020335fe7c84316c5da099933832043e6a5820bcdb0cd66a81.pdf
                                       difficulty_rating: 3
@@ -821,7 +913,7 @@ paths:
                                             .XXX.XX..
                                             X.X.X..X.
                                             ...XX....
-                                          md_note: Rerum excepturi.
+                                          md_note: Eius sint quod accusantium.
                                           output: |
                                             10
                                         - input: |
@@ -831,7 +923,27 @@ paths:
                                             .XXX.XX..
                                             X.X.X..X.
                                             ...XX....
-                                          md_note: Rerum excepturi.
+                                          md_note: Eius sint quod accusantium.
+                                          output: |
+                                            10
+                                        - input: |
+                                            5 9 3
+                                            A....X..B
+                                            ..X..X.X.
+                                            .XXX.XX..
+                                            X.X.X..X.
+                                            ...XX....
+                                          md_note: Eius sint quod accusantium.
+                                          output: |
+                                            10
+                                        - input: |
+                                            5 9 3
+                                            A....X..B
+                                            ..X..X.X.
+                                            .XXX.XX..
+                                            X.X.X..X.
+                                            ...XX....
+                                          md_note: Eius sint quod accusantium.
                                           output: |
                                             10
                                       illustration_img_url: https://dvhk4hiwp1rmf.cloudfront.net/task-illustrations/bafcc0aa1b4c56faa44f5f3b2a5abd9529af941eb9a9b10f541b436762d4948a.png
@@ -867,94 +979,6 @@ paths:
                                               XXXX
                                               X.BX
                                           subtask: 1
-                                        - inputs:
-                                            - |
-                                              5 5 3
-                                              A.X..
-                                              X.B.X
-                                              ....X
-                                              XX...
-                                              X.XXX
-                                            - |
-                                              6 3 1
-                                              ...
-                                              XA.
-                                              .X.
-                                              X..
-                                              B..
-                                              ...
-                                            - |
-                                              6 4 2
-                                              X...
-                                              .AXX
-                                              X..X
-                                              .X.X
-                                              XXXX
-                                              X.BX
-                                          subtask: 1
-                                        - inputs:
-                                            - |
-                                              5 5 3
-                                              A.X..
-                                              X.B.X
-                                              ....X
-                                              XX...
-                                              X.XXX
-                                            - |
-                                              6 3 1
-                                              ...
-                                              XA.
-                                              .X.
-                                              X..
-                                              B..
-                                              ...
-                                            - |
-                                              6 4 2
-                                              X...
-                                              .AXX
-                                              X..X
-                                              .X.X
-                                              XXXX
-                                              X.BX
-                                          subtask: 1
-                                    - cpu_time_limit_seconds: 0.5
-                                      default_md_statement:
-                                        input: Ievaddatu pirmajā rindā dotas trīs naturālu skaitļu...
-                                        notes: Dicta aspernatur est quia ea sequi architecto.
-                                        output: Izvaddatu vienīgajā rindā jābūt veselam skaitlim...
-                                        scoring: Et dolores quas dolorum voluptas.
-                                        story: Krišjānis ir uzkonstruējis kvadrātveida putekļsūcēju (saīsināti – KP), kas ir neaizstājams palīgs viņa darbnīcas uzkopšanā...
-                                      default_pdf_statement_url: https://dvhk4hiwp1rmf.cloudfront.net/task-pdf-statements/f27386f1b69f3c020335fe7c84316c5da099933832043e6a5820bcdb0cd66a81.pdf
-                                      difficulty_rating: 3
-                                      examples:
-                                        - input: |
-                                            5 9 3
-                                            A....X..B
-                                            ..X..X.X.
-                                            .XXX.XX..
-                                            X.X.X..X.
-                                            ...XX....
-                                          md_note: Rerum excepturi.
-                                          output: |
-                                            10
-                                        - input: |
-                                            5 9 3
-                                            A....X..B
-                                            ..X..X.X.
-                                            .XXX.XX..
-                                            X.X.X..X.
-                                            ...XX....
-                                          md_note: Rerum excepturi.
-                                          output: |
-                                            10
-                                      illustration_img_url: https://dvhk4hiwp1rmf.cloudfront.net/task-illustrations/bafcc0aa1b4c56faa44f5f3b2a5abd9529af941eb9a9b10f541b436762d4948a.png
-                                      memory_limit_megabytes: 256
-                                      origin_notes:
-                                        lv: Uzdevums parādījās Latvijas 37. informātikas olimpiādes (2023./2024. gads) skolas kārtā.
-                                      origin_olympiad: LIO
-                                      published_task_id: kvadrputekl
-                                      task_full_name: Kvadrātveida putekļsūcējs
-                                      visible_input_subtasks:
                                         - inputs:
                                             - |
                                               5 5 3
@@ -1034,9 +1058,9 @@ paths:
                                 - cpu_time_limit_seconds: 0.5
                                   default_md_statement:
                                     input: Ievaddatu pirmajā rindā dotas trīs naturālu skaitļu...
-                                    notes: Dicta aspernatur est quia ea sequi architecto.
+                                    notes: Hic quam.
                                     output: Izvaddatu vienīgajā rindā jābūt veselam skaitlim...
-                                    scoring: Et dolores quas dolorum voluptas.
+                                    scoring: Consequatur eveniet nostrum blanditiis dignissimos.
                                     story: Krišjānis ir uzkonstruējis kvadrātveida putekļsūcēju (saīsināti – KP), kas ir neaizstājams palīgs viņa darbnīcas uzkopšanā...
                                   default_pdf_statement_url: https://dvhk4hiwp1rmf.cloudfront.net/task-pdf-statements/f27386f1b69f3c020335fe7c84316c5da099933832043e6a5820bcdb0cd66a81.pdf
                                   difficulty_rating: 3
@@ -1048,7 +1072,7 @@ paths:
                                         .XXX.XX..
                                         X.X.X..X.
                                         ...XX....
-                                      md_note: Rerum excepturi.
+                                      md_note: Eius sint quod accusantium.
                                       output: |
                                         10
                                     - input: |
@@ -1058,7 +1082,27 @@ paths:
                                         .XXX.XX..
                                         X.X.X..X.
                                         ...XX....
-                                      md_note: Rerum excepturi.
+                                      md_note: Eius sint quod accusantium.
+                                      output: |
+                                        10
+                                    - input: |
+                                        5 9 3
+                                        A....X..B
+                                        ..X..X.X.
+                                        .XXX.XX..
+                                        X.X.X..X.
+                                        ...XX....
+                                      md_note: Eius sint quod accusantium.
+                                      output: |
+                                        10
+                                    - input: |
+                                        5 9 3
+                                        A....X..B
+                                        ..X..X.X.
+                                        .XXX.XX..
+                                        X.X.X..X.
+                                        ...XX....
+                                      md_note: Eius sint quod accusantium.
                                       output: |
                                         10
                                   illustration_img_url: https://dvhk4hiwp1rmf.cloudfront.net/task-illustrations/bafcc0aa1b4c56faa44f5f3b2a5abd9529af941eb9a9b10f541b436762d4948a.png
@@ -1069,6 +1113,31 @@ paths:
                                   published_task_id: kvadrputekl
                                   task_full_name: Kvadrātveida putekļsūcējs
                                   visible_input_subtasks:
+                                    - inputs:
+                                        - |
+                                          5 5 3
+                                          A.X..
+                                          X.B.X
+                                          ....X
+                                          XX...
+                                          X.XXX
+                                        - |
+                                          6 3 1
+                                          ...
+                                          XA.
+                                          .X.
+                                          X..
+                                          B..
+                                          ...
+                                        - |
+                                          6 4 2
+                                          X...
+                                          .AXX
+                                          X..X
+                                          .X.X
+                                          XXXX
+                                          X.BX
+                                      subtask: 1
                                     - inputs:
                                         - |
                                           5 5 3
@@ -1147,9 +1216,9 @@ paths:
                                 - cpu_time_limit_seconds: 0.5
                                   default_md_statement:
                                     input: Ievaddatu pirmajā rindā dotas trīs naturālu skaitļu...
-                                    notes: Dicta aspernatur est quia ea sequi architecto.
+                                    notes: Hic quam.
                                     output: Izvaddatu vienīgajā rindā jābūt veselam skaitlim...
-                                    scoring: Et dolores quas dolorum voluptas.
+                                    scoring: Consequatur eveniet nostrum blanditiis dignissimos.
                                     story: Krišjānis ir uzkonstruējis kvadrātveida putekļsūcēju (saīsināti – KP), kas ir neaizstājams palīgs viņa darbnīcas uzkopšanā...
                                   default_pdf_statement_url: https://dvhk4hiwp1rmf.cloudfront.net/task-pdf-statements/f27386f1b69f3c020335fe7c84316c5da099933832043e6a5820bcdb0cd66a81.pdf
                                   difficulty_rating: 3
@@ -1161,7 +1230,7 @@ paths:
                                         .XXX.XX..
                                         X.X.X..X.
                                         ...XX....
-                                      md_note: Rerum excepturi.
+                                      md_note: Eius sint quod accusantium.
                                       output: |
                                         10
                                     - input: |
@@ -1171,7 +1240,27 @@ paths:
                                         .XXX.XX..
                                         X.X.X..X.
                                         ...XX....
-                                      md_note: Rerum excepturi.
+                                      md_note: Eius sint quod accusantium.
+                                      output: |
+                                        10
+                                    - input: |
+                                        5 9 3
+                                        A....X..B
+                                        ..X..X.X.
+                                        .XXX.XX..
+                                        X.X.X..X.
+                                        ...XX....
+                                      md_note: Eius sint quod accusantium.
+                                      output: |
+                                        10
+                                    - input: |
+                                        5 9 3
+                                        A....X..B
+                                        ..X..X.X.
+                                        .XXX.XX..
+                                        X.X.X..X.
+                                        ...XX....
+                                      md_note: Eius sint quod accusantium.
                                       output: |
                                         10
                                   illustration_img_url: https://dvhk4hiwp1rmf.cloudfront.net/task-illustrations/bafcc0aa1b4c56faa44f5f3b2a5abd9529af941eb9a9b10f541b436762d4948a.png
@@ -1182,6 +1271,31 @@ paths:
                                   published_task_id: kvadrputekl
                                   task_full_name: Kvadrātveida putekļsūcējs
                                   visible_input_subtasks:
+                                    - inputs:
+                                        - |
+                                          5 5 3
+                                          A.X..
+                                          X.B.X
+                                          ....X
+                                          XX...
+                                          X.XXX
+                                        - |
+                                          6 3 1
+                                          ...
+                                          XA.
+                                          .X.
+                                          X..
+                                          B..
+                                          ...
+                                        - |
+                                          6 4 2
+                                          X...
+                                          .AXX
+                                          X..X
+                                          .X.X
+                                          XXXX
+                                          X.BX
+                                      subtask: 1
                                     - inputs:
                                         - |
                                           5 5 3
@@ -1263,8 +1377,8 @@ paths:
                         application/json:
                             schema:
                                 type: string
-                                example: Ipsa consequatur recusandae officia.
-                            example: Ut animi esse.
+                                example: Quidem tenetur explicabo qui in enim quia.
+                            example: Tenetur rerum provident modi.
     /tasks/{task_id}:
         get:
             tags:
@@ -1293,9 +1407,9 @@ paths:
                                 cpu_time_limit_seconds: 0.5
                                 default_md_statement:
                                     input: Ievaddatu pirmajā rindā dotas trīs naturālu skaitļu...
-                                    notes: Vitae eius.
+                                    notes: Necessitatibus debitis illo ex et similique.
                                     output: Izvaddatu vienīgajā rindā jābūt veselam skaitlim...
-                                    scoring: Quod accusantium.
+                                    scoring: Beatae incidunt provident quis possimus et consequatur.
                                     story: Krišjānis ir uzkonstruējis kvadrātveida putekļsūcēju (saīsināti – KP), kas ir neaizstājams palīgs viņa darbnīcas uzkopšanā...
                                 default_pdf_statement_url: https://dvhk4hiwp1rmf.cloudfront.net/task-pdf-statements/f27386f1b69f3c020335fe7c84316c5da099933832043e6a5820bcdb0cd66a81.pdf
                                 difficulty_rating: 3
@@ -1307,7 +1421,7 @@ paths:
                                         .XXX.XX..
                                         X.X.X..X.
                                         ...XX....
-                                      md_note: Voluptatem inventore reiciendis impedit voluptatem.
+                                      md_note: Occaecati et et non.
                                       output: |
                                         10
                                     - input: |
@@ -1317,7 +1431,7 @@ paths:
                                         .XXX.XX..
                                         X.X.X..X.
                                         ...XX....
-                                      md_note: Voluptatem inventore reiciendis impedit voluptatem.
+                                      md_note: Occaecati et et non.
                                       output: |
                                         10
                                     - input: |
@@ -1327,7 +1441,7 @@ paths:
                                         .XXX.XX..
                                         X.X.X..X.
                                         ...XX....
-                                      md_note: Voluptatem inventore reiciendis impedit voluptatem.
+                                      md_note: Occaecati et et non.
                                       output: |
                                         10
                                     - input: |
@@ -1337,7 +1451,7 @@ paths:
                                         .XXX.XX..
                                         X.X.X..X.
                                         ...XX....
-                                      md_note: Voluptatem inventore reiciendis impedit voluptatem.
+                                      md_note: Occaecati et et non.
                                       output: |
                                         10
                                 illustration_img_url: https://dvhk4hiwp1rmf.cloudfront.net/task-illustrations/bafcc0aa1b4c56faa44f5f3b2a5abd9529af941eb9a9b10f541b436762d4948a.png
@@ -1398,64 +1512,14 @@ paths:
                                           XXXX
                                           X.BX
                                       subtask: 1
-                                    - inputs:
-                                        - |
-                                          5 5 3
-                                          A.X..
-                                          X.B.X
-                                          ....X
-                                          XX...
-                                          X.XXX
-                                        - |
-                                          6 3 1
-                                          ...
-                                          XA.
-                                          .X.
-                                          X..
-                                          B..
-                                          ...
-                                        - |
-                                          6 4 2
-                                          X...
-                                          .AXX
-                                          X..X
-                                          .X.X
-                                          XXXX
-                                          X.BX
-                                      subtask: 1
-                                    - inputs:
-                                        - |
-                                          5 5 3
-                                          A.X..
-                                          X.B.X
-                                          ....X
-                                          XX...
-                                          X.XXX
-                                        - |
-                                          6 3 1
-                                          ...
-                                          XA.
-                                          .X.
-                                          X..
-                                          B..
-                                          ...
-                                        - |
-                                          6 4 2
-                                          X...
-                                          .AXX
-                                          X..X
-                                          .X.X
-                                          XXXX
-                                          X.BX
-                                      subtask: 1
                 "404":
                     description: 'TaskNotFound: Not Found response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Dignissimos et tempora.
-                            example: Ratione quod architecto.
+                                example: Dolor voluptatem.
+                            example: Odio modi distinctio ad.
     /users:
         post:
             tags:
@@ -1494,32 +1558,32 @@ paths:
                         application/json:
                             schema:
                                 type: string
-                                example: Voluptatem iure ab.
-                            example: Ut tenetur rerum provident modi voluptatem odio.
+                                example: Maxime quis qui expedita sed deserunt consequatur.
+                            example: Libero officia doloremque in recusandae rerum architecto.
                 "401":
                     description: 'InvalidCredentials: Unauthorized response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Sint sed itaque.
-                            example: Quia laborum.
+                                example: Beatae similique.
+                            example: Ut qui.
                 "404":
                     description: 'NotFound: Not Found response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Soluta architecto.
-                            example: Eligendi dolor.
+                                example: Quam illo id.
+                            example: Aut maiores.
                 "409":
                     description: 'EmailExistsConflict: Conflict response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Autem repudiandae ut nostrum quod corporis repellendus.
-                            example: Quia ut.
+                                example: Delectus iste autem.
+                            example: Enim mollitia dolorum aliquam aut est.
     /users/{uuid}:
         delete:
             tags:
@@ -1556,32 +1620,32 @@ paths:
                         application/json:
                             schema:
                                 type: string
-                                example: Animi aut eligendi.
-                            example: Libero officia doloremque in recusandae rerum architecto.
+                                example: Sequi eveniet non non.
+                            example: Sit dolor earum labore amet.
                 "401":
                     description: 'InvalidCredentials: Unauthorized response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Delectus iste autem.
-                            example: Ut est enim.
+                                example: Delectus a.
+                            example: Ut laudantium.
                 "404":
                     description: 'NotFound: Not Found response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Maxime quis qui expedita sed deserunt consequatur.
-                            example: Sunt exercitationem.
+                                example: Ut iure omnis et recusandae.
+                            example: Quia in enim aut voluptatem dolor.
                 "409":
                     description: 'EmailExistsConflict: Conflict response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Beatae similique.
-                            example: Enim mollitia dolorum aliquam aut est.
+                                example: Aut quos aspernatur officiis blanditiis.
+                            example: Voluptate molestiae officia totam sit porro.
             security:
                 - jwt_query_Authorization:
                     - users:write
@@ -1630,32 +1694,32 @@ paths:
                         application/json:
                             schema:
                                 type: string
-                                example: Eum facere delectus ullam sit unde.
-                            example: Est quas id tempora repellat.
+                                example: Autem repudiandae ut nostrum quod corporis repellendus.
+                            example: Quia laborum.
                 "401":
                     description: 'InvalidCredentials: Unauthorized response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Aspernatur laboriosam aut qui voluptatibus minus.
-                            example: Et adipisci sit velit.
+                                example: Voluptatem iure ab.
+                            example: Deleniti possimus et rem quia ut.
                 "404":
                     description: 'NotFound: Not Found response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Exercitationem sequi quasi ex et ut.
-                            example: Voluptatem sed repellat.
+                                example: Architecto et.
+                            example: Eligendi dolor.
                 "409":
                     description: 'EmailExistsConflict: Conflict response.'
                     content:
                         application/json:
                             schema:
                                 type: string
-                                example: Tenetur explicabo qui in.
-                            example: Sint ullam pariatur aliquam tempore in.
+                                example: Sint sed itaque.
+                            example: Ut est enim.
             security:
                 - jwt_query_Authorization:
                     - users:read
@@ -1774,7 +1838,7 @@ components:
                 md_note:
                     type: string
                     description: Markdown note for the example
-                    example: Quisquam ut eaque sunt amet voluptatem est.
+                    example: Officia voluptatem dignissimos.
                 output:
                     type: string
                     description: Example output
@@ -1789,7 +1853,7 @@ components:
                     .XXX.XX..
                     X.X.X..X.
                     ...XX....
-                md_note: Et voluptate recusandae et perferendis modi.
+                md_note: Tempora unde.
                 output: |
                     10
             required:
@@ -1802,68 +1866,71 @@ components:
                     type: array
                     items:
                         type: string
-                        example: Dolores sit in.
+                        example: Dignissimos officiis soluta sunt.
                     example:
-                        - Eaque optio nobis facere ad sit.
-                        - Modi quia ipsam.
+                        - Autem est doloribus similique voluptas doloribus illo.
+                        - Rerum qui adipisci occaecati.
+                        - Ipsam maxime quia.
                 email:
                     type: string
-                    example: Placeat velit eum ut libero fugiat.
+                    example: Cum ratione architecto iusto quibusdam qui ut.
                 expires_at:
                     type: string
-                    example: Et dolores.
+                    example: Itaque ab maxime.
                 firstname:
                     type: string
-                    example: Autem fuga quibusdam sunt.
+                    example: Dolorem illo eum sit nobis incidunt aliquam.
                 issued_at:
                     type: string
-                    example: Error enim reprehenderit nulla beatae aut est.
+                    example: Ea impedit veritatis vitae eum.
                 issuer:
                     type: string
-                    example: Ea beatae dolor excepturi est.
+                    example: Reprehenderit nulla beatae.
                 lastname:
                     type: string
-                    example: Atque enim consequatur aperiam quis.
+                    example: Molestias aperiam omnis earum.
                 not_before:
                     type: string
-                    example: Repudiandae dolores alias quia odit dignissimos.
+                    example: Facere nulla sed.
                 scopes:
                     type: array
                     items:
                         type: string
-                        example: Soluta dignissimos impedit dolores quis voluptas.
+                        example: Ut fugit iusto molestiae.
                     example:
-                        - Illo eum sit nobis incidunt aliquam.
-                        - Molestias aperiam omnis earum.
-                        - Cum ratione architecto iusto quibusdam qui ut.
+                        - Sit in dicta laudantium eaque.
+                        - Nobis facere ad sit non modi quia.
+                        - Eius et dolores explicabo error.
                 subject:
                     type: string
-                    example: Ut fugit iusto molestiae.
+                    example: Est pariatur repudiandae dolores alias quia.
                 username:
                     type: string
-                    example: Sint et.
+                    example: Soluta dignissimos impedit dolores quis voluptas.
                 uuid:
                     type: string
-                    example: Consequatur aut nostrum enim molestiae doloremque iusto.
+                    example: Ea beatae dolor excepturi est.
             example:
                 audience:
-                    - Voluptas eos libero.
-                    - Autem dignissimos quis dolores quaerat autem.
-                    - Aperiam ut aliquam.
-                    - Hic qui quia aut consequatur dolorem aut.
-                email: Ipsam maxime quia.
-                expires_at: Ut et aut vero deleniti consequuntur ad.
-                firstname: Autem est doloribus similique voluptas doloribus illo.
-                issued_at: Autem tenetur.
-                issuer: Non sit omnis.
-                lastname: Rerum qui adipisci occaecati.
-                not_before: Sed autem aspernatur magni non molestiae.
+                    - Expedita ut autem veniam.
+                    - Ipsam totam ea repellat.
+                    - In sint non quisquam.
+                    - Similique aut rem non dolorem expedita.
+                email: Illo voluptas eos libero cupiditate autem.
+                expires_at: Possimus fugiat et ut et deleniti.
+                firstname: Non sit omnis.
+                issued_at: Iusto ex nemo doloremque rerum.
+                issuer: Autem aspernatur magni non molestiae assumenda.
+                lastname: Natus ut cum.
+                not_before: Incidunt architecto in quis sunt.
                 scopes:
-                    - Impedit veritatis vitae.
-                    - Et facere nulla sed doloribus hic quia.
-                subject: Natus ut cum.
-                username: Soluta sunt qui.
-                uuid: Itaque ab maxime.
+                    - Ut aliquam nobis hic qui quia aut.
+                    - Dolorem aut quisquam.
+                    - Et aut vero deleniti consequuntur ad omnis.
+                    - Tenetur quo.
+                subject: Reprehenderit distinctio quasi unde eveniet.
+                username: Hic quia.
+                uuid: Quis dolores quaerat autem.
         LoginRequestBody:
             type: object
             properties:
@@ -1891,7 +1958,7 @@ components:
                 notes:
                     type: string
                     description: Notes section of the markdown statement
-                    example: Modi tenetur.
+                    example: Et voluptate recusandae et perferendis modi.
                 output:
                     type: string
                     description: Output section of the markdown statement
@@ -1899,7 +1966,7 @@ components:
                 scoring:
                     type: string
                     description: Scoring section of the markdown statement
-                    example: Possimus voluptates ea dolores sequi.
+                    example: Quidem laborum voluptas.
                 story:
                     type: string
                     description: Story section of the markdown statement
@@ -1907,9 +1974,9 @@ components:
             description: Represents a markdown statement for a task
             example:
                 input: Ievaddatu pirmajā rindā dotas trīs naturālu skaitļu...
-                notes: Consectetur aliquam.
+                notes: Consequatur a et qui.
                 output: Izvaddatu vienīgajā rindā jābūt veselam skaitlim...
-                scoring: Et ut similique fugiat harum corporis voluptas.
+                scoring: Laudantium saepe omnis asperiores ut ipsa consequatur.
                 story: Krišjānis ir uzkonstruējis kvadrātveida putekļsūcēju (saīsināti – KP), kas ir neaizstājams palīgs viņa darbnīcas uzkopšanā...
             required:
                 - story
@@ -1999,7 +2066,7 @@ components:
                     type: array
                     items:
                         type: string
-                        example: Et qui aut.
+                        example: Facere delectus ullam sit unde eveniet exercitationem.
                     description: Inputs for the subtask
                     example:
                         - |
@@ -2191,7 +2258,7 @@ components:
                             .XXX.XX..
                             X.X.X..X.
                             ...XX....
-                          md_note: Rerum excepturi.
+                          md_note: Eius sint quod accusantium.
                           output: |
                             10
                         - input: |
@@ -2201,7 +2268,7 @@ components:
                             .XXX.XX..
                             X.X.X..X.
                             ...XX....
-                          md_note: Rerum excepturi.
+                          md_note: Eius sint quod accusantium.
                           output: |
                             10
                 illustration_img_url:
@@ -2220,7 +2287,7 @@ components:
                         lv: Uzdevums parādījās Latvijas 37. informātikas olimpiādes (2023./2024. gads) skolas kārtā.
                     additionalProperties:
                         type: string
-                        example: Laborum voluptas et consequatur.
+                        example: Aut qui voluptatibus minus doloremque.
                 origin_olympiad:
                     type: string
                     description: Origin olympiad of the task
@@ -2289,39 +2356,14 @@ components:
                               XXXX
                               X.BX
                           subtask: 1
-                        - inputs:
-                            - |
-                              5 5 3
-                              A.X..
-                              X.B.X
-                              ....X
-                              XX...
-                              X.XXX
-                            - |
-                              6 3 1
-                              ...
-                              XA.
-                              .X.
-                              X..
-                              B..
-                              ...
-                            - |
-                              6 4 2
-                              X...
-                              .AXX
-                              X..X
-                              .X.X
-                              XXXX
-                              X.BX
-                          subtask: 1
             description: Represents a competitive programming task
             example:
                 cpu_time_limit_seconds: 0.5
                 default_md_statement:
                     input: Ievaddatu pirmajā rindā dotas trīs naturālu skaitļu...
-                    notes: Dicta aspernatur est quia ea sequi architecto.
+                    notes: Hic quam.
                     output: Izvaddatu vienīgajā rindā jābūt veselam skaitlim...
-                    scoring: Et dolores quas dolorum voluptas.
+                    scoring: Consequatur eveniet nostrum blanditiis dignissimos.
                     story: Krišjānis ir uzkonstruējis kvadrātveida putekļsūcēju (saīsināti – KP), kas ir neaizstājams palīgs viņa darbnīcas uzkopšanā...
                 default_pdf_statement_url: https://dvhk4hiwp1rmf.cloudfront.net/task-pdf-statements/f27386f1b69f3c020335fe7c84316c5da099933832043e6a5820bcdb0cd66a81.pdf
                 difficulty_rating: 3
@@ -2333,7 +2375,7 @@ components:
                         .XXX.XX..
                         X.X.X..X.
                         ...XX....
-                      md_note: Rerum excepturi.
+                      md_note: Eius sint quod accusantium.
                       output: |
                         10
                     - input: |
@@ -2343,17 +2385,7 @@ components:
                         .XXX.XX..
                         X.X.X..X.
                         ...XX....
-                      md_note: Rerum excepturi.
-                      output: |
-                        10
-                    - input: |
-                        5 9 3
-                        A....X..B
-                        ..X..X.X.
-                        .XXX.XX..
-                        X.X.X..X.
-                        ...XX....
-                      md_note: Rerum excepturi.
+                      md_note: Eius sint quod accusantium.
                       output: |
                         10
                 illustration_img_url: https://dvhk4hiwp1rmf.cloudfront.net/task-illustrations/bafcc0aa1b4c56faa44f5f3b2a5abd9529af941eb9a9b10f541b436762d4948a.png
