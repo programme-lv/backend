@@ -188,11 +188,11 @@ func (s *taskssrvc) GetTaskSubmEvalData(ctx context.Context, p *taskgen.GetTaskS
 		// TODO: as of now subtasks without testgroups are not implemented
 		// currently test subtasks are determined by the testgroup that they belong to
 		subtasks := make([]int, 0)
-		if testGroup, ok := testToTestGroupMap[i]; ok {
+		if testGroup, ok := testToTestGroupMap[i+1]; ok {
 			subtasks = append(subtasks, testGroup.Subtask)
 		}
 		var testGroupId *int = nil
-		if testGroup, ok := testToTestGroupMap[i]; ok {
+		if testGroup, ok := testToTestGroupMap[i+1]; ok {
 			testGroupId = &testGroup.GroupID
 		}
 		tests = append(tests, &taskgen.TaskEvalTestInformation{
