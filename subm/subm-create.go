@@ -110,17 +110,16 @@ func (s *submissionssrvc) CreateSubmission(ctx context.Context, p *submgen.Creat
 			TestGroup:           test.TestGroup,
 		})
 	}
-	// TODO: batch save evaluation test rows
-
-	var scores []ScoreGroup
-	var scoreGrouopExample = ScoreGroup{
-		Received: 0,
-		Possible: 100,
-		Finished: false,
+	err = s.ddbSubmTable.BatchSaveEvaluationTestRows(ctx, evaluationTestRows)
+	if err != nil {
+		return nil, submgen.InternalError("error saving submission evaluation test rows")
 	}
 
+	// TODO: extract the scoring logic into seperated section of the code
+	var scores []ScoreGroup
+
 	// if it has subtasks, then those are the groups
-	// else it's just one group
+	// otherwise it's just one big group
 
 	/*
 
@@ -145,19 +144,66 @@ func (s *submissionssrvc) CreateSubmission(ctx context.Context, p *submgen.Creat
 	}
 
 	if len(subtaskToTests) > 0 {
-		// groups are subtasks
-		// possible score is calculated as
-		// if the subtask has a score specified then that
-		// if there are testgroups that belong to the subtask
-		//   sum of their scores
-		// if there are tests that don't belong to a testgroup then the sum of those
-	}
+		// it follows that groups are subtasks
 
-	// TODO: calculate scores
+		// possible score is calculated as:
+		// if the subtask has a score specified then that
+		// else if there are testgroups then the sum of their scores
+		// else the no of tests that belong to this subtask
+
+		possible := 0
+		for subtask, subtaskTests := range subtaskToTests {
+			foundSubtaskScore := false
+			for _, subtaskScore := range taskEvalData.SubtaskScores {
+				if subtaskScore.SubtaskID == subtask {
+					possible = subtaskScore.Score
+					foundSubtaskScore = true
+					break
+				}
+			}
+			if foundSubtaskScore {
+				scores = append(scores, ScoreGroup{
+					Received: 0,
+					Possible: possible,
+					Finished: false,
+				})
+				continue
+			}
+			foundTestGroup := false
+			for _, testGroupInfos := range taskEvalData.TestGroupInformation {
+				if testGroupInfos.Subtask == subtask {
+					possible += testGroupInfos.Score
+					foundTestGroup = true
+				}
+			}
+			if foundTestGroup {
+				scores = append(scores, ScoreGroup{
+					Received: 0,
+					Possible: possible,
+					Finished: false,
+				})
+				continue
+			}
+			scores = append(scores, ScoreGroup{
+				Received: 0,
+				Possible: len(subtaskTests),
+				Finished: false,
+			})
+		}
+	} else {
+		// it follows that all tests are in one group
+		// testgroups can't exist without subtasks
+		possible := len(taskEvalData.Tests)
+		scores = append(scores, ScoreGroup{
+			Received: 0,
+			Possible: possible,
+			Finished: false,
+		})
+	}
 
 	submDetailsRow := &SubmissionDetailsRow{
 		SubmUuid:   submUuid.String(),
-		SortKey:    fmt.Sprintf("details"),
+		SortKey:    "details",
 		Content:    submContent.String(),
 		AuthorUuid: userByUsername.UUID,
 		TaskUuid:   p.TaskCodeID,
@@ -172,20 +218,9 @@ func (s *submissionssrvc) CreateSubmission(ctx context.Context, p *submgen.Creat
 	}
 	err = s.ddbSubmTable.SaveSubmissionDetails(ctx, submDetailsRow)
 	if err != nil {
+		log.Printf(ctx, "error saving submission details: %+v", err)
 		return nil, submgen.InternalError("error saving submission details")
 	}
-
-	// err = s.ddbSubmTable.Save(ctx, row)
-	// if err != nil {
-	// 	// TODO: automatically retry with exponential backoff on version conflict
-	// 	if dynamo.IsCondCheckFailed(err) {
-	// 		log.Errorf(ctx, err, "version conflict saving user")
-	// 		return nil, submgen.InternalError("version conflict saving user")
-	// 	} else {
-	// 		log.Errorf(ctx, err, "error saving user")
-	// 		return nil, submgen.InternalError("error saving user")
-	// 	}
-	// }
 
 	// TODO: enqueue message to SQS
 	messageBody := fmt.Sprintf("Message %s", submDetailsRow.SubmUuid)

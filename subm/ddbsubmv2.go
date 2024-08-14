@@ -137,3 +137,14 @@ func (ddb *DynamoDbSubmTableV2) SaveSubmissionEvaluationDetails(ctx context.Cont
 	put := ddb.submTable.Put(eval).If("attribute_not_exists(version) OR version = ?", eval.Version-1)
 	return put.Run(ctx)
 }
+
+func (ddb *DynamoDbSubmTableV2) BatchSaveEvaluationTestRows(ctx context.Context, tests []*SubmissionEvaluationTestRow) error {
+	var items []interface{}
+	for _, test := range tests {
+		items = append(items, test)
+	}
+	put := ddb.submTable.Batch().Write().Put(items...)
+	_, err := put.Run(ctx)
+	// TODO: handle writen amount and unprocessed items
+	return err
+}
