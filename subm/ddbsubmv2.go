@@ -23,6 +23,8 @@ type SubmissionDetailsRow struct {
 
 	EvalResult *SubmDetailsRowEvaluation `dynamo:"evaluation_result"`
 
+	Gsi1Pk int `dynamo:"gsi1_pk"` // gsi1pk = 1
+
 	CreatedAtRfc3339 string `dynamo:"created_at_rfc3339_utc"`
 	Version          int64  `dynamo:"version"` // For optimistic locking
 }

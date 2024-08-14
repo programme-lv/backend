@@ -217,6 +217,7 @@ func (s *submissionssrvc) CreateSubmission(ctx context.Context, p *submgen.Creat
 			Status:   "waiting",
 			Scores:   scores,
 		},
+		Gsi1Pk:           1,
 		CreatedAtRfc3339: createdAt.UTC().Format(time.RFC3339),
 		Version:          0,
 	}
