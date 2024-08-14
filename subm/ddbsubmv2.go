@@ -8,18 +8,18 @@ import (
 )
 
 type SubmissionDetailsRow struct {
-	Uuid    string `dynamo:"subm_uuid,hash"` // partition key
-	SortKey string `dynamo:"sort_key,range"` // details#<padded_unix_timestamp>
+	SubmUuid string `dynamo:"subm_uuid,hash"` // partition key
+	SortKey  string `dynamo:"sort_key,range"` // submission
 
-	Content string `dynamo:"content"` // submission task solution code
+	Content string `dynamo:"subm_content"` // submission task solution code
 
 	AuthorUuid string `dynamo:"author_uuid"`
 	TaskUuid   string `dynamo:"task_uuid"`
 	ProgLangId string `dynamo:"prog_lang_id"`
 
-	BriefEvaluation *SubmDetailsRowEvaluation `dynamo:"evaluation"`
+	EvalResult *SubmDetailsRowEvaluation `dynamo:"evaluation_result"`
 
-	CreatedAtRfc3339 string `dynamo:"created_at_rfc3339"`
+	CreatedAtRfc3339 string `dynamo:"created_at_rfc3339_utc"`
 	Version          int64  `dynamo:"version"` // For optimistic locking
 }
 
@@ -39,7 +39,7 @@ type ScoreGroup struct {
 
 type SubmissionEvaluationDetailsRow struct {
 	SubmUuid string `dynamo:"subm_uuid,hash"` // partition key
-	SortKey  string `dynamo:"sort_key,range"` // evaluation#<eval_uuid>#details
+	SortKey  string `dynamo:"sort_key,range"` // evaluation#<eval_uuid>
 
 	EvaluationStage string `dynamo:"evaluation_stage"` // "waiting", "received", "compiling", "testing", "finished"
 
@@ -48,8 +48,19 @@ type SubmissionEvaluationDetailsRow struct {
 	SystemInformation *string      `dynamo:"system_information"` // details about the system that ran the evaluation
 	SubmCompileData   *RuntimeData `dynamo:"subm_compile_data"`  // compilation runtime data for author's submission
 
-	CreatedAtRfc3339 string `dynamo:"created_at_rfc3339"`
+	ProgrammingLang SubmEvalDetailsProgrammingLang `dynamo:"programming_lang"`
+
+	CreatedAtRfc3339 string `dynamo:"created_at_rfc3339_utc"`
 	Version          int64  `dynamo:"version"` // For optimistic locking
+}
+
+type SubmEvalDetailsProgrammingLang struct {
+	PLangId        string  `dynamo:"p_lang_id"`
+	DisplayName    string  `dynamo:"display_name"`
+	SubmCodeFname  string  `dynamo:"subm_code_fname"`
+	CompileCommand *string `dynamo:"compile_command"`
+	CompiledFname  *string `dynamo:"compiled_fname"`
+	ExecCommand    string  `dynamo:"exec_command"`
 }
 
 func (s *SubmissionEvaluationDetailsRow) EvaluationUuid() string {
@@ -74,15 +85,18 @@ type SubmissionEvaluationTestRow struct {
 	FullInputS3Uri  string `dynamo:"full_input_s3_uri"`
 	FullAnswerS3Uri string `dynamo:"full_answer_s3_uri"`
 
-	Ignored  bool `dynamo:"ignored"`
-	Started  bool `dynamo:"started"`
-	Finished bool `dynamo:"finished"`
+	Reached  bool `dynamo:"reached"`
+	Ignored  bool `dynamo:"ignored"`  // if doesn't count towards the score
+	Finished bool `dynamo:"finished"` // if the test is evaluated / tested
+
+	InputTrimmed  *string `dynamo:"input_trimmed"`  // trimmed input for display
+	AnswerTrimmed *string `dynamo:"answer_trimmed"` // trimmed answer for display
 
 	SubmTestRuntimeData *RuntimeData `dynamo:"subm_test_runtime_data"`
 	CheckerRuntimeData  *RuntimeData `dynamo:"checker_runtime_data"`
 
 	Subtasks  []int `dynamo:"subtasks"`   // subtasks that the test is part of
-	TestGroup int   `dynamo:"test_group"` // test group that the test is part of
+	TestGroup *int  `dynamo:"test_group"` // test group that the test is part of
 }
 
 func (s *SubmissionEvaluationTestRow) TestId() int {

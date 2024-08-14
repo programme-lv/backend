@@ -43,18 +43,22 @@ var Task = dsl.Type("Task", func() {
 })
 
 var TaskSubmEvalData = dsl.Type("TaskSubmEvalData", func() {
+	dsl.Attribute("published_task_id", dsl.String, "ID of the published task")
+	dsl.Attribute("task_full_name", dsl.String, "Full name of the task")
 	dsl.Attribute("memory_limit_megabytes", dsl.Int, "Memory limit in megabytes")
 	dsl.Attribute("cpu_time_limit_seconds", dsl.Float64, "CPU time limit in seconds")
 	dsl.Attribute("tests", dsl.ArrayOf(TaskEvalTestInformation), "Tests for submission evaluation")
-	dsl.Required("memory_limit_megabytes", "cpu_time_limit_seconds", "tests")
+	dsl.Attribute("testlib_checker_code", dsl.String, "C++ code of testlib.h checker")
+	dsl.Required("memory_limit_megabytes", "cpu_time_limit_seconds", "tests", "testlib_checker_code", "published_task_id", "task_full_name")
 })
 
 var TaskEvalTestInformation = dsl.Type("TaskEvalTestInformation", func() {
+	dsl.Attribute("test_id", dsl.Int, "Test ID")
 	dsl.Attribute("full_input_s3_uri", dsl.String, "Full input S3 URI")
 	dsl.Attribute("full_answer_s3_uri", dsl.String, "Full answer S3 URI")
 	dsl.Attribute("subtasks", dsl.ArrayOf(dsl.Int), "Subtasks that the test is part of")
 	dsl.Attribute("test_group", dsl.Int, "Test group that the test is part of")
-	dsl.Required("full_input_s3_uri", "full_answer_s3_uri")
+	dsl.Required("test_id", "full_input_s3_uri", "full_answer_s3_uri")
 })
 
 var MarkdownStatement = dsl.Type("MarkdownStatement", func() {

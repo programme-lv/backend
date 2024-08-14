@@ -1192,7 +1192,7 @@ definitions:
                         .XXX.XX..
                         X.X.X..X.
                         ...XX....
-                      md_note: Dolores quas dolorum.
+                      md_note: Rerum excepturi.
                       output: |
                         10
                     - input: |
@@ -1202,7 +1202,7 @@ definitions:
                         .XXX.XX..
                         X.X.X..X.
                         ...XX....
-                      md_note: Dolores quas dolorum.
+                      md_note: Rerum excepturi.
                       output: |
                         10
             illustration_img_url:
@@ -1320,9 +1320,9 @@ definitions:
             cpu_time_limit_seconds: 0.5
             default_md_statement:
                 input: Ievaddatu pirmajā rindā dotas trīs naturālu skaitļu...
-                notes: Asperiores nemo architecto temporibus.
+                notes: Dicta aspernatur est quia ea sequi architecto.
                 output: Izvaddatu vienīgajā rindā jābūt veselam skaitlim...
-                scoring: Dicta aspernatur est quia ea sequi architecto.
+                scoring: Et dolores quas dolorum voluptas.
                 story: Krišjānis ir uzkonstruējis kvadrātveida putekļsūcēju (saīsināti – KP), kas ir neaizstājams palīgs viņa darbnīcas uzkopšanā...
             default_pdf_statement_url: https://dvhk4hiwp1rmf.cloudfront.net/task-pdf-statements/f27386f1b69f3c020335fe7c84316c5da099933832043e6a5820bcdb0cd66a81.pdf
             difficulty_rating: 3
@@ -1334,7 +1334,7 @@ definitions:
                     .XXX.XX..
                     X.X.X..X.
                     ...XX....
-                  md_note: Dolores quas dolorum.
+                  md_note: Rerum excepturi.
                   output: |
                     10
                 - input: |
@@ -1344,7 +1344,7 @@ definitions:
                     .XXX.XX..
                     X.X.X..X.
                     ...XX....
-                  md_note: Dolores quas dolorum.
+                  md_note: Rerum excepturi.
                   output: |
                     10
                 - input: |
@@ -1354,7 +1354,7 @@ definitions:
                     .XXX.XX..
                     X.X.X..X.
                     ...XX....
-                  md_note: Dolores quas dolorum.
+                  md_note: Rerum excepturi.
                   output: |
                     10
                 - input: |
@@ -1364,7 +1364,7 @@ definitions:
                     .XXX.XX..
                     X.X.X..X.
                     ...XX....
-                  md_note: Dolores quas dolorum.
+                  md_note: Rerum excepturi.
                   output: |
                     10
             illustration_img_url: https://dvhk4hiwp1rmf.cloudfront.net/task-illustrations/bafcc0aa1b4c56faa44f5f3b2a5abd9529af941eb9a9b10f541b436762d4948a.png
@@ -1521,7 +1521,7 @@ definitions:
                         .XXX.XX..
                         X.X.X..X.
                         ...XX....
-                      md_note: Autem et.
+                      md_note: Voluptatem inventore reiciendis impedit voluptatem.
                       output: |
                         10
                     - input: |
@@ -1531,7 +1531,7 @@ definitions:
                         .XXX.XX..
                         X.X.X..X.
                         ...XX....
-                      md_note: Autem et.
+                      md_note: Voluptatem inventore reiciendis impedit voluptatem.
                       output: |
                         10
                     - input: |
@@ -1541,7 +1541,7 @@ definitions:
                         .XXX.XX..
                         X.X.X..X.
                         ...XX....
-                      md_note: Autem et.
+                      md_note: Voluptatem inventore reiciendis impedit voluptatem.
                       output: |
                         10
             illustration_img_url:
@@ -1658,9 +1658,9 @@ definitions:
             cpu_time_limit_seconds: 0.5
             default_md_statement:
                 input: Ievaddatu pirmajā rindā dotas trīs naturālu skaitļu...
-                notes: Dignissimos tenetur vitae eius sint quod accusantium.
+                notes: Vitae eius.
                 output: Izvaddatu vienīgajā rindā jābūt veselam skaitlim...
-                scoring: Voluptatem inventore reiciendis impedit voluptatem.
+                scoring: Quod accusantium.
                 story: Krišjānis ir uzkonstruējis kvadrātveida putekļsūcēju (saīsināti – KP), kas ir neaizstājams palīgs viņa darbnīcas uzkopšanā...
             default_pdf_statement_url: https://dvhk4hiwp1rmf.cloudfront.net/task-pdf-statements/f27386f1b69f3c020335fe7c84316c5da099933832043e6a5820bcdb0cd66a81.pdf
             difficulty_rating: 3
@@ -1672,7 +1672,7 @@ definitions:
                     .XXX.XX..
                     X.X.X..X.
                     ...XX....
-                  md_note: Autem et.
+                  md_note: Voluptatem inventore reiciendis impedit voluptatem.
                   output: |
                     10
                 - input: |
@@ -1682,7 +1682,7 @@ definitions:
                     .XXX.XX..
                     X.X.X..X.
                     ...XX....
-                  md_note: Autem et.
+                  md_note: Voluptatem inventore reiciendis impedit voluptatem.
                   output: |
                     10
                 - input: |
@@ -1692,7 +1692,7 @@ definitions:
                     .XXX.XX..
                     X.X.X..X.
                     ...XX....
-                  md_note: Autem et.
+                  md_note: Voluptatem inventore reiciendis impedit voluptatem.
                   output: |
                     10
                 - input: |
@@ -1702,7 +1702,7 @@ definitions:
                     .XXX.XX..
                     X.X.X..X.
                     ...XX....
-                  md_note: Autem et.
+                  md_note: Voluptatem inventore reiciendis impedit voluptatem.
                   output: |
                     10
             illustration_img_url: https://dvhk4hiwp1rmf.cloudfront.net/task-illustrations/bafcc0aa1b4c56faa44f5f3b2a5abd9529af941eb9a9b10f541b436762d4948a.png

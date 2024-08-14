@@ -27,19 +27,20 @@ paths:
                                     - Sint non assumenda et voluptatem doloribus velit.
                                     - Molestiae voluptas qui.
                                     - Illum voluptatem.
-                                email: Doloremque excepturi deserunt.
+                                email: Illo perferendis quos aut consequatur eveniet.
                                 expires_at: Libero fugiat error rerum.
-                                firstname: Ut id.
+                                firstname: Facere quis iure assumenda numquam officia dolores.
                                 issued_at: At dolorem dolorem fugit hic impedit.
                                 issuer: Quasi soluta quia maxime.
-                                lastname: Illo perferendis quos aut consequatur eveniet.
+                                lastname: Ut id.
                                 not_before: Accusantium nulla dolor quae rerum cupiditate dolores.
                                 scopes:
-                                    - Voluptas velit autem praesentium.
-                                    - Eveniet velit inventore.
+                                    - Suscipit quibusdam qui.
+                                    - Nihil ut voluptas.
+                                    - Autem praesentium nihil eveniet velit inventore.
                                 subject: Sed illo sunt deleniti nihil ad optio.
-                                username: Facere quis iure assumenda numquam officia dolores.
-                                uuid: Reprehenderit suscipit quibusdam qui sunt.
+                                username: Consequatur et molestias officiis omnis explicabo.
+                                uuid: Doloremque excepturi deserunt.
                 "400":
                     description: 'InvalidUserDetails: Bad Request response.'
                     content:
@@ -580,9 +581,9 @@ paths:
                                     - cpu_time_limit_seconds: 0.5
                                       default_md_statement:
                                         input: Ievaddatu pirmajā rindā dotas trīs naturālu skaitļu...
-                                        notes: Asperiores nemo architecto temporibus.
+                                        notes: Dicta aspernatur est quia ea sequi architecto.
                                         output: Izvaddatu vienīgajā rindā jābūt veselam skaitlim...
-                                        scoring: Dicta aspernatur est quia ea sequi architecto.
+                                        scoring: Et dolores quas dolorum voluptas.
                                         story: Krišjānis ir uzkonstruējis kvadrātveida putekļsūcēju (saīsināti – KP), kas ir neaizstājams palīgs viņa darbnīcas uzkopšanā...
                                       default_pdf_statement_url: https://dvhk4hiwp1rmf.cloudfront.net/task-pdf-statements/f27386f1b69f3c020335fe7c84316c5da099933832043e6a5820bcdb0cd66a81.pdf
                                       difficulty_rating: 3
@@ -594,7 +595,7 @@ paths:
                                             .XXX.XX..
                                             X.X.X..X.
                                             ...XX....
-                                          md_note: Dolores quas dolorum.
+                                          md_note: Rerum excepturi.
                                           output: |
                                             10
                                         - input: |
@@ -604,27 +605,7 @@ paths:
                                             .XXX.XX..
                                             X.X.X..X.
                                             ...XX....
-                                          md_note: Dolores quas dolorum.
-                                          output: |
-                                            10
-                                        - input: |
-                                            5 9 3
-                                            A....X..B
-                                            ..X..X.X.
-                                            .XXX.XX..
-                                            X.X.X..X.
-                                            ...XX....
-                                          md_note: Dolores quas dolorum.
-                                          output: |
-                                            10
-                                        - input: |
-                                            5 9 3
-                                            A....X..B
-                                            ..X..X.X.
-                                            .XXX.XX..
-                                            X.X.X..X.
-                                            ...XX....
-                                          md_note: Dolores quas dolorum.
+                                          md_note: Rerum excepturi.
                                           output: |
                                             10
                                       illustration_img_url: https://dvhk4hiwp1rmf.cloudfront.net/task-illustrations/bafcc0aa1b4c56faa44f5f3b2a5abd9529af941eb9a9b10f541b436762d4948a.png
@@ -713,9 +694,9 @@ paths:
                                     - cpu_time_limit_seconds: 0.5
                                       default_md_statement:
                                         input: Ievaddatu pirmajā rindā dotas trīs naturālu skaitļu...
-                                        notes: Asperiores nemo architecto temporibus.
+                                        notes: Dicta aspernatur est quia ea sequi architecto.
                                         output: Izvaddatu vienīgajā rindā jābūt veselam skaitlim...
-                                        scoring: Dicta aspernatur est quia ea sequi architecto.
+                                        scoring: Et dolores quas dolorum voluptas.
                                         story: Krišjānis ir uzkonstruējis kvadrātveida putekļsūcēju (saīsināti – KP), kas ir neaizstājams palīgs viņa darbnīcas uzkopšanā...
                                       default_pdf_statement_url: https://dvhk4hiwp1rmf.cloudfront.net/task-pdf-statements/f27386f1b69f3c020335fe7c84316c5da099933832043e6a5820bcdb0cd66a81.pdf
                                       difficulty_rating: 3
@@ -727,7 +708,7 @@ paths:
                                             .XXX.XX..
                                             X.X.X..X.
                                             ...XX....
-                                          md_note: Dolores quas dolorum.
+                                          md_note: Rerum excepturi.
                                           output: |
                                             10
                                         - input: |
@@ -737,27 +718,7 @@ paths:
                                             .XXX.XX..
                                             X.X.X..X.
                                             ...XX....
-                                          md_note: Dolores quas dolorum.
-                                          output: |
-                                            10
-                                        - input: |
-                                            5 9 3
-                                            A....X..B
-                                            ..X..X.X.
-                                            .XXX.XX..
-                                            X.X.X..X.
-                                            ...XX....
-                                          md_note: Dolores quas dolorum.
-                                          output: |
-                                            10
-                                        - input: |
-                                            5 9 3
-                                            A....X..B
-                                            ..X..X.X.
-                                            .XXX.XX..
-                                            X.X.X..X.
-                                            ...XX....
-                                          md_note: Dolores quas dolorum.
+                                          md_note: Rerum excepturi.
                                           output: |
                                             10
                                       illustration_img_url: https://dvhk4hiwp1rmf.cloudfront.net/task-illustrations/bafcc0aa1b4c56faa44f5f3b2a5abd9529af941eb9a9b10f541b436762d4948a.png
@@ -846,9 +807,9 @@ paths:
                                     - cpu_time_limit_seconds: 0.5
                                       default_md_statement:
                                         input: Ievaddatu pirmajā rindā dotas trīs naturālu skaitļu...
-                                        notes: Asperiores nemo architecto temporibus.
+                                        notes: Dicta aspernatur est quia ea sequi architecto.
                                         output: Izvaddatu vienīgajā rindā jābūt veselam skaitlim...
-                                        scoring: Dicta aspernatur est quia ea sequi architecto.
+                                        scoring: Et dolores quas dolorum voluptas.
                                         story: Krišjānis ir uzkonstruējis kvadrātveida putekļsūcēju (saīsināti – KP), kas ir neaizstājams palīgs viņa darbnīcas uzkopšanā...
                                       default_pdf_statement_url: https://dvhk4hiwp1rmf.cloudfront.net/task-pdf-statements/f27386f1b69f3c020335fe7c84316c5da099933832043e6a5820bcdb0cd66a81.pdf
                                       difficulty_rating: 3
@@ -860,7 +821,7 @@ paths:
                                             .XXX.XX..
                                             X.X.X..X.
                                             ...XX....
-                                          md_note: Dolores quas dolorum.
+                                          md_note: Rerum excepturi.
                                           output: |
                                             10
                                         - input: |
@@ -870,27 +831,7 @@ paths:
                                             .XXX.XX..
                                             X.X.X..X.
                                             ...XX....
-                                          md_note: Dolores quas dolorum.
-                                          output: |
-                                            10
-                                        - input: |
-                                            5 9 3
-                                            A....X..B
-                                            ..X..X.X.
-                                            .XXX.XX..
-                                            X.X.X..X.
-                                            ...XX....
-                                          md_note: Dolores quas dolorum.
-                                          output: |
-                                            10
-                                        - input: |
-                                            5 9 3
-                                            A....X..B
-                                            ..X..X.X.
-                                            .XXX.XX..
-                                            X.X.X..X.
-                                            ...XX....
-                                          md_note: Dolores quas dolorum.
+                                          md_note: Rerum excepturi.
                                           output: |
                                             10
                                       illustration_img_url: https://dvhk4hiwp1rmf.cloudfront.net/task-illustrations/bafcc0aa1b4c56faa44f5f3b2a5abd9529af941eb9a9b10f541b436762d4948a.png
@@ -979,9 +920,9 @@ paths:
                                     - cpu_time_limit_seconds: 0.5
                                       default_md_statement:
                                         input: Ievaddatu pirmajā rindā dotas trīs naturālu skaitļu...
-                                        notes: Asperiores nemo architecto temporibus.
+                                        notes: Dicta aspernatur est quia ea sequi architecto.
                                         output: Izvaddatu vienīgajā rindā jābūt veselam skaitlim...
-                                        scoring: Dicta aspernatur est quia ea sequi architecto.
+                                        scoring: Et dolores quas dolorum voluptas.
                                         story: Krišjānis ir uzkonstruējis kvadrātveida putekļsūcēju (saīsināti – KP), kas ir neaizstājams palīgs viņa darbnīcas uzkopšanā...
                                       default_pdf_statement_url: https://dvhk4hiwp1rmf.cloudfront.net/task-pdf-statements/f27386f1b69f3c020335fe7c84316c5da099933832043e6a5820bcdb0cd66a81.pdf
                                       difficulty_rating: 3
@@ -993,7 +934,7 @@ paths:
                                             .XXX.XX..
                                             X.X.X..X.
                                             ...XX....
-                                          md_note: Dolores quas dolorum.
+                                          md_note: Rerum excepturi.
                                           output: |
                                             10
                                         - input: |
@@ -1003,27 +944,7 @@ paths:
                                             .XXX.XX..
                                             X.X.X..X.
                                             ...XX....
-                                          md_note: Dolores quas dolorum.
-                                          output: |
-                                            10
-                                        - input: |
-                                            5 9 3
-                                            A....X..B
-                                            ..X..X.X.
-                                            .XXX.XX..
-                                            X.X.X..X.
-                                            ...XX....
-                                          md_note: Dolores quas dolorum.
-                                          output: |
-                                            10
-                                        - input: |
-                                            5 9 3
-                                            A....X..B
-                                            ..X..X.X.
-                                            .XXX.XX..
-                                            X.X.X..X.
-                                            ...XX....
-                                          md_note: Dolores quas dolorum.
+                                          md_note: Rerum excepturi.
                                           output: |
                                             10
                                       illustration_img_url: https://dvhk4hiwp1rmf.cloudfront.net/task-illustrations/bafcc0aa1b4c56faa44f5f3b2a5abd9529af941eb9a9b10f541b436762d4948a.png
@@ -1113,9 +1034,9 @@ paths:
                                 - cpu_time_limit_seconds: 0.5
                                   default_md_statement:
                                     input: Ievaddatu pirmajā rindā dotas trīs naturālu skaitļu...
-                                    notes: Asperiores nemo architecto temporibus.
+                                    notes: Dicta aspernatur est quia ea sequi architecto.
                                     output: Izvaddatu vienīgajā rindā jābūt veselam skaitlim...
-                                    scoring: Dicta aspernatur est quia ea sequi architecto.
+                                    scoring: Et dolores quas dolorum voluptas.
                                     story: Krišjānis ir uzkonstruējis kvadrātveida putekļsūcēju (saīsināti – KP), kas ir neaizstājams palīgs viņa darbnīcas uzkopšanā...
                                   default_pdf_statement_url: https://dvhk4hiwp1rmf.cloudfront.net/task-pdf-statements/f27386f1b69f3c020335fe7c84316c5da099933832043e6a5820bcdb0cd66a81.pdf
                                   difficulty_rating: 3
@@ -1127,7 +1048,7 @@ paths:
                                         .XXX.XX..
                                         X.X.X..X.
                                         ...XX....
-                                      md_note: Dolores quas dolorum.
+                                      md_note: Rerum excepturi.
                                       output: |
                                         10
                                     - input: |
@@ -1137,27 +1058,7 @@ paths:
                                         .XXX.XX..
                                         X.X.X..X.
                                         ...XX....
-                                      md_note: Dolores quas dolorum.
-                                      output: |
-                                        10
-                                    - input: |
-                                        5 9 3
-                                        A....X..B
-                                        ..X..X.X.
-                                        .XXX.XX..
-                                        X.X.X..X.
-                                        ...XX....
-                                      md_note: Dolores quas dolorum.
-                                      output: |
-                                        10
-                                    - input: |
-                                        5 9 3
-                                        A....X..B
-                                        ..X..X.X.
-                                        .XXX.XX..
-                                        X.X.X..X.
-                                        ...XX....
-                                      md_note: Dolores quas dolorum.
+                                      md_note: Rerum excepturi.
                                       output: |
                                         10
                                   illustration_img_url: https://dvhk4hiwp1rmf.cloudfront.net/task-illustrations/bafcc0aa1b4c56faa44f5f3b2a5abd9529af941eb9a9b10f541b436762d4948a.png
@@ -1246,9 +1147,9 @@ paths:
                                 - cpu_time_limit_seconds: 0.5
                                   default_md_statement:
                                     input: Ievaddatu pirmajā rindā dotas trīs naturālu skaitļu...
-                                    notes: Asperiores nemo architecto temporibus.
+                                    notes: Dicta aspernatur est quia ea sequi architecto.
                                     output: Izvaddatu vienīgajā rindā jābūt veselam skaitlim...
-                                    scoring: Dicta aspernatur est quia ea sequi architecto.
+                                    scoring: Et dolores quas dolorum voluptas.
                                     story: Krišjānis ir uzkonstruējis kvadrātveida putekļsūcēju (saīsināti – KP), kas ir neaizstājams palīgs viņa darbnīcas uzkopšanā...
                                   default_pdf_statement_url: https://dvhk4hiwp1rmf.cloudfront.net/task-pdf-statements/f27386f1b69f3c020335fe7c84316c5da099933832043e6a5820bcdb0cd66a81.pdf
                                   difficulty_rating: 3
@@ -1260,7 +1161,7 @@ paths:
                                         .XXX.XX..
                                         X.X.X..X.
                                         ...XX....
-                                      md_note: Dolores quas dolorum.
+                                      md_note: Rerum excepturi.
                                       output: |
                                         10
                                     - input: |
@@ -1270,27 +1171,7 @@ paths:
                                         .XXX.XX..
                                         X.X.X..X.
                                         ...XX....
-                                      md_note: Dolores quas dolorum.
-                                      output: |
-                                        10
-                                    - input: |
-                                        5 9 3
-                                        A....X..B
-                                        ..X..X.X.
-                                        .XXX.XX..
-                                        X.X.X..X.
-                                        ...XX....
-                                      md_note: Dolores quas dolorum.
-                                      output: |
-                                        10
-                                    - input: |
-                                        5 9 3
-                                        A....X..B
-                                        ..X..X.X.
-                                        .XXX.XX..
-                                        X.X.X..X.
-                                        ...XX....
-                                      md_note: Dolores quas dolorum.
+                                      md_note: Rerum excepturi.
                                       output: |
                                         10
                                   illustration_img_url: https://dvhk4hiwp1rmf.cloudfront.net/task-illustrations/bafcc0aa1b4c56faa44f5f3b2a5abd9529af941eb9a9b10f541b436762d4948a.png
@@ -1412,9 +1293,9 @@ paths:
                                 cpu_time_limit_seconds: 0.5
                                 default_md_statement:
                                     input: Ievaddatu pirmajā rindā dotas trīs naturālu skaitļu...
-                                    notes: Dignissimos tenetur vitae eius sint quod accusantium.
+                                    notes: Vitae eius.
                                     output: Izvaddatu vienīgajā rindā jābūt veselam skaitlim...
-                                    scoring: Voluptatem inventore reiciendis impedit voluptatem.
+                                    scoring: Quod accusantium.
                                     story: Krišjānis ir uzkonstruējis kvadrātveida putekļsūcēju (saīsināti – KP), kas ir neaizstājams palīgs viņa darbnīcas uzkopšanā...
                                 default_pdf_statement_url: https://dvhk4hiwp1rmf.cloudfront.net/task-pdf-statements/f27386f1b69f3c020335fe7c84316c5da099933832043e6a5820bcdb0cd66a81.pdf
                                 difficulty_rating: 3
@@ -1426,7 +1307,7 @@ paths:
                                         .XXX.XX..
                                         X.X.X..X.
                                         ...XX....
-                                      md_note: Autem et.
+                                      md_note: Voluptatem inventore reiciendis impedit voluptatem.
                                       output: |
                                         10
                                     - input: |
@@ -1436,7 +1317,27 @@ paths:
                                         .XXX.XX..
                                         X.X.X..X.
                                         ...XX....
-                                      md_note: Autem et.
+                                      md_note: Voluptatem inventore reiciendis impedit voluptatem.
+                                      output: |
+                                        10
+                                    - input: |
+                                        5 9 3
+                                        A....X..B
+                                        ..X..X.X.
+                                        .XXX.XX..
+                                        X.X.X..X.
+                                        ...XX....
+                                      md_note: Voluptatem inventore reiciendis impedit voluptatem.
+                                      output: |
+                                        10
+                                    - input: |
+                                        5 9 3
+                                        A....X..B
+                                        ..X..X.X.
+                                        .XXX.XX..
+                                        X.X.X..X.
+                                        ...XX....
+                                      md_note: Voluptatem inventore reiciendis impedit voluptatem.
                                       output: |
                                         10
                                 illustration_img_url: https://dvhk4hiwp1rmf.cloudfront.net/task-illustrations/bafcc0aa1b4c56faa44f5f3b2a5abd9529af941eb9a9b10f541b436762d4948a.png
@@ -2290,7 +2191,7 @@ components:
                             .XXX.XX..
                             X.X.X..X.
                             ...XX....
-                          md_note: Dolores quas dolorum.
+                          md_note: Rerum excepturi.
                           output: |
                             10
                         - input: |
@@ -2300,7 +2201,7 @@ components:
                             .XXX.XX..
                             X.X.X..X.
                             ...XX....
-                          md_note: Dolores quas dolorum.
+                          md_note: Rerum excepturi.
                           output: |
                             10
                 illustration_img_url:
@@ -2418,9 +2319,9 @@ components:
                 cpu_time_limit_seconds: 0.5
                 default_md_statement:
                     input: Ievaddatu pirmajā rindā dotas trīs naturālu skaitļu...
-                    notes: Asperiores nemo architecto temporibus.
+                    notes: Dicta aspernatur est quia ea sequi architecto.
                     output: Izvaddatu vienīgajā rindā jābūt veselam skaitlim...
-                    scoring: Dicta aspernatur est quia ea sequi architecto.
+                    scoring: Et dolores quas dolorum voluptas.
                     story: Krišjānis ir uzkonstruējis kvadrātveida putekļsūcēju (saīsināti – KP), kas ir neaizstājams palīgs viņa darbnīcas uzkopšanā...
                 default_pdf_statement_url: https://dvhk4hiwp1rmf.cloudfront.net/task-pdf-statements/f27386f1b69f3c020335fe7c84316c5da099933832043e6a5820bcdb0cd66a81.pdf
                 difficulty_rating: 3
@@ -2432,7 +2333,7 @@ components:
                         .XXX.XX..
                         X.X.X..X.
                         ...XX....
-                      md_note: Dolores quas dolorum.
+                      md_note: Rerum excepturi.
                       output: |
                         10
                     - input: |
@@ -2442,7 +2343,7 @@ components:
                         .XXX.XX..
                         X.X.X..X.
                         ...XX....
-                      md_note: Dolores quas dolorum.
+                      md_note: Rerum excepturi.
                       output: |
                         10
                     - input: |
@@ -2452,7 +2353,7 @@ components:
                         .XXX.XX..
                         X.X.X..X.
                         ...XX....
-                      md_note: Dolores quas dolorum.
+                      md_note: Rerum excepturi.
                       output: |
                         10
                 illustration_img_url: https://dvhk4hiwp1rmf.cloudfront.net/task-illustrations/bafcc0aa1b4c56faa44f5f3b2a5abd9529af941eb9a9b10f541b436762d4948a.png

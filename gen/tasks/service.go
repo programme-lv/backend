@@ -111,6 +111,8 @@ type Task struct {
 }
 
 type TaskEvalTestInformation struct {
+	// Test ID
+	TestID int
 	// Full input S3 URI
 	FullInputS3URI string
 	// Full answer S3 URI
@@ -127,12 +129,18 @@ type TaskNotFound string
 // TaskSubmEvalData is the result type of the tasks service getTaskSubmEvalData
 // method.
 type TaskSubmEvalData struct {
+	// ID of the published task
+	PublishedTaskID string
+	// Full name of the task
+	TaskFullName string
 	// Memory limit in megabytes
 	MemoryLimitMegabytes int
 	// CPU time limit in seconds
 	CPUTimeLimitSeconds float64
 	// Tests for submission evaluation
 	Tests []*TaskEvalTestInformation
+	// C++ code of testlib.h checker
+	TestlibCheckerCode string
 }
 
 // Error returns an error description.
