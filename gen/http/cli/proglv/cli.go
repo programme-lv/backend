@@ -37,7 +37,7 @@ func UsageExamples() string {
       "submission": "print(factorial(5))",
       "task_code_id": "kvadrputekl",
       "username": "coder123"
-   }' --token "Est ea."` + "\n" +
+   }' --token "Est nisi adipisci incidunt expedita consectetur."` + "\n" +
 		os.Args[0] + ` tasks list-tasks` + "\n" +
 		os.Args[0] + ` users get-user --uuid "550e8400-e29b-41d4-a716-446655440000" --token "jwt_token"` + "\n" +
 		""
@@ -291,7 +291,7 @@ Example:
       "submission": "print(factorial(5))",
       "task_code_id": "kvadrputekl",
       "username": "coder123"
-   }' --token "Est ea."
+   }' --token "Est nisi adipisci incidunt expedita consectetur."
 `, os.Args[0])
 }
 

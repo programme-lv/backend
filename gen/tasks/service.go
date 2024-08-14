@@ -131,8 +131,12 @@ type TaskEvalTestInformation struct {
 	TestID int
 	// Full input S3 URI
 	FullInputS3URI string
+	// SHA256 of the input
+	InputSha256 string
 	// Full answer S3 URI
 	FullAnswerS3URI string
+	// SHA256 of the answer
+	AnswerSha256 string
 	// Subtasks that the test is part of
 	Subtasks []int
 	// Test group that the test is part of

@@ -198,7 +198,9 @@ func (s *taskssrvc) GetTaskSubmEvalData(ctx context.Context, p *taskgen.GetTaskS
 		tests = append(tests, &taskgen.TaskEvalTestInformation{
 			TestID:          i + 1,
 			FullInputS3URI:  fmt.Sprintf("s3://proglv-tests/%s.zst", test.InputSHA256),
+			InputSha256:     test.InputSHA256,
 			FullAnswerS3URI: fmt.Sprintf("s3://proglv-tests/%s.zst", test.AnswerSHA256),
+			AnswerSha256:    test.AnswerSHA256,
 			Subtasks:        subtasks,
 			TestGroup:       testGroupId,
 		})

@@ -76,10 +76,12 @@ var TaskEvalTestGroupInformation = dsl.Type("TaskEvalTestGroupInformation", func
 var TaskEvalTestInformation = dsl.Type("TaskEvalTestInformation", func() {
 	dsl.Attribute("test_id", dsl.Int, "Test ID")
 	dsl.Attribute("full_input_s3_uri", dsl.String, "Full input S3 URI")
+	dsl.Attribute("input_sha256", dsl.String, "SHA256 of the input")
 	dsl.Attribute("full_answer_s3_uri", dsl.String, "Full answer S3 URI")
+	dsl.Attribute("answer_sha256", dsl.String, "SHA256 of the answer")
 	dsl.Attribute("subtasks", dsl.ArrayOf(dsl.Int), "Subtasks that the test is part of")
 	dsl.Attribute("test_group", dsl.Int, "Test group that the test is part of")
-	dsl.Required("test_id", "full_input_s3_uri", "full_answer_s3_uri")
+	dsl.Required("test_id", "full_input_s3_uri", "full_answer_s3_uri", "input_sha256", "answer_sha256")
 })
 
 var MarkdownStatement = dsl.Type("MarkdownStatement", func() {

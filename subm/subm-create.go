@@ -2,6 +2,7 @@ package subm
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -227,14 +228,52 @@ func (s *submissionssrvc) CreateSubmission(ctx context.Context, p *submgen.Creat
 		return nil, submgen.InternalError("error saving submission details")
 	}
 
-	// TODO: enqueue message to SQS
-	messageBody := fmt.Sprintf("Message %s", submDetailsRow.SubmUuid)
+	var tests []Test = make([]Test, 0)
+	for _, test := range taskEvalData.Tests {
+		tests = append(tests, Test{
+			ID:            test.TestID,
+			InputSha256:   test.InputSha256,
+			InputS3URI:    test.FullInputS3URI,
+			InputContent:  nil,
+			InputHttpURL:  nil,
+			AnswerSha256:  test.AnswerSha256,
+			AnswerS3URI:   test.FullAnswerS3URI,
+			AnswerContent: nil,
+			AnswerHttpURL: nil,
+		})
+	}
+	reqWithUuid := EvalReqWithUuid{
+		EvaluationUuid: evalUuid.String(),
+		Request: EvalRequest{
+			Submission: submContent.String(),
+			Language: LanguageDetails{
+				ID:               foundPLang.ID,
+				Name:             foundPLang.FullName,
+				CodeFilename:     foundPLang.CodeFilename,
+				CompileCmd:       foundPLang.CompileCmd,
+				CompiledFilename: foundPLang.CompiledFilename,
+				ExecCmd:          foundPLang.ExecuteCmd,
+			},
+			Limits: LimitsDetails{
+				CPUTimeMillis:   int(taskEvalData.CPUTimeLimitSeconds * 1000),
+				MemoryKibibytes: int(float64(taskEvalData.MemoryLimitMegabytes) * 976.5625),
+			},
+			Tests:          tests,
+			TestlibChecker: taskEvalData.TestlibCheckerCode,
+		},
+	}
+	jsonReq, err := json.Marshal(reqWithUuid)
+	if err != nil {
+		log.Printf(ctx, "error marshalling eval request: %+v", err)
+		return nil, submgen.InternalError("error marshalling eval request")
+	}
 	_, err = s.sqsClient.SendMessage(context.TODO(), &sqs.SendMessageInput{
 		QueueUrl:    aws.String(s.submQueueUrl),
-		MessageBody: aws.String(messageBody),
+		MessageBody: aws.String(string(jsonReq)),
 	})
 	if err != nil {
 		fmt.Printf("failed to send message %s, %v\n", submDetailsRow.SubmUuid, err)
+		return nil, submgen.InternalError("error sending message to evaluation queue")
 	}
 
 	createdAtRfc3339 := createdAt.Format(time.RFC3339)
