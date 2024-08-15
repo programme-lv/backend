@@ -85,6 +85,10 @@ func NewSubmissions(ctx context.Context) submgen.Service {
 
 func (s *submissionssrvc) StartProcessingSubmEvalResults(ctx context.Context) (err error) {
 	submEvalResQueueUrl := "https://sqs.eu-central-1.amazonaws.com/975049886115/standard_subm_eval_results"
+	throtleChan := make(chan struct{}, 10)
+	for i := 0; i < 10; i++ {
+		throtleChan <- struct{}{}
+	}
 	for {
 		output, err := s.sqsClient.ReceiveMessage(context.TODO(), &sqs.ReceiveMessageInput{
 			QueueUrl:            aws.String(submEvalResQueueUrl),
@@ -127,7 +131,10 @@ func (s *submissionssrvc) StartProcessingSubmEvalResults(ctx context.Context) (e
 				continue
 			}
 
-			s.processEvalResult(qMsg.EvalUuid, msgType.MsgType, qMsg.Data)
+			// TODO throttle for each eval uuid individually
+			<-throtleChan
+			go s.processEvalResult(qMsg.EvalUuid, msgType.MsgType, qMsg.Data)
+			throtleChan <- struct{}{}
 		}
 	}
 }
