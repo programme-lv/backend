@@ -11,7 +11,9 @@ type SubmDetailsRow struct {
 	ProgLangId string `dynamodbav:"prog_lang_id"`
 
 	CurrentEvalUuid   string `dynamodbav:"current_eval_uuid"`   // the uuid of the current evaluation
-	CurrentEvalStatus string `dynamodbav:"current_eval_status"` // "waiting", "received", "compiling", "testing", "finished"
+	CurrentEvalStatus string `dynamodbav:"current_eval_status"` // "waiting", "received", "compiling", "testing", "finished", "error"
+
+	ErrorMsg *string `dynamodbav:"error_msg"` // error message if evaluation failed
 
 	Gsi1Pk      int    `dynamodbav:"gsi1_pk"` // gsi1pk = 1
 	Gsi1SortKey string `dynamodbav:"gsi1_sk"` // <created_at_rfc3339_utc>#<subm_uuid>#details
@@ -44,8 +46,7 @@ type SubmScoringSubtaskRow struct {
 
 	CurrentEvalUuid string `dynamodbav:"current_eval_uuid"` // the uuid of the current evaluation
 
-	ReceivedScore int `dynamodbav:"received_score"`
-	PossibleScore int `dynamodbav:"possible_score"`
+	SubtaskScore int `dynamodbav:"subtask_score"`
 
 	AcceptedTests int `dynamodbav:"accepted_tests"`
 	WrongTests    int `dynamodbav:"wrong_tests"`
@@ -80,7 +81,9 @@ type EvalDetailsRow struct {
 	SortKey  string `dynamodbav:"sort_key"`  // eval#<eval_uuid>#details
 
 	EvalUuid        string `dynamodbav:"eval_uuid"`        // the uuid of the evaluation
-	EvaluationStage string `dynamodbav:"evaluation_stage"` // "waiting", "received", "compiling", "testing", "finished"
+	EvaluationStage string `dynamodbav:"evaluation_stage"` // "waiting", "received", "compiling", "testing", "finished", "error"
+
+	ErrorMsg *string `dynamodbav:"error_msg"` // error message if evaluation failed
 
 	TestlibCheckerCode string `dynamodbav:"testlib_checker_code"` // the code of the testlib checker
 
@@ -158,8 +161,7 @@ type EvalScoringSubtaskRow struct {
 	SubmUuid string `dynamodbav:"subm_uuid"` // partition key
 	SortKey  string `dynamodbav:"sort_key"`  // eval#<eval_uuid>#scoring#subtask#<subtask_id>
 
-	ReceivedScore int `dynamodbav:"received_score"`
-	PossibleScore int `dynamodbav:"possible_score"`
+	SubtaskScore int `dynamodbav:"subtask_score"`
 
 	AcceptedTests int `dynamodbav:"accepted_tests"`
 	WrongTests    int `dynamodbav:"wrong_tests"`

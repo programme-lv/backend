@@ -97,8 +97,7 @@ func (s *submissionssrvc) createSubmissionWithValidatedInput(
 			evalRow := &EvalScoringSubtaskRow{
 				SubmUuid:      submUuid.String(),
 				SortKey:       fmt.Sprintf("eval#%s#scoring#subtask#%02d", evalUuid.String(), subtask.SubtaskID),
-				ReceivedScore: 0,
-				PossibleScore: subtask.Score,
+				SubtaskScore:  subtask.Score,
 				AcceptedTests: 0,
 				WrongTests:    0,
 				UntestedTests: stTestCount,
@@ -109,8 +108,7 @@ func (s *submissionssrvc) createSubmissionWithValidatedInput(
 			submRow := &SubmScoringSubtaskRow{
 				SubmUuid:        submUuid.String(),
 				SortKey:         fmt.Sprintf("subm#scoring#subtask#%02d", subtask.SubtaskID),
-				ReceivedScore:   0,
-				PossibleScore:   subtask.Score,
+				SubtaskScore:    subtask.Score,
 				AcceptedTests:   0,
 				WrongTests:      0,
 				CurrentEvalUuid: evalUuid.String(),
