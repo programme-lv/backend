@@ -51,8 +51,15 @@ type SubmissionEvaluationDetailsRow struct {
 
 	TestlibCheckerCode string `dynamo:"testlib_checker_code"` // the code of the testlib checker
 
-	SystemInformation *string      `dynamo:"system_information"` // details about the system that ran the evaluation
-	SubmCompileData   *RuntimeData `dynamo:"subm_compile_data"`  // compilation runtime data for author's submission
+	SystemInformation *string `dynamo:"system_information"` // details about the system that ran the evaluation
+
+	SubmCompileStdout   *string `dynamo:"subm_comp_stdout"` // might be trimmed
+	SubmCompileStderr   *string `dynamo:"subm_comp_stderr"` // might be trimmed
+	SubmCompileExitCode *int64  `dynamo:"subm_comp_exit_code"`
+
+	SubmCompileCpuTimeMillis   *int64 `dynamo:"subm_comp_cpu_time_millis"`
+	SubmCompileWallTimeMillis  *int64 `dynamo:"subm_comp_wall_time_millis"`
+	SubmCompileMemoryKibiBytes *int64 `dynamo:"subm_comp_memory_kibi_bytes"`
 
 	ProgrammingLang SubmEvalDetailsProgrammingLang `dynamo:"programming_lang"`
 
@@ -74,16 +81,6 @@ func (s *SubmissionEvaluationDetailsRow) EvaluationUuid() string {
 	panic("not implemented")
 }
 
-type RuntimeData struct {
-	Stdout   *string `dynamo:"stdout"` // might be trimmed
-	Stderr   *string `dynamo:"stderr"` // might be trimmed
-	ExitCode int64   `dynamo:"exit_code"`
-
-	CpuTimeMillis   int64 `dynamo:"cpu_time_millis"`
-	WallTimeMillis  int64 `dynamo:"wall_time_millis"`
-	MemoryKibiBytes int64 `dynamo:"memory_kibi_bytes"`
-}
-
 type SubmissionEvaluationTestRow struct {
 	SubmUuid string `dynamo:"subm_uuid,hash"` // partition key
 	SortKey  string `dynamo:"sort_key,range"` // evaluation#<eval_uuid>#test#<padded_test_id>
@@ -98,8 +95,21 @@ type SubmissionEvaluationTestRow struct {
 	InputTrimmed  *string `dynamo:"input_trimmed"`  // trimmed input for display
 	AnswerTrimmed *string `dynamo:"answer_trimmed"` // trimmed answer for display
 
-	SubmTestRuntimeData *RuntimeData `dynamo:"subm_test_runtime_data"`
-	CheckerRuntimeData  *RuntimeData `dynamo:"checker_runtime_data"`
+	CheckerStdout   *string `dynamo:"checker_stdout"` // might be trimmed
+	CheckerStderr   *string `dynamo:"checker_stderr"` // might be trimmed
+	CheckerExitCode *int64  `dynamo:"checker_exit_code"`
+
+	CheckerCpuTimeMillis   *int64 `dynamo:"checker_cpu_time_millis"`
+	CheckerWallTimeMillis  *int64 `dynamo:"checker_wall_time_millis"`
+	CheckerMemoryKibiBytes *int64 `dynamo:"checker_memory_kibi_bytes"`
+
+	SubmStdout   *string `dynamo:"subm_stdout"` // might be trimmed
+	SubmStderr   *string `dynamo:"subm_stderr"` // might be trimmed
+	SubmExitCode *int64  `dynamo:"subm_exit_code"`
+
+	SubmCpuTimeMillis   *int64 `dynamo:"subm_cpu_time_millis"`
+	SubmWallTimeMillis  *int64 `dynamo:"subm_wall_time_millis"`
+	SubmMemoryKibiBytes *int64 `dynamo:"subm_memory_kibi_bytes"`
 
 	Subtasks  []int `dynamo:"subtasks"`   // subtasks that the test is part of
 	TestGroup *int  `dynamo:"test_group"` // test group that the test is part of
