@@ -39,12 +39,13 @@ func (s *submissionssrvc) createSubmissionWithValidatedInput(
 	case "tests":
 		// PUT SUBMISSION SCORING TESTS ROW
 		submScoringTestsRow := &SubmissionScoringTestsRow{
-			SubmUuid: submUuid.String(),
-			SortKey:  fmt.Sprintf("subm#scoring#tests"),
-			Accepted: 0,
-			Wrong:    0,
-			Untested: len(task.Tests),
-			Gsi1Pk:   1,
+			SubmUuid:    submUuid.String(),
+			SortKey:     "subm#scoring#tests",
+			Accepted:    0,
+			Wrong:       0,
+			Untested:    len(task.Tests),
+			Gsi1Pk:      1,
+			Gsi1SortKey: fmt.Sprintf("%s#%s#scoring#tests", createdAt.Format(time.RFC3339), submUuid.String()),
 		}
 		item, err := attributevalue.MarshalMap(submScoringTestsRow)
 		if err != nil {
@@ -71,13 +72,14 @@ func (s *submissionssrvc) createSubmissionWithValidatedInput(
 			}
 			row := &SubmissionScoringSubtaskRow{
 				SubmUuid:      submUuid.String(),
-				SortKey:       fmt.Sprintf("subm#scoring#subtask#%d", subtask.SubtaskID),
+				SortKey:       fmt.Sprintf("subm#scoring#subtask#%02d", subtask.SubtaskID),
 				ReceivedScore: 0,
 				PossibleScore: subtask.Score,
 				AcceptedTests: 0,
 				WrongTests:    0,
 				UntestedTests: stTestCount,
 				Gsi1Pk:        1,
+				Gsi1SortKey:   fmt.Sprintf("%s#%s#scoring#subtask#%02d", createdAt.Format(time.RFC3339), submUuid.String(), subtask.SubtaskID),
 			}
 			submScoringSubtaskRows = append(submScoringSubtaskRows, row)
 		}
@@ -116,13 +118,14 @@ func (s *submissionssrvc) createSubmissionWithValidatedInput(
 			}
 			row := &SubmissionScoringTestgroupRow{
 				SubmUuid:         submUuid.String(),
-				SortKey:          fmt.Sprintf("subm#scoring#testgroup#%d", testGroup.TestGroupID),
+				SortKey:          fmt.Sprintf("subm#scoring#testgroup#%02d", testGroup.TestGroupID),
 				StatementSubtask: testGroup.Subtask,
 				TestgroupScore:   testGroup.Score,
 				AcceptedTests:    0,
 				WrongTests:       0,
 				UntestedTests:    tgTests,
 				Gsi1Pk:           1,
+				Gsi1SortKey:      fmt.Sprintf("%s#%s#scoring#testgroup#%02d", createdAt.Format(time.RFC3339), submUuid.String(), testGroup.TestGroupID),
 			}
 
 			submScoringTestgroupRows = append(submScoringTestgroupRows, row)
@@ -156,6 +159,7 @@ func (s *submissionssrvc) createSubmissionWithValidatedInput(
 	evalDetailsRow := &SubmissionEvaluationDetailsRow{
 		SubmUuid:                   submUuid.String(),
 		SortKey:                    fmt.Sprintf("eval#%s#details", evalUuid.String()),
+		EvalUuid:                   evalUuid.String(),
 		EvaluationStage:            "waiting",
 		TestlibCheckerCode:         task.TestlibCheckerCode,
 		SystemInformation:          nil,
@@ -189,7 +193,6 @@ func (s *submissionssrvc) createSubmissionWithValidatedInput(
 	}
 
 	// TODO: subtask, testgroup information
-	// TODO: eval_uuid as field
 
 	// PUT EVALUATION TEST ROWS
 	evaluationTestRows := make([]*SubmissionEvaluationTestRow, 0)
@@ -244,7 +247,6 @@ func (s *submissionssrvc) createSubmissionWithValidatedInput(
 		start = end
 	}
 	// TODO: subtask, testgroup information in evaluation
-	// TODO: eval_uuid as field
 
 	// PUT SUBMISSION DETAILS ROW
 	submDetailsRow := &SubmissionDetailsRow{
@@ -257,6 +259,7 @@ func (s *submissionssrvc) createSubmissionWithValidatedInput(
 		CurrentEvalUuid:   evalUuid.String(),
 		CurrentEvalStatus: "waiting",
 		Gsi1Pk:            1,
+		Gsi1SortKey:       fmt.Sprintf("%s#%s#details", createdAt.Format(time.RFC3339), submUuid.String()),
 		CreatedAtRfc3339:  createdAt.UTC().Format(time.RFC3339),
 		Version:           1,
 	}

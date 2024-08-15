@@ -13,7 +13,8 @@ type SubmissionDetailsRow struct {
 	CurrentEvalUuid   string `dynamodbav:"current_eval_uuid"`   // the uuid of the current evaluation
 	CurrentEvalStatus string `dynamodbav:"current_eval_status"` // "waiting", "received", "compiling", "testing", "finished"
 
-	Gsi1Pk int `dynamodbav:"gsi1_pk"` // gsi1pk = 1
+	Gsi1Pk      int    `dynamodbav:"gsi1_pk"` // gsi1pk = 1
+	Gsi1SortKey string `dynamodbav:"gsi1_sk"` // <created_at_rfc3339_utc>#<subm_uuid>#details
 
 	CreatedAtRfc3339 string `dynamodbav:"created_at_rfc3339_utc"`
 	Version          int64  `dynamodbav:"version"` // For optimistic locking
@@ -27,7 +28,8 @@ type SubmissionScoringTestsRow struct {
 	Wrong    int `dynamodbav:"wrong"`
 	Untested int `dynamodbav:"untested"`
 
-	Gsi1Pk int `dynamodbav:"gsi1_pk"` // gsi1pk = 1
+	Gsi1Pk      int    `dynamodbav:"gsi1_pk"` // gsi1pk = 1
+	Gsi1SortKey string `dynamodbav:"gsi1_sk"` // <created_at_rfc3339_utc>#<subm_uuid>#scoring#tests
 }
 
 type SubmissionScoringSubtaskRow struct {
@@ -41,7 +43,8 @@ type SubmissionScoringSubtaskRow struct {
 	WrongTests    int `dynamodbav:"wrong_tests"`
 	UntestedTests int `dynamodbav:"untested_tests"`
 
-	Gsi1Pk int `dynamodbav:"gsi1_pk"` // gsi1pk = 1
+	Gsi1Pk      int    `dynamodbav:"gsi1_pk"` // gsi1pk = 1
+	Gsi1SortKey string `dynamodbav:"gsi1_sk"` // <created_at_rfc3339_utc>#<subm_uuid>#scoring#subtask#<subtask_id>
 }
 
 type SubmissionScoringTestgroupRow struct {
@@ -56,7 +59,8 @@ type SubmissionScoringTestgroupRow struct {
 	WrongTests    int `dynamodbav:"wrong_tests"`
 	UntestedTests int `dynamodbav:"untested_tests"`
 
-	Gsi1Pk int `dynamodbav:"gsi1_pk"` // gsi1pk = 1
+	Gsi1Pk      int    `dynamodbav:"gsi1_pk"` // gsi1pk = 1
+	Gsi1SortKey string `dynamodbav:"gsi1_sk"` // <created_at_rfc3339_utc>#<subm_uuid>#scoring#testgroup#<testgroup_id>
 }
 
 type SubmissionEvaluationDetailsRow struct {
