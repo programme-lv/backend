@@ -594,7 +594,7 @@ func (s *submissionssrvc) processEvalResult(evalUuid string, msgType string, fie
 				"subm_uuid": &types.AttributeValueMemberS{Value: submUuid},
 				"sort_key":  &types.AttributeValueMemberS{Value: "eval#" + evalUuid + "#scoring#testgroup#" + fmt.Sprintf("%02d", *testSubtasksTestGroups.TestGroup)},
 			}
-			for attempt := 0; attempt < 30; attempt++ {
+			for attempt := 0; attempt < 300; attempt++ { // about 15 seconds
 				if attempt > 0 {
 					time.Sleep(time.Duration(10+rand.Intn(91)) * time.Millisecond)
 				}
@@ -633,6 +633,7 @@ func (s *submissionssrvc) processEvalResult(evalUuid string, msgType string, fie
 				updTestgroup := expression.
 					Set(expression.Name("accepted_tests"), expression.Value(testgroupRow.AcceptedTests)).
 					Set(expression.Name("untested_tests"), expression.Value(testgroupRow.UntestedTests)).
+					Set(expression.Name("wrong_tests"), expression.Value(testgroupRow.WrongTests)).
 					Set(expression.Name("version"), expression.Value(testgroupRow.Version+1))
 
 				updTestgroupCond := expression.Name("version").Equal(expression.Value(testgroupRow.Version))
