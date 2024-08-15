@@ -37,17 +37,40 @@ func (s *submissionssrvc) createSubmissionWithValidatedInput(
 	scoringMethod := determineScoringMethod(task)
 	switch scoringMethod {
 	case "tests":
-		// PUT SUBMISSION SCORING TESTS ROW
-		submScoringTestsRow := &SubmissionScoringTestsRow{
-			SubmUuid:    submUuid.String(),
-			SortKey:     "subm#scoring#tests",
-			Accepted:    0,
-			Wrong:       0,
-			Untested:    len(task.Tests),
-			Gsi1Pk:      1,
-			Gsi1SortKey: fmt.Sprintf("%s#%s#scoring#tests", createdAt.Format(time.RFC3339), submUuid.String()),
+		// PUT EVALUATION SCORING TESTS ROW
+		evalScoringTestsRow := &EvalScoringTestsRow{
+			SubmUuid: submUuid.String(),
+			SortKey:  fmt.Sprintf("eval#%s#scoring#tests", evalUuid.String()),
+			Accepted: 0,
+			Wrong:    0,
+			Untested: len(task.Tests),
+			Version:  1,
 		}
-		item, err := attributevalue.MarshalMap(submScoringTestsRow)
+		item, err := attributevalue.MarshalMap(evalScoringTestsRow)
+		if err != nil {
+			log.Printf(ctx, "error marshalling eval scoring tests row: %+v", err)
+			return nil, submgen.InternalError("error marshalling eval scoring tests row")
+		}
+		_, err = s.ddbClient.PutItem(context.TODO(), &dynamodb.PutItemInput{
+			TableName: &s.submTableName, Item: item})
+		if err != nil {
+			log.Printf(ctx, "error saving evaluation scoring tests: %+v", err)
+			return nil, submgen.InternalError("error saving evaluation scoring tests")
+		}
+
+		// PUT SUBMISSION SCORING TESTS ROW
+		submScoringTestsRow := &SubmScoringTestsRow{
+			SubmUuid:        submUuid.String(),
+			SortKey:         "subm#scoring#tests",
+			Accepted:        0,
+			Wrong:           0,
+			Untested:        len(task.Tests),
+			Gsi1Pk:          1,
+			CurrentEvalUuid: evalUuid.String(),
+			Version:         1,
+			Gsi1SortKey:     fmt.Sprintf("%s#%s#scoring#tests", createdAt.Format(time.RFC3339), submUuid.String()),
+		}
+		item, err = attributevalue.MarshalMap(submScoringTestsRow)
 		if err != nil {
 			log.Printf(ctx, "error marshalling scoring tests row: %+v", err)
 			return nil, submgen.InternalError("error marshalling scoring tests row")
@@ -59,8 +82,9 @@ func (s *submissionssrvc) createSubmissionWithValidatedInput(
 			return nil, submgen.InternalError("error saving submission scoring tests")
 		}
 	case "subtask":
-		// PUT SUBMISSION SCORING SUBTASK ROWS
-		submScoringSubtaskRows := make([]*SubmissionScoringSubtaskRow, 0)
+		// PUT EVALUATION, SUBMISSION SCORING SUBTASK ROWS
+		evalScoringSubtaskRows := make([]*EvalScoringSubtaskRow, 0)
+		submScoringSubtaskRows := make([]*SubmScoringSubtaskRow, 0)
 		for _, subtask := range task.SubtaskScores {
 			stTestCount := 0
 			for _, test := range task.Tests {
@@ -70,18 +94,32 @@ func (s *submissionssrvc) createSubmissionWithValidatedInput(
 					}
 				}
 			}
-			row := &SubmissionScoringSubtaskRow{
+			evalRow := &EvalScoringSubtaskRow{
 				SubmUuid:      submUuid.String(),
-				SortKey:       fmt.Sprintf("subm#scoring#subtask#%02d", subtask.SubtaskID),
+				SortKey:       fmt.Sprintf("eval#%s#scoring#subtask#%02d", evalUuid.String(), subtask.SubtaskID),
 				ReceivedScore: 0,
 				PossibleScore: subtask.Score,
 				AcceptedTests: 0,
 				WrongTests:    0,
 				UntestedTests: stTestCount,
-				Gsi1Pk:        1,
-				Gsi1SortKey:   fmt.Sprintf("%s#%s#scoring#subtask#%02d", createdAt.Format(time.RFC3339), submUuid.String(), subtask.SubtaskID),
+				Version:       1,
 			}
-			submScoringSubtaskRows = append(submScoringSubtaskRows, row)
+			evalScoringSubtaskRows = append(evalScoringSubtaskRows, evalRow)
+
+			submRow := &SubmScoringSubtaskRow{
+				SubmUuid:        submUuid.String(),
+				SortKey:         fmt.Sprintf("subm#scoring#subtask#%02d", subtask.SubtaskID),
+				ReceivedScore:   0,
+				PossibleScore:   subtask.Score,
+				AcceptedTests:   0,
+				WrongTests:      0,
+				CurrentEvalUuid: evalUuid.String(),
+				Version:         1,
+				UntestedTests:   stTestCount,
+				Gsi1Pk:          1,
+				Gsi1SortKey:     fmt.Sprintf("%s#%s#scoring#subtask#%02d", createdAt.Format(time.RFC3339), submUuid.String(), subtask.SubtaskID),
+			}
+			submScoringSubtaskRows = append(submScoringSubtaskRows, submRow)
 		}
 		batchSize := 25
 		start := 0
@@ -106,9 +144,33 @@ func (s *submissionssrvc) createSubmissionWithValidatedInput(
 			}
 			start = end
 		}
+		batchSize = 25
+		start = 0
+		for start < len(evalScoringSubtaskRows) {
+			end := min(start+batchSize, len(evalScoringSubtaskRows))
+			batch := evalScoringSubtaskRows[start:end]
+			items := make([]types.WriteRequest, len(batch))
+			for i := range len(batch) {
+				item, err := attributevalue.MarshalMap(batch[i])
+				if err != nil {
+					log.Printf(ctx, "error marshalling eval scoring subtask row: %+v", err)
+					return nil, submgen.InternalError("error marshalling eval scoring subtask row")
+				}
+				items[i] = types.WriteRequest{PutRequest: &types.PutRequest{Item: item}}
+			}
+			_, err = s.ddbClient.BatchWriteItem(context.TODO(), &dynamodb.BatchWriteItemInput{
+				RequestItems: map[string][]types.WriteRequest{s.submTableName: items},
+			})
+			if err != nil {
+				log.Printf(ctx, "error saving evaluation scoring subtasks: %+v", err)
+				return nil, submgen.InternalError("error saving evaluation scoring subtasks")
+			}
+			start = end
+		}
 	case "testgroup":
-		// PUT SUBMISSION SCORING TESTGROUP ROWS
-		submScoringTestgroupRows := make([]*SubmissionScoringTestgroupRow, 0)
+		// PUT EVALUATION, SUBMISSION SCORING TESTGROUP ROWS
+		evalScoringTestgroupRows := make([]*EvalScoringTestgroupRow, 0)
+		submScoringTestgroupRows := make([]*SubmScoringTestgroupRow, 0)
 		for _, testGroup := range task.TestGroupInformation {
 			tgTests := 0
 			for _, test := range task.Tests {
@@ -116,19 +178,33 @@ func (s *submissionssrvc) createSubmissionWithValidatedInput(
 					tgTests++
 				}
 			}
-			row := &SubmissionScoringTestgroupRow{
+			evalRow := &EvalScoringTestgroupRow{
+				SubmUuid:         submUuid.String(),
+				SortKey:          fmt.Sprintf("eval#%s#scoring#testgroup#%02d", evalUuid.String(), testGroup.TestGroupID),
+				StatementSubtask: testGroup.Subtask,
+				TestgroupScore:   testGroup.Score,
+				AcceptedTests:    0,
+				WrongTests:       0,
+				UntestedTests:    tgTests,
+				Version:          1,
+			}
+			evalScoringTestgroupRows = append(evalScoringTestgroupRows, evalRow)
+
+			submRow := &SubmScoringTestgroupRow{
 				SubmUuid:         submUuid.String(),
 				SortKey:          fmt.Sprintf("subm#scoring#testgroup#%02d", testGroup.TestGroupID),
 				StatementSubtask: testGroup.Subtask,
 				TestgroupScore:   testGroup.Score,
 				AcceptedTests:    0,
 				WrongTests:       0,
+				CurrentEvalUuid:  evalUuid.String(),
+				Version:          1,
 				UntestedTests:    tgTests,
 				Gsi1Pk:           1,
 				Gsi1SortKey:      fmt.Sprintf("%s#%s#scoring#testgroup#%02d", createdAt.Format(time.RFC3339), submUuid.String(), testGroup.TestGroupID),
 			}
 
-			submScoringTestgroupRows = append(submScoringTestgroupRows, row)
+			submScoringTestgroupRows = append(submScoringTestgroupRows, submRow)
 		}
 		batchSize := 25
 		start := 0
@@ -153,10 +229,33 @@ func (s *submissionssrvc) createSubmissionWithValidatedInput(
 			}
 			start = end
 		}
+		batchSize = 25
+		start = 0
+		for start < len(evalScoringTestgroupRows) {
+			end := min(start+batchSize, len(evalScoringTestgroupRows))
+			batch := evalScoringTestgroupRows[start:end]
+			items := make([]types.WriteRequest, len(batch))
+			for i := range len(batch) {
+				item, err := attributevalue.MarshalMap(batch[i])
+				if err != nil {
+					log.Printf(ctx, "error marshalling eval scoring testgroup row: %+v", err)
+					return nil, submgen.InternalError("error marshalling eval scoring testgroup row")
+				}
+				items[i] = types.WriteRequest{PutRequest: &types.PutRequest{Item: item}}
+			}
+			_, err = s.ddbClient.BatchWriteItem(context.TODO(), &dynamodb.BatchWriteItemInput{
+				RequestItems: map[string][]types.WriteRequest{s.submTableName: items},
+			})
+			if err != nil {
+				log.Printf(ctx, "error saving evaluation scoring testgroups: %+v", err)
+				return nil, submgen.InternalError("error saving evaluation scoring testgroups")
+			}
+			start = end
+		}
 	}
 
 	// PUT EVALUATION DETAILS ROW
-	evalDetailsRow := &SubmissionEvaluationDetailsRow{
+	evalDetailsRow := &EvalDetailsRow{
 		SubmUuid:                   submUuid.String(),
 		SortKey:                    fmt.Sprintf("eval#%s#details", evalUuid.String()),
 		EvalUuid:                   evalUuid.String(),
@@ -169,7 +268,7 @@ func (s *submissionssrvc) createSubmissionWithValidatedInput(
 		SubmCompileCpuTimeMillis:   nil,
 		SubmCompileWallTimeMillis:  nil,
 		SubmCompileMemoryKibiBytes: nil,
-		ProgrammingLang: SubmEvalDetailsProgrammingLang{
+		ProgrammingLang: EvalDetailsProgrammingLang{
 			PLangId:        lang.ID,
 			DisplayName:    lang.FullName,
 			SubmCodeFname:  lang.CodeFilename,
@@ -195,9 +294,9 @@ func (s *submissionssrvc) createSubmissionWithValidatedInput(
 	// TODO: subtask, testgroup information
 
 	// PUT EVALUATION TEST ROWS
-	evaluationTestRows := make([]*SubmissionEvaluationTestRow, 0)
+	evaluationTestRows := make([]*EvalTestRow, 0)
 	for _, test := range task.Tests {
-		evaluationTestRows = append(evaluationTestRows, &SubmissionEvaluationTestRow{
+		evaluationTestRows = append(evaluationTestRows, &EvalTestRow{
 			SubmUuid:               submUuid.String(),
 			SortKey:                fmt.Sprintf("eval#%s#test#%04d", evalUuid.String(), test.TestID),
 			FullInputS3Uri:         test.FullInputS3URI,
@@ -249,7 +348,7 @@ func (s *submissionssrvc) createSubmissionWithValidatedInput(
 	// TODO: subtask, testgroup information in evaluation
 
 	// PUT SUBMISSION DETAILS ROW
-	submDetailsRow := &SubmissionDetailsRow{
+	submDetailsRow := &SubmDetailsRow{
 		SubmUuid:          submUuid.String(),
 		SortKey:           "subm#details",
 		Content:           *subm,

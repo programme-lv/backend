@@ -1,6 +1,6 @@
 package subm
 
-type SubmissionDetailsRow struct {
+type SubmDetailsRow struct {
 	SubmUuid string `dynamodbav:"subm_uuid"` // partition key
 	SortKey  string `dynamodbav:"sort_key"`  // subm#details
 
@@ -20,9 +20,11 @@ type SubmissionDetailsRow struct {
 	Version          int64  `dynamodbav:"version"` // For optimistic locking
 }
 
-type SubmissionScoringTestsRow struct {
+type SubmScoringTestsRow struct {
 	SubmUuid string `dynamodbav:"subm_uuid"` // partition key
 	SortKey  string `dynamodbav:"sort_key"`  // subm#scoring#tests
+
+	CurrentEvalUuid string `dynamodbav:"current_eval_uuid"` // the uuid of the current evaluation
 
 	Accepted int `dynamodbav:"accepted"`
 	Wrong    int `dynamodbav:"wrong"`
@@ -30,11 +32,17 @@ type SubmissionScoringTestsRow struct {
 
 	Gsi1Pk      int    `dynamodbav:"gsi1_pk"` // gsi1pk = 1
 	Gsi1SortKey string `dynamodbav:"gsi1_sk"` // <created_at_rfc3339_utc>#<subm_uuid>#scoring#tests
+
+	// For optimistic locking, equal to current evaluation's scoring tests version
+	// eval scoring row gets copied here and conditionally updated
+	Version int64 `dynamodbav:"version"`
 }
 
-type SubmissionScoringSubtaskRow struct {
+type SubmScoringSubtaskRow struct {
 	SubmUuid string `dynamodbav:"subm_uuid"` // partition key
 	SortKey  string `dynamodbav:"sort_key"`  // subm#scoring#subtask#<subtask_id>
+
+	CurrentEvalUuid string `dynamodbav:"current_eval_uuid"` // the uuid of the current evaluation
 
 	ReceivedScore int `dynamodbav:"received_score"`
 	PossibleScore int `dynamodbav:"possible_score"`
@@ -45,11 +53,14 @@ type SubmissionScoringSubtaskRow struct {
 
 	Gsi1Pk      int    `dynamodbav:"gsi1_pk"` // gsi1pk = 1
 	Gsi1SortKey string `dynamodbav:"gsi1_sk"` // <created_at_rfc3339_utc>#<subm_uuid>#scoring#subtask#<subtask_id>
+	Version     int64  `dynamodbav:"version"` // For optimistic locking, equal to current evaluation's scoring subtask version
 }
 
-type SubmissionScoringTestgroupRow struct {
+type SubmScoringTestgroupRow struct {
 	SubmUuid string `dynamodbav:"subm_uuid"` // partition key
 	SortKey  string `dynamodbav:"sort_key"`  // subm#scoring#testgroup#<testgroup_id>
+
+	CurrentEvalUuid string `dynamodbav:"current_eval_uuid"` // the uuid of the current evaluation
 
 	StatementSubtask int `dynamodbav:"statement_subtask"`
 
@@ -61,9 +72,10 @@ type SubmissionScoringTestgroupRow struct {
 
 	Gsi1Pk      int    `dynamodbav:"gsi1_pk"` // gsi1pk = 1
 	Gsi1SortKey string `dynamodbav:"gsi1_sk"` // <created_at_rfc3339_utc>#<subm_uuid>#scoring#testgroup#<testgroup_id>
+	Version     int64  `dynamodbav:"version"` // For optimistic locking, equal to current evaluation's scoring testgroup version
 }
 
-type SubmissionEvaluationDetailsRow struct {
+type EvalDetailsRow struct {
 	SubmUuid string `dynamodbav:"subm_uuid"` // partition key
 	SortKey  string `dynamodbav:"sort_key"`  // eval#<eval_uuid>#details
 
@@ -82,13 +94,22 @@ type SubmissionEvaluationDetailsRow struct {
 	SubmCompileWallTimeMillis  *int64 `dynamodbav:"subm_comp_wall_time_millis"`
 	SubmCompileMemoryKibiBytes *int64 `dynamodbav:"subm_comp_memory_kibi_bytes"`
 
-	ProgrammingLang SubmEvalDetailsProgrammingLang `dynamodbav:"programming_lang"`
+	ProgrammingLang EvalDetailsProgrammingLang `dynamodbav:"programming_lang"`
 
 	CreatedAtRfc3339 string `dynamodbav:"created_at_rfc3339_utc"`
 	Version          int64  `dynamodbav:"version"` // For optimistic locking
 }
 
-type SubmissionEvaluationTestRow struct {
+type EvalDetailsProgrammingLang struct {
+	PLangId        string  `dynamodbav:"p_lang_id"`
+	DisplayName    string  `dynamodbav:"display_name"`
+	SubmCodeFname  string  `dynamodbav:"subm_code_fname"`
+	CompileCommand *string `dynamodbav:"compile_command"`
+	CompiledFname  *string `dynamodbav:"compiled_fname"`
+	ExecCommand    string  `dynamodbav:"exec_command"`
+}
+
+type EvalTestRow struct {
 	SubmUuid string `dynamodbav:"subm_uuid"` // partition key
 	SortKey  string `dynamodbav:"sort_key"`  // eval#<eval_uuid>#test#<padded_test_id>
 
@@ -122,11 +143,42 @@ type SubmissionEvaluationTestRow struct {
 	TestGroup *int  `dynamodbav:"test_group"` // test group that the test is part of
 }
 
-type SubmEvalDetailsProgrammingLang struct {
-	PLangId        string  `dynamodbav:"p_lang_id"`
-	DisplayName    string  `dynamodbav:"display_name"`
-	SubmCodeFname  string  `dynamodbav:"subm_code_fname"`
-	CompileCommand *string `dynamodbav:"compile_command"`
-	CompiledFname  *string `dynamodbav:"compiled_fname"`
-	ExecCommand    string  `dynamodbav:"exec_command"`
+type EvalScoringTestsRow struct {
+	SubmUuid string `dynamodbav:"subm_uuid"` // partition key
+	SortKey  string `dynamodbav:"sort_key"`  // eval#<eval_uuid>#scoring#tests
+
+	Accepted int `dynamodbav:"accepted"`
+	Wrong    int `dynamodbav:"wrong"`
+	Untested int `dynamodbav:"untested"`
+
+	Version int64 `dynamodbav:"version"` // For optimistic locking
+}
+
+type EvalScoringSubtaskRow struct {
+	SubmUuid string `dynamodbav:"subm_uuid"` // partition key
+	SortKey  string `dynamodbav:"sort_key"`  // eval#<eval_uuid>#scoring#subtask#<subtask_id>
+
+	ReceivedScore int `dynamodbav:"received_score"`
+	PossibleScore int `dynamodbav:"possible_score"`
+
+	AcceptedTests int `dynamodbav:"accepted_tests"`
+	WrongTests    int `dynamodbav:"wrong_tests"`
+	UntestedTests int `dynamodbav:"untested_tests"`
+
+	Version int64 `dynamodbav:"version"` // For optimistic locking, equal to current evaluation's scoring subtask version
+}
+
+type EvalScoringTestgroupRow struct {
+	SubmUuid string `dynamodbav:"subm_uuid"` // partition key
+	SortKey  string `dynamodbav:"sort_key"`  // eval#<eval_uuid>#scoring#testgroup#<testgroup_id>
+
+	StatementSubtask int `dynamodbav:"statement_subtask"`
+
+	TestgroupScore int `dynamodbav:"testgroup_score"`
+
+	AcceptedTests int `dynamodbav:"accepted_tests"`
+	WrongTests    int `dynamodbav:"wrong_tests"`
+	UntestedTests int `dynamodbav:"untested_tests"`
+
+	Version int64 `dynamodbav:"version"` // For optimistic locking, equal to current evaluation's scoring testgroup version
 }
