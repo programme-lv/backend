@@ -156,8 +156,8 @@ func (s *submissionssrvc) CreateSubmission(ctx context.Context, p *submgen.Creat
 		// else if there are testgroups then the sum of their scores
 		// else the no of tests that belong to this subtask
 
-		possible := 0
 		for subtask, subtaskTests := range subtaskToTests {
+			possible := 0
 			foundSubtaskScore := false
 			for _, subtaskScore := range taskEvalData.SubtaskScores {
 				if subtaskScore.SubtaskID == subtask {
