@@ -2,9 +2,11 @@ package subm
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/aws/retry"
@@ -65,13 +67,66 @@ func NewSubmissions(ctx context.Context) submgen.Service {
 		panic("SUBM_SQS_QUEUE_URL not set in .env file")
 	}
 
-	return &submissionssrvc{
+	srvc := &submissionssrvc{
 		ddbSubmTable: NewDynamoDbSubmTableV2(dynamodbClient, submTableName),
 		userSrvc:     user.NewUsers(ctx),
 		taskSrvc:     task.NewTasks(ctx),
 		jwtKey:       []byte(jwtKey),
 		sqsClient:    sqsClient,
 		submQueueUrl: submQueueUrl,
+	}
+
+	go srvc.StartProcessingSubmEvalResults(ctx)
+
+	return srvc
+}
+
+func (s *submissionssrvc) StartProcessingSubmEvalResults(ctx context.Context) (err error) {
+	submEvalResQueueUrl := "https://sqs.eu-central-1.amazonaws.com/975049886115/standard_subm_eval_results"
+	for {
+		output, err := s.sqsClient.ReceiveMessage(context.TODO(), &sqs.ReceiveMessageInput{
+			QueueUrl:            aws.String(submEvalResQueueUrl),
+			MaxNumberOfMessages: 10,
+			WaitTimeSeconds:     5,
+		})
+		if err != nil {
+			fmt.Printf("failed to receive messages, %v\n", err)
+			time.Sleep(1 * time.Second)
+			continue
+		}
+
+		for _, message := range output.Messages {
+			_, err = s.sqsClient.DeleteMessage(context.TODO(), &sqs.DeleteMessageInput{
+				QueueUrl:      aws.String(submEvalResQueueUrl),
+				ReceiptHandle: message.ReceiptHandle,
+			})
+			if err != nil {
+				fmt.Printf("failed to delete message, %v\n", err)
+			}
+
+			log.Printf(ctx, "received eval message: %s\n", (*message.Body)[:min(200, len(*message.Body))])
+
+			var qMsg struct {
+				EvalUuid string           `json:"eval_uuid"`
+				Data     *json.RawMessage `json:"data"`
+			}
+			err := json.Unmarshal([]byte(*message.Body), &qMsg)
+			if err != nil {
+				fmt.Printf("failed to unmarshal message: %v\n", err)
+				continue
+			}
+
+			msgType := struct {
+				MsgType string `json:"msg_type"`
+			}{}
+			err = json.Unmarshal(*qMsg.Data, &msgType)
+			if err != nil {
+				fmt.Printf("failed to unmarshal message: %v\n", err)
+				continue
+			}
+
+			s.processEvalResult(qMsg.EvalUuid, msgType.MsgType, qMsg.Data)
+		}
 	}
 }
 
