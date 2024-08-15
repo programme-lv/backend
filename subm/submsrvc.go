@@ -24,12 +24,13 @@ import (
 // submissions service example implementation.
 // The example methods log the requests and return zero values.
 type submissionssrvc struct {
-	ddbSubmTable *DynamoDbSubmTableV2
-	userSrvc     usergen.Service
-	taskSrvc     taskgen.Service
-	jwtKey       []byte
-	sqsClient    *sqs.Client
-	submQueueUrl string
+	ddbClient     *dynamodb.Client
+	submTableName string
+	userSrvc      usergen.Service
+	taskSrvc      taskgen.Service
+	jwtKey        []byte
+	sqsClient     *sqs.Client
+	submQueueUrl  string
 }
 
 // NewSubmissions returns the submissions service implementation.
@@ -68,12 +69,13 @@ func NewSubmissions(ctx context.Context) submgen.Service {
 	}
 
 	srvc := &submissionssrvc{
-		ddbSubmTable: NewDynamoDbSubmTableV2(dynamodbClient, submTableName),
-		userSrvc:     user.NewUsers(ctx),
-		taskSrvc:     task.NewTasks(ctx),
-		jwtKey:       []byte(jwtKey),
-		sqsClient:    sqsClient,
-		submQueueUrl: submQueueUrl,
+		submTableName: submTableName,
+		ddbClient:     dynamodbClient,
+		userSrvc:      user.NewUsers(ctx),
+		taskSrvc:      task.NewTasks(ctx),
+		jwtKey:        []byte(jwtKey),
+		sqsClient:     sqsClient,
+		submQueueUrl:  submQueueUrl,
 	}
 
 	go srvc.StartProcessingSubmEvalResults(ctx)
