@@ -31,6 +31,7 @@ func (s *submissionssrvc) processEvalResult(evalUuid string, msgType string, fie
 			log.Printf("failed to update system info: %v", err)
 		}
 
+		// change the hash key to be that of the submission
 		err = s.ddbSubmTable.submTable.Update("eval_uuid", evalUuid).
 			Set("evaluation_stage", "received").
 			If("evaluation_stage = ?", "waiting").

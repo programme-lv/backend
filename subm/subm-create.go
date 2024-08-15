@@ -222,20 +222,17 @@ func (s *submissionssrvc) CreateSubmission(ctx context.Context, p *submgen.Creat
 	}
 
 	submDetailsRow := &SubmissionDetailsRow{
-		SubmUuid:   submUuid.String(),
-		SortKey:    "details",
-		Content:    submContent.String(),
-		AuthorUuid: userByUsername.UUID,
-		TaskUuid:   p.TaskCodeID,
-		ProgLangId: foundPLang.ID,
-		EvalResult: &SubmDetailsRowEvaluation{
-			EvalUuid: evalUuid.String(),
-			Status:   "waiting",
-			Scores:   scores,
-		},
-		Gsi1Pk:           1,
-		CreatedAtRfc3339: createdAt.UTC().Format(time.RFC3339),
-		Version:          0,
+		SubmUuid:          submUuid.String(),
+		SortKey:           "details",
+		Content:           submContent.String(),
+		AuthorUuid:        userByUsername.UUID,
+		TaskUuid:          p.TaskCodeID,
+		ProgLangId:        foundPLang.ID,
+		CurrentEvalUuid:   evalUuid.String(),
+		CurrentEvalStatus: "waiting",
+		Gsi1Pk:            1,
+		CreatedAtRfc3339:  createdAt.UTC().Format(time.RFC3339),
+		Version:           0,
 	}
 	err = s.ddbSubmTable.SaveSubmissionDetails(ctx, submDetailsRow)
 	if err != nil {

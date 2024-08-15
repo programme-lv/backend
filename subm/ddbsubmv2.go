@@ -21,18 +21,13 @@ type SubmissionDetailsRow struct {
 	TaskUuid   string `dynamo:"task_uuid"`
 	ProgLangId string `dynamo:"prog_lang_id"`
 
-	EvalResult *SubmDetailsRowEvaluation `dynamo:"evaluation_result"`
+	CurrentEvalUuid   string `dynamo:"current_eval_uuid"`   // the uuid of the current evaluation
+	CurrentEvalStatus string `dynamo:"current_eval_status"` // "waiting", "received", "compiling", "testing", "finished"
 
 	Gsi1Pk int `dynamo:"gsi1_pk"` // gsi1pk = 1
 
 	CreatedAtRfc3339 string `dynamo:"created_at_rfc3339_utc"`
 	Version          int64  `dynamo:"version"` // For optimistic locking
-}
-
-type SubmDetailsRowEvaluation struct {
-	EvalUuid string       `dynamo:"eval_uuid"`
-	Status   string       `dynamo:"status"`
-	Scores   []ScoreGroup `dynamo:"scores"`
 }
 
 // ScoreGroup is either subtask or test group
