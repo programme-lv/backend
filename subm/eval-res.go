@@ -818,10 +818,68 @@ func (s *submissionssrvc) processEvalResult(evalUuid string, msgType string, fie
 				UpdateExpression:          updSubmFailedExpr.Update(),
 				ExpressionAttributeValues: updSubmFailedExpr.Values(),
 				ExpressionAttributeNames:  updSubmFailedExpr.Names(),
+				ConditionExpression:       updSubmFailedExpr.Condition(),
 			})
 
 			if err != nil {
 				log.Printf("failed to update submission failed: %v", err)
+				return
+			}
+		} else {
+			// set both evaluation_stage and current_eval_status to "finished"
+			evalDetailsPk := map[string]types.AttributeValue{
+				"subm_uuid": &types.AttributeValueMemberS{Value: submUuid},
+				"sort_key":  &types.AttributeValueMemberS{Value: "eval#" + evalUuid + "#details"},
+			}
+
+			updEvalFinished := expression.Set(expression.Name("evaluation_stage"), expression.Value("finished"))
+			// if not error
+			updEvalFinishedCond := expression.Name("evaluation_stage").NotEqual(expression.Value("failed"))
+			updEvalFinishedExpr, err := expression.NewBuilder().WithUpdate(updEvalFinished).WithCondition(updEvalFinishedCond).Build()
+			if err != nil {
+				log.Printf("failed to build evaluation finished update expression: %v", err)
+				return
+			}
+
+			_, err = s.ddbClient.UpdateItem(context.TODO(), &dynamodb.UpdateItemInput{
+				Key:                       evalDetailsPk,
+				TableName:                 aws.String(s.submTableName),
+				UpdateExpression:          updEvalFinishedExpr.Update(),
+				ExpressionAttributeValues: updEvalFinishedExpr.Values(),
+				ExpressionAttributeNames:  updEvalFinishedExpr.Names(),
+				ConditionExpression:       updEvalFinishedExpr.Condition(),
+			})
+
+			if err != nil {
+				log.Printf("failed to update evaluation finished: %v", err)
+				return
+			}
+
+			submDetailsPk := map[string]types.AttributeValue{
+				"subm_uuid": &types.AttributeValueMemberS{Value: submUuid},
+				"sort_key":  &types.AttributeValueMemberS{Value: "subm#details"},
+			}
+
+			updSubmFinished := expression.Set(expression.Name("current_eval_status"), expression.Value("finished"))
+			// if not error
+			updSubmFinishedCond := expression.Name("current_eval_status").NotEqual(expression.Value("failed"))
+			updSubmFinishedExpr, err := expression.NewBuilder().WithUpdate(updSubmFinished).WithCondition(updSubmFinishedCond).Build()
+			if err != nil {
+				log.Printf("failed to build submission finished update expression: %v", err)
+				return
+			}
+
+			_, err = s.ddbClient.UpdateItem(context.TODO(), &dynamodb.UpdateItemInput{
+				Key:                       submDetailsPk,
+				TableName:                 aws.String(s.submTableName),
+				UpdateExpression:          updSubmFinishedExpr.Update(),
+				ExpressionAttributeValues: updSubmFinishedExpr.Values(),
+				ExpressionAttributeNames:  updSubmFinishedExpr.Names(),
+				ConditionExpression:       updSubmFinishedExpr.Condition(),
+			})
+
+			if err != nil {
+				log.Printf("failed to update submission finished: %v", err)
 				return
 			}
 		}
