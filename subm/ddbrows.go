@@ -1,5 +1,10 @@
 package subm
 
+import (
+	"strconv"
+	"strings"
+)
+
 type SubmDetailsRow struct {
 	SubmUuid string `dynamodbav:"subm_uuid"` // partition key
 	SortKey  string `dynamodbav:"sort_key"`  // subm#details
@@ -74,6 +79,18 @@ type SubmScoringTestgroupRow struct {
 	Gsi1Pk      int    `dynamodbav:"gsi1_pk"` // gsi1pk = 1
 	Gsi1SortKey string `dynamodbav:"gsi1_sk"` // <created_at_rfc3339_utc>#<subm_uuid>#scoring#testgroup#<testgroup_id>
 	Version     int64  `dynamodbav:"version"` // For optimistic locking, equal to current evaluation's scoring testgroup version
+}
+
+func (sstgr *SubmScoringTestgroupRow) TestGroupID() int {
+	// split the sort key by '#', the last element is the testgroup id
+	parts := strings.Split(sstgr.SortKey, "#")
+	testgroupID := parts[len(parts)-1]
+	// convert the string to int
+	res, err := strconv.Atoi(testgroupID)
+	if err != nil {
+		panic(err)
+	}
+	return res
 }
 
 type EvalDetailsRow struct {

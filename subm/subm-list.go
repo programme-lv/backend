@@ -2,11 +2,180 @@ package subm
 
 import (
 	"context"
+	"strings"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	submgen "github.com/programme-lv/backend/gen/submissions"
+	"goa.design/clue/log"
 )
 
 // List all submissions
 func (s *submissionssrvc) ListSubmissions(ctx context.Context) (res []*submgen.Submission, err error) {
-	panic("not implemented")
+	input := &dynamodb.QueryInput{
+		TableName:              aws.String(s.submTableName),
+		IndexName:              aws.String("gsi1_pk-gsi1_sk-index"),
+		KeyConditionExpression: aws.String("gsi1_pk = :pk"),
+		ExpressionAttributeValues: map[string]types.AttributeValue{
+			":pk": &types.AttributeValueMemberN{
+				Value: "1",
+			},
+		},
+	}
+
+	result, err := s.ddbClient.Query(context.TODO(), input)
+	if err != nil {
+		log.Printf(ctx, "failed to query items: %v", err)
+		return nil, submgen.InternalError("failed to query items")
+	}
+
+	type ddmSubmTestGroupResult struct {
+		Score    int
+		Accepted int
+		Wrong    int
+		Untested int
+		Subtask  int
+	}
+
+	type ddbSubm struct {
+		SubmUuid         string
+		SubmContent      string
+		AuthorUuid       string
+		TaskId           string
+		ProgLangId       string
+		CurrEvalUuid     string
+		CurrEvalStatus   string
+		ErrorMsg         *string
+		CreatedAtRfc3339 string
+
+		TestGroupResults map[int]ddmSubmTestGroupResult
+	}
+
+	// TODO: the last item might not have all of its data because of the paginated query
+
+	submMap := make(map[string]*ddbSubm) // subm_uuid -> submission
+	log.Printf(ctx, "found %d items", len(result.Items))
+	for _, item := range result.Items {
+		submUuid := item["subm_uuid"].(*types.AttributeValueMemberS).Value
+		if _, ok := submMap[submUuid]; !ok {
+			submMap[submUuid] = &ddbSubm{
+				SubmUuid:         submUuid,
+				TestGroupResults: nil,
+			}
+		}
+
+		sortKey := item["sort_key"].(*types.AttributeValueMemberS).Value
+		// check if "sort_key" starts with subm#scoring#testgroup#
+		if strings.HasPrefix(sortKey, "subm#scoring#testgroup#") {
+			// parse it as SubmScoringTestgroupRow
+
+			var submScoringTestgroupRow SubmScoringTestgroupRow
+			err := attributevalue.UnmarshalMap(item, &submScoringTestgroupRow)
+			if err != nil {
+				log.Printf(ctx, "failed to unmarshal item: %v", err)
+				return nil, submgen.InternalError("failed to unmarshal item")
+			}
+
+			if submMap[submUuid].TestGroupResults == nil {
+				submMap[submUuid].TestGroupResults = make(map[int]ddmSubmTestGroupResult)
+			}
+
+			// submScoringTestgroupRow.TestGroupID()
+			testGroupId := submScoringTestgroupRow.TestGroupID()
+			submMap[submUuid].TestGroupResults[testGroupId] = ddmSubmTestGroupResult{
+				Score:    submScoringTestgroupRow.TestgroupScore,
+				Accepted: submScoringTestgroupRow.AcceptedTests,
+				Wrong:    submScoringTestgroupRow.WrongTests,
+				Untested: submScoringTestgroupRow.UntestedTests,
+				Subtask:  submScoringTestgroupRow.StatementSubtask,
+			}
+		} else if strings.HasPrefix(sortKey, "subm#details") {
+			// parse it as SubmDetailsRow
+			var submDetailsRow SubmDetailsRow
+			err := attributevalue.UnmarshalMap(item, &submDetailsRow)
+			if err != nil {
+				log.Printf(ctx, "failed to unmarshal item: %v", err)
+				return nil, submgen.InternalError("failed to unmarshal item")
+			}
+
+			submMap[submUuid].SubmContent = submDetailsRow.Content
+			submMap[submUuid].AuthorUuid = submDetailsRow.AuthorUuid
+			submMap[submUuid].TaskId = submDetailsRow.TaskId
+			submMap[submUuid].ProgLangId = submDetailsRow.ProgLangId
+			submMap[submUuid].CurrEvalUuid = submDetailsRow.CurrentEvalUuid
+			submMap[submUuid].CurrEvalStatus = submDetailsRow.CurrentEvalStatus
+			submMap[submUuid].ErrorMsg = submDetailsRow.ErrorMsg
+			submMap[submUuid].CreatedAtRfc3339 = submDetailsRow.CreatedAtRfc3339
+		}
+	}
+
+	for k, v := range submMap {
+		log.Printf(ctx, "submission %v: %+v", k, v)
+	}
+
+	tasks, err := s.taskSrvc.ListTasks(ctx)
+	if err != nil {
+		return nil, submgen.InternalError("failed to fetch tasks")
+	}
+	mapTaskIdToName := make(map[string]string)
+	for _, task := range tasks {
+		mapTaskIdToName[task.PublishedTaskID] = task.TaskFullName
+	}
+
+	users, err := s.userSrvc.ListUsers(ctx)
+	if err != nil {
+		return nil, submgen.InternalError("failed to fetch users")
+	}
+	mapUserUuidToUsername := make(map[string]string)
+	for _, user := range users {
+		mapUserUuidToUsername[user.UUID] = user.Username
+	}
+
+	pLangs, err := s.ListProgrammingLanguages(ctx)
+	if err != nil {
+		return nil, submgen.InternalError("failed to fetch programming languages")
+	}
+	mapPLangIdToDisplayName := make(map[string]string)
+	mapPLangIdToMonacoId := make(map[string]string)
+	for _, pLang := range pLangs {
+		mapPLangIdToDisplayName[pLang.ID] = pLang.FullName
+		mapPLangIdToMonacoId[pLang.ID] = pLang.MonacoID
+	}
+
+	res = make([]*submgen.Submission, 0, len(submMap))
+	for k, v := range submMap {
+		var testgroups []*submgen.TestGroupResult = nil
+		if v.TestGroupResults != nil {
+			testgroups = make([]*submgen.TestGroupResult, 0, len(v.TestGroupResults))
+			for testGroupId, testGroupResult := range v.TestGroupResults {
+				testgroups = append(testgroups, &submgen.TestGroupResult{
+					TestGroupID:      testGroupId,
+					TestGroupScore:   testGroupResult.Score,
+					StatementSubtask: testGroupResult.Subtask,
+					AcceptedTests:    testGroupResult.Accepted,
+					WrongTests:       testGroupResult.Wrong,
+					UntestedTests:    testGroupResult.Untested,
+				})
+			}
+		}
+		res = append(res, &submgen.Submission{
+			SubmUUID:              k,
+			Submission:            v.SubmContent, // TODO: reconsider retrieving submission content in submission list
+			Username:              mapUserUuidToUsername[v.AuthorUuid],
+			CreatedAt:             v.CreatedAtRfc3339,
+			EvalStatus:            v.CurrEvalStatus,
+			EvalScoringTestgroups: testgroups,
+			EvalScoringTests:      nil, // TODO: tests
+			EvalScoringSubtasks:   nil, // TODO: subtasks
+			PLangID:               v.ProgLangId,
+			PLangDisplayName:      mapPLangIdToDisplayName[v.ProgLangId],
+			PLangMonacoID:         mapPLangIdToMonacoId[v.ProgLangId],
+			TaskName:              mapTaskIdToName[v.TaskId],
+			TaskID:                v.TaskId,
+		})
+	}
+
+	return res, nil
 }

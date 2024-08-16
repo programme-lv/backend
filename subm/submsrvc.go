@@ -148,10 +148,10 @@ type SubmissionContent struct {
 }
 
 func (subm *SubmissionContent) IsValid() error {
-	const maxSubmissionLength = 128000 // 128 KB
+	const maxSubmissionLength = 64000 // 64 KB
 	if len(subm.Value) > maxSubmissionLength {
 		return submgen.InvalidSubmissionDetails(
-			"maksimālais iesūtījuma garums ir 128 KB",
+			"maksimālais iesūtījuma garums ir 64 KB",
 		)
 	}
 	return nil
