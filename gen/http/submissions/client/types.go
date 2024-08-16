@@ -29,19 +29,31 @@ type CreateSubmissionRequestBody struct {
 // "createSubmission" endpoint HTTP response body.
 type CreateSubmissionResponseBody struct {
 	// UUID of the submission
-	UUID *string `form:"uuid,omitempty" json:"uuid,omitempty" xml:"uuid,omitempty"`
+	SubmUUID *string `form:"subm_uuid,omitempty" json:"subm_uuid,omitempty" xml:"subm_uuid,omitempty"`
 	// The code submission
 	Submission *string `form:"submission,omitempty" json:"submission,omitempty" xml:"submission,omitempty"`
 	// Username of the user who submitted
 	Username *string `form:"username,omitempty" json:"username,omitempty" xml:"username,omitempty"`
-	// Creation date of the submission
-	CreatedAt *string `form:"createdAt,omitempty" json:"createdAt,omitempty" xml:"createdAt,omitempty"`
-	// Evaluation of the submission
-	Evaluation *EvaluationResponseBody `form:"evaluation,omitempty" json:"evaluation,omitempty" xml:"evaluation,omitempty"`
-	// Programming language of the submission
-	Language *SubmProgrammingLangResponseBody `form:"language,omitempty" json:"language,omitempty" xml:"language,omitempty"`
-	// Task associated with the submission
-	Task *SubmTaskResponseBody `form:"task,omitempty" json:"task,omitempty" xml:"task,omitempty"`
+	// Creation time of the submission
+	CreatedAt *string `form:"created_at,omitempty" json:"created_at,omitempty" xml:"created_at,omitempty"`
+	// Status of the current evaluation
+	EvalStatus *string `form:"eval_status,omitempty" json:"eval_status,omitempty" xml:"eval_status,omitempty"`
+	// Scoring / results of the test groups
+	EvalScoringTestgroups []*TestGroupResultResponseBody `form:"eval_scoring_testgroups,omitempty" json:"eval_scoring_testgroups,omitempty" xml:"eval_scoring_testgroups,omitempty"`
+	// Scoring / results of the all tests
+	EvalScoringTests *TestsResultResponseBody `form:"eval_scoring_tests,omitempty" json:"eval_scoring_tests,omitempty" xml:"eval_scoring_tests,omitempty"`
+	// Scoring / results of the subtasks
+	EvalScoringSubtasks []*SubtaskResultResponseBody `form:"eval_scoring_subtasks,omitempty" json:"eval_scoring_subtasks,omitempty" xml:"eval_scoring_subtasks,omitempty"`
+	// ID of the programming language
+	PLangID *string `form:"p_lang_id,omitempty" json:"p_lang_id,omitempty" xml:"p_lang_id,omitempty"`
+	// Display name of the programming language
+	PLangDisplayName *string `form:"p_lang_display_name,omitempty" json:"p_lang_display_name,omitempty" xml:"p_lang_display_name,omitempty"`
+	// Monaco editor ID for the programming language
+	PLangMonacoID *string `form:"p_lang_monaco_id,omitempty" json:"p_lang_monaco_id,omitempty" xml:"p_lang_monaco_id,omitempty"`
+	// Name of the task associated with the submission
+	TaskName *string `form:"task_name,omitempty" json:"task_name,omitempty" xml:"task_name,omitempty"`
+	// Code of the task associated with the submission
+	TaskID *string `form:"task_id,omitempty" json:"task_id,omitempty" xml:"task_id,omitempty"`
 }
 
 // ListSubmissionsResponseBody is the type of the "submissions" service
@@ -52,102 +64,145 @@ type ListSubmissionsResponseBody []*SubmissionResponse
 // "getSubmission" endpoint HTTP response body.
 type GetSubmissionResponseBody struct {
 	// UUID of the submission
-	UUID *string `form:"uuid,omitempty" json:"uuid,omitempty" xml:"uuid,omitempty"`
+	SubmUUID *string `form:"subm_uuid,omitempty" json:"subm_uuid,omitempty" xml:"subm_uuid,omitempty"`
 	// The code submission
 	Submission *string `form:"submission,omitempty" json:"submission,omitempty" xml:"submission,omitempty"`
 	// Username of the user who submitted
 	Username *string `form:"username,omitempty" json:"username,omitempty" xml:"username,omitempty"`
-	// Creation date of the submission
-	CreatedAt *string `form:"createdAt,omitempty" json:"createdAt,omitempty" xml:"createdAt,omitempty"`
-	// Evaluation of the submission
-	Evaluation *EvaluationResponseBody `form:"evaluation,omitempty" json:"evaluation,omitempty" xml:"evaluation,omitempty"`
-	// Programming language of the submission
-	Language *SubmProgrammingLangResponseBody `form:"language,omitempty" json:"language,omitempty" xml:"language,omitempty"`
-	// Task associated with the submission
-	Task *SubmTaskResponseBody `form:"task,omitempty" json:"task,omitempty" xml:"task,omitempty"`
+	// Creation time of the submission
+	CreatedAt *string `form:"created_at,omitempty" json:"created_at,omitempty" xml:"created_at,omitempty"`
+	// Status of the current evaluation
+	EvalStatus *string `form:"eval_status,omitempty" json:"eval_status,omitempty" xml:"eval_status,omitempty"`
+	// Scoring / results of the test groups
+	EvalScoringTestgroups []*TestGroupResultResponseBody `form:"eval_scoring_testgroups,omitempty" json:"eval_scoring_testgroups,omitempty" xml:"eval_scoring_testgroups,omitempty"`
+	// Scoring / results of the all tests
+	EvalScoringTests *TestsResultResponseBody `form:"eval_scoring_tests,omitempty" json:"eval_scoring_tests,omitempty" xml:"eval_scoring_tests,omitempty"`
+	// Scoring / results of the subtasks
+	EvalScoringSubtasks []*SubtaskResultResponseBody `form:"eval_scoring_subtasks,omitempty" json:"eval_scoring_subtasks,omitempty" xml:"eval_scoring_subtasks,omitempty"`
+	// ID of the programming language
+	PLangID *string `form:"p_lang_id,omitempty" json:"p_lang_id,omitempty" xml:"p_lang_id,omitempty"`
+	// Display name of the programming language
+	PLangDisplayName *string `form:"p_lang_display_name,omitempty" json:"p_lang_display_name,omitempty" xml:"p_lang_display_name,omitempty"`
+	// Monaco editor ID for the programming language
+	PLangMonacoID *string `form:"p_lang_monaco_id,omitempty" json:"p_lang_monaco_id,omitempty" xml:"p_lang_monaco_id,omitempty"`
+	// Name of the task associated with the submission
+	TaskName *string `form:"task_name,omitempty" json:"task_name,omitempty" xml:"task_name,omitempty"`
+	// Code of the task associated with the submission
+	TaskID *string `form:"task_id,omitempty" json:"task_id,omitempty" xml:"task_id,omitempty"`
 }
 
 // ListProgrammingLanguagesResponseBody is the type of the "submissions"
 // service "listProgrammingLanguages" endpoint HTTP response body.
 type ListProgrammingLanguagesResponseBody []*ProgrammingLangResponse
 
-// EvaluationResponseBody is used to define fields on response body types.
-type EvaluationResponseBody struct {
-	// UUID of the evaluation
-	UUID *string `form:"uuid,omitempty" json:"uuid,omitempty" xml:"uuid,omitempty"`
-	// Status of the evaluation
-	Status *string `form:"status,omitempty" json:"status,omitempty" xml:"status,omitempty"`
-	// Received score of the evaluation
-	ReceivedScore *int `form:"receivedScore,omitempty" json:"receivedScore,omitempty" xml:"receivedScore,omitempty"`
-	// Possible score of the evaluation
-	PossibleScore *int `form:"possibleScore,omitempty" json:"possibleScore,omitempty" xml:"possibleScore,omitempty"`
+// TestGroupResultResponseBody is used to define fields on response body types.
+type TestGroupResultResponseBody struct {
+	// ID of the test group
+	TestGroupID *int `form:"test_group_id,omitempty" json:"test_group_id,omitempty" xml:"test_group_id,omitempty"`
+	// Score of the test group
+	TestGroupScore *int `form:"test_group_score,omitempty" json:"test_group_score,omitempty" xml:"test_group_score,omitempty"`
+	// Statement subtask
+	StatementSubtask *int `form:"statement_subtask,omitempty" json:"statement_subtask,omitempty" xml:"statement_subtask,omitempty"`
+	// Number of accepted tests
+	AcceptedTests *int `form:"accepted_tests,omitempty" json:"accepted_tests,omitempty" xml:"accepted_tests,omitempty"`
+	// Number of wrong tests
+	WrongTests *int `form:"wrong_tests,omitempty" json:"wrong_tests,omitempty" xml:"wrong_tests,omitempty"`
+	// Number of untested tests
+	UntestedTests *int `form:"untested_tests,omitempty" json:"untested_tests,omitempty" xml:"untested_tests,omitempty"`
 }
 
-// SubmProgrammingLangResponseBody is used to define fields on response body
-// types.
-type SubmProgrammingLangResponseBody struct {
-	// ID of the programming language
-	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
-	// Full name of the programming language
-	FullName *string `form:"fullName,omitempty" json:"fullName,omitempty" xml:"fullName,omitempty"`
-	// Monaco editor ID for the programming language
-	MonacoID *string `form:"monacoId,omitempty" json:"monacoId,omitempty" xml:"monacoId,omitempty"`
+// TestsResultResponseBody is used to define fields on response body types.
+type TestsResultResponseBody struct {
+	// Number of accepted tests
+	Accepted *int `form:"accepted,omitempty" json:"accepted,omitempty" xml:"accepted,omitempty"`
+	// Number of wrong tests
+	Wrong *int `form:"wrong,omitempty" json:"wrong,omitempty" xml:"wrong,omitempty"`
+	// Number of untested tests
+	Untested *int `form:"untested,omitempty" json:"untested,omitempty" xml:"untested,omitempty"`
 }
 
-// SubmTaskResponseBody is used to define fields on response body types.
-type SubmTaskResponseBody struct {
-	// Name of the task
-	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
-	// Code of the task
-	Code *string `form:"code,omitempty" json:"code,omitempty" xml:"code,omitempty"`
+// SubtaskResultResponseBody is used to define fields on response body types.
+type SubtaskResultResponseBody struct {
+	// ID of the subtask
+	SubtaskID *int `form:"subtask_id,omitempty" json:"subtask_id,omitempty" xml:"subtask_id,omitempty"`
+	// Score of the subtask
+	SubtaskScore *int `form:"subtask_score,omitempty" json:"subtask_score,omitempty" xml:"subtask_score,omitempty"`
+	// Number of accepted tests
+	AcceptedTests *int `form:"accepted_tests,omitempty" json:"accepted_tests,omitempty" xml:"accepted_tests,omitempty"`
+	// Number of wrong tests
+	WrongTests *int `form:"wrong_tests,omitempty" json:"wrong_tests,omitempty" xml:"wrong_tests,omitempty"`
+	// Number of untested tests
+	UntestedTests *int `form:"untested_tests,omitempty" json:"untested_tests,omitempty" xml:"untested_tests,omitempty"`
 }
 
 // SubmissionResponse is used to define fields on response body types.
 type SubmissionResponse struct {
 	// UUID of the submission
-	UUID *string `form:"uuid,omitempty" json:"uuid,omitempty" xml:"uuid,omitempty"`
+	SubmUUID *string `form:"subm_uuid,omitempty" json:"subm_uuid,omitempty" xml:"subm_uuid,omitempty"`
 	// The code submission
 	Submission *string `form:"submission,omitempty" json:"submission,omitempty" xml:"submission,omitempty"`
 	// Username of the user who submitted
 	Username *string `form:"username,omitempty" json:"username,omitempty" xml:"username,omitempty"`
-	// Creation date of the submission
-	CreatedAt *string `form:"createdAt,omitempty" json:"createdAt,omitempty" xml:"createdAt,omitempty"`
-	// Evaluation of the submission
-	Evaluation *EvaluationResponse `form:"evaluation,omitempty" json:"evaluation,omitempty" xml:"evaluation,omitempty"`
-	// Programming language of the submission
-	Language *SubmProgrammingLangResponse `form:"language,omitempty" json:"language,omitempty" xml:"language,omitempty"`
-	// Task associated with the submission
-	Task *SubmTaskResponse `form:"task,omitempty" json:"task,omitempty" xml:"task,omitempty"`
-}
-
-// EvaluationResponse is used to define fields on response body types.
-type EvaluationResponse struct {
-	// UUID of the evaluation
-	UUID *string `form:"uuid,omitempty" json:"uuid,omitempty" xml:"uuid,omitempty"`
-	// Status of the evaluation
-	Status *string `form:"status,omitempty" json:"status,omitempty" xml:"status,omitempty"`
-	// Received score of the evaluation
-	ReceivedScore *int `form:"receivedScore,omitempty" json:"receivedScore,omitempty" xml:"receivedScore,omitempty"`
-	// Possible score of the evaluation
-	PossibleScore *int `form:"possibleScore,omitempty" json:"possibleScore,omitempty" xml:"possibleScore,omitempty"`
-}
-
-// SubmProgrammingLangResponse is used to define fields on response body types.
-type SubmProgrammingLangResponse struct {
+	// Creation time of the submission
+	CreatedAt *string `form:"created_at,omitempty" json:"created_at,omitempty" xml:"created_at,omitempty"`
+	// Status of the current evaluation
+	EvalStatus *string `form:"eval_status,omitempty" json:"eval_status,omitempty" xml:"eval_status,omitempty"`
+	// Scoring / results of the test groups
+	EvalScoringTestgroups []*TestGroupResultResponse `form:"eval_scoring_testgroups,omitempty" json:"eval_scoring_testgroups,omitempty" xml:"eval_scoring_testgroups,omitempty"`
+	// Scoring / results of the all tests
+	EvalScoringTests *TestsResultResponse `form:"eval_scoring_tests,omitempty" json:"eval_scoring_tests,omitempty" xml:"eval_scoring_tests,omitempty"`
+	// Scoring / results of the subtasks
+	EvalScoringSubtasks []*SubtaskResultResponse `form:"eval_scoring_subtasks,omitempty" json:"eval_scoring_subtasks,omitempty" xml:"eval_scoring_subtasks,omitempty"`
 	// ID of the programming language
-	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
-	// Full name of the programming language
-	FullName *string `form:"fullName,omitempty" json:"fullName,omitempty" xml:"fullName,omitempty"`
+	PLangID *string `form:"p_lang_id,omitempty" json:"p_lang_id,omitempty" xml:"p_lang_id,omitempty"`
+	// Display name of the programming language
+	PLangDisplayName *string `form:"p_lang_display_name,omitempty" json:"p_lang_display_name,omitempty" xml:"p_lang_display_name,omitempty"`
 	// Monaco editor ID for the programming language
-	MonacoID *string `form:"monacoId,omitempty" json:"monacoId,omitempty" xml:"monacoId,omitempty"`
+	PLangMonacoID *string `form:"p_lang_monaco_id,omitempty" json:"p_lang_monaco_id,omitempty" xml:"p_lang_monaco_id,omitempty"`
+	// Name of the task associated with the submission
+	TaskName *string `form:"task_name,omitempty" json:"task_name,omitempty" xml:"task_name,omitempty"`
+	// Code of the task associated with the submission
+	TaskID *string `form:"task_id,omitempty" json:"task_id,omitempty" xml:"task_id,omitempty"`
 }
 
-// SubmTaskResponse is used to define fields on response body types.
-type SubmTaskResponse struct {
-	// Name of the task
-	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
-	// Code of the task
-	Code *string `form:"code,omitempty" json:"code,omitempty" xml:"code,omitempty"`
+// TestGroupResultResponse is used to define fields on response body types.
+type TestGroupResultResponse struct {
+	// ID of the test group
+	TestGroupID *int `form:"test_group_id,omitempty" json:"test_group_id,omitempty" xml:"test_group_id,omitempty"`
+	// Score of the test group
+	TestGroupScore *int `form:"test_group_score,omitempty" json:"test_group_score,omitempty" xml:"test_group_score,omitempty"`
+	// Statement subtask
+	StatementSubtask *int `form:"statement_subtask,omitempty" json:"statement_subtask,omitempty" xml:"statement_subtask,omitempty"`
+	// Number of accepted tests
+	AcceptedTests *int `form:"accepted_tests,omitempty" json:"accepted_tests,omitempty" xml:"accepted_tests,omitempty"`
+	// Number of wrong tests
+	WrongTests *int `form:"wrong_tests,omitempty" json:"wrong_tests,omitempty" xml:"wrong_tests,omitempty"`
+	// Number of untested tests
+	UntestedTests *int `form:"untested_tests,omitempty" json:"untested_tests,omitempty" xml:"untested_tests,omitempty"`
+}
+
+// TestsResultResponse is used to define fields on response body types.
+type TestsResultResponse struct {
+	// Number of accepted tests
+	Accepted *int `form:"accepted,omitempty" json:"accepted,omitempty" xml:"accepted,omitempty"`
+	// Number of wrong tests
+	Wrong *int `form:"wrong,omitempty" json:"wrong,omitempty" xml:"wrong,omitempty"`
+	// Number of untested tests
+	Untested *int `form:"untested,omitempty" json:"untested,omitempty" xml:"untested,omitempty"`
+}
+
+// SubtaskResultResponse is used to define fields on response body types.
+type SubtaskResultResponse struct {
+	// ID of the subtask
+	SubtaskID *int `form:"subtask_id,omitempty" json:"subtask_id,omitempty" xml:"subtask_id,omitempty"`
+	// Score of the subtask
+	SubtaskScore *int `form:"subtask_score,omitempty" json:"subtask_score,omitempty" xml:"subtask_score,omitempty"`
+	// Number of accepted tests
+	AcceptedTests *int `form:"accepted_tests,omitempty" json:"accepted_tests,omitempty" xml:"accepted_tests,omitempty"`
+	// Number of wrong tests
+	WrongTests *int `form:"wrong_tests,omitempty" json:"wrong_tests,omitempty" xml:"wrong_tests,omitempty"`
+	// Number of untested tests
+	UntestedTests *int `form:"untested_tests,omitempty" json:"untested_tests,omitempty" xml:"untested_tests,omitempty"`
 }
 
 // ProgrammingLangResponse is used to define fields on response body types.
@@ -190,14 +245,32 @@ func NewCreateSubmissionRequestBody(p *submissions.CreateSubmissionPayload) *Cre
 // "createSubmission" endpoint result from a HTTP "Created" response.
 func NewCreateSubmissionSubmissionCreated(body *CreateSubmissionResponseBody) *submissions.Submission {
 	v := &submissions.Submission{
-		UUID:       *body.UUID,
-		Submission: *body.Submission,
-		Username:   *body.Username,
-		CreatedAt:  *body.CreatedAt,
+		SubmUUID:         *body.SubmUUID,
+		Submission:       *body.Submission,
+		Username:         *body.Username,
+		CreatedAt:        *body.CreatedAt,
+		EvalStatus:       *body.EvalStatus,
+		PLangID:          *body.PLangID,
+		PLangDisplayName: *body.PLangDisplayName,
+		PLangMonacoID:    *body.PLangMonacoID,
+		TaskName:         *body.TaskName,
+		TaskID:           *body.TaskID,
 	}
-	v.Evaluation = unmarshalEvaluationResponseBodyToSubmissionsEvaluation(body.Evaluation)
-	v.Language = unmarshalSubmProgrammingLangResponseBodyToSubmissionsSubmProgrammingLang(body.Language)
-	v.Task = unmarshalSubmTaskResponseBodyToSubmissionsSubmTask(body.Task)
+	if body.EvalScoringTestgroups != nil {
+		v.EvalScoringTestgroups = make([]*submissions.TestGroupResult, len(body.EvalScoringTestgroups))
+		for i, val := range body.EvalScoringTestgroups {
+			v.EvalScoringTestgroups[i] = unmarshalTestGroupResultResponseBodyToSubmissionsTestGroupResult(val)
+		}
+	}
+	if body.EvalScoringTests != nil {
+		v.EvalScoringTests = unmarshalTestsResultResponseBodyToSubmissionsTestsResult(body.EvalScoringTests)
+	}
+	if body.EvalScoringSubtasks != nil {
+		v.EvalScoringSubtasks = make([]*submissions.SubtaskResult, len(body.EvalScoringSubtasks))
+		for i, val := range body.EvalScoringSubtasks {
+			v.EvalScoringSubtasks[i] = unmarshalSubtaskResultResponseBodyToSubmissionsSubtaskResult(val)
+		}
+	}
 
 	return v
 }
@@ -281,14 +354,32 @@ func NewListSubmissionsUnauthorized(body string) submissions.Unauthorized {
 // endpoint result from a HTTP "OK" response.
 func NewGetSubmissionSubmissionOK(body *GetSubmissionResponseBody) *submissions.Submission {
 	v := &submissions.Submission{
-		UUID:       *body.UUID,
-		Submission: *body.Submission,
-		Username:   *body.Username,
-		CreatedAt:  *body.CreatedAt,
+		SubmUUID:         *body.SubmUUID,
+		Submission:       *body.Submission,
+		Username:         *body.Username,
+		CreatedAt:        *body.CreatedAt,
+		EvalStatus:       *body.EvalStatus,
+		PLangID:          *body.PLangID,
+		PLangDisplayName: *body.PLangDisplayName,
+		PLangMonacoID:    *body.PLangMonacoID,
+		TaskName:         *body.TaskName,
+		TaskID:           *body.TaskID,
 	}
-	v.Evaluation = unmarshalEvaluationResponseBodyToSubmissionsEvaluation(body.Evaluation)
-	v.Language = unmarshalSubmProgrammingLangResponseBodyToSubmissionsSubmProgrammingLang(body.Language)
-	v.Task = unmarshalSubmTaskResponseBodyToSubmissionsSubmTask(body.Task)
+	if body.EvalScoringTestgroups != nil {
+		v.EvalScoringTestgroups = make([]*submissions.TestGroupResult, len(body.EvalScoringTestgroups))
+		for i, val := range body.EvalScoringTestgroups {
+			v.EvalScoringTestgroups[i] = unmarshalTestGroupResultResponseBodyToSubmissionsTestGroupResult(val)
+		}
+	}
+	if body.EvalScoringTests != nil {
+		v.EvalScoringTests = unmarshalTestsResultResponseBodyToSubmissionsTestsResult(body.EvalScoringTests)
+	}
+	if body.EvalScoringSubtasks != nil {
+		v.EvalScoringSubtasks = make([]*submissions.SubtaskResult, len(body.EvalScoringSubtasks))
+		for i, val := range body.EvalScoringSubtasks {
+			v.EvalScoringSubtasks[i] = unmarshalSubtaskResultResponseBodyToSubmissionsSubtaskResult(val)
+		}
+	}
 
 	return v
 }
@@ -371,8 +462,8 @@ func NewListProgrammingLanguagesUnauthorized(body string) submissions.Unauthoriz
 // ValidateCreateSubmissionResponseBody runs the validations defined on
 // CreateSubmissionResponseBody
 func ValidateCreateSubmissionResponseBody(body *CreateSubmissionResponseBody) (err error) {
-	if body.UUID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("uuid", "body"))
+	if body.SubmUUID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("subm_uuid", "body"))
 	}
 	if body.Submission == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("submission", "body"))
@@ -381,33 +472,43 @@ func ValidateCreateSubmissionResponseBody(body *CreateSubmissionResponseBody) (e
 		err = goa.MergeErrors(err, goa.MissingFieldError("username", "body"))
 	}
 	if body.CreatedAt == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("createdAt", "body"))
+		err = goa.MergeErrors(err, goa.MissingFieldError("created_at", "body"))
 	}
-	if body.Evaluation == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("evaluation", "body"))
+	if body.EvalStatus == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("eval_status", "body"))
 	}
-	if body.Language == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("language", "body"))
+	if body.PLangID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("p_lang_id", "body"))
 	}
-	if body.Task == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("task", "body"))
+	if body.PLangDisplayName == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("p_lang_display_name", "body"))
 	}
-	if body.CreatedAt != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.createdAt", *body.CreatedAt, goa.FormatDateTime))
+	if body.PLangMonacoID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("p_lang_monaco_id", "body"))
 	}
-	if body.Evaluation != nil {
-		if err2 := ValidateEvaluationResponseBody(body.Evaluation); err2 != nil {
+	if body.TaskName == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("task_name", "body"))
+	}
+	if body.TaskID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("task_id", "body"))
+	}
+	for _, e := range body.EvalScoringTestgroups {
+		if e != nil {
+			if err2 := ValidateTestGroupResultResponseBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	if body.EvalScoringTests != nil {
+		if err2 := ValidateTestsResultResponseBody(body.EvalScoringTests); err2 != nil {
 			err = goa.MergeErrors(err, err2)
 		}
 	}
-	if body.Language != nil {
-		if err2 := ValidateSubmProgrammingLangResponseBody(body.Language); err2 != nil {
-			err = goa.MergeErrors(err, err2)
-		}
-	}
-	if body.Task != nil {
-		if err2 := ValidateSubmTaskResponseBody(body.Task); err2 != nil {
-			err = goa.MergeErrors(err, err2)
+	for _, e := range body.EvalScoringSubtasks {
+		if e != nil {
+			if err2 := ValidateSubtaskResultResponseBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
 		}
 	}
 	return
@@ -416,8 +517,8 @@ func ValidateCreateSubmissionResponseBody(body *CreateSubmissionResponseBody) (e
 // ValidateGetSubmissionResponseBody runs the validations defined on
 // GetSubmissionResponseBody
 func ValidateGetSubmissionResponseBody(body *GetSubmissionResponseBody) (err error) {
-	if body.UUID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("uuid", "body"))
+	if body.SubmUUID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("subm_uuid", "body"))
 	}
 	if body.Submission == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("submission", "body"))
@@ -426,87 +527,112 @@ func ValidateGetSubmissionResponseBody(body *GetSubmissionResponseBody) (err err
 		err = goa.MergeErrors(err, goa.MissingFieldError("username", "body"))
 	}
 	if body.CreatedAt == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("createdAt", "body"))
+		err = goa.MergeErrors(err, goa.MissingFieldError("created_at", "body"))
 	}
-	if body.Evaluation == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("evaluation", "body"))
+	if body.EvalStatus == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("eval_status", "body"))
 	}
-	if body.Language == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("language", "body"))
+	if body.PLangID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("p_lang_id", "body"))
 	}
-	if body.Task == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("task", "body"))
+	if body.PLangDisplayName == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("p_lang_display_name", "body"))
 	}
-	if body.CreatedAt != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.createdAt", *body.CreatedAt, goa.FormatDateTime))
+	if body.PLangMonacoID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("p_lang_monaco_id", "body"))
 	}
-	if body.Evaluation != nil {
-		if err2 := ValidateEvaluationResponseBody(body.Evaluation); err2 != nil {
+	if body.TaskName == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("task_name", "body"))
+	}
+	if body.TaskID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("task_id", "body"))
+	}
+	for _, e := range body.EvalScoringTestgroups {
+		if e != nil {
+			if err2 := ValidateTestGroupResultResponseBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	if body.EvalScoringTests != nil {
+		if err2 := ValidateTestsResultResponseBody(body.EvalScoringTests); err2 != nil {
 			err = goa.MergeErrors(err, err2)
 		}
 	}
-	if body.Language != nil {
-		if err2 := ValidateSubmProgrammingLangResponseBody(body.Language); err2 != nil {
-			err = goa.MergeErrors(err, err2)
-		}
-	}
-	if body.Task != nil {
-		if err2 := ValidateSubmTaskResponseBody(body.Task); err2 != nil {
-			err = goa.MergeErrors(err, err2)
+	for _, e := range body.EvalScoringSubtasks {
+		if e != nil {
+			if err2 := ValidateSubtaskResultResponseBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
 		}
 	}
 	return
 }
 
-// ValidateEvaluationResponseBody runs the validations defined on
-// EvaluationResponseBody
-func ValidateEvaluationResponseBody(body *EvaluationResponseBody) (err error) {
-	if body.UUID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("uuid", "body"))
+// ValidateTestGroupResultResponseBody runs the validations defined on
+// TestGroupResultResponseBody
+func ValidateTestGroupResultResponseBody(body *TestGroupResultResponseBody) (err error) {
+	if body.TestGroupID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("test_group_id", "body"))
 	}
-	if body.Status == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("status", "body"))
+	if body.TestGroupScore == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("test_group_score", "body"))
 	}
-	if body.ReceivedScore == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("receivedScore", "body"))
+	if body.StatementSubtask == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("statement_subtask", "body"))
 	}
-	if body.PossibleScore == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("possibleScore", "body"))
+	if body.AcceptedTests == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("accepted_tests", "body"))
 	}
-	return
-}
-
-// ValidateSubmProgrammingLangResponseBody runs the validations defined on
-// SubmProgrammingLangResponseBody
-func ValidateSubmProgrammingLangResponseBody(body *SubmProgrammingLangResponseBody) (err error) {
-	if body.ID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
+	if body.WrongTests == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("wrong_tests", "body"))
 	}
-	if body.FullName == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("fullName", "body"))
-	}
-	if body.MonacoID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("monacoId", "body"))
+	if body.UntestedTests == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("untested_tests", "body"))
 	}
 	return
 }
 
-// ValidateSubmTaskResponseBody runs the validations defined on
-// SubmTaskResponseBody
-func ValidateSubmTaskResponseBody(body *SubmTaskResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
+// ValidateTestsResultResponseBody runs the validations defined on
+// TestsResultResponseBody
+func ValidateTestsResultResponseBody(body *TestsResultResponseBody) (err error) {
+	if body.Accepted == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("accepted", "body"))
 	}
-	if body.Code == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
+	if body.Wrong == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("wrong", "body"))
+	}
+	if body.Untested == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("untested", "body"))
+	}
+	return
+}
+
+// ValidateSubtaskResultResponseBody runs the validations defined on
+// SubtaskResultResponseBody
+func ValidateSubtaskResultResponseBody(body *SubtaskResultResponseBody) (err error) {
+	if body.SubtaskID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("subtask_id", "body"))
+	}
+	if body.SubtaskScore == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("subtask_score", "body"))
+	}
+	if body.AcceptedTests == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("accepted_tests", "body"))
+	}
+	if body.WrongTests == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("wrong_tests", "body"))
+	}
+	if body.UntestedTests == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("untested_tests", "body"))
 	}
 	return
 }
 
 // ValidateSubmissionResponse runs the validations defined on SubmissionResponse
 func ValidateSubmissionResponse(body *SubmissionResponse) (err error) {
-	if body.UUID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("uuid", "body"))
+	if body.SubmUUID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("subm_uuid", "body"))
 	}
 	if body.Submission == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("submission", "body"))
@@ -515,77 +641,104 @@ func ValidateSubmissionResponse(body *SubmissionResponse) (err error) {
 		err = goa.MergeErrors(err, goa.MissingFieldError("username", "body"))
 	}
 	if body.CreatedAt == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("createdAt", "body"))
+		err = goa.MergeErrors(err, goa.MissingFieldError("created_at", "body"))
 	}
-	if body.Evaluation == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("evaluation", "body"))
+	if body.EvalStatus == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("eval_status", "body"))
 	}
-	if body.Language == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("language", "body"))
+	if body.PLangID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("p_lang_id", "body"))
 	}
-	if body.Task == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("task", "body"))
+	if body.PLangDisplayName == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("p_lang_display_name", "body"))
 	}
-	if body.CreatedAt != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.createdAt", *body.CreatedAt, goa.FormatDateTime))
+	if body.PLangMonacoID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("p_lang_monaco_id", "body"))
 	}
-	if body.Evaluation != nil {
-		if err2 := ValidateEvaluationResponse(body.Evaluation); err2 != nil {
+	if body.TaskName == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("task_name", "body"))
+	}
+	if body.TaskID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("task_id", "body"))
+	}
+	for _, e := range body.EvalScoringTestgroups {
+		if e != nil {
+			if err2 := ValidateTestGroupResultResponse(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	if body.EvalScoringTests != nil {
+		if err2 := ValidateTestsResultResponse(body.EvalScoringTests); err2 != nil {
 			err = goa.MergeErrors(err, err2)
 		}
 	}
-	if body.Language != nil {
-		if err2 := ValidateSubmProgrammingLangResponse(body.Language); err2 != nil {
-			err = goa.MergeErrors(err, err2)
-		}
-	}
-	if body.Task != nil {
-		if err2 := ValidateSubmTaskResponse(body.Task); err2 != nil {
-			err = goa.MergeErrors(err, err2)
+	for _, e := range body.EvalScoringSubtasks {
+		if e != nil {
+			if err2 := ValidateSubtaskResultResponse(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
 		}
 	}
 	return
 }
 
-// ValidateEvaluationResponse runs the validations defined on EvaluationResponse
-func ValidateEvaluationResponse(body *EvaluationResponse) (err error) {
-	if body.UUID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("uuid", "body"))
+// ValidateTestGroupResultResponse runs the validations defined on
+// TestGroupResultResponse
+func ValidateTestGroupResultResponse(body *TestGroupResultResponse) (err error) {
+	if body.TestGroupID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("test_group_id", "body"))
 	}
-	if body.Status == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("status", "body"))
+	if body.TestGroupScore == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("test_group_score", "body"))
 	}
-	if body.ReceivedScore == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("receivedScore", "body"))
+	if body.StatementSubtask == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("statement_subtask", "body"))
 	}
-	if body.PossibleScore == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("possibleScore", "body"))
+	if body.AcceptedTests == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("accepted_tests", "body"))
 	}
-	return
-}
-
-// ValidateSubmProgrammingLangResponse runs the validations defined on
-// SubmProgrammingLangResponse
-func ValidateSubmProgrammingLangResponse(body *SubmProgrammingLangResponse) (err error) {
-	if body.ID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
+	if body.WrongTests == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("wrong_tests", "body"))
 	}
-	if body.FullName == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("fullName", "body"))
-	}
-	if body.MonacoID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("monacoId", "body"))
+	if body.UntestedTests == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("untested_tests", "body"))
 	}
 	return
 }
 
-// ValidateSubmTaskResponse runs the validations defined on SubmTaskResponse
-func ValidateSubmTaskResponse(body *SubmTaskResponse) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
+// ValidateTestsResultResponse runs the validations defined on
+// TestsResultResponse
+func ValidateTestsResultResponse(body *TestsResultResponse) (err error) {
+	if body.Accepted == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("accepted", "body"))
 	}
-	if body.Code == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
+	if body.Wrong == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("wrong", "body"))
+	}
+	if body.Untested == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("untested", "body"))
+	}
+	return
+}
+
+// ValidateSubtaskResultResponse runs the validations defined on
+// SubtaskResultResponse
+func ValidateSubtaskResultResponse(body *SubtaskResultResponse) (err error) {
+	if body.SubtaskID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("subtask_id", "body"))
+	}
+	if body.SubtaskScore == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("subtask_score", "body"))
+	}
+	if body.AcceptedTests == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("accepted_tests", "body"))
+	}
+	if body.WrongTests == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("wrong_tests", "body"))
+	}
+	if body.UntestedTests == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("untested_tests", "body"))
 	}
 	return
 }

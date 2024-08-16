@@ -29,19 +29,31 @@ type CreateSubmissionRequestBody struct {
 // "createSubmission" endpoint HTTP response body.
 type CreateSubmissionResponseBody struct {
 	// UUID of the submission
-	UUID string `form:"uuid" json:"uuid" xml:"uuid"`
+	SubmUUID string `form:"subm_uuid" json:"subm_uuid" xml:"subm_uuid"`
 	// The code submission
 	Submission string `form:"submission" json:"submission" xml:"submission"`
 	// Username of the user who submitted
 	Username string `form:"username" json:"username" xml:"username"`
-	// Creation date of the submission
-	CreatedAt string `form:"createdAt" json:"createdAt" xml:"createdAt"`
-	// Evaluation of the submission
-	Evaluation *EvaluationResponseBody `form:"evaluation" json:"evaluation" xml:"evaluation"`
-	// Programming language of the submission
-	Language *SubmProgrammingLangResponseBody `form:"language" json:"language" xml:"language"`
-	// Task associated with the submission
-	Task *SubmTaskResponseBody `form:"task" json:"task" xml:"task"`
+	// Creation time of the submission
+	CreatedAt string `form:"created_at" json:"created_at" xml:"created_at"`
+	// Status of the current evaluation
+	EvalStatus string `form:"eval_status" json:"eval_status" xml:"eval_status"`
+	// Scoring / results of the test groups
+	EvalScoringTestgroups []*TestGroupResultResponseBody `form:"eval_scoring_testgroups,omitempty" json:"eval_scoring_testgroups,omitempty" xml:"eval_scoring_testgroups,omitempty"`
+	// Scoring / results of the all tests
+	EvalScoringTests *TestsResultResponseBody `form:"eval_scoring_tests,omitempty" json:"eval_scoring_tests,omitempty" xml:"eval_scoring_tests,omitempty"`
+	// Scoring / results of the subtasks
+	EvalScoringSubtasks []*SubtaskResultResponseBody `form:"eval_scoring_subtasks,omitempty" json:"eval_scoring_subtasks,omitempty" xml:"eval_scoring_subtasks,omitempty"`
+	// ID of the programming language
+	PLangID string `form:"p_lang_id" json:"p_lang_id" xml:"p_lang_id"`
+	// Display name of the programming language
+	PLangDisplayName string `form:"p_lang_display_name" json:"p_lang_display_name" xml:"p_lang_display_name"`
+	// Monaco editor ID for the programming language
+	PLangMonacoID string `form:"p_lang_monaco_id" json:"p_lang_monaco_id" xml:"p_lang_monaco_id"`
+	// Name of the task associated with the submission
+	TaskName string `form:"task_name" json:"task_name" xml:"task_name"`
+	// Code of the task associated with the submission
+	TaskID string `form:"task_id" json:"task_id" xml:"task_id"`
 }
 
 // ListSubmissionsResponseBody is the type of the "submissions" service
@@ -52,102 +64,145 @@ type ListSubmissionsResponseBody []*SubmissionResponse
 // "getSubmission" endpoint HTTP response body.
 type GetSubmissionResponseBody struct {
 	// UUID of the submission
-	UUID string `form:"uuid" json:"uuid" xml:"uuid"`
+	SubmUUID string `form:"subm_uuid" json:"subm_uuid" xml:"subm_uuid"`
 	// The code submission
 	Submission string `form:"submission" json:"submission" xml:"submission"`
 	// Username of the user who submitted
 	Username string `form:"username" json:"username" xml:"username"`
-	// Creation date of the submission
-	CreatedAt string `form:"createdAt" json:"createdAt" xml:"createdAt"`
-	// Evaluation of the submission
-	Evaluation *EvaluationResponseBody `form:"evaluation" json:"evaluation" xml:"evaluation"`
-	// Programming language of the submission
-	Language *SubmProgrammingLangResponseBody `form:"language" json:"language" xml:"language"`
-	// Task associated with the submission
-	Task *SubmTaskResponseBody `form:"task" json:"task" xml:"task"`
+	// Creation time of the submission
+	CreatedAt string `form:"created_at" json:"created_at" xml:"created_at"`
+	// Status of the current evaluation
+	EvalStatus string `form:"eval_status" json:"eval_status" xml:"eval_status"`
+	// Scoring / results of the test groups
+	EvalScoringTestgroups []*TestGroupResultResponseBody `form:"eval_scoring_testgroups,omitempty" json:"eval_scoring_testgroups,omitempty" xml:"eval_scoring_testgroups,omitempty"`
+	// Scoring / results of the all tests
+	EvalScoringTests *TestsResultResponseBody `form:"eval_scoring_tests,omitempty" json:"eval_scoring_tests,omitempty" xml:"eval_scoring_tests,omitempty"`
+	// Scoring / results of the subtasks
+	EvalScoringSubtasks []*SubtaskResultResponseBody `form:"eval_scoring_subtasks,omitempty" json:"eval_scoring_subtasks,omitempty" xml:"eval_scoring_subtasks,omitempty"`
+	// ID of the programming language
+	PLangID string `form:"p_lang_id" json:"p_lang_id" xml:"p_lang_id"`
+	// Display name of the programming language
+	PLangDisplayName string `form:"p_lang_display_name" json:"p_lang_display_name" xml:"p_lang_display_name"`
+	// Monaco editor ID for the programming language
+	PLangMonacoID string `form:"p_lang_monaco_id" json:"p_lang_monaco_id" xml:"p_lang_monaco_id"`
+	// Name of the task associated with the submission
+	TaskName string `form:"task_name" json:"task_name" xml:"task_name"`
+	// Code of the task associated with the submission
+	TaskID string `form:"task_id" json:"task_id" xml:"task_id"`
 }
 
 // ListProgrammingLanguagesResponseBody is the type of the "submissions"
 // service "listProgrammingLanguages" endpoint HTTP response body.
 type ListProgrammingLanguagesResponseBody []*ProgrammingLangResponse
 
-// EvaluationResponseBody is used to define fields on response body types.
-type EvaluationResponseBody struct {
-	// UUID of the evaluation
-	UUID string `form:"uuid" json:"uuid" xml:"uuid"`
-	// Status of the evaluation
-	Status string `form:"status" json:"status" xml:"status"`
-	// Received score of the evaluation
-	ReceivedScore int `form:"receivedScore" json:"receivedScore" xml:"receivedScore"`
-	// Possible score of the evaluation
-	PossibleScore int `form:"possibleScore" json:"possibleScore" xml:"possibleScore"`
+// TestGroupResultResponseBody is used to define fields on response body types.
+type TestGroupResultResponseBody struct {
+	// ID of the test group
+	TestGroupID int `form:"test_group_id" json:"test_group_id" xml:"test_group_id"`
+	// Score of the test group
+	TestGroupScore int `form:"test_group_score" json:"test_group_score" xml:"test_group_score"`
+	// Statement subtask
+	StatementSubtask int `form:"statement_subtask" json:"statement_subtask" xml:"statement_subtask"`
+	// Number of accepted tests
+	AcceptedTests int `form:"accepted_tests" json:"accepted_tests" xml:"accepted_tests"`
+	// Number of wrong tests
+	WrongTests int `form:"wrong_tests" json:"wrong_tests" xml:"wrong_tests"`
+	// Number of untested tests
+	UntestedTests int `form:"untested_tests" json:"untested_tests" xml:"untested_tests"`
 }
 
-// SubmProgrammingLangResponseBody is used to define fields on response body
-// types.
-type SubmProgrammingLangResponseBody struct {
-	// ID of the programming language
-	ID string `form:"id" json:"id" xml:"id"`
-	// Full name of the programming language
-	FullName string `form:"fullName" json:"fullName" xml:"fullName"`
-	// Monaco editor ID for the programming language
-	MonacoID string `form:"monacoId" json:"monacoId" xml:"monacoId"`
+// TestsResultResponseBody is used to define fields on response body types.
+type TestsResultResponseBody struct {
+	// Number of accepted tests
+	Accepted int `form:"accepted" json:"accepted" xml:"accepted"`
+	// Number of wrong tests
+	Wrong int `form:"wrong" json:"wrong" xml:"wrong"`
+	// Number of untested tests
+	Untested int `form:"untested" json:"untested" xml:"untested"`
 }
 
-// SubmTaskResponseBody is used to define fields on response body types.
-type SubmTaskResponseBody struct {
-	// Name of the task
-	Name string `form:"name" json:"name" xml:"name"`
-	// Code of the task
-	Code string `form:"code" json:"code" xml:"code"`
+// SubtaskResultResponseBody is used to define fields on response body types.
+type SubtaskResultResponseBody struct {
+	// ID of the subtask
+	SubtaskID int `form:"subtask_id" json:"subtask_id" xml:"subtask_id"`
+	// Score of the subtask
+	SubtaskScore int `form:"subtask_score" json:"subtask_score" xml:"subtask_score"`
+	// Number of accepted tests
+	AcceptedTests int `form:"accepted_tests" json:"accepted_tests" xml:"accepted_tests"`
+	// Number of wrong tests
+	WrongTests int `form:"wrong_tests" json:"wrong_tests" xml:"wrong_tests"`
+	// Number of untested tests
+	UntestedTests int `form:"untested_tests" json:"untested_tests" xml:"untested_tests"`
 }
 
 // SubmissionResponse is used to define fields on response body types.
 type SubmissionResponse struct {
 	// UUID of the submission
-	UUID string `form:"uuid" json:"uuid" xml:"uuid"`
+	SubmUUID string `form:"subm_uuid" json:"subm_uuid" xml:"subm_uuid"`
 	// The code submission
 	Submission string `form:"submission" json:"submission" xml:"submission"`
 	// Username of the user who submitted
 	Username string `form:"username" json:"username" xml:"username"`
-	// Creation date of the submission
-	CreatedAt string `form:"createdAt" json:"createdAt" xml:"createdAt"`
-	// Evaluation of the submission
-	Evaluation *EvaluationResponse `form:"evaluation" json:"evaluation" xml:"evaluation"`
-	// Programming language of the submission
-	Language *SubmProgrammingLangResponse `form:"language" json:"language" xml:"language"`
-	// Task associated with the submission
-	Task *SubmTaskResponse `form:"task" json:"task" xml:"task"`
-}
-
-// EvaluationResponse is used to define fields on response body types.
-type EvaluationResponse struct {
-	// UUID of the evaluation
-	UUID string `form:"uuid" json:"uuid" xml:"uuid"`
-	// Status of the evaluation
-	Status string `form:"status" json:"status" xml:"status"`
-	// Received score of the evaluation
-	ReceivedScore int `form:"receivedScore" json:"receivedScore" xml:"receivedScore"`
-	// Possible score of the evaluation
-	PossibleScore int `form:"possibleScore" json:"possibleScore" xml:"possibleScore"`
-}
-
-// SubmProgrammingLangResponse is used to define fields on response body types.
-type SubmProgrammingLangResponse struct {
+	// Creation time of the submission
+	CreatedAt string `form:"created_at" json:"created_at" xml:"created_at"`
+	// Status of the current evaluation
+	EvalStatus string `form:"eval_status" json:"eval_status" xml:"eval_status"`
+	// Scoring / results of the test groups
+	EvalScoringTestgroups []*TestGroupResultResponse `form:"eval_scoring_testgroups,omitempty" json:"eval_scoring_testgroups,omitempty" xml:"eval_scoring_testgroups,omitempty"`
+	// Scoring / results of the all tests
+	EvalScoringTests *TestsResultResponse `form:"eval_scoring_tests,omitempty" json:"eval_scoring_tests,omitempty" xml:"eval_scoring_tests,omitempty"`
+	// Scoring / results of the subtasks
+	EvalScoringSubtasks []*SubtaskResultResponse `form:"eval_scoring_subtasks,omitempty" json:"eval_scoring_subtasks,omitempty" xml:"eval_scoring_subtasks,omitempty"`
 	// ID of the programming language
-	ID string `form:"id" json:"id" xml:"id"`
-	// Full name of the programming language
-	FullName string `form:"fullName" json:"fullName" xml:"fullName"`
+	PLangID string `form:"p_lang_id" json:"p_lang_id" xml:"p_lang_id"`
+	// Display name of the programming language
+	PLangDisplayName string `form:"p_lang_display_name" json:"p_lang_display_name" xml:"p_lang_display_name"`
 	// Monaco editor ID for the programming language
-	MonacoID string `form:"monacoId" json:"monacoId" xml:"monacoId"`
+	PLangMonacoID string `form:"p_lang_monaco_id" json:"p_lang_monaco_id" xml:"p_lang_monaco_id"`
+	// Name of the task associated with the submission
+	TaskName string `form:"task_name" json:"task_name" xml:"task_name"`
+	// Code of the task associated with the submission
+	TaskID string `form:"task_id" json:"task_id" xml:"task_id"`
 }
 
-// SubmTaskResponse is used to define fields on response body types.
-type SubmTaskResponse struct {
-	// Name of the task
-	Name string `form:"name" json:"name" xml:"name"`
-	// Code of the task
-	Code string `form:"code" json:"code" xml:"code"`
+// TestGroupResultResponse is used to define fields on response body types.
+type TestGroupResultResponse struct {
+	// ID of the test group
+	TestGroupID int `form:"test_group_id" json:"test_group_id" xml:"test_group_id"`
+	// Score of the test group
+	TestGroupScore int `form:"test_group_score" json:"test_group_score" xml:"test_group_score"`
+	// Statement subtask
+	StatementSubtask int `form:"statement_subtask" json:"statement_subtask" xml:"statement_subtask"`
+	// Number of accepted tests
+	AcceptedTests int `form:"accepted_tests" json:"accepted_tests" xml:"accepted_tests"`
+	// Number of wrong tests
+	WrongTests int `form:"wrong_tests" json:"wrong_tests" xml:"wrong_tests"`
+	// Number of untested tests
+	UntestedTests int `form:"untested_tests" json:"untested_tests" xml:"untested_tests"`
+}
+
+// TestsResultResponse is used to define fields on response body types.
+type TestsResultResponse struct {
+	// Number of accepted tests
+	Accepted int `form:"accepted" json:"accepted" xml:"accepted"`
+	// Number of wrong tests
+	Wrong int `form:"wrong" json:"wrong" xml:"wrong"`
+	// Number of untested tests
+	Untested int `form:"untested" json:"untested" xml:"untested"`
+}
+
+// SubtaskResultResponse is used to define fields on response body types.
+type SubtaskResultResponse struct {
+	// ID of the subtask
+	SubtaskID int `form:"subtask_id" json:"subtask_id" xml:"subtask_id"`
+	// Score of the subtask
+	SubtaskScore int `form:"subtask_score" json:"subtask_score" xml:"subtask_score"`
+	// Number of accepted tests
+	AcceptedTests int `form:"accepted_tests" json:"accepted_tests" xml:"accepted_tests"`
+	// Number of wrong tests
+	WrongTests int `form:"wrong_tests" json:"wrong_tests" xml:"wrong_tests"`
+	// Number of untested tests
+	UntestedTests int `form:"untested_tests" json:"untested_tests" xml:"untested_tests"`
 }
 
 // ProgrammingLangResponse is used to define fields on response body types.
@@ -178,19 +233,31 @@ type ProgrammingLangResponse struct {
 // result of the "createSubmission" endpoint of the "submissions" service.
 func NewCreateSubmissionResponseBody(res *submissions.Submission) *CreateSubmissionResponseBody {
 	body := &CreateSubmissionResponseBody{
-		UUID:       res.UUID,
-		Submission: res.Submission,
-		Username:   res.Username,
-		CreatedAt:  res.CreatedAt,
+		SubmUUID:         res.SubmUUID,
+		Submission:       res.Submission,
+		Username:         res.Username,
+		CreatedAt:        res.CreatedAt,
+		EvalStatus:       res.EvalStatus,
+		PLangID:          res.PLangID,
+		PLangDisplayName: res.PLangDisplayName,
+		PLangMonacoID:    res.PLangMonacoID,
+		TaskName:         res.TaskName,
+		TaskID:           res.TaskID,
 	}
-	if res.Evaluation != nil {
-		body.Evaluation = marshalSubmissionsEvaluationToEvaluationResponseBody(res.Evaluation)
+	if res.EvalScoringTestgroups != nil {
+		body.EvalScoringTestgroups = make([]*TestGroupResultResponseBody, len(res.EvalScoringTestgroups))
+		for i, val := range res.EvalScoringTestgroups {
+			body.EvalScoringTestgroups[i] = marshalSubmissionsTestGroupResultToTestGroupResultResponseBody(val)
+		}
 	}
-	if res.Language != nil {
-		body.Language = marshalSubmissionsSubmProgrammingLangToSubmProgrammingLangResponseBody(res.Language)
+	if res.EvalScoringTests != nil {
+		body.EvalScoringTests = marshalSubmissionsTestsResultToTestsResultResponseBody(res.EvalScoringTests)
 	}
-	if res.Task != nil {
-		body.Task = marshalSubmissionsSubmTaskToSubmTaskResponseBody(res.Task)
+	if res.EvalScoringSubtasks != nil {
+		body.EvalScoringSubtasks = make([]*SubtaskResultResponseBody, len(res.EvalScoringSubtasks))
+		for i, val := range res.EvalScoringSubtasks {
+			body.EvalScoringSubtasks[i] = marshalSubmissionsSubtaskResultToSubtaskResultResponseBody(val)
+		}
 	}
 	return body
 }
@@ -209,19 +276,31 @@ func NewListSubmissionsResponseBody(res []*submissions.Submission) ListSubmissio
 // of the "getSubmission" endpoint of the "submissions" service.
 func NewGetSubmissionResponseBody(res *submissions.Submission) *GetSubmissionResponseBody {
 	body := &GetSubmissionResponseBody{
-		UUID:       res.UUID,
-		Submission: res.Submission,
-		Username:   res.Username,
-		CreatedAt:  res.CreatedAt,
+		SubmUUID:         res.SubmUUID,
+		Submission:       res.Submission,
+		Username:         res.Username,
+		CreatedAt:        res.CreatedAt,
+		EvalStatus:       res.EvalStatus,
+		PLangID:          res.PLangID,
+		PLangDisplayName: res.PLangDisplayName,
+		PLangMonacoID:    res.PLangMonacoID,
+		TaskName:         res.TaskName,
+		TaskID:           res.TaskID,
 	}
-	if res.Evaluation != nil {
-		body.Evaluation = marshalSubmissionsEvaluationToEvaluationResponseBody(res.Evaluation)
+	if res.EvalScoringTestgroups != nil {
+		body.EvalScoringTestgroups = make([]*TestGroupResultResponseBody, len(res.EvalScoringTestgroups))
+		for i, val := range res.EvalScoringTestgroups {
+			body.EvalScoringTestgroups[i] = marshalSubmissionsTestGroupResultToTestGroupResultResponseBody(val)
+		}
 	}
-	if res.Language != nil {
-		body.Language = marshalSubmissionsSubmProgrammingLangToSubmProgrammingLangResponseBody(res.Language)
+	if res.EvalScoringTests != nil {
+		body.EvalScoringTests = marshalSubmissionsTestsResultToTestsResultResponseBody(res.EvalScoringTests)
 	}
-	if res.Task != nil {
-		body.Task = marshalSubmissionsSubmTaskToSubmTaskResponseBody(res.Task)
+	if res.EvalScoringSubtasks != nil {
+		body.EvalScoringSubtasks = make([]*SubtaskResultResponseBody, len(res.EvalScoringSubtasks))
+		for i, val := range res.EvalScoringSubtasks {
+			body.EvalScoringSubtasks[i] = marshalSubmissionsSubtaskResultToSubtaskResultResponseBody(val)
+		}
 	}
 	return body
 }

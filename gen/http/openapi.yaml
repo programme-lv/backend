@@ -182,13 +182,16 @@ paths:
                     schema:
                         $ref: '#/definitions/SubmissionsCreateSubmissionResponseBody'
                         required:
-                            - uuid
+                            - subm_uuid
                             - submission
                             - username
-                            - createdAt
-                            - evaluation
-                            - language
-                            - task
+                            - created_at
+                            - eval_status
+                            - p_lang_id
+                            - p_lang_display_name
+                            - p_lang_monaco_id
+                            - task_name
+                            - task_id
                 "400":
                     description: Bad Request response.
                     schema:
@@ -228,13 +231,16 @@ paths:
                     schema:
                         $ref: '#/definitions/SubmissionsGetSubmissionResponseBody'
                         required:
-                            - uuid
+                            - subm_uuid
                             - submission
                             - username
-                            - createdAt
-                            - evaluation
-                            - language
-                            - task
+                            - created_at
+                            - eval_status
+                            - p_lang_id
+                            - p_lang_display_name
+                            - p_lang_monaco_id
+                            - task_name
+                            - task_id
                 "400":
                     description: Bad Request response.
                     schema:
@@ -450,72 +456,6 @@ paths:
             security:
                 - jwt_query_Authorization: []
 definitions:
-    EvaluationResponse:
-        title: EvaluationResponse
-        type: object
-        properties:
-            possibleScore:
-                type: integer
-                description: Possible score of the evaluation
-                example: 100
-                format: int64
-            receivedScore:
-                type: integer
-                description: Received score of the evaluation
-                example: 85
-                format: int64
-            status:
-                type: string
-                description: Status of the evaluation
-                example: completed
-            uuid:
-                type: string
-                description: UUID of the evaluation
-                example: 123e4567-e89b-12d3-a456-426614174000
-        description: Represents the evaluation of a submission
-        example:
-            possibleScore: 100
-            receivedScore: 85
-            status: completed
-            uuid: 123e4567-e89b-12d3-a456-426614174000
-        required:
-            - uuid
-            - status
-            - receivedScore
-            - possibleScore
-    EvaluationResponseBody:
-        title: EvaluationResponseBody
-        type: object
-        properties:
-            possibleScore:
-                type: integer
-                description: Possible score of the evaluation
-                example: 100
-                format: int64
-            receivedScore:
-                type: integer
-                description: Received score of the evaluation
-                example: 85
-                format: int64
-            status:
-                type: string
-                description: Status of the evaluation
-                example: completed
-            uuid:
-                type: string
-                description: UUID of the evaluation
-                example: 123e4567-e89b-12d3-a456-426614174000
-        description: Represents the evaluation of a submission
-        example:
-            possibleScore: 100
-            receivedScore: 85
-            status: completed
-            uuid: 123e4567-e89b-12d3-a456-426614174000
-        required:
-            - uuid
-            - status
-            - receivedScore
-            - possibleScore
     ExampleResponse:
         title: ExampleResponse
         type: object
@@ -533,7 +473,7 @@ definitions:
             md_note:
                 type: string
                 description: Markdown note for the example
-                example: Perspiciatis dolor.
+                example: Natus ut cum.
             output:
                 type: string
                 description: Example output
@@ -548,7 +488,7 @@ definitions:
                 .XXX.XX..
                 X.X.X..X.
                 ...XX....
-            md_note: Voluptates repellendus sit quibusdam.
+            md_note: Illo voluptas eos libero cupiditate autem.
             output: |
                 10
         required:
@@ -571,7 +511,7 @@ definitions:
             md_note:
                 type: string
                 description: Markdown note for the example
-                example: Quo at.
+                example: Ipsam totam ea repellat.
             output:
                 type: string
                 description: Example output
@@ -586,7 +526,7 @@ definitions:
                 .XXX.XX..
                 X.X.X..X.
                 ...XX....
-            md_note: Tenetur temporibus harum assumenda.
+            md_note: In sint non quisquam.
             output: |
                 10
         required:
@@ -603,7 +543,7 @@ definitions:
             notes:
                 type: string
                 description: Notes section of the markdown statement
-                example: Est ad cupiditate sint asperiores.
+                example: Quia velit itaque ab.
             output:
                 type: string
                 description: Output section of the markdown statement
@@ -611,7 +551,7 @@ definitions:
             scoring:
                 type: string
                 description: Scoring section of the markdown statement
-                example: Ducimus alias ab ut nobis.
+                example: Similique ea impedit veritatis.
             story:
                 type: string
                 description: Story section of the markdown statement
@@ -619,9 +559,9 @@ definitions:
         description: Represents a markdown statement for a task
         example:
             input: Ievaddatu pirmajā rindā dotas trīs naturālu skaitļu...
-            notes: Necessitatibus nam et eum repudiandae tempora.
+            notes: Eum et facere nulla.
             output: Izvaddatu vienīgajā rindā jābūt veselam skaitlim...
-            scoring: Maxime labore.
+            scoring: Doloribus hic quia voluptatibus non sit omnis.
             story: Krišjānis ir uzkonstruējis kvadrātveida putekļsūcēju (saīsināti – KP), kas ir neaizstājams palīgs viņa darbnīcas uzkopšanā...
         required:
             - story
@@ -638,7 +578,7 @@ definitions:
             notes:
                 type: string
                 description: Notes section of the markdown statement
-                example: Velit quia ea impedit sint consequatur.
+                example: Vero deleniti consequuntur ad omnis autem tenetur.
             output:
                 type: string
                 description: Output section of the markdown statement
@@ -646,7 +586,7 @@ definitions:
             scoring:
                 type: string
                 description: Scoring section of the markdown statement
-                example: Et doloremque ut similique voluptate similique dolores.
+                example: Sed autem aspernatur magni non molestiae.
             story:
                 type: string
                 description: Story section of the markdown statement
@@ -654,9 +594,9 @@ definitions:
         description: Represents a markdown statement for a task
         example:
             input: Ievaddatu pirmajā rindā dotas trīs naturālu skaitļu...
-            notes: Et aliquid dolores et doloremque.
+            notes: Aspernatur reprehenderit distinctio quasi unde eveniet consequatur.
             output: Izvaddatu vienīgajā rindā jābūt veselam skaitlim...
-            scoring: Quam est repudiandae.
+            scoring: Expedita ut autem veniam.
             story: Krišjānis ir uzkonstruējis kvadrātveida putekļsūcēju (saīsināti – KP), kas ir neaizstājams palīgs viņa darbnīcas uzkopšanā...
         required:
             - story
@@ -748,7 +688,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Et aspernatur fugit.
+                    example: Hic qui quia aut consequatur dolorem aut.
                 description: Inputs for the subtask
                 example:
                     - |
@@ -817,7 +757,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Ipsa exercitationem.
+                    example: Possimus fugiat et ut et deleniti.
                 description: Inputs for the subtask
                 example:
                     - |
@@ -878,147 +818,163 @@ definitions:
         required:
             - subtask
             - inputs
-    SubmProgrammingLangResponse:
-        title: SubmProgrammingLangResponse
-        type: object
-        properties:
-            fullName:
-                type: string
-                description: Full name of the programming language
-                example: Go
-            id:
-                type: string
-                description: ID of the programming language
-                example: go
-            monacoId:
-                type: string
-                description: Monaco editor ID for the programming language
-                example: go
-        description: Represents a programming language
-        example:
-            fullName: Go
-            id: go
-            monacoId: go
-        required:
-            - id
-            - fullName
-            - monacoId
-    SubmProgrammingLangResponseBody:
-        title: SubmProgrammingLangResponseBody
-        type: object
-        properties:
-            fullName:
-                type: string
-                description: Full name of the programming language
-                example: Go
-            id:
-                type: string
-                description: ID of the programming language
-                example: go
-            monacoId:
-                type: string
-                description: Monaco editor ID for the programming language
-                example: go
-        description: Represents a programming language
-        example:
-            fullName: Go
-            id: go
-            monacoId: go
-        required:
-            - id
-            - fullName
-            - monacoId
-    SubmTaskResponse:
-        title: SubmTaskResponse
-        type: object
-        properties:
-            code:
-                type: string
-                description: Code of the task
-                example: fact001
-            name:
-                type: string
-                description: Name of the task
-                example: Factorial Calculation
-        description: Represents a competitive programming task
-        example:
-            code: fact001
-            name: Factorial Calculation
-        required:
-            - name
-            - code
-    SubmTaskResponseBody:
-        title: SubmTaskResponseBody
-        type: object
-        properties:
-            code:
-                type: string
-                description: Code of the task
-                example: fact001
-            name:
-                type: string
-                description: Name of the task
-                example: Factorial Calculation
-        description: Represents a competitive programming task
-        example:
-            code: fact001
-            name: Factorial Calculation
-        required:
-            - name
-            - code
     SubmissionResponse:
         title: SubmissionResponse
         type: object
         properties:
-            createdAt:
+            created_at:
                 type: string
-                description: Creation date of the submission
-                example: "2024-08-08T10:30:00Z"
-                format: date-time
-            evaluation:
-                $ref: '#/definitions/EvaluationResponse'
-            language:
-                $ref: '#/definitions/SubmProgrammingLangResponse'
+                description: Creation time of the submission
+                example: Officia voluptatem dignissimos.
+            eval_scoring_subtasks:
+                type: array
+                items:
+                    $ref: '#/definitions/SubtaskResultResponse'
+                description: Scoring / results of the subtasks
+                example:
+                    - accepted_tests: 3783849246656928445
+                      subtask_id: 862290211100774827
+                      subtask_score: 5932063920578939640
+                      untested_tests: 6608146232810955738
+                      wrong_tests: 4986450916902163310
+                    - accepted_tests: 3783849246656928445
+                      subtask_id: 862290211100774827
+                      subtask_score: 5932063920578939640
+                      untested_tests: 6608146232810955738
+                      wrong_tests: 4986450916902163310
+                    - accepted_tests: 3783849246656928445
+                      subtask_id: 862290211100774827
+                      subtask_score: 5932063920578939640
+                      untested_tests: 6608146232810955738
+                      wrong_tests: 4986450916902163310
+            eval_scoring_testgroups:
+                type: array
+                items:
+                    $ref: '#/definitions/TestGroupResultResponse'
+                description: Scoring / results of the test groups
+                example:
+                    - accepted_tests: 2399424557420764555
+                      statement_subtask: 4065762078146389525
+                      test_group_id: 7394126715431757918
+                      test_group_score: 6464129349315505801
+                      untested_tests: 4232154079196505659
+                      wrong_tests: 4958692635995674076
+                    - accepted_tests: 2399424557420764555
+                      statement_subtask: 4065762078146389525
+                      test_group_id: 7394126715431757918
+                      test_group_score: 6464129349315505801
+                      untested_tests: 4232154079196505659
+                      wrong_tests: 4958692635995674076
+                    - accepted_tests: 2399424557420764555
+                      statement_subtask: 4065762078146389525
+                      test_group_id: 7394126715431757918
+                      test_group_score: 6464129349315505801
+                      untested_tests: 4232154079196505659
+                      wrong_tests: 4958692635995674076
+                    - accepted_tests: 2399424557420764555
+                      statement_subtask: 4065762078146389525
+                      test_group_id: 7394126715431757918
+                      test_group_score: 6464129349315505801
+                      untested_tests: 4232154079196505659
+                      wrong_tests: 4958692635995674076
+            eval_scoring_tests:
+                $ref: '#/definitions/TestsResultResponse'
+            eval_status:
+                type: string
+                description: Status of the current evaluation
+                example: Tempora unde.
+            p_lang_display_name:
+                type: string
+                description: Display name of the programming language
+                example: Autem repudiandae ut nostrum quod corporis repellendus.
+            p_lang_id:
+                type: string
+                description: ID of the programming language
+                example: Voluptatem iure ab.
+            p_lang_monaco_id:
+                type: string
+                description: Monaco editor ID for the programming language
+                example: Architecto et.
+            subm_uuid:
+                type: string
+                description: UUID of the submission
+                example: Quidem laborum voluptas.
             submission:
                 type: string
                 description: The code submission
-                example: print(factorial(5))
-            task:
-                $ref: '#/definitions/SubmTaskResponse'
+                example: Consequatur a et qui.
+            task_id:
+                type: string
+                description: Code of the task associated with the submission
+                example: Soluta architecto.
+            task_name:
+                type: string
+                description: Name of the task associated with the submission
+                example: Sint sed itaque.
             username:
                 type: string
                 description: Username of the user who submitted
-                example: coder123
-            uuid:
-                type: string
-                description: UUID of the submission
-                example: 123e4567-e89b-12d3-a456-426614174000
-        description: Represents a submission
+                example: Laudantium saepe omnis asperiores ut ipsa consequatur.
         example:
-            createdAt: "2024-08-08T10:30:00Z"
-            evaluation:
-                possibleScore: 100
-                receivedScore: 85
-                status: completed
-                uuid: 123e4567-e89b-12d3-a456-426614174000
-            language:
-                fullName: Go
-                id: go
-                monacoId: go
-            submission: print(factorial(5))
-            task:
-                code: fact001
-                name: Factorial Calculation
-            username: coder123
-            uuid: 123e4567-e89b-12d3-a456-426614174000
+            created_at: Beatae similique.
+            eval_scoring_subtasks:
+                - accepted_tests: 3783849246656928445
+                  subtask_id: 862290211100774827
+                  subtask_score: 5932063920578939640
+                  untested_tests: 6608146232810955738
+                  wrong_tests: 4986450916902163310
+                - accepted_tests: 3783849246656928445
+                  subtask_id: 862290211100774827
+                  subtask_score: 5932063920578939640
+                  untested_tests: 6608146232810955738
+                  wrong_tests: 4986450916902163310
+                - accepted_tests: 3783849246656928445
+                  subtask_id: 862290211100774827
+                  subtask_score: 5932063920578939640
+                  untested_tests: 6608146232810955738
+                  wrong_tests: 4986450916902163310
+                - accepted_tests: 3783849246656928445
+                  subtask_id: 862290211100774827
+                  subtask_score: 5932063920578939640
+                  untested_tests: 6608146232810955738
+                  wrong_tests: 4986450916902163310
+            eval_scoring_testgroups:
+                - accepted_tests: 2399424557420764555
+                  statement_subtask: 4065762078146389525
+                  test_group_id: 7394126715431757918
+                  test_group_score: 6464129349315505801
+                  untested_tests: 4232154079196505659
+                  wrong_tests: 4958692635995674076
+                - accepted_tests: 2399424557420764555
+                  statement_subtask: 4065762078146389525
+                  test_group_id: 7394126715431757918
+                  test_group_score: 6464129349315505801
+                  untested_tests: 4232154079196505659
+                  wrong_tests: 4958692635995674076
+            eval_scoring_tests:
+                accepted: 5423225749750281152
+                untested: 47598614444753283
+                wrong: 8138009116053967692
+            eval_status: Quam illo id.
+            p_lang_display_name: Blanditiis sequi eveniet.
+            p_lang_id: Omnis et recusandae quo delectus.
+            p_lang_monaco_id: Non et.
+            subm_uuid: Maxime quis qui expedita sed deserunt consequatur.
+            submission: Delectus iste autem.
+            task_id: Sint et.
+            task_name: Quos aspernatur officiis blanditiis eius unde voluptas.
+            username: Animi aut eligendi.
         required:
-            - uuid
+            - subm_uuid
             - submission
             - username
-            - createdAt
-            - evaluation
-            - language
-            - task
+            - created_at
+            - eval_status
+            - p_lang_id
+            - p_lang_display_name
+            - p_lang_monaco_id
+            - task_name
+            - task_id
     SubmissionsCreateSubmissionRequestBody:
         title: SubmissionsCreateSubmissionRequestBody
         type: object
@@ -1053,106 +1009,372 @@ definitions:
         title: SubmissionsCreateSubmissionResponseBody
         type: object
         properties:
-            createdAt:
+            created_at:
                 type: string
-                description: Creation date of the submission
-                example: "2024-08-08T10:30:00Z"
-                format: date-time
-            evaluation:
-                $ref: '#/definitions/EvaluationResponseBody'
-            language:
-                $ref: '#/definitions/SubmProgrammingLangResponseBody'
+                description: Creation time of the submission
+                example: Laudantium qui labore corrupti.
+            eval_scoring_subtasks:
+                type: array
+                items:
+                    $ref: '#/definitions/SubtaskResultResponseBody'
+                description: Scoring / results of the subtasks
+                example:
+                    - accepted_tests: 7720553144753357615
+                      subtask_id: 9167221839465390447
+                      subtask_score: 1408663125023114345
+                      untested_tests: 3775575383567604714
+                      wrong_tests: 5744809029649609504
+                    - accepted_tests: 7720553144753357615
+                      subtask_id: 9167221839465390447
+                      subtask_score: 1408663125023114345
+                      untested_tests: 3775575383567604714
+                      wrong_tests: 5744809029649609504
+            eval_scoring_testgroups:
+                type: array
+                items:
+                    $ref: '#/definitions/TestGroupResultResponseBody'
+                description: Scoring / results of the test groups
+                example:
+                    - accepted_tests: 5715237542301360531
+                      statement_subtask: 8883933417640871930
+                      test_group_id: 4853875059777515226
+                      test_group_score: 8790711861458765932
+                      untested_tests: 4032304587011601647
+                      wrong_tests: 2946795653221984534
+                    - accepted_tests: 5715237542301360531
+                      statement_subtask: 8883933417640871930
+                      test_group_id: 4853875059777515226
+                      test_group_score: 8790711861458765932
+                      untested_tests: 4032304587011601647
+                      wrong_tests: 2946795653221984534
+            eval_scoring_tests:
+                $ref: '#/definitions/TestsResultResponseBody'
+            eval_status:
+                type: string
+                description: Status of the current evaluation
+                example: Hic esse amet voluptatem quia cumque.
+            p_lang_display_name:
+                type: string
+                description: Display name of the programming language
+                example: Qui numquam.
+            p_lang_id:
+                type: string
+                description: ID of the programming language
+                example: Facilis incidunt.
+            p_lang_monaco_id:
+                type: string
+                description: Monaco editor ID for the programming language
+                example: Ut iste alias minus nobis doloremque dolorem.
+            subm_uuid:
+                type: string
+                description: UUID of the submission
+                example: Doloremque est et illum eveniet.
             submission:
                 type: string
                 description: The code submission
-                example: print(factorial(5))
-            task:
-                $ref: '#/definitions/SubmTaskResponseBody'
+                example: Aut a nihil blanditiis deserunt.
+            task_id:
+                type: string
+                description: Code of the task associated with the submission
+                example: Voluptatum molestiae qui amet quod enim ipsum.
+            task_name:
+                type: string
+                description: Name of the task associated with the submission
+                example: Ratione quo labore.
             username:
                 type: string
                 description: Username of the user who submitted
-                example: coder123
-            uuid:
-                type: string
-                description: UUID of the submission
-                example: 123e4567-e89b-12d3-a456-426614174000
+                example: Laborum quia repellat voluptatem quia voluptas.
         example:
-            createdAt: "2024-08-08T10:30:00Z"
-            evaluation:
-                possibleScore: 100
-                receivedScore: 85
-                status: completed
-                uuid: 123e4567-e89b-12d3-a456-426614174000
-            language:
-                fullName: Go
-                id: go
-                monacoId: go
-            submission: print(factorial(5))
-            task:
-                code: fact001
-                name: Factorial Calculation
-            username: coder123
-            uuid: 123e4567-e89b-12d3-a456-426614174000
+            created_at: Est dolorum quaerat qui.
+            eval_scoring_subtasks:
+                - accepted_tests: 7720553144753357615
+                  subtask_id: 9167221839465390447
+                  subtask_score: 1408663125023114345
+                  untested_tests: 3775575383567604714
+                  wrong_tests: 5744809029649609504
+                - accepted_tests: 7720553144753357615
+                  subtask_id: 9167221839465390447
+                  subtask_score: 1408663125023114345
+                  untested_tests: 3775575383567604714
+                  wrong_tests: 5744809029649609504
+                - accepted_tests: 7720553144753357615
+                  subtask_id: 9167221839465390447
+                  subtask_score: 1408663125023114345
+                  untested_tests: 3775575383567604714
+                  wrong_tests: 5744809029649609504
+                - accepted_tests: 7720553144753357615
+                  subtask_id: 9167221839465390447
+                  subtask_score: 1408663125023114345
+                  untested_tests: 3775575383567604714
+                  wrong_tests: 5744809029649609504
+            eval_scoring_testgroups:
+                - accepted_tests: 5715237542301360531
+                  statement_subtask: 8883933417640871930
+                  test_group_id: 4853875059777515226
+                  test_group_score: 8790711861458765932
+                  untested_tests: 4032304587011601647
+                  wrong_tests: 2946795653221984534
+                - accepted_tests: 5715237542301360531
+                  statement_subtask: 8883933417640871930
+                  test_group_id: 4853875059777515226
+                  test_group_score: 8790711861458765932
+                  untested_tests: 4032304587011601647
+                  wrong_tests: 2946795653221984534
+                - accepted_tests: 5715237542301360531
+                  statement_subtask: 8883933417640871930
+                  test_group_id: 4853875059777515226
+                  test_group_score: 8790711861458765932
+                  untested_tests: 4032304587011601647
+                  wrong_tests: 2946795653221984534
+                - accepted_tests: 5715237542301360531
+                  statement_subtask: 8883933417640871930
+                  test_group_id: 4853875059777515226
+                  test_group_score: 8790711861458765932
+                  untested_tests: 4032304587011601647
+                  wrong_tests: 2946795653221984534
+            eval_scoring_tests:
+                accepted: 3785261307906550490
+                untested: 4223040205366050515
+                wrong: 4062866428432752107
+            eval_status: Et dolorum suscipit.
+            p_lang_display_name: Ea dolores sequi atque consectetur aliquam.
+            p_lang_id: Tenetur provident possimus.
+            p_lang_monaco_id: Et ut similique fugiat harum corporis voluptas.
+            subm_uuid: Quod molestiae.
+            submission: Aliquam et sunt officia consequatur quia cum.
+            task_id: Et voluptate recusandae et perferendis modi.
+            task_name: Quisquam ut eaque sunt amet voluptatem est.
+            username: Quia debitis.
         required:
-            - uuid
+            - subm_uuid
             - submission
             - username
-            - createdAt
-            - evaluation
-            - language
-            - task
+            - created_at
+            - eval_status
+            - p_lang_id
+            - p_lang_display_name
+            - p_lang_monaco_id
+            - task_name
+            - task_id
     SubmissionsGetSubmissionResponseBody:
         title: SubmissionsGetSubmissionResponseBody
         type: object
         properties:
-            createdAt:
+            created_at:
                 type: string
-                description: Creation date of the submission
-                example: "2024-08-08T10:30:00Z"
-                format: date-time
-            evaluation:
-                $ref: '#/definitions/EvaluationResponseBody'
-            language:
-                $ref: '#/definitions/SubmProgrammingLangResponseBody'
+                description: Creation time of the submission
+                example: Consequatur aut nostrum enim molestiae doloremque iusto.
+            eval_scoring_subtasks:
+                type: array
+                items:
+                    $ref: '#/definitions/SubtaskResultResponseBody'
+                description: Scoring / results of the subtasks
+                example:
+                    - accepted_tests: 7720553144753357615
+                      subtask_id: 9167221839465390447
+                      subtask_score: 1408663125023114345
+                      untested_tests: 3775575383567604714
+                      wrong_tests: 5744809029649609504
+                    - accepted_tests: 7720553144753357615
+                      subtask_id: 9167221839465390447
+                      subtask_score: 1408663125023114345
+                      untested_tests: 3775575383567604714
+                      wrong_tests: 5744809029649609504
+            eval_scoring_testgroups:
+                type: array
+                items:
+                    $ref: '#/definitions/TestGroupResultResponseBody'
+                description: Scoring / results of the test groups
+                example:
+                    - accepted_tests: 5715237542301360531
+                      statement_subtask: 8883933417640871930
+                      test_group_id: 4853875059777515226
+                      test_group_score: 8790711861458765932
+                      untested_tests: 4032304587011601647
+                      wrong_tests: 2946795653221984534
+                    - accepted_tests: 5715237542301360531
+                      statement_subtask: 8883933417640871930
+                      test_group_id: 4853875059777515226
+                      test_group_score: 8790711861458765932
+                      untested_tests: 4032304587011601647
+                      wrong_tests: 2946795653221984534
+                    - accepted_tests: 5715237542301360531
+                      statement_subtask: 8883933417640871930
+                      test_group_id: 4853875059777515226
+                      test_group_score: 8790711861458765932
+                      untested_tests: 4032304587011601647
+                      wrong_tests: 2946795653221984534
+            eval_scoring_tests:
+                $ref: '#/definitions/TestsResultResponseBody'
+            eval_status:
+                type: string
+                description: Status of the current evaluation
+                example: Soluta dignissimos impedit dolores quis voluptas.
+            p_lang_display_name:
+                type: string
+                description: Display name of the programming language
+                example: Aperiam omnis.
+            p_lang_id:
+                type: string
+                description: ID of the programming language
+                example: Eum sit nobis incidunt aliquam ullam.
+            p_lang_monaco_id:
+                type: string
+                description: Monaco editor ID for the programming language
+                example: Eum cum ratione architecto iusto.
+            subm_uuid:
+                type: string
+                description: UUID of the submission
+                example: Autem fuga quibusdam sunt.
             submission:
                 type: string
                 description: The code submission
-                example: print(factorial(5))
-            task:
-                $ref: '#/definitions/SubmTaskResponseBody'
+                example: Atque enim consequatur aperiam quis.
+            task_id:
+                type: string
+                description: Code of the task associated with the submission
+                example: Ea beatae dolor excepturi est.
+            task_name:
+                type: string
+                description: Name of the task associated with the submission
+                example: Qui ut.
             username:
                 type: string
                 description: Username of the user who submitted
-                example: coder123
-            uuid:
-                type: string
-                description: UUID of the submission
-                example: 123e4567-e89b-12d3-a456-426614174000
+                example: Placeat velit eum ut libero fugiat.
         example:
-            createdAt: "2024-08-08T10:30:00Z"
-            evaluation:
-                possibleScore: 100
-                receivedScore: 85
-                status: completed
-                uuid: 123e4567-e89b-12d3-a456-426614174000
-            language:
-                fullName: Go
-                id: go
-                monacoId: go
-            submission: print(factorial(5))
-            task:
-                code: fact001
-                name: Factorial Calculation
-            username: coder123
-            uuid: 123e4567-e89b-12d3-a456-426614174000
+            created_at: Sit non modi quia ipsam eius et.
+            eval_scoring_subtasks:
+                - accepted_tests: 7720553144753357615
+                  subtask_id: 9167221839465390447
+                  subtask_score: 1408663125023114345
+                  untested_tests: 3775575383567604714
+                  wrong_tests: 5744809029649609504
+                - accepted_tests: 7720553144753357615
+                  subtask_id: 9167221839465390447
+                  subtask_score: 1408663125023114345
+                  untested_tests: 3775575383567604714
+                  wrong_tests: 5744809029649609504
+            eval_scoring_testgroups:
+                - accepted_tests: 5715237542301360531
+                  statement_subtask: 8883933417640871930
+                  test_group_id: 4853875059777515226
+                  test_group_score: 8790711861458765932
+                  untested_tests: 4032304587011601647
+                  wrong_tests: 2946795653221984534
+                - accepted_tests: 5715237542301360531
+                  statement_subtask: 8883933417640871930
+                  test_group_id: 4853875059777515226
+                  test_group_score: 8790711861458765932
+                  untested_tests: 4032304587011601647
+                  wrong_tests: 2946795653221984534
+            eval_scoring_tests:
+                accepted: 3785261307906550490
+                untested: 4223040205366050515
+                wrong: 4062866428432752107
+            eval_status: Explicabo error enim reprehenderit nulla.
+            p_lang_display_name: Dignissimos officiis soluta sunt.
+            p_lang_id: Pariatur repudiandae dolores alias quia.
+            p_lang_monaco_id: Suscipit autem est doloribus similique voluptas.
+            subm_uuid: Ut fugit iusto molestiae.
+            submission: Dolores sit in.
+            task_id: Sunt ipsam.
+            task_name: Illo aut rerum qui adipisci.
+            username: Laudantium eaque optio nobis facere.
         required:
-            - uuid
+            - subm_uuid
             - submission
             - username
-            - createdAt
-            - evaluation
-            - language
-            - task
+            - created_at
+            - eval_status
+            - p_lang_id
+            - p_lang_display_name
+            - p_lang_monaco_id
+            - task_name
+            - task_id
+    SubtaskResultResponse:
+        title: SubtaskResultResponse
+        type: object
+        properties:
+            accepted_tests:
+                type: integer
+                description: Number of accepted tests
+                example: 6823374617431343915
+                format: int64
+            subtask_id:
+                type: integer
+                description: ID of the subtask
+                example: 3769132138099838375
+                format: int64
+            subtask_score:
+                type: integer
+                description: Score of the subtask
+                example: 26944324373111073
+                format: int64
+            untested_tests:
+                type: integer
+                description: Number of untested tests
+                example: 4625350320889224380
+                format: int64
+            wrong_tests:
+                type: integer
+                description: Number of wrong tests
+                example: 1878486714412599627
+                format: int64
+        example:
+            accepted_tests: 7546927467534945766
+            subtask_id: 9015295191540422774
+            subtask_score: 404149647131089214
+            untested_tests: 3502701306394534094
+            wrong_tests: 5042314291640768014
+        required:
+            - subtask_id
+            - subtask_score
+            - accepted_tests
+            - wrong_tests
+            - untested_tests
+    SubtaskResultResponseBody:
+        title: SubtaskResultResponseBody
+        type: object
+        properties:
+            accepted_tests:
+                type: integer
+                description: Number of accepted tests
+                example: 7054074809609208491
+                format: int64
+            subtask_id:
+                type: integer
+                description: ID of the subtask
+                example: 1070167026568609235
+                format: int64
+            subtask_score:
+                type: integer
+                description: Score of the subtask
+                example: 6629577328435678913
+                format: int64
+            untested_tests:
+                type: integer
+                description: Number of untested tests
+                example: 5160368591318523162
+                format: int64
+            wrong_tests:
+                type: integer
+                description: Number of wrong tests
+                example: 2884205813101374646
+                format: int64
+        example:
+            accepted_tests: 4731991551958162189
+            subtask_id: 9020100960596679400
+            subtask_score: 5952308623003848701
+            untested_tests: 9014855105174665521
+            wrong_tests: 6536029247891145824
+        required:
+            - subtask_id
+            - subtask_score
+            - accepted_tests
+            - wrong_tests
+            - untested_tests
     TaskResponse:
         title: TaskResponse
         type: object
@@ -1192,7 +1414,7 @@ definitions:
                         .XXX.XX..
                         X.X.X..X.
                         ...XX....
-                      md_note: Eius sint quod accusantium.
+                      md_note: Quis iure assumenda numquam officia dolores.
                       output: |
                         10
                     - input: |
@@ -1202,7 +1424,7 @@ definitions:
                         .XXX.XX..
                         X.X.X..X.
                         ...XX....
-                      md_note: Eius sint quod accusantium.
+                      md_note: Quis iure assumenda numquam officia dolores.
                       output: |
                         10
                     - input: |
@@ -1212,7 +1434,17 @@ definitions:
                         .XXX.XX..
                         X.X.X..X.
                         ...XX....
-                      md_note: Eius sint quod accusantium.
+                      md_note: Quis iure assumenda numquam officia dolores.
+                      output: |
+                        10
+                    - input: |
+                        5 9 3
+                        A....X..B
+                        ..X..X.X.
+                        .XXX.XX..
+                        X.X.X..X.
+                        ...XX....
+                      md_note: Quis iure assumenda numquam officia dolores.
                       output: |
                         10
             illustration_img_url:
@@ -1231,7 +1463,7 @@ definitions:
                     lv: Uzdevums parādījās Latvijas 37. informātikas olimpiādes (2023./2024. gads) skolas kārtā.
                 additionalProperties:
                     type: string
-                    example: Delectus rerum necessitatibus delectus et.
+                    example: Dolores quaerat autem mollitia aperiam ut aliquam.
             origin_olympiad:
                 type: string
                 description: Origin olympiad of the task
@@ -1300,14 +1532,39 @@ definitions:
                           XXXX
                           X.BX
                       subtask: 1
+                    - inputs:
+                        - |
+                          5 5 3
+                          A.X..
+                          X.B.X
+                          ....X
+                          XX...
+                          X.XXX
+                        - |
+                          6 3 1
+                          ...
+                          XA.
+                          .X.
+                          X..
+                          B..
+                          ...
+                        - |
+                          6 4 2
+                          X...
+                          .AXX
+                          X..X
+                          .X.X
+                          XXXX
+                          X.BX
+                      subtask: 1
         description: Represents a competitive programming task
         example:
             cpu_time_limit_seconds: 0.5
             default_md_statement:
                 input: Ievaddatu pirmajā rindā dotas trīs naturālu skaitļu...
-                notes: Hic quam.
+                notes: Molestiae quidem deleniti.
                 output: Izvaddatu vienīgajā rindā jābūt veselam skaitlim...
-                scoring: Consequatur eveniet nostrum blanditiis dignissimos.
+                scoring: Consequatur et molestias officiis omnis explicabo.
                 story: Krišjānis ir uzkonstruējis kvadrātveida putekļsūcēju (saīsināti – KP), kas ir neaizstājams palīgs viņa darbnīcas uzkopšanā...
             default_pdf_statement_url: https://dvhk4hiwp1rmf.cloudfront.net/task-pdf-statements/f27386f1b69f3c020335fe7c84316c5da099933832043e6a5820bcdb0cd66a81.pdf
             difficulty_rating: 3
@@ -1319,7 +1576,7 @@ definitions:
                     .XXX.XX..
                     X.X.X..X.
                     ...XX....
-                  md_note: Eius sint quod accusantium.
+                  md_note: Quis iure assumenda numquam officia dolores.
                   output: |
                     10
                 - input: |
@@ -1329,7 +1586,7 @@ definitions:
                     .XXX.XX..
                     X.X.X..X.
                     ...XX....
-                  md_note: Eius sint quod accusantium.
+                  md_note: Quis iure assumenda numquam officia dolores.
                   output: |
                     10
                 - input: |
@@ -1339,7 +1596,7 @@ definitions:
                     .XXX.XX..
                     X.X.X..X.
                     ...XX....
-                  md_note: Eius sint quod accusantium.
+                  md_note: Quis iure assumenda numquam officia dolores.
                   output: |
                     10
             illustration_img_url: https://dvhk4hiwp1rmf.cloudfront.net/task-illustrations/bafcc0aa1b4c56faa44f5f3b2a5abd9529af941eb9a9b10f541b436762d4948a.png
@@ -1350,6 +1607,31 @@ definitions:
             published_task_id: kvadrputekl
             task_full_name: Kvadrātveida putekļsūcējs
             visible_input_subtasks:
+                - inputs:
+                    - |
+                      5 5 3
+                      A.X..
+                      X.B.X
+                      ....X
+                      XX...
+                      X.XXX
+                    - |
+                      6 3 1
+                      ...
+                      XA.
+                      .X.
+                      X..
+                      B..
+                      ...
+                    - |
+                      6 4 2
+                      X...
+                      .AXX
+                      X..X
+                      .X.X
+                      XXXX
+                      X.BX
+                  subtask: 1
                 - inputs:
                     - |
                       5 5 3
@@ -1446,7 +1728,7 @@ definitions:
                         .XXX.XX..
                         X.X.X..X.
                         ...XX....
-                      md_note: Occaecati et et non.
+                      md_note: Autem praesentium nihil eveniet velit inventore.
                       output: |
                         10
                     - input: |
@@ -1456,7 +1738,17 @@ definitions:
                         .XXX.XX..
                         X.X.X..X.
                         ...XX....
-                      md_note: Occaecati et et non.
+                      md_note: Autem praesentium nihil eveniet velit inventore.
+                      output: |
+                        10
+                    - input: |
+                        5 9 3
+                        A....X..B
+                        ..X..X.X.
+                        .XXX.XX..
+                        X.X.X..X.
+                        ...XX....
+                      md_note: Autem praesentium nihil eveniet velit inventore.
                       output: |
                         10
             illustration_img_url:
@@ -1475,7 +1767,7 @@ definitions:
                     lv: Uzdevums parādījās Latvijas 37. informātikas olimpiādes (2023./2024. gads) skolas kārtā.
                 additionalProperties:
                     type: string
-                    example: Laboriosam est hic.
+                    example: Aut rem non dolorem expedita.
             origin_olympiad:
                 type: string
                 description: Origin olympiad of the task
@@ -1544,13 +1836,38 @@ definitions:
                           XXXX
                           X.BX
                       subtask: 1
+                    - inputs:
+                        - |
+                          5 5 3
+                          A.X..
+                          X.B.X
+                          ....X
+                          XX...
+                          X.XXX
+                        - |
+                          6 3 1
+                          ...
+                          XA.
+                          .X.
+                          X..
+                          B..
+                          ...
+                        - |
+                          6 4 2
+                          X...
+                          .AXX
+                          X..X
+                          .X.X
+                          XXXX
+                          X.BX
+                      subtask: 1
         example:
             cpu_time_limit_seconds: 0.5
             default_md_statement:
                 input: Ievaddatu pirmajā rindā dotas trīs naturālu skaitļu...
-                notes: Necessitatibus debitis illo ex et similique.
+                notes: Suscipit quibusdam qui.
                 output: Izvaddatu vienīgajā rindā jābūt veselam skaitlim...
-                scoring: Beatae incidunt provident quis possimus et consequatur.
+                scoring: Nihil ut voluptas.
                 story: Krišjānis ir uzkonstruējis kvadrātveida putekļsūcēju (saīsināti – KP), kas ir neaizstājams palīgs viņa darbnīcas uzkopšanā...
             default_pdf_statement_url: https://dvhk4hiwp1rmf.cloudfront.net/task-pdf-statements/f27386f1b69f3c020335fe7c84316c5da099933832043e6a5820bcdb0cd66a81.pdf
             difficulty_rating: 3
@@ -1562,7 +1879,7 @@ definitions:
                     .XXX.XX..
                     X.X.X..X.
                     ...XX....
-                  md_note: Occaecati et et non.
+                  md_note: Autem praesentium nihil eveniet velit inventore.
                   output: |
                     10
                 - input: |
@@ -1572,17 +1889,7 @@ definitions:
                     .XXX.XX..
                     X.X.X..X.
                     ...XX....
-                  md_note: Occaecati et et non.
-                  output: |
-                    10
-                - input: |
-                    5 9 3
-                    A....X..B
-                    ..X..X.X.
-                    .XXX.XX..
-                    X.X.X..X.
-                    ...XX....
-                  md_note: Occaecati et et non.
+                  md_note: Autem praesentium nihil eveniet velit inventore.
                   output: |
                     10
             illustration_img_url: https://dvhk4hiwp1rmf.cloudfront.net/task-illustrations/bafcc0aa1b4c56faa44f5f3b2a5abd9529af941eb9a9b10f541b436762d4948a.png
@@ -1643,56 +1950,6 @@ definitions:
                       XXXX
                       X.BX
                   subtask: 1
-                - inputs:
-                    - |
-                      5 5 3
-                      A.X..
-                      X.B.X
-                      ....X
-                      XX...
-                      X.XXX
-                    - |
-                      6 3 1
-                      ...
-                      XA.
-                      .X.
-                      X..
-                      B..
-                      ...
-                    - |
-                      6 4 2
-                      X...
-                      .AXX
-                      X..X
-                      .X.X
-                      XXXX
-                      X.BX
-                  subtask: 1
-                - inputs:
-                    - |
-                      5 5 3
-                      A.X..
-                      X.B.X
-                      ....X
-                      XX...
-                      X.XXX
-                    - |
-                      6 3 1
-                      ...
-                      XA.
-                      .X.
-                      X..
-                      B..
-                      ...
-                    - |
-                      6 4 2
-                      X...
-                      .AXX
-                      X..X
-                      .X.X
-                      XXXX
-                      X.BX
-                  subtask: 1
         required:
             - published_task_id
             - task_full_name
@@ -1700,6 +1957,156 @@ definitions:
             - cpu_time_limit_seconds
             - origin_olympiad
             - difficulty_rating
+    TestGroupResultResponse:
+        title: TestGroupResultResponse
+        type: object
+        properties:
+            accepted_tests:
+                type: integer
+                description: Number of accepted tests
+                example: 4247551106889161858
+                format: int64
+            statement_subtask:
+                type: integer
+                description: Statement subtask
+                example: 337240561112468343
+                format: int64
+            test_group_id:
+                type: integer
+                description: ID of the test group
+                example: 7389224452776661635
+                format: int64
+            test_group_score:
+                type: integer
+                description: Score of the test group
+                example: 897990292865620284
+                format: int64
+            untested_tests:
+                type: integer
+                description: Number of untested tests
+                example: 4006160473146922405
+                format: int64
+            wrong_tests:
+                type: integer
+                description: Number of wrong tests
+                example: 3198279192625574129
+                format: int64
+        example:
+            accepted_tests: 2699817484274423567
+            statement_subtask: 8495029994554873342
+            test_group_id: 5807846144399143452
+            test_group_score: 7322021788854356656
+            untested_tests: 6465363623918634121
+            wrong_tests: 4002009483983178050
+        required:
+            - test_group_id
+            - test_group_score
+            - statement_subtask
+            - accepted_tests
+            - wrong_tests
+            - untested_tests
+    TestGroupResultResponseBody:
+        title: TestGroupResultResponseBody
+        type: object
+        properties:
+            accepted_tests:
+                type: integer
+                description: Number of accepted tests
+                example: 284689657309451178
+                format: int64
+            statement_subtask:
+                type: integer
+                description: Statement subtask
+                example: 7843229112551072863
+                format: int64
+            test_group_id:
+                type: integer
+                description: ID of the test group
+                example: 1307628029465816200
+                format: int64
+            test_group_score:
+                type: integer
+                description: Score of the test group
+                example: 698080032946192988
+                format: int64
+            untested_tests:
+                type: integer
+                description: Number of untested tests
+                example: 3172541630126790766
+                format: int64
+            wrong_tests:
+                type: integer
+                description: Number of wrong tests
+                example: 3840003079295085756
+                format: int64
+        example:
+            accepted_tests: 4817721516806989452
+            statement_subtask: 1094281719987283325
+            test_group_id: 6077036221240797131
+            test_group_score: 1646075165524771846
+            untested_tests: 7434775528761662098
+            wrong_tests: 3087491112219868501
+        required:
+            - test_group_id
+            - test_group_score
+            - statement_subtask
+            - accepted_tests
+            - wrong_tests
+            - untested_tests
+    TestsResultResponse:
+        title: TestsResultResponse
+        type: object
+        properties:
+            accepted:
+                type: integer
+                description: Number of accepted tests
+                example: 2192184140755377834
+                format: int64
+            untested:
+                type: integer
+                description: Number of untested tests
+                example: 4590124892103517407
+                format: int64
+            wrong:
+                type: integer
+                description: Number of wrong tests
+                example: 3203371166598071063
+                format: int64
+        example:
+            accepted: 339398659136067111
+            untested: 4095233109102480106
+            wrong: 5724166556919609356
+        required:
+            - accepted
+            - wrong
+            - untested
+    TestsResultResponseBody:
+        title: TestsResultResponseBody
+        type: object
+        properties:
+            accepted:
+                type: integer
+                description: Number of accepted tests
+                example: 7577954407496053838
+                format: int64
+            untested:
+                type: integer
+                description: Number of untested tests
+                example: 2945953862351909914
+                format: int64
+            wrong:
+                type: integer
+                description: Number of wrong tests
+                example: 213089140895190895
+                format: int64
+        example:
+            accepted: 5045165632095592072
+            untested: 8151312635045316026
+            wrong: 5578459838848888149
+        required:
+            - accepted
+            - wrong
+            - untested
     UsersCreateUserRequestBody:
         title: UsersCreateUserRequestBody
         type: object
@@ -1837,67 +2244,68 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Vel voluptatem est accusamus animi et.
+                    example: Eligendi quae tempora qui hic quo.
                 example:
-                    - Repellat animi soluta nulla.
-                    - Dolorum neque.
-                    - Accusamus voluptas repellendus atque est sit voluptatem.
-                    - Incidunt ratione ut fugiat aut.
+                    - Distinctio amet et et.
+                    - Molestiae ut animi.
             email:
                 type: string
-                example: Modi minima et illo dolor.
+                example: Sed beatae non repudiandae.
             expires_at:
                 type: string
-                example: Reiciendis maxime vitae voluptate eum.
+                example: Modi ratione quod.
             firstname:
                 type: string
-                example: Nemo cumque architecto qui repellat.
+                example: Sunt rem sed ipsum error sint perspiciatis.
             issued_at:
                 type: string
-                example: Odit quod.
+                example: Et et.
             issuer:
                 type: string
-                example: Sint nostrum.
+                example: Expedita alias eveniet expedita vitae occaecati temporibus.
             lastname:
                 type: string
-                example: Voluptatibus quae autem odio.
+                example: Quis sunt.
             not_before:
                 type: string
-                example: Laudantium et.
+                example: Sit velit.
             scopes:
                 type: array
                 items:
                     type: string
-                    example: Repellendus et molestias.
+                    example: Nostrum et quia.
                 example:
-                    - Quia et et nulla.
-                    - Quisquam laboriosam optio qui.
+                    - Nam provident hic.
+                    - Qui aliquam quisquam doloribus aspernatur quia minima.
+                    - Sint ad et maiores quia est.
+                    - Est et iste et placeat consequatur eaque.
             subject:
                 type: string
-                example: Saepe eos debitis ratione tempora.
+                example: Quis at aut.
             username:
                 type: string
-                example: Nobis exercitationem esse consequatur voluptas neque.
+                example: Doloremque rerum aut incidunt architecto in.
             uuid:
                 type: string
-                example: Id quasi accusamus.
+                example: Corporis tenetur velit.
         example:
             audience:
-                - Esse amet voluptatem quia cumque ea est.
-                - Porro magni.
-            email: Perferendis molestias explicabo odio quasi.
-            expires_at: Distinctio optio nesciunt.
-            firstname: Aperiam fuga.
-            issued_at: Neque numquam animi.
-            issuer: Blanditiis deserunt soluta laborum quia repellat.
-            lastname: Consectetur iure.
-            not_before: Minus earum fugiat quam molestiae ea.
+                - Officia doloremque in recusandae rerum architecto.
+                - Et amet quia voluptate fugiat sint.
+            email: Sint ullam pariatur aliquam tempore in.
+            expires_at: Enim mollitia dolorum aliquam aut est.
+            firstname: Voluptatem sed repellat.
+            issued_at: Ut qui.
+            issuer: Sunt exercitationem.
+            lastname: Provident blanditiis est.
+            not_before: Aut maiores.
             scopes:
-                - Aut totam praesentium dolor aspernatur doloremque.
-                - Et illum eveniet omnis aut a.
-            subject: Quia voluptas possimus laudantium qui labore corrupti.
-            username: Quo magni explicabo mollitia explicabo.
-            uuid: Dolorum quos et occaecati rem.
+                - Ad ex deleniti possimus et rem quia.
+                - Est quia laborum.
+                - Eligendi dolor.
+            subject: Ut est enim.
+            username: Est quas id tempora repellat.
+            uuid: Ut tenetur rerum provident modi voluptatem odio.
 securityDefinitions:
     jwt_header_Authorization:
         type: apiKey

@@ -289,8 +289,6 @@ func (s *submissionssrvc) createSubmissionWithValidatedInput(
 		return nil, submgen.InternalError("error saving submission evaluation details")
 	}
 
-	// TODO: subtask, testgroup information
-
 	// PUT EVALUATION TEST ROWS
 	evaluationTestRows := make([]*EvalTestRow, 0)
 	for _, test := range task.Tests {
@@ -343,7 +341,6 @@ func (s *submissionssrvc) createSubmissionWithValidatedInput(
 		}
 		start = end
 	}
-	// TODO: subtask, testgroup information in evaluation
 
 	// PUT SUBMISSION DETAILS ROW
 	submDetailsRow := &SubmDetailsRow{
@@ -351,7 +348,7 @@ func (s *submissionssrvc) createSubmissionWithValidatedInput(
 		SortKey:           "subm#details",
 		Content:           *subm,
 		AuthorUuid:        user.UUID,
-		TaskUuid:          task.PublishedTaskID,
+		TaskId:            task.PublishedTaskID,
 		ProgLangId:        lang.ID,
 		CurrentEvalUuid:   evalUuid.String(),
 		CurrentEvalStatus: "waiting",
@@ -421,22 +418,70 @@ func (s *submissionssrvc) createSubmissionWithValidatedInput(
 		return nil, submgen.InternalError("error sending message to evaluation queue")
 	}
 
-	// RETURN SUBMISSION TO USER
+	var evalScoringTestgroups []*submgen.TestGroupResult = nil
+	if scoringMethod == "testgroup" {
+		evalScoringTestgroups = make([]*submgen.TestGroupResult, 0)
+		for _, testGroup := range task.TestGroupInformation {
+			tgTests := 0
+			for _, test := range task.Tests {
+				if test.TestGroup != nil && *test.TestGroup == testGroup.TestGroupID {
+					tgTests++
+				}
+			}
+			evalScoringTestgroups = append(evalScoringTestgroups, &submgen.TestGroupResult{
+				TestGroupID:      testGroup.TestGroupID,
+				TestGroupScore:   testGroup.Score,
+				StatementSubtask: testGroup.Subtask,
+				AcceptedTests:    0,
+				WrongTests:       0,
+				UntestedTests:    tgTests,
+			})
+		}
+	}
+	var evalScoringTests *submgen.TestsResult = nil
+	if scoringMethod == "tests" {
+		evalScoringTests = &submgen.TestsResult{
+			Accepted: 0,
+			Wrong:    0,
+			Untested: len(task.Tests),
+		}
+	}
+	var evalScoringSubtasks []*submgen.SubtaskResult = nil
+	if scoringMethod == "subtask" {
+		evalScoringSubtasks = make([]*submgen.SubtaskResult, 0)
+		for _, subtask := range task.SubtaskScores {
+			stTestCount := 0
+			for _, test := range task.Tests {
+				for _, testSt := range test.Subtasks {
+					if testSt == subtask.SubtaskID {
+						stTestCount++
+					}
+				}
+			}
+			evalScoringSubtasks = append(evalScoringSubtasks, &submgen.SubtaskResult{
+				SubtaskID:     subtask.SubtaskID,
+				SubtaskScore:  subtask.Score,
+				AcceptedTests: 0,
+				WrongTests:    0,
+				UntestedTests: stTestCount,
+			})
+		}
+	}
+
 	res := &submgen.Submission{
-		UUID:       submDetailsRow.SubmUuid,
-		Submission: submDetailsRow.Content,
-		Username:   user.Username,
-		CreatedAt:  createdAt.Format(time.RFC3339),
-		Evaluation: nil,
-		Language: &submgen.SubmProgrammingLang{
-			ID:       lang.ID,
-			FullName: lang.FullName,
-			MonacoID: lang.MonacoId,
-		},
-		Task: &submgen.SubmTask{
-			Name: task.TaskFullName,
-			Code: task.PublishedTaskID,
-		},
+		SubmUUID:              submDetailsRow.SubmUuid,
+		Submission:            submDetailsRow.Content,
+		Username:              user.Username,
+		CreatedAt:             createdAt.Format(time.RFC3339),
+		EvalStatus:            "waiting",
+		EvalScoringTestgroups: evalScoringTestgroups,
+		EvalScoringTests:      evalScoringTests,
+		EvalScoringSubtasks:   evalScoringSubtasks,
+		PLangID:               lang.ID,
+		PLangDisplayName:      lang.FullName,
+		PLangMonacoID:         lang.MonacoId,
+		TaskName:              task.TaskFullName,
+		TaskID:                task.PublishedTaskID,
 	}
 
 	return res, nil

@@ -471,38 +471,53 @@ func DecodeListProgrammingLanguagesResponse(decoder func(*http.Response) goahttp
 	}
 }
 
-// unmarshalEvaluationResponseBodyToSubmissionsEvaluation builds a value of
-// type *submissions.Evaluation from a value of type *EvaluationResponseBody.
-func unmarshalEvaluationResponseBodyToSubmissionsEvaluation(v *EvaluationResponseBody) *submissions.Evaluation {
-	res := &submissions.Evaluation{
-		UUID:          *v.UUID,
-		Status:        *v.Status,
-		ReceivedScore: *v.ReceivedScore,
-		PossibleScore: *v.PossibleScore,
+// unmarshalTestGroupResultResponseBodyToSubmissionsTestGroupResult builds a
+// value of type *submissions.TestGroupResult from a value of type
+// *TestGroupResultResponseBody.
+func unmarshalTestGroupResultResponseBodyToSubmissionsTestGroupResult(v *TestGroupResultResponseBody) *submissions.TestGroupResult {
+	if v == nil {
+		return nil
+	}
+	res := &submissions.TestGroupResult{
+		TestGroupID:      *v.TestGroupID,
+		TestGroupScore:   *v.TestGroupScore,
+		StatementSubtask: *v.StatementSubtask,
+		AcceptedTests:    *v.AcceptedTests,
+		WrongTests:       *v.WrongTests,
+		UntestedTests:    *v.UntestedTests,
 	}
 
 	return res
 }
 
-// unmarshalSubmProgrammingLangResponseBodyToSubmissionsSubmProgrammingLang
-// builds a value of type *submissions.SubmProgrammingLang from a value of type
-// *SubmProgrammingLangResponseBody.
-func unmarshalSubmProgrammingLangResponseBodyToSubmissionsSubmProgrammingLang(v *SubmProgrammingLangResponseBody) *submissions.SubmProgrammingLang {
-	res := &submissions.SubmProgrammingLang{
-		ID:       *v.ID,
-		FullName: *v.FullName,
-		MonacoID: *v.MonacoID,
+// unmarshalTestsResultResponseBodyToSubmissionsTestsResult builds a value of
+// type *submissions.TestsResult from a value of type *TestsResultResponseBody.
+func unmarshalTestsResultResponseBodyToSubmissionsTestsResult(v *TestsResultResponseBody) *submissions.TestsResult {
+	if v == nil {
+		return nil
+	}
+	res := &submissions.TestsResult{
+		Accepted: *v.Accepted,
+		Wrong:    *v.Wrong,
+		Untested: *v.Untested,
 	}
 
 	return res
 }
 
-// unmarshalSubmTaskResponseBodyToSubmissionsSubmTask builds a value of type
-// *submissions.SubmTask from a value of type *SubmTaskResponseBody.
-func unmarshalSubmTaskResponseBodyToSubmissionsSubmTask(v *SubmTaskResponseBody) *submissions.SubmTask {
-	res := &submissions.SubmTask{
-		Name: *v.Name,
-		Code: *v.Code,
+// unmarshalSubtaskResultResponseBodyToSubmissionsSubtaskResult builds a value
+// of type *submissions.SubtaskResult from a value of type
+// *SubtaskResultResponseBody.
+func unmarshalSubtaskResultResponseBodyToSubmissionsSubtaskResult(v *SubtaskResultResponseBody) *submissions.SubtaskResult {
+	if v == nil {
+		return nil
+	}
+	res := &submissions.SubtaskResult{
+		SubtaskID:     *v.SubtaskID,
+		SubtaskScore:  *v.SubtaskScore,
+		AcceptedTests: *v.AcceptedTests,
+		WrongTests:    *v.WrongTests,
+		UntestedTests: *v.UntestedTests,
 	}
 
 	return res
@@ -512,50 +527,82 @@ func unmarshalSubmTaskResponseBodyToSubmissionsSubmTask(v *SubmTaskResponseBody)
 // *submissions.Submission from a value of type *SubmissionResponse.
 func unmarshalSubmissionResponseToSubmissionsSubmission(v *SubmissionResponse) *submissions.Submission {
 	res := &submissions.Submission{
-		UUID:       *v.UUID,
-		Submission: *v.Submission,
-		Username:   *v.Username,
-		CreatedAt:  *v.CreatedAt,
+		SubmUUID:         *v.SubmUUID,
+		Submission:       *v.Submission,
+		Username:         *v.Username,
+		CreatedAt:        *v.CreatedAt,
+		EvalStatus:       *v.EvalStatus,
+		PLangID:          *v.PLangID,
+		PLangDisplayName: *v.PLangDisplayName,
+		PLangMonacoID:    *v.PLangMonacoID,
+		TaskName:         *v.TaskName,
+		TaskID:           *v.TaskID,
 	}
-	res.Evaluation = unmarshalEvaluationResponseToSubmissionsEvaluation(v.Evaluation)
-	res.Language = unmarshalSubmProgrammingLangResponseToSubmissionsSubmProgrammingLang(v.Language)
-	res.Task = unmarshalSubmTaskResponseToSubmissionsSubmTask(v.Task)
-
-	return res
-}
-
-// unmarshalEvaluationResponseToSubmissionsEvaluation builds a value of type
-// *submissions.Evaluation from a value of type *EvaluationResponse.
-func unmarshalEvaluationResponseToSubmissionsEvaluation(v *EvaluationResponse) *submissions.Evaluation {
-	res := &submissions.Evaluation{
-		UUID:          *v.UUID,
-		Status:        *v.Status,
-		ReceivedScore: *v.ReceivedScore,
-		PossibleScore: *v.PossibleScore,
+	if v.EvalScoringTestgroups != nil {
+		res.EvalScoringTestgroups = make([]*submissions.TestGroupResult, len(v.EvalScoringTestgroups))
+		for i, val := range v.EvalScoringTestgroups {
+			res.EvalScoringTestgroups[i] = unmarshalTestGroupResultResponseToSubmissionsTestGroupResult(val)
+		}
 	}
-
-	return res
-}
-
-// unmarshalSubmProgrammingLangResponseToSubmissionsSubmProgrammingLang builds
-// a value of type *submissions.SubmProgrammingLang from a value of type
-// *SubmProgrammingLangResponse.
-func unmarshalSubmProgrammingLangResponseToSubmissionsSubmProgrammingLang(v *SubmProgrammingLangResponse) *submissions.SubmProgrammingLang {
-	res := &submissions.SubmProgrammingLang{
-		ID:       *v.ID,
-		FullName: *v.FullName,
-		MonacoID: *v.MonacoID,
+	if v.EvalScoringTests != nil {
+		res.EvalScoringTests = unmarshalTestsResultResponseToSubmissionsTestsResult(v.EvalScoringTests)
+	}
+	if v.EvalScoringSubtasks != nil {
+		res.EvalScoringSubtasks = make([]*submissions.SubtaskResult, len(v.EvalScoringSubtasks))
+		for i, val := range v.EvalScoringSubtasks {
+			res.EvalScoringSubtasks[i] = unmarshalSubtaskResultResponseToSubmissionsSubtaskResult(val)
+		}
 	}
 
 	return res
 }
 
-// unmarshalSubmTaskResponseToSubmissionsSubmTask builds a value of type
-// *submissions.SubmTask from a value of type *SubmTaskResponse.
-func unmarshalSubmTaskResponseToSubmissionsSubmTask(v *SubmTaskResponse) *submissions.SubmTask {
-	res := &submissions.SubmTask{
-		Name: *v.Name,
-		Code: *v.Code,
+// unmarshalTestGroupResultResponseToSubmissionsTestGroupResult builds a value
+// of type *submissions.TestGroupResult from a value of type
+// *TestGroupResultResponse.
+func unmarshalTestGroupResultResponseToSubmissionsTestGroupResult(v *TestGroupResultResponse) *submissions.TestGroupResult {
+	if v == nil {
+		return nil
+	}
+	res := &submissions.TestGroupResult{
+		TestGroupID:      *v.TestGroupID,
+		TestGroupScore:   *v.TestGroupScore,
+		StatementSubtask: *v.StatementSubtask,
+		AcceptedTests:    *v.AcceptedTests,
+		WrongTests:       *v.WrongTests,
+		UntestedTests:    *v.UntestedTests,
+	}
+
+	return res
+}
+
+// unmarshalTestsResultResponseToSubmissionsTestsResult builds a value of type
+// *submissions.TestsResult from a value of type *TestsResultResponse.
+func unmarshalTestsResultResponseToSubmissionsTestsResult(v *TestsResultResponse) *submissions.TestsResult {
+	if v == nil {
+		return nil
+	}
+	res := &submissions.TestsResult{
+		Accepted: *v.Accepted,
+		Wrong:    *v.Wrong,
+		Untested: *v.Untested,
+	}
+
+	return res
+}
+
+// unmarshalSubtaskResultResponseToSubmissionsSubtaskResult builds a value of
+// type *submissions.SubtaskResult from a value of type *SubtaskResultResponse.
+func unmarshalSubtaskResultResponseToSubmissionsSubtaskResult(v *SubtaskResultResponse) *submissions.SubtaskResult {
+	if v == nil {
+		return nil
+	}
+	res := &submissions.SubtaskResult{
+		SubtaskID:     *v.SubtaskID,
+		SubtaskScore:  *v.SubtaskScore,
+		AcceptedTests: *v.AcceptedTests,
+		WrongTests:    *v.WrongTests,
+		UntestedTests: *v.UntestedTests,
 	}
 
 	return res

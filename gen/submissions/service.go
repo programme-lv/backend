@@ -63,18 +63,6 @@ type CreateSubmissionPayload struct {
 	Token string
 }
 
-// Represents the evaluation of a submission
-type Evaluation struct {
-	// UUID of the evaluation
-	UUID string
-	// Status of the evaluation
-	Status string
-	// Received score of the evaluation
-	ReceivedScore int
-	// Possible score of the evaluation
-	PossibleScore int
-}
-
 // GetSubmissionPayload is the payload type of the submissions service
 // getSubmission method.
 type GetSubmissionPayload struct {
@@ -115,41 +103,72 @@ type ProgrammingLang struct {
 	Enabled bool
 }
 
-// Represents a programming language
-type SubmProgrammingLang struct {
-	// ID of the programming language
-	ID string
-	// Full name of the programming language
-	FullName string
-	// Monaco editor ID for the programming language
-	MonacoID string
-}
-
-// Represents a competitive programming task
-type SubmTask struct {
-	// Name of the task
-	Name string
-	// Code of the task
-	Code string
-}
-
 // Submission is the result type of the submissions service createSubmission
 // method.
 type Submission struct {
 	// UUID of the submission
-	UUID string
+	SubmUUID string
 	// The code submission
 	Submission string
 	// Username of the user who submitted
 	Username string
-	// Creation date of the submission
+	// Creation time of the submission
 	CreatedAt string
-	// Evaluation of the submission
-	Evaluation *Evaluation
-	// Programming language of the submission
-	Language *SubmProgrammingLang
-	// Task associated with the submission
-	Task *SubmTask
+	// Status of the current evaluation
+	EvalStatus string
+	// Scoring / results of the test groups
+	EvalScoringTestgroups []*TestGroupResult
+	// Scoring / results of the all tests
+	EvalScoringTests *TestsResult
+	// Scoring / results of the subtasks
+	EvalScoringSubtasks []*SubtaskResult
+	// ID of the programming language
+	PLangID string
+	// Display name of the programming language
+	PLangDisplayName string
+	// Monaco editor ID for the programming language
+	PLangMonacoID string
+	// Name of the task associated with the submission
+	TaskName string
+	// Code of the task associated with the submission
+	TaskID string
+}
+
+type SubtaskResult struct {
+	// ID of the subtask
+	SubtaskID int
+	// Score of the subtask
+	SubtaskScore int
+	// Number of accepted tests
+	AcceptedTests int
+	// Number of wrong tests
+	WrongTests int
+	// Number of untested tests
+	UntestedTests int
+}
+
+type TestGroupResult struct {
+	// ID of the test group
+	TestGroupID int
+	// Score of the test group
+	TestGroupScore int
+	// Statement subtask
+	StatementSubtask int
+	// Number of accepted tests
+	AcceptedTests int
+	// Number of wrong tests
+	WrongTests int
+	// Number of untested tests
+	UntestedTests int
+}
+
+type TestsResult struct {
+	// Number of accepted tests
+	Accepted int
+	// Number of wrong tests
+	Wrong int
+	// Number of untested tests
+	Untested int
 }
 
 // Credentials are invalid

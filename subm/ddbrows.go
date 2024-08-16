@@ -7,7 +7,7 @@ type SubmDetailsRow struct {
 	Content string `dynamodbav:"subm_content"` // submission task solution code
 
 	AuthorUuid string `dynamodbav:"author_uuid"`
-	TaskUuid   string `dynamodbav:"task_uuid"`
+	TaskId     string `dynamodbav:"task_id"`
 	ProgLangId string `dynamodbav:"prog_lang_id"`
 
 	CurrentEvalUuid   string `dynamodbav:"current_eval_uuid"`   // the uuid of the current evaluation
