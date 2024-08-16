@@ -2,6 +2,7 @@ package subm
 
 import (
 	"context"
+	"sort"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -23,6 +24,7 @@ func (s *submissionssrvc) ListSubmissions(ctx context.Context) (res []*submgen.S
 				Value: "1",
 			},
 		},
+		ScanIndexForward: aws.Bool(false),
 	}
 
 	result, err := s.ddbClient.Query(context.TODO(), input)
@@ -176,6 +178,11 @@ func (s *submissionssrvc) ListSubmissions(ctx context.Context) (res []*submgen.S
 			TaskID:                v.TaskId,
 		})
 	}
+
+	// sort by created_at descending
+	sort.Slice(res, func(i, j int) bool {
+		return res[i].CreatedAt > res[j].CreatedAt
+	})
 
 	return res, nil
 }
