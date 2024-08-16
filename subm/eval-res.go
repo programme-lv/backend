@@ -656,6 +656,7 @@ func (s *submissionssrvc) processEvalResult(evalUuid string, msgType string, fie
 					var condFailed *types.ConditionalCheckFailedException
 					if errors.As(err, &condFailed) {
 						log.Printf("failed to update testgroup because the condition failed: %v", err)
+						continue
 					} else {
 						log.Printf("failed to update testgroup: %v", err)
 						continue
