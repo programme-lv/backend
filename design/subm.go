@@ -52,6 +52,7 @@ var Submission = dsl.Type("Submission", func() {
 	dsl.Attribute("submission", dsl.String, "The code submission")
 	dsl.Attribute("username", dsl.String, "Username of the user who submitted")
 	dsl.Attribute("created_at", dsl.String, "Creation time of the submission")
+	dsl.Attribute("eval_uuid", dsl.String, "UUID of the evaluation")
 	dsl.Attribute("eval_status", dsl.String, "Status of the current evaluation")
 	dsl.Attribute("eval_scoring_testgroups", dsl.ArrayOf(TestGroupResult), "Scoring / results of the test groups")
 	dsl.Attribute("eval_scoring_tests", TestsResult, "Scoring / results of the all tests")
@@ -61,7 +62,7 @@ var Submission = dsl.Type("Submission", func() {
 	dsl.Attribute("p_lang_monaco_id", dsl.String, "Monaco editor ID for the programming language")
 	dsl.Attribute("task_name", dsl.String, "Name of the task associated with the submission")
 	dsl.Attribute("task_id", dsl.String, "Code of the task associated with the submission")
-	dsl.Required("subm_uuid", "submission", "username", "created_at", "eval_status", "p_lang_id", "p_lang_display_name", "p_lang_monaco_id", "task_name", "task_id")
+	dsl.Required("subm_uuid", "submission", "username", "created_at", "eval_status", "p_lang_id", "p_lang_display_name", "p_lang_monaco_id", "task_name", "task_id", "eval_uuid")
 })
 
 var CreateSubmissionPayload = dsl.Type("CreateSubmissionPayload", func() {
@@ -82,8 +83,26 @@ var CreateSubmissionPayload = dsl.Type("CreateSubmissionPayload", func() {
 	dsl.Required("submission", "username", "programming_lang_id", "task_code_id", "token")
 })
 
+var SubmissionStateUpdate = dsl.Type("SubmissionStateUpdate", func() {
+	dsl.Attribute("subm_uuid", dsl.String, "UUID of the submission")
+	dsl.Attribute("eval_uuid", dsl.String, "UUID of the evaluation")
+	dsl.Attribute("new_state", dsl.String, "New state of the submission")
+	dsl.Required("subm_uuid", "new_state", "eval_uuid")
+})
+
+var TestgroupResultUpdate = dsl.Type("TestgroupScoreUpdate", func() {
+	dsl.Attribute("subm_uuid", dsl.String)
+	dsl.Attribute("eval_uuid", dsl.String)
+	dsl.Attribute("accepted_tests", dsl.Int)
+	dsl.Attribute("wrong_tests", dsl.Int)
+	dsl.Attribute("untested_tests", dsl.Int)
+	dsl.Required("subm_uuid", "eval_uuid", "accepted_tests", "wrong_tests", "untested_tests")
+})
+
 var SubmListUpdate = dsl.Type("SubmissionListUpdate", func() {
 	dsl.Attribute("subm_created", Submission, "Submission that was created")
+	dsl.Attribute("state_update", SubmissionStateUpdate)
+	dsl.Attribute("testgroup_res_update", TestgroupResultUpdate)
 	// TODO: status update
 	// TODO: scoring update
 })

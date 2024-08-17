@@ -640,6 +640,7 @@ func unmarshalSubmissionResponseToSubmissionsSubmission(v *SubmissionResponse) *
 		Submission:       *v.Submission,
 		Username:         *v.Username,
 		CreatedAt:        *v.CreatedAt,
+		EvalUUID:         *v.EvalUUID,
 		EvalStatus:       *v.EvalStatus,
 		PLangID:          *v.PLangID,
 		PLangDisplayName: *v.PLangDisplayName,
@@ -728,6 +729,7 @@ func unmarshalSubmissionResponseBodyToSubmissionsSubmission(v *SubmissionRespons
 		Submission:       *v.Submission,
 		Username:         *v.Username,
 		CreatedAt:        *v.CreatedAt,
+		EvalUUID:         *v.EvalUUID,
 		EvalStatus:       *v.EvalStatus,
 		PLangID:          *v.PLangID,
 		PLangDisplayName: *v.PLangDisplayName,
@@ -749,6 +751,40 @@ func unmarshalSubmissionResponseBodyToSubmissionsSubmission(v *SubmissionRespons
 		for i, val := range v.EvalScoringSubtasks {
 			res.EvalScoringSubtasks[i] = unmarshalSubtaskResultResponseBodyToSubmissionsSubtaskResult(val)
 		}
+	}
+
+	return res
+}
+
+// unmarshalSubmissionStateUpdateResponseBodyToSubmissionsSubmissionStateUpdate
+// builds a value of type *submissions.SubmissionStateUpdate from a value of
+// type *SubmissionStateUpdateResponseBody.
+func unmarshalSubmissionStateUpdateResponseBodyToSubmissionsSubmissionStateUpdate(v *SubmissionStateUpdateResponseBody) *submissions.SubmissionStateUpdate {
+	if v == nil {
+		return nil
+	}
+	res := &submissions.SubmissionStateUpdate{
+		SubmUUID: *v.SubmUUID,
+		EvalUUID: *v.EvalUUID,
+		NewState: *v.NewState,
+	}
+
+	return res
+}
+
+// unmarshalTestgroupScoreUpdateResponseBodyToSubmissionsTestgroupScoreUpdate
+// builds a value of type *submissions.TestgroupScoreUpdate from a value of
+// type *TestgroupScoreUpdateResponseBody.
+func unmarshalTestgroupScoreUpdateResponseBodyToSubmissionsTestgroupScoreUpdate(v *TestgroupScoreUpdateResponseBody) *submissions.TestgroupScoreUpdate {
+	if v == nil {
+		return nil
+	}
+	res := &submissions.TestgroupScoreUpdate{
+		SubmUUID:      *v.SubmUUID,
+		EvalUUID:      *v.EvalUUID,
+		AcceptedTests: *v.AcceptedTests,
+		WrongTests:    *v.WrongTests,
+		UntestedTests: *v.UntestedTests,
 	}
 
 	return res

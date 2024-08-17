@@ -20,36 +20,39 @@ func (s *submissionssrvc) processEvalResult(evalUuid string, msgType string, fie
 	baseDelay := 100 * time.Millisecond
 
 	var submUuid string
-	for attempt := 0; attempt < 5; attempt++ {
-		// sleep for 100ms * attempt^2
-		if attempt > 0 {
-			time.Sleep(baseDelay * time.Duration(attempt*attempt))
-		}
-		// Create the query input
-		input := &dynamodb.QueryInput{
-			TableName:              aws.String(s.submTableName),
-			IndexName:              aws.String("eval_uuid-index"),
-			KeyConditionExpression: aws.String("eval_uuid = :evalUUID"),
-			ExpressionAttributeValues: map[string]types.AttributeValue{
-				":evalUUID": &types.AttributeValueMemberS{Value: evalUuid},
-			},
-			ProjectionExpression: aws.String("subm_uuid"),
-		}
+	var foundInMap bool
+	if submUuid, foundInMap = s.evalUuidToSubmUuid[evalUuid]; !foundInMap {
+		for attempt := 0; attempt < 5; attempt++ {
+			// sleep for 100ms * attempt^2
+			if attempt > 0 {
+				time.Sleep(baseDelay * time.Duration(attempt*attempt))
+			}
+			// Create the query input
+			input := &dynamodb.QueryInput{
+				TableName:              aws.String(s.submTableName),
+				IndexName:              aws.String("eval_uuid-index"),
+				KeyConditionExpression: aws.String("eval_uuid = :evalUUID"),
+				ExpressionAttributeValues: map[string]types.AttributeValue{
+					":evalUUID": &types.AttributeValueMemberS{Value: evalUuid},
+				},
+				ProjectionExpression: aws.String("subm_uuid"),
+			}
 
-		// Execute the query
-		result, err := s.ddbClient.Query(context.TODO(), input)
-		if err != nil {
-			log.Printf("failed to query items: %v", err)
-			continue
-		}
+			// Execute the query
+			result, err := s.ddbClient.Query(context.TODO(), input)
+			if err != nil {
+				log.Printf("failed to query items: %v", err)
+				continue
+			}
 
-		switch len(result.Items) {
-		case 0:
-			log.Printf("no submission found for eval_uuid %s", evalUuid)
-			continue
-		case 1:
-			// Success: return the subm_uuid
-			submUuid = result.Items[0]["subm_uuid"].(*types.AttributeValueMemberS).Value
+			switch len(result.Items) {
+			case 0:
+				log.Printf("no submission found for eval_uuid %s", evalUuid)
+				continue
+			case 1:
+				// Success: return the subm_uuid
+				submUuid = result.Items[0]["subm_uuid"].(*types.AttributeValueMemberS).Value
+			}
 		}
 	}
 	if submUuid == "" {
@@ -158,7 +161,11 @@ func (s *submissionssrvc) processEvalResult(evalUuid string, msgType string, fie
 			}
 		}
 
-		// TODO: notify listeners that the submission has been received
+		s.updateSubmStateChan <- &SubmissionStateUpdate{
+			SubmUuid: submUuid,
+			EvalUuid: evalUuid,
+			NewState: "received",
+		}
 	case "started_compilation":
 		// update evaluation details row with "evaluation_stage" = "compiling" if it is either "received" or "waiting"
 		updEvalStage := expression.Set(expression.Name("evaluation_stage"), expression.Value("compiling"))
@@ -223,7 +230,11 @@ func (s *submissionssrvc) processEvalResult(evalUuid string, msgType string, fie
 			}
 		}
 
-		//TODO: notify listeners that the compilation has started
+		s.updateSubmStateChan <- &SubmissionStateUpdate{
+			SubmUuid: submUuid,
+			EvalUuid: evalUuid,
+			NewState: "compiling",
+		}
 	case "finished_compilation":
 		var parsed struct {
 			RuntimeData struct {
@@ -339,7 +350,11 @@ func (s *submissionssrvc) processEvalResult(evalUuid string, msgType string, fie
 			}
 		}
 
-		// TODO: notify listeners that the testing has started
+		s.updateSubmStateChan <- &SubmissionStateUpdate{
+			SubmUuid: submUuid,
+			EvalUuid: evalUuid,
+			NewState: "testing",
+		}
 	case "started_test":
 		var parsed struct {
 			TestId int64 `json:"test_id"`
@@ -529,7 +544,7 @@ func (s *submissionssrvc) processEvalResult(evalUuid string, msgType string, fie
 				"sort_key":  &types.AttributeValueMemberS{Value: "eval#" + evalUuid + "#details"},
 			}
 
-			updEvalFailed := expression.Set(expression.Name("evaluation_stage"), expression.Value("failed")).
+			updEvalFailed := expression.Set(expression.Name("evaluation_stage"), expression.Value("error")).
 				Set(expression.Name("error_msg"), expression.Value(fmt.Sprintf("checker exited with code %d for test %d", parsed.Checker.ExitCode, parsed.TestId)))
 			updEvalFailedExpr, err := expression.NewBuilder().WithUpdate(updEvalFailed).Build()
 			if err != nil {
@@ -555,7 +570,7 @@ func (s *submissionssrvc) processEvalResult(evalUuid string, msgType string, fie
 				"sort_key":  &types.AttributeValueMemberS{Value: "subm#details"},
 			}
 
-			updSubmFailed := expression.Set(expression.Name("current_eval_status"), expression.Value("failed")).
+			updSubmFailed := expression.Set(expression.Name("current_eval_status"), expression.Value("error")).
 				Set(expression.Name("error_msg"), expression.Value(fmt.Sprintf("checker exited with code %d for test %d", parsed.Checker.ExitCode, parsed.TestId)))
 			updSubmFailedExpr, err := expression.NewBuilder().WithUpdate(updSubmFailed).Build()
 			if err != nil {
@@ -576,7 +591,11 @@ func (s *submissionssrvc) processEvalResult(evalUuid string, msgType string, fie
 				return
 			}
 
-			// TODO: and notify listeners that the evaluation has failed
+			s.updateSubmStateChan <- &SubmissionStateUpdate{
+				SubmUuid: submUuid,
+				EvalUuid: evalUuid,
+				NewState: "error",
+			}
 
 			return
 		}
@@ -769,7 +788,7 @@ func (s *submissionssrvc) processEvalResult(evalUuid string, msgType string, fie
 			return
 		}
 
-		// if ErrorMsg is not nil, set evaluation_stage to "failed" and current_eval_status to "failed"
+		// if ErrorMsg is not nil, set evaluation_stage to "error" and current_eval_status to "error"
 		if parsed.ErrorMsg != nil {
 			evalDetailsPk := map[string]types.AttributeValue{
 				"subm_uuid": &types.AttributeValueMemberS{Value: submUuid},
@@ -802,7 +821,7 @@ func (s *submissionssrvc) processEvalResult(evalUuid string, msgType string, fie
 				"sort_key":  &types.AttributeValueMemberS{Value: "subm#details"},
 			}
 
-			updSubmFailed := expression.Set(expression.Name("current_eval_status"), expression.Value("failed")).
+			updSubmFailed := expression.Set(expression.Name("current_eval_status"), expression.Value("error")).
 				Set(expression.Name("error_msg"), expression.Value(parsed.ErrorMsg))
 
 			// make sure that the current_eval_uuid is the same as eval_uuid
@@ -826,6 +845,12 @@ func (s *submissionssrvc) processEvalResult(evalUuid string, msgType string, fie
 				log.Printf("failed to update submission failed: %v", err)
 				return
 			}
+
+			s.updateSubmStateChan <- &SubmissionStateUpdate{
+				SubmUuid: submUuid,
+				EvalUuid: evalUuid,
+				NewState: "error",
+			}
 		} else {
 			// set both evaluation_stage and current_eval_status to "finished"
 			evalDetailsPk := map[string]types.AttributeValue{
@@ -835,7 +860,7 @@ func (s *submissionssrvc) processEvalResult(evalUuid string, msgType string, fie
 
 			updEvalFinished := expression.Set(expression.Name("evaluation_stage"), expression.Value("finished"))
 			// if not error
-			updEvalFinishedCond := expression.Name("evaluation_stage").NotEqual(expression.Value("failed"))
+			updEvalFinishedCond := expression.Name("evaluation_stage").NotEqual(expression.Value("error"))
 			updEvalFinishedExpr, err := expression.NewBuilder().WithUpdate(updEvalFinished).WithCondition(updEvalFinishedCond).Build()
 			if err != nil {
 				log.Printf("failed to build evaluation finished update expression: %v", err)
@@ -863,7 +888,7 @@ func (s *submissionssrvc) processEvalResult(evalUuid string, msgType string, fie
 
 			updSubmFinished := expression.Set(expression.Name("current_eval_status"), expression.Value("finished"))
 			// if not error
-			updSubmFinishedCond := expression.Name("current_eval_status").NotEqual(expression.Value("failed"))
+			updSubmFinishedCond := expression.Name("current_eval_status").NotEqual(expression.Value("error"))
 			updSubmFinishedExpr, err := expression.NewBuilder().WithUpdate(updSubmFinished).WithCondition(updSubmFinishedCond).Build()
 			if err != nil {
 				log.Printf("failed to build submission finished update expression: %v", err)
@@ -882,6 +907,12 @@ func (s *submissionssrvc) processEvalResult(evalUuid string, msgType string, fie
 			if err != nil {
 				log.Printf("failed to update submission finished: %v", err)
 				return
+			}
+
+			s.updateSubmStateChan <- &SubmissionStateUpdate{
+				SubmUuid: submUuid,
+				EvalUuid: evalUuid,
+				NewState: "finished",
 			}
 		}
 	}

@@ -132,6 +132,8 @@ type Submission struct {
 	Username string
 	// Creation time of the submission
 	CreatedAt string
+	// UUID of the evaluation
+	EvalUUID string
 	// Status of the current evaluation
 	EvalStatus string
 	// Scoring / results of the test groups
@@ -156,7 +158,18 @@ type Submission struct {
 // streamSubmissionUpdates method.
 type SubmissionListUpdate struct {
 	// Submission that was created
-	SubmCreated *Submission
+	SubmCreated        *Submission
+	StateUpdate        *SubmissionStateUpdate
+	TestgroupResUpdate *TestgroupScoreUpdate
+}
+
+type SubmissionStateUpdate struct {
+	// UUID of the submission
+	SubmUUID string
+	// UUID of the evaluation
+	EvalUUID string
+	// New state of the submission
+	NewState string
 }
 
 type SubtaskResult struct {
@@ -184,6 +197,14 @@ type TestGroupResult struct {
 	// Number of wrong tests
 	WrongTests int
 	// Number of untested tests
+	UntestedTests int
+}
+
+type TestgroupScoreUpdate struct {
+	SubmUUID      string
+	EvalUUID      string
+	AcceptedTests int
+	WrongTests    int
 	UntestedTests int
 }
 

@@ -36,6 +36,8 @@ type CreateSubmissionResponseBody struct {
 	Username string `form:"username" json:"username" xml:"username"`
 	// Creation time of the submission
 	CreatedAt string `form:"created_at" json:"created_at" xml:"created_at"`
+	// UUID of the evaluation
+	EvalUUID string `form:"eval_uuid" json:"eval_uuid" xml:"eval_uuid"`
 	// Status of the current evaluation
 	EvalStatus string `form:"eval_status" json:"eval_status" xml:"eval_status"`
 	// Scoring / results of the test groups
@@ -64,7 +66,9 @@ type ListSubmissionsResponseBody []*SubmissionResponse
 // "streamSubmissionUpdates" endpoint HTTP response body.
 type StreamSubmissionUpdatesResponseBody struct {
 	// Submission that was created
-	SubmCreated *SubmissionResponseBody `form:"subm_created,omitempty" json:"subm_created,omitempty" xml:"subm_created,omitempty"`
+	SubmCreated        *SubmissionResponseBody            `form:"subm_created,omitempty" json:"subm_created,omitempty" xml:"subm_created,omitempty"`
+	StateUpdate        *SubmissionStateUpdateResponseBody `form:"state_update,omitempty" json:"state_update,omitempty" xml:"state_update,omitempty"`
+	TestgroupResUpdate *TestgroupScoreUpdateResponseBody  `form:"testgroup_res_update,omitempty" json:"testgroup_res_update,omitempty" xml:"testgroup_res_update,omitempty"`
 }
 
 // GetSubmissionResponseBody is the type of the "submissions" service
@@ -78,6 +82,8 @@ type GetSubmissionResponseBody struct {
 	Username string `form:"username" json:"username" xml:"username"`
 	// Creation time of the submission
 	CreatedAt string `form:"created_at" json:"created_at" xml:"created_at"`
+	// UUID of the evaluation
+	EvalUUID string `form:"eval_uuid" json:"eval_uuid" xml:"eval_uuid"`
 	// Status of the current evaluation
 	EvalStatus string `form:"eval_status" json:"eval_status" xml:"eval_status"`
 	// Scoring / results of the test groups
@@ -152,6 +158,8 @@ type SubmissionResponse struct {
 	Username string `form:"username" json:"username" xml:"username"`
 	// Creation time of the submission
 	CreatedAt string `form:"created_at" json:"created_at" xml:"created_at"`
+	// UUID of the evaluation
+	EvalUUID string `form:"eval_uuid" json:"eval_uuid" xml:"eval_uuid"`
 	// Status of the current evaluation
 	EvalStatus string `form:"eval_status" json:"eval_status" xml:"eval_status"`
 	// Scoring / results of the test groups
@@ -222,6 +230,8 @@ type SubmissionResponseBody struct {
 	Username string `form:"username" json:"username" xml:"username"`
 	// Creation time of the submission
 	CreatedAt string `form:"created_at" json:"created_at" xml:"created_at"`
+	// UUID of the evaluation
+	EvalUUID string `form:"eval_uuid" json:"eval_uuid" xml:"eval_uuid"`
 	// Status of the current evaluation
 	EvalStatus string `form:"eval_status" json:"eval_status" xml:"eval_status"`
 	// Scoring / results of the test groups
@@ -240,6 +250,27 @@ type SubmissionResponseBody struct {
 	TaskName string `form:"task_name" json:"task_name" xml:"task_name"`
 	// Code of the task associated with the submission
 	TaskID string `form:"task_id" json:"task_id" xml:"task_id"`
+}
+
+// SubmissionStateUpdateResponseBody is used to define fields on response body
+// types.
+type SubmissionStateUpdateResponseBody struct {
+	// UUID of the submission
+	SubmUUID string `form:"subm_uuid" json:"subm_uuid" xml:"subm_uuid"`
+	// UUID of the evaluation
+	EvalUUID string `form:"eval_uuid" json:"eval_uuid" xml:"eval_uuid"`
+	// New state of the submission
+	NewState string `form:"new_state" json:"new_state" xml:"new_state"`
+}
+
+// TestgroupScoreUpdateResponseBody is used to define fields on response body
+// types.
+type TestgroupScoreUpdateResponseBody struct {
+	SubmUUID      string `form:"subm_uuid" json:"subm_uuid" xml:"subm_uuid"`
+	EvalUUID      string `form:"eval_uuid" json:"eval_uuid" xml:"eval_uuid"`
+	AcceptedTests int    `form:"accepted_tests" json:"accepted_tests" xml:"accepted_tests"`
+	WrongTests    int    `form:"wrong_tests" json:"wrong_tests" xml:"wrong_tests"`
+	UntestedTests int    `form:"untested_tests" json:"untested_tests" xml:"untested_tests"`
 }
 
 // ProgrammingLangResponse is used to define fields on response body types.
@@ -274,6 +305,7 @@ func NewCreateSubmissionResponseBody(res *submissions.Submission) *CreateSubmiss
 		Submission:       res.Submission,
 		Username:         res.Username,
 		CreatedAt:        res.CreatedAt,
+		EvalUUID:         res.EvalUUID,
 		EvalStatus:       res.EvalStatus,
 		PLangID:          res.PLangID,
 		PLangDisplayName: res.PLangDisplayName,
@@ -317,6 +349,12 @@ func NewStreamSubmissionUpdatesResponseBody(res *submissions.SubmissionListUpdat
 	if res.SubmCreated != nil {
 		body.SubmCreated = marshalSubmissionsSubmissionToSubmissionResponseBody(res.SubmCreated)
 	}
+	if res.StateUpdate != nil {
+		body.StateUpdate = marshalSubmissionsSubmissionStateUpdateToSubmissionStateUpdateResponseBody(res.StateUpdate)
+	}
+	if res.TestgroupResUpdate != nil {
+		body.TestgroupResUpdate = marshalSubmissionsTestgroupScoreUpdateToTestgroupScoreUpdateResponseBody(res.TestgroupResUpdate)
+	}
 	return body
 }
 
@@ -328,6 +366,7 @@ func NewGetSubmissionResponseBody(res *submissions.Submission) *GetSubmissionRes
 		Submission:       res.Submission,
 		Username:         res.Username,
 		CreatedAt:        res.CreatedAt,
+		EvalUUID:         res.EvalUUID,
 		EvalStatus:       res.EvalStatus,
 		PLangID:          res.PLangID,
 		PLangDisplayName: res.PLangDisplayName,

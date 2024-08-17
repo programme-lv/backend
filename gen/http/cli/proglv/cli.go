@@ -37,7 +37,7 @@ func UsageExamples() string {
       "submission": "print(factorial(5))",
       "task_code_id": "kvadrputekl",
       "username": "coder123"
-   }' --token "Vel quisquam ducimus corporis illo et."` + "\n" +
+   }' --token "Aut ipsa enim tempora totam consectetur."` + "\n" +
 		os.Args[0] + ` tasks list-tasks` + "\n" +
 		os.Args[0] + ` users get-user --uuid "550e8400-e29b-41d4-a716-446655440000" --token "jwt_token"` + "\n" +
 		""
@@ -302,7 +302,7 @@ Example:
       "submission": "print(factorial(5))",
       "task_code_id": "kvadrputekl",
       "username": "coder123"
-   }' --token "Vel quisquam ducimus corporis illo et."
+   }' --token "Aut ipsa enim tempora totam consectetur."
 `, os.Args[0])
 }
 
@@ -461,6 +461,6 @@ Query current JWT
     -token STRING: 
 
 Example:
-    %[1]s users query-current-jwt --token "Voluptate eum est odit quod est laudantium."
+    %[1]s users query-current-jwt --token "Est dolorum quaerat qui."
 `, os.Args[0])
 }

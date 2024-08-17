@@ -36,6 +36,8 @@ type CreateSubmissionResponseBody struct {
 	Username *string `form:"username,omitempty" json:"username,omitempty" xml:"username,omitempty"`
 	// Creation time of the submission
 	CreatedAt *string `form:"created_at,omitempty" json:"created_at,omitempty" xml:"created_at,omitempty"`
+	// UUID of the evaluation
+	EvalUUID *string `form:"eval_uuid,omitempty" json:"eval_uuid,omitempty" xml:"eval_uuid,omitempty"`
 	// Status of the current evaluation
 	EvalStatus *string `form:"eval_status,omitempty" json:"eval_status,omitempty" xml:"eval_status,omitempty"`
 	// Scoring / results of the test groups
@@ -64,7 +66,9 @@ type ListSubmissionsResponseBody []*SubmissionResponse
 // "streamSubmissionUpdates" endpoint HTTP response body.
 type StreamSubmissionUpdatesResponseBody struct {
 	// Submission that was created
-	SubmCreated *SubmissionResponseBody `form:"subm_created,omitempty" json:"subm_created,omitempty" xml:"subm_created,omitempty"`
+	SubmCreated        *SubmissionResponseBody            `form:"subm_created,omitempty" json:"subm_created,omitempty" xml:"subm_created,omitempty"`
+	StateUpdate        *SubmissionStateUpdateResponseBody `form:"state_update,omitempty" json:"state_update,omitempty" xml:"state_update,omitempty"`
+	TestgroupResUpdate *TestgroupScoreUpdateResponseBody  `form:"testgroup_res_update,omitempty" json:"testgroup_res_update,omitempty" xml:"testgroup_res_update,omitempty"`
 }
 
 // GetSubmissionResponseBody is the type of the "submissions" service
@@ -78,6 +82,8 @@ type GetSubmissionResponseBody struct {
 	Username *string `form:"username,omitempty" json:"username,omitempty" xml:"username,omitempty"`
 	// Creation time of the submission
 	CreatedAt *string `form:"created_at,omitempty" json:"created_at,omitempty" xml:"created_at,omitempty"`
+	// UUID of the evaluation
+	EvalUUID *string `form:"eval_uuid,omitempty" json:"eval_uuid,omitempty" xml:"eval_uuid,omitempty"`
 	// Status of the current evaluation
 	EvalStatus *string `form:"eval_status,omitempty" json:"eval_status,omitempty" xml:"eval_status,omitempty"`
 	// Scoring / results of the test groups
@@ -152,6 +158,8 @@ type SubmissionResponse struct {
 	Username *string `form:"username,omitempty" json:"username,omitempty" xml:"username,omitempty"`
 	// Creation time of the submission
 	CreatedAt *string `form:"created_at,omitempty" json:"created_at,omitempty" xml:"created_at,omitempty"`
+	// UUID of the evaluation
+	EvalUUID *string `form:"eval_uuid,omitempty" json:"eval_uuid,omitempty" xml:"eval_uuid,omitempty"`
 	// Status of the current evaluation
 	EvalStatus *string `form:"eval_status,omitempty" json:"eval_status,omitempty" xml:"eval_status,omitempty"`
 	// Scoring / results of the test groups
@@ -222,6 +230,8 @@ type SubmissionResponseBody struct {
 	Username *string `form:"username,omitempty" json:"username,omitempty" xml:"username,omitempty"`
 	// Creation time of the submission
 	CreatedAt *string `form:"created_at,omitempty" json:"created_at,omitempty" xml:"created_at,omitempty"`
+	// UUID of the evaluation
+	EvalUUID *string `form:"eval_uuid,omitempty" json:"eval_uuid,omitempty" xml:"eval_uuid,omitempty"`
 	// Status of the current evaluation
 	EvalStatus *string `form:"eval_status,omitempty" json:"eval_status,omitempty" xml:"eval_status,omitempty"`
 	// Scoring / results of the test groups
@@ -240,6 +250,27 @@ type SubmissionResponseBody struct {
 	TaskName *string `form:"task_name,omitempty" json:"task_name,omitempty" xml:"task_name,omitempty"`
 	// Code of the task associated with the submission
 	TaskID *string `form:"task_id,omitempty" json:"task_id,omitempty" xml:"task_id,omitempty"`
+}
+
+// SubmissionStateUpdateResponseBody is used to define fields on response body
+// types.
+type SubmissionStateUpdateResponseBody struct {
+	// UUID of the submission
+	SubmUUID *string `form:"subm_uuid,omitempty" json:"subm_uuid,omitempty" xml:"subm_uuid,omitempty"`
+	// UUID of the evaluation
+	EvalUUID *string `form:"eval_uuid,omitempty" json:"eval_uuid,omitempty" xml:"eval_uuid,omitempty"`
+	// New state of the submission
+	NewState *string `form:"new_state,omitempty" json:"new_state,omitempty" xml:"new_state,omitempty"`
+}
+
+// TestgroupScoreUpdateResponseBody is used to define fields on response body
+// types.
+type TestgroupScoreUpdateResponseBody struct {
+	SubmUUID      *string `form:"subm_uuid,omitempty" json:"subm_uuid,omitempty" xml:"subm_uuid,omitempty"`
+	EvalUUID      *string `form:"eval_uuid,omitempty" json:"eval_uuid,omitempty" xml:"eval_uuid,omitempty"`
+	AcceptedTests *int    `form:"accepted_tests,omitempty" json:"accepted_tests,omitempty" xml:"accepted_tests,omitempty"`
+	WrongTests    *int    `form:"wrong_tests,omitempty" json:"wrong_tests,omitempty" xml:"wrong_tests,omitempty"`
+	UntestedTests *int    `form:"untested_tests,omitempty" json:"untested_tests,omitempty" xml:"untested_tests,omitempty"`
 }
 
 // ProgrammingLangResponse is used to define fields on response body types.
@@ -286,6 +317,7 @@ func NewCreateSubmissionSubmissionCreated(body *CreateSubmissionResponseBody) *s
 		Submission:       *body.Submission,
 		Username:         *body.Username,
 		CreatedAt:        *body.CreatedAt,
+		EvalUUID:         *body.EvalUUID,
 		EvalStatus:       *body.EvalStatus,
 		PLangID:          *body.PLangID,
 		PLangDisplayName: *body.PLangDisplayName,
@@ -394,6 +426,12 @@ func NewStreamSubmissionUpdatesSubmissionListUpdateOK(body *StreamSubmissionUpda
 	if body.SubmCreated != nil {
 		v.SubmCreated = unmarshalSubmissionResponseBodyToSubmissionsSubmission(body.SubmCreated)
 	}
+	if body.StateUpdate != nil {
+		v.StateUpdate = unmarshalSubmissionStateUpdateResponseBodyToSubmissionsSubmissionStateUpdate(body.StateUpdate)
+	}
+	if body.TestgroupResUpdate != nil {
+		v.TestgroupResUpdate = unmarshalTestgroupScoreUpdateResponseBodyToSubmissionsTestgroupScoreUpdate(body.TestgroupResUpdate)
+	}
 
 	return v
 }
@@ -438,6 +476,7 @@ func NewGetSubmissionSubmissionOK(body *GetSubmissionResponseBody) *submissions.
 		Submission:       *body.Submission,
 		Username:         *body.Username,
 		CreatedAt:        *body.CreatedAt,
+		EvalUUID:         *body.EvalUUID,
 		EvalStatus:       *body.EvalStatus,
 		PLangID:          *body.PLangID,
 		PLangDisplayName: *body.PLangDisplayName,
@@ -572,6 +611,9 @@ func ValidateCreateSubmissionResponseBody(body *CreateSubmissionResponseBody) (e
 	if body.TaskID == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("task_id", "body"))
 	}
+	if body.EvalUUID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("eval_uuid", "body"))
+	}
 	for _, e := range body.EvalScoringTestgroups {
 		if e != nil {
 			if err2 := ValidateTestGroupResultResponseBody(e); err2 != nil {
@@ -599,6 +641,16 @@ func ValidateCreateSubmissionResponseBody(body *CreateSubmissionResponseBody) (e
 func ValidateStreamSubmissionUpdatesResponseBody(body *StreamSubmissionUpdatesResponseBody) (err error) {
 	if body.SubmCreated != nil {
 		if err2 := ValidateSubmissionResponseBody(body.SubmCreated); err2 != nil {
+			err = goa.MergeErrors(err, err2)
+		}
+	}
+	if body.StateUpdate != nil {
+		if err2 := ValidateSubmissionStateUpdateResponseBody(body.StateUpdate); err2 != nil {
+			err = goa.MergeErrors(err, err2)
+		}
+	}
+	if body.TestgroupResUpdate != nil {
+		if err2 := ValidateTestgroupScoreUpdateResponseBody(body.TestgroupResUpdate); err2 != nil {
 			err = goa.MergeErrors(err, err2)
 		}
 	}
@@ -637,6 +689,9 @@ func ValidateGetSubmissionResponseBody(body *GetSubmissionResponseBody) (err err
 	}
 	if body.TaskID == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("task_id", "body"))
+	}
+	if body.EvalUUID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("eval_uuid", "body"))
 	}
 	for _, e := range body.EvalScoringTestgroups {
 		if e != nil {
@@ -751,6 +806,9 @@ func ValidateSubmissionResponse(body *SubmissionResponse) (err error) {
 	}
 	if body.TaskID == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("task_id", "body"))
+	}
+	if body.EvalUUID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("eval_uuid", "body"))
 	}
 	for _, e := range body.EvalScoringTestgroups {
 		if e != nil {
@@ -867,6 +925,9 @@ func ValidateSubmissionResponseBody(body *SubmissionResponseBody) (err error) {
 	if body.TaskID == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("task_id", "body"))
 	}
+	if body.EvalUUID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("eval_uuid", "body"))
+	}
 	for _, e := range body.EvalScoringTestgroups {
 		if e != nil {
 			if err2 := ValidateTestGroupResultResponseBody(e); err2 != nil {
@@ -885,6 +946,42 @@ func ValidateSubmissionResponseBody(body *SubmissionResponseBody) (err error) {
 				err = goa.MergeErrors(err, err2)
 			}
 		}
+	}
+	return
+}
+
+// ValidateSubmissionStateUpdateResponseBody runs the validations defined on
+// SubmissionStateUpdateResponseBody
+func ValidateSubmissionStateUpdateResponseBody(body *SubmissionStateUpdateResponseBody) (err error) {
+	if body.SubmUUID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("subm_uuid", "body"))
+	}
+	if body.NewState == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("new_state", "body"))
+	}
+	if body.EvalUUID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("eval_uuid", "body"))
+	}
+	return
+}
+
+// ValidateTestgroupScoreUpdateResponseBody runs the validations defined on
+// TestgroupScoreUpdateResponseBody
+func ValidateTestgroupScoreUpdateResponseBody(body *TestgroupScoreUpdateResponseBody) (err error) {
+	if body.SubmUUID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("subm_uuid", "body"))
+	}
+	if body.EvalUUID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("eval_uuid", "body"))
+	}
+	if body.AcceptedTests == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("accepted_tests", "body"))
+	}
+	if body.WrongTests == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("wrong_tests", "body"))
+	}
+	if body.UntestedTests == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("untested_tests", "body"))
 	}
 	return
 }

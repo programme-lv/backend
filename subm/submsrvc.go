@@ -33,10 +33,29 @@ type submissionssrvc struct {
 	sqsClient     *sqs.Client
 	submQueueUrl  string
 
-	createdSubmChan      chan *submgen.Submission
-	submUpdListenerLock  sync.Mutex
-	submUpdateListeners  []chan *submgen.SubmissionListUpdate
-	toBeRemovedListeners []chan *submgen.SubmissionListUpdate
+	createdSubmChan        chan *submgen.Submission
+	updateSubmStateChan    chan *SubmissionStateUpdate
+	updateTestgroupResChan chan *TestgroupResultUpdate
+
+	updateListenerLock     sync.Mutex
+	updateListeners        []chan *submgen.SubmissionListUpdate
+	updateRemovedListeners []chan *submgen.SubmissionListUpdate
+
+	evalUuidToSubmUuid map[string]string
+}
+
+type SubmissionStateUpdate struct {
+	SubmUuid string
+	EvalUuid string
+	NewState string
+}
+
+type TestgroupResultUpdate struct {
+	SubmUuid      string
+	EvalUuid      string
+	AcceptedTests int
+	WrongTests    int
+	UntestedTests int
 }
 
 // NewSubmissions returns the submissions service implementation.
@@ -75,16 +94,20 @@ func NewSubmissions(ctx context.Context) submgen.Service {
 	}
 
 	srvc := &submissionssrvc{
-		ddbClient:            dynamodbClient,
-		submTableName:        submTableName,
-		userSrvc:             user.NewUsers(ctx),
-		taskSrvc:             task.NewTasks(ctx),
-		jwtKey:               []byte(jwtKey),
-		sqsClient:            sqsClient,
-		submQueueUrl:         submQueueUrl,
-		createdSubmChan:      make(chan *submgen.Submission, 1000),
-		submUpdateListeners:  make([]chan *submgen.SubmissionListUpdate, 0, 100),
-		toBeRemovedListeners: make([]chan *submgen.SubmissionListUpdate, 0, 100),
+		ddbClient:              dynamodbClient,
+		submTableName:          submTableName,
+		userSrvc:               user.NewUsers(ctx),
+		taskSrvc:               task.NewTasks(ctx),
+		jwtKey:                 []byte(jwtKey),
+		sqsClient:              sqsClient,
+		submQueueUrl:           submQueueUrl,
+		createdSubmChan:        make(chan *submgen.Submission, 1000),
+		updateSubmStateChan:    make(chan *SubmissionStateUpdate, 1000),
+		updateTestgroupResChan: make(chan *TestgroupResultUpdate, 1000),
+		updateListenerLock:     sync.Mutex{},
+		updateListeners:        make([]chan *submgen.SubmissionListUpdate, 0, 100),
+		updateRemovedListeners: make([]chan *submgen.SubmissionListUpdate, 0, 100),
+		evalUuidToSubmUuid:     map[string]string{},
 	}
 
 	go srvc.StartProcessingSubmEvalResults(ctx)
@@ -95,8 +118,8 @@ func NewSubmissions(ctx context.Context) submgen.Service {
 
 func (s *submissionssrvc) StartProcessingSubmEvalResults(ctx context.Context) (err error) {
 	submEvalResQueueUrl := "https://sqs.eu-central-1.amazonaws.com/975049886115/standard_subm_eval_results"
-	throtleChan := make(chan struct{}, 10)
-	for i := 0; i < 10; i++ {
+	throtleChan := make(chan struct{}, 100)
+	for i := 0; i < 100; i++ {
 		throtleChan <- struct{}{}
 	}
 	for {
@@ -172,6 +195,17 @@ func (subm *SubmissionContent) String() string {
 }
 
 func (s *submissionssrvc) StartStreamingSubmListUpdates(ctx context.Context) {
+	sendUpdate := func(update *submgen.SubmissionListUpdate) {
+		s.updateListenerLock.Lock()
+		for _, listener := range s.updateListeners {
+			if len(listener) == cap(listener) {
+				<-listener
+			}
+			listener <- update
+		}
+		s.updateListenerLock.Unlock()
+	}
+
 	for {
 		select {
 		case created := <-s.createdSubmChan:
@@ -179,15 +213,17 @@ func (s *submissionssrvc) StartStreamingSubmListUpdates(ctx context.Context) {
 			update := &submgen.SubmissionListUpdate{
 				SubmCreated: created,
 			}
-
-			s.submUpdListenerLock.Lock()
-			for _, listener := range s.submUpdateListeners {
-				if len(listener) == cap(listener) {
-					<-listener
-				}
-				listener <- update
+			sendUpdate(update)
+		case stateUpdate := <-s.updateSubmStateChan:
+			// notify all listeners about the state update
+			update := &submgen.SubmissionListUpdate{
+				StateUpdate: &submgen.SubmissionStateUpdate{
+					SubmUUID: stateUpdate.SubmUuid,
+					EvalUUID: stateUpdate.EvalUuid,
+					NewState: stateUpdate.NewState,
+				},
 			}
-			s.submUpdListenerLock.Unlock()
+			sendUpdate(update)
 		}
 	}
 }
@@ -196,21 +232,21 @@ func (s *submissionssrvc) StartStreamingSubmListUpdates(ctx context.Context) {
 func (s *submissionssrvc) StreamSubmissionUpdates(ctx context.Context, p submgen.StreamSubmissionUpdatesServerStream) (err error) {
 	// register myself as a listener to the submission updates
 	myChan := make(chan *submgen.SubmissionListUpdate, 1000)
-	s.submUpdListenerLock.Lock()
-	s.submUpdateListeners = append(s.submUpdateListeners, myChan)
-	s.submUpdListenerLock.Unlock()
+	s.updateListenerLock.Lock()
+	s.updateListeners = append(s.updateListeners, myChan)
+	s.updateListenerLock.Unlock()
 
 	defer func() {
 		// lock listener slice
-		s.submUpdListenerLock.Lock()
+		s.updateListenerLock.Lock()
 		// remove myself from the listeners slice
-		for i, listener := range s.submUpdateListeners {
+		for i, listener := range s.updateListeners {
 			if listener == myChan {
-				s.submUpdateListeners = append(s.submUpdateListeners[:i], s.submUpdateListeners[i+1:]...)
+				s.updateListeners = append(s.updateListeners[:i], s.updateListeners[i+1:]...)
 				break
 			}
 		}
-		s.submUpdListenerLock.Unlock()
+		s.updateListenerLock.Unlock()
 		close(myChan)
 	}()
 

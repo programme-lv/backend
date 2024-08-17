@@ -486,6 +486,8 @@ func (s *submissionssrvc) createSubmissionWithValidatedInput(
 
 	s.createdSubmChan <- res
 
+	s.evalUuidToSubmUuid[evalUuid.String()] = submUuid.String()
+
 	return res, nil
 }
 

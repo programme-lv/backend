@@ -222,6 +222,7 @@ paths:
                             - p_lang_monaco_id
                             - task_name
                             - task_id
+                            - eval_uuid
                 "400":
                     description: Bad Request response.
                     schema:
@@ -271,6 +272,7 @@ paths:
                             - p_lang_monaco_id
                             - task_name
                             - task_id
+                            - eval_uuid
                 "400":
                     description: Bad Request response.
                     schema:
@@ -503,7 +505,7 @@ definitions:
             md_note:
                 type: string
                 description: Markdown note for the example
-                example: Eligendi dolor.
+                example: Pariatur maiores est.
             output:
                 type: string
                 description: Example output
@@ -518,7 +520,7 @@ definitions:
                 .XXX.XX..
                 X.X.X..X.
                 ...XX....
-            md_note: Sunt exercitationem.
+            md_note: Minima a et blanditiis.
             output: |
                 10
         required:
@@ -541,7 +543,7 @@ definitions:
             md_note:
                 type: string
                 description: Markdown note for the example
-                example: Laudantium provident sit dolor earum.
+                example: Aspernatur adipisci quo et enim.
             output:
                 type: string
                 description: Example output
@@ -556,7 +558,7 @@ definitions:
                 .XXX.XX..
                 X.X.X..X.
                 ...XX....
-            md_note: Amet qui sint fugiat sed consequatur voluptate.
+            md_note: Magnam sed officia.
             output: |
                 10
         required:
@@ -573,7 +575,7 @@ definitions:
             notes:
                 type: string
                 description: Notes section of the markdown statement
-                example: Ut tenetur rerum provident modi voluptatem odio.
+                example: Tempora quia quibusdam quod ea quia.
             output:
                 type: string
                 description: Output section of the markdown statement
@@ -581,7 +583,7 @@ definitions:
             scoring:
                 type: string
                 description: Scoring section of the markdown statement
-                example: Distinctio ad ex deleniti possimus et.
+                example: Autem beatae delectus architecto est.
             story:
                 type: string
                 description: Story section of the markdown statement
@@ -589,9 +591,9 @@ definitions:
         description: Represents a markdown statement for a task
         example:
             input: Ievaddatu pirmajā rindā dotas trīs naturālu skaitļu...
-            notes: Quia ut.
+            notes: Soluta aut aut.
             output: Izvaddatu vienīgajā rindā jābūt veselam skaitlim...
-            scoring: Quia laborum.
+            scoring: Ipsam vel eos veniam in aut autem.
             story: Krišjānis ir uzkonstruējis kvadrātveida putekļsūcēju (saīsināti – KP), kas ir neaizstājams palīgs viņa darbnīcas uzkopšanā...
         required:
             - story
@@ -608,7 +610,7 @@ definitions:
             notes:
                 type: string
                 description: Notes section of the markdown statement
-                example: Voluptate fugiat sint qui.
+                example: Iusto dolor exercitationem aut illo.
             output:
                 type: string
                 description: Output section of the markdown statement
@@ -616,7 +618,7 @@ definitions:
             scoring:
                 type: string
                 description: Scoring section of the markdown statement
-                example: Mollitia dolorum aliquam aut est et.
+                example: Dignissimos repudiandae et.
             story:
                 type: string
                 description: Story section of the markdown statement
@@ -624,9 +626,9 @@ definitions:
         description: Represents a markdown statement for a task
         example:
             input: Ievaddatu pirmajā rindā dotas trīs naturālu skaitļu...
-            notes: Qui est aut maiores beatae quia in.
+            notes: Repellendus molestias adipisci qui sequi et.
             output: Izvaddatu vienīgajā rindā jābūt veselam skaitlim...
-            scoring: Aut voluptatem dolor nulla.
+            scoring: Enim modi.
             story: Krišjānis ir uzkonstruējis kvadrātveida putekļsūcēju (saīsināti – KP), kas ir neaizstājams palīgs viņa darbnīcas uzkopšanā...
         required:
             - story
@@ -718,7 +720,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Libero officia doloremque in recusandae rerum architecto.
+                    example: Quo recusandae omnis magni alias est sed.
                 description: Inputs for the subtask
                 example:
                     - |
@@ -787,7 +789,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Nesciunt esse nemo vitae quibusdam cumque.
+                    example: Adipisci aspernatur quia corrupti voluptates ullam.
                 description: Inputs for the subtask
                 example:
                     - |
@@ -855,128 +857,146 @@ definitions:
             created_at:
                 type: string
                 description: Creation time of the submission
-                example: Aut quos aspernatur officiis blanditiis.
+                example: Non sit omnis.
             eval_scoring_subtasks:
                 type: array
                 items:
                     $ref: '#/definitions/SubtaskResultResponse'
                 description: Scoring / results of the subtasks
                 example:
-                    - accepted_tests: 3783849246656928445
-                      subtask_id: 862290211100774827
-                      subtask_score: 5932063920578939640
-                      untested_tests: 6608146232810955738
-                      wrong_tests: 4986450916902163310
-                    - accepted_tests: 3783849246656928445
-                      subtask_id: 862290211100774827
-                      subtask_score: 5932063920578939640
-                      untested_tests: 6608146232810955738
-                      wrong_tests: 4986450916902163310
-                    - accepted_tests: 3783849246656928445
-                      subtask_id: 862290211100774827
-                      subtask_score: 5932063920578939640
-                      untested_tests: 6608146232810955738
-                      wrong_tests: 4986450916902163310
-                    - accepted_tests: 3783849246656928445
-                      subtask_id: 862290211100774827
-                      subtask_score: 5932063920578939640
-                      untested_tests: 6608146232810955738
-                      wrong_tests: 4986450916902163310
+                    - accepted_tests: 1061727144106224103
+                      subtask_id: 8380668205619652909
+                      subtask_score: 4232448705194007563
+                      untested_tests: 826488332414275085
+                      wrong_tests: 3174053373465644102
+                    - accepted_tests: 1061727144106224103
+                      subtask_id: 8380668205619652909
+                      subtask_score: 4232448705194007563
+                      untested_tests: 826488332414275085
+                      wrong_tests: 3174053373465644102
+                    - accepted_tests: 1061727144106224103
+                      subtask_id: 8380668205619652909
+                      subtask_score: 4232448705194007563
+                      untested_tests: 826488332414275085
+                      wrong_tests: 3174053373465644102
             eval_scoring_testgroups:
                 type: array
                 items:
                     $ref: '#/definitions/TestGroupResultResponse'
                 description: Scoring / results of the test groups
                 example:
-                    - accepted_tests: 2399424557420764555
-                      statement_subtask: 4065762078146389525
-                      test_group_id: 7394126715431757918
-                      test_group_score: 6464129349315505801
-                      untested_tests: 4232154079196505659
-                      wrong_tests: 4958692635995674076
-                    - accepted_tests: 2399424557420764555
-                      statement_subtask: 4065762078146389525
-                      test_group_id: 7394126715431757918
-                      test_group_score: 6464129349315505801
-                      untested_tests: 4232154079196505659
-                      wrong_tests: 4958692635995674076
+                    - accepted_tests: 1197023012707218426
+                      statement_subtask: 7380403459586498932
+                      test_group_id: 5955932233362919291
+                      test_group_score: 4220435978784164186
+                      untested_tests: 1317748648578841930
+                      wrong_tests: 2524244840861339404
+                    - accepted_tests: 1197023012707218426
+                      statement_subtask: 7380403459586498932
+                      test_group_id: 5955932233362919291
+                      test_group_score: 4220435978784164186
+                      untested_tests: 1317748648578841930
+                      wrong_tests: 2524244840861339404
+                    - accepted_tests: 1197023012707218426
+                      statement_subtask: 7380403459586498932
+                      test_group_id: 5955932233362919291
+                      test_group_score: 4220435978784164186
+                      untested_tests: 1317748648578841930
+                      wrong_tests: 2524244840861339404
+                    - accepted_tests: 1197023012707218426
+                      statement_subtask: 7380403459586498932
+                      test_group_id: 5955932233362919291
+                      test_group_score: 4220435978784164186
+                      untested_tests: 1317748648578841930
+                      wrong_tests: 2524244840861339404
             eval_scoring_tests:
                 $ref: '#/definitions/TestsResultResponse'
             eval_status:
                 type: string
                 description: Status of the current evaluation
-                example: Unde voluptas.
+                example: Illo voluptas eos libero cupiditate autem.
+            eval_uuid:
+                type: string
+                description: UUID of the evaluation
+                example: Natus ut cum.
             p_lang_display_name:
                 type: string
                 description: Display name of the programming language
-                example: Illo eum sit nobis incidunt aliquam.
+                example: Quasi unde eveniet consequatur tempore expedita ut.
             p_lang_id:
                 type: string
                 description: ID of the programming language
-                example: Dignissimos impedit dolores quis voluptas error.
+                example: Aspernatur magni non molestiae assumenda aspernatur reprehenderit.
             p_lang_monaco_id:
                 type: string
                 description: Monaco editor ID for the programming language
-                example: Molestias aperiam omnis earum.
+                example: Veniam tempora ipsam totam ea repellat repellat.
             subm_uuid:
                 type: string
                 description: UUID of the submission
-                example: Ut iure omnis et recusandae.
+                example: Ea impedit veritatis vitae eum.
             submission:
                 type: string
                 description: The code submission
-                example: Delectus a.
+                example: Facere nulla sed.
             task_id:
                 type: string
                 description: Code of the task associated with the submission
-                example: Ea beatae dolor excepturi est.
+                example: Rem non dolorem.
             task_name:
                 type: string
                 description: Name of the task associated with the submission
-                example: Cum ratione architecto iusto quibusdam qui ut.
+                example: Sint non quisquam cupiditate similique.
             username:
                 type: string
                 description: Username of the user who submitted
-                example: Sequi eveniet non non.
+                example: Hic quia.
         example:
-            created_at: Sit non modi quia ipsam eius et.
+            created_at: In quis.
             eval_scoring_subtasks:
-                - accepted_tests: 3783849246656928445
-                  subtask_id: 862290211100774827
-                  subtask_score: 5932063920578939640
-                  untested_tests: 6608146232810955738
-                  wrong_tests: 4986450916902163310
-                - accepted_tests: 3783849246656928445
-                  subtask_id: 862290211100774827
-                  subtask_score: 5932063920578939640
-                  untested_tests: 6608146232810955738
-                  wrong_tests: 4986450916902163310
+                - accepted_tests: 1061727144106224103
+                  subtask_id: 8380668205619652909
+                  subtask_score: 4232448705194007563
+                  untested_tests: 826488332414275085
+                  wrong_tests: 3174053373465644102
+                - accepted_tests: 1061727144106224103
+                  subtask_id: 8380668205619652909
+                  subtask_score: 4232448705194007563
+                  untested_tests: 826488332414275085
+                  wrong_tests: 3174053373465644102
             eval_scoring_testgroups:
-                - accepted_tests: 2399424557420764555
-                  statement_subtask: 4065762078146389525
-                  test_group_id: 7394126715431757918
-                  test_group_score: 6464129349315505801
-                  untested_tests: 4232154079196505659
-                  wrong_tests: 4958692635995674076
-                - accepted_tests: 2399424557420764555
-                  statement_subtask: 4065762078146389525
-                  test_group_id: 7394126715431757918
-                  test_group_score: 6464129349315505801
-                  untested_tests: 4232154079196505659
-                  wrong_tests: 4958692635995674076
+                - accepted_tests: 1197023012707218426
+                  statement_subtask: 7380403459586498932
+                  test_group_id: 5955932233362919291
+                  test_group_score: 4220435978784164186
+                  untested_tests: 1317748648578841930
+                  wrong_tests: 2524244840861339404
+                - accepted_tests: 1197023012707218426
+                  statement_subtask: 7380403459586498932
+                  test_group_id: 5955932233362919291
+                  test_group_score: 4220435978784164186
+                  untested_tests: 1317748648578841930
+                  wrong_tests: 2524244840861339404
+                - accepted_tests: 1197023012707218426
+                  statement_subtask: 7380403459586498932
+                  test_group_id: 5955932233362919291
+                  test_group_score: 4220435978784164186
+                  untested_tests: 1317748648578841930
+                  wrong_tests: 2524244840861339404
             eval_scoring_tests:
-                accepted: 5423225749750281152
-                untested: 47598614444753283
-                wrong: 8138009116053967692
-            eval_status: Explicabo error enim reprehenderit nulla.
-            p_lang_display_name: Dignissimos officiis soluta sunt.
-            p_lang_id: Pariatur repudiandae dolores alias quia.
-            p_lang_monaco_id: Suscipit autem est doloribus similique voluptas.
-            subm_uuid: Ut fugit iusto molestiae.
-            submission: Dolores sit in.
-            task_id: Sunt ipsam.
-            task_name: Illo aut rerum qui adipisci.
-            username: Laudantium eaque optio nobis facere.
+                accepted: 8867035682599123196
+                untested: 7079115659623918585
+                wrong: 2665292154090313275
+            eval_status: Sint perspiciatis cum quis.
+            eval_uuid: Rem sed ipsum.
+            p_lang_display_name: Eligendi nostrum et quia dignissimos.
+            p_lang_id: Beatae non repudiandae a corporis tenetur.
+            p_lang_monaco_id: Nam provident hic.
+            subm_uuid: Nihil possimus fugiat et ut et.
+            submission: Nihil iusto ex nemo.
+            task_id: Sint ad et maiores quia est.
+            task_name: Qui aliquam quisquam doloribus aspernatur quia minima.
+            username: Rerum aut incidunt.
         required:
             - subm_uuid
             - submission
@@ -988,6 +1008,7 @@ definitions:
             - p_lang_monaco_id
             - task_name
             - task_id
+            - eval_uuid
     SubmissionResponseBody:
         title: SubmissionResponseBody
         type: object
@@ -995,141 +1016,140 @@ definitions:
             created_at:
                 type: string
                 description: Creation time of the submission
-                example: Doloribus hic quia voluptatibus non sit omnis.
+                example: Eligendi quae tempora qui hic quo.
             eval_scoring_subtasks:
                 type: array
                 items:
                     $ref: '#/definitions/SubtaskResultResponseBody'
                 description: Scoring / results of the subtasks
                 example:
-                    - accepted_tests: 7720553144753357615
-                      subtask_id: 9167221839465390447
-                      subtask_score: 1408663125023114345
-                      untested_tests: 3775575383567604714
-                      wrong_tests: 5744809029649609504
-                    - accepted_tests: 7720553144753357615
-                      subtask_id: 9167221839465390447
-                      subtask_score: 1408663125023114345
-                      untested_tests: 3775575383567604714
-                      wrong_tests: 5744809029649609504
-                    - accepted_tests: 7720553144753357615
-                      subtask_id: 9167221839465390447
-                      subtask_score: 1408663125023114345
-                      untested_tests: 3775575383567604714
-                      wrong_tests: 5744809029649609504
+                    - accepted_tests: 2524123002320840
+                      subtask_id: 3815997190531863537
+                      subtask_score: 1164447941286999095
+                      untested_tests: 4919690584421977662
+                      wrong_tests: 8184465610989926589
+                    - accepted_tests: 2524123002320840
+                      subtask_id: 3815997190531863537
+                      subtask_score: 1164447941286999095
+                      untested_tests: 4919690584421977662
+                      wrong_tests: 8184465610989926589
             eval_scoring_testgroups:
                 type: array
                 items:
                     $ref: '#/definitions/TestGroupResultResponseBody'
                 description: Scoring / results of the test groups
                 example:
-                    - accepted_tests: 5715237542301360531
-                      statement_subtask: 8883933417640871930
-                      test_group_id: 4853875059777515226
-                      test_group_score: 8790711861458765932
-                      untested_tests: 4032304587011601647
-                      wrong_tests: 2946795653221984534
-                    - accepted_tests: 5715237542301360531
-                      statement_subtask: 8883933417640871930
-                      test_group_id: 4853875059777515226
-                      test_group_score: 8790711861458765932
-                      untested_tests: 4032304587011601647
-                      wrong_tests: 2946795653221984534
-                    - accepted_tests: 5715237542301360531
-                      statement_subtask: 8883933417640871930
-                      test_group_id: 4853875059777515226
-                      test_group_score: 8790711861458765932
-                      untested_tests: 4032304587011601647
-                      wrong_tests: 2946795653221984534
-                    - accepted_tests: 5715237542301360531
-                      statement_subtask: 8883933417640871930
-                      test_group_id: 4853875059777515226
-                      test_group_score: 8790711861458765932
-                      untested_tests: 4032304587011601647
-                      wrong_tests: 2946795653221984534
+                    - accepted_tests: 1558140665671054117
+                      statement_subtask: 4389630032395887761
+                      test_group_id: 8409830294111935840
+                      test_group_score: 1664960979858139649
+                      untested_tests: 6498697405408565279
+                      wrong_tests: 6081030264311576743
+                    - accepted_tests: 1558140665671054117
+                      statement_subtask: 4389630032395887761
+                      test_group_id: 8409830294111935840
+                      test_group_score: 1664960979858139649
+                      untested_tests: 6498697405408565279
+                      wrong_tests: 6081030264311576743
+                    - accepted_tests: 1558140665671054117
+                      statement_subtask: 4389630032395887761
+                      test_group_id: 8409830294111935840
+                      test_group_score: 1664960979858139649
+                      untested_tests: 6498697405408565279
+                      wrong_tests: 6081030264311576743
+                    - accepted_tests: 1558140665671054117
+                      statement_subtask: 4389630032395887761
+                      test_group_id: 8409830294111935840
+                      test_group_score: 1664960979858139649
+                      untested_tests: 6498697405408565279
+                      wrong_tests: 6081030264311576743
             eval_scoring_tests:
                 $ref: '#/definitions/TestsResultResponseBody'
             eval_status:
                 type: string
                 description: Status of the current evaluation
-                example: Natus ut cum.
+                example: Molestiae ut animi.
+            eval_uuid:
+                type: string
+                description: UUID of the evaluation
+                example: Repudiandae distinctio amet et et.
             p_lang_display_name:
                 type: string
                 description: Display name of the programming language
-                example: Dignissimos quis dolores quaerat autem mollitia aperiam.
+                example: Velit perferendis.
             p_lang_id:
                 type: string
                 description: ID of the programming language
-                example: Eos libero cupiditate.
+                example: Quod architecto et et adipisci.
             p_lang_monaco_id:
                 type: string
                 description: Monaco editor ID for the programming language
-                example: Aliquam nobis hic qui.
+                example: Quas id.
             subm_uuid:
                 type: string
                 description: UUID of the submission
-                example: Quia velit itaque ab.
+                example: Est et iste et placeat consequatur eaque.
             submission:
                 type: string
                 description: The code submission
-                example: Similique ea impedit veritatis.
+                example: Expedita alias eveniet expedita vitae occaecati temporibus.
             task_id:
                 type: string
                 description: Code of the task associated with the submission
-                example: Et aut vero deleniti consequuntur ad omnis.
+                example: Exercitationem provident blanditiis est et sint ullam.
             task_name:
                 type: string
                 description: Name of the task associated with the submission
-                example: Aut consequatur dolorem aut quisquam.
+                example: Repellat voluptatem voluptatem sed.
             username:
                 type: string
                 description: Username of the user who submitted
-                example: Eum et facere nulla.
+                example: Quis at aut.
         example:
-            created_at: Tempore expedita ut autem veniam.
+            created_at: Quia ut.
             eval_scoring_subtasks:
-                - accepted_tests: 7720553144753357615
-                  subtask_id: 9167221839465390447
-                  subtask_score: 1408663125023114345
-                  untested_tests: 3775575383567604714
-                  wrong_tests: 5744809029649609504
-                - accepted_tests: 7720553144753357615
-                  subtask_id: 9167221839465390447
-                  subtask_score: 1408663125023114345
-                  untested_tests: 3775575383567604714
-                  wrong_tests: 5744809029649609504
+                - accepted_tests: 2524123002320840
+                  subtask_id: 3815997190531863537
+                  subtask_score: 1164447941286999095
+                  untested_tests: 4919690584421977662
+                  wrong_tests: 8184465610989926589
+                - accepted_tests: 2524123002320840
+                  subtask_id: 3815997190531863537
+                  subtask_score: 1164447941286999095
+                  untested_tests: 4919690584421977662
+                  wrong_tests: 8184465610989926589
+                - accepted_tests: 2524123002320840
+                  subtask_id: 3815997190531863537
+                  subtask_score: 1164447941286999095
+                  untested_tests: 4919690584421977662
+                  wrong_tests: 8184465610989926589
             eval_scoring_testgroups:
-                - accepted_tests: 5715237542301360531
-                  statement_subtask: 8883933417640871930
-                  test_group_id: 4853875059777515226
-                  test_group_score: 8790711861458765932
-                  untested_tests: 4032304587011601647
-                  wrong_tests: 2946795653221984534
-                - accepted_tests: 5715237542301360531
-                  statement_subtask: 8883933417640871930
-                  test_group_id: 4853875059777515226
-                  test_group_score: 8790711861458765932
-                  untested_tests: 4032304587011601647
-                  wrong_tests: 2946795653221984534
-                - accepted_tests: 5715237542301360531
-                  statement_subtask: 8883933417640871930
-                  test_group_id: 4853875059777515226
-                  test_group_score: 8790711861458765932
-                  untested_tests: 4032304587011601647
-                  wrong_tests: 2946795653221984534
+                - accepted_tests: 1558140665671054117
+                  statement_subtask: 4389630032395887761
+                  test_group_id: 8409830294111935840
+                  test_group_score: 1664960979858139649
+                  untested_tests: 6498697405408565279
+                  wrong_tests: 6081030264311576743
+                - accepted_tests: 1558140665671054117
+                  statement_subtask: 4389630032395887761
+                  test_group_id: 8409830294111935840
+                  test_group_score: 1664960979858139649
+                  untested_tests: 6498697405408565279
+                  wrong_tests: 6081030264311576743
             eval_scoring_tests:
-                accepted: 3785261307906550490
-                untested: 4223040205366050515
-                wrong: 4062866428432752107
-            eval_status: Ipsam totam ea repellat.
-            p_lang_display_name: Expedita nihil possimus fugiat et ut et.
-            p_lang_id: Non quisquam cupiditate similique aut rem non.
-            p_lang_monaco_id: Nihil iusto ex nemo.
-            subm_uuid: Tenetur quo.
-            submission: Autem aspernatur magni non molestiae assumenda.
-            task_id: In quis.
-            task_name: Rerum aut incidunt.
-            username: Reprehenderit distinctio quasi unde eveniet.
+                accepted: 4401638572233241483
+                untested: 8439219991192523214
+                wrong: 3392342282335858688
+            eval_status: Eligendi dolor.
+            eval_uuid: Quia laborum.
+            p_lang_display_name: Ut libero officia doloremque in recusandae rerum.
+            p_lang_id: Nisi ut est.
+            p_lang_monaco_id: Illo et amet quia voluptate.
+            subm_uuid: Aliquam tempore in.
+            submission: Ut tenetur rerum provident modi voluptatem odio.
+            task_id: Aut est.
+            task_name: Sint qui enim mollitia dolorum.
+            username: Distinctio ad ex deleniti possimus et.
         required:
             - subm_uuid
             - submission
@@ -1141,6 +1161,31 @@ definitions:
             - p_lang_monaco_id
             - task_name
             - task_id
+            - eval_uuid
+    SubmissionStateUpdateResponseBody:
+        title: SubmissionStateUpdateResponseBody
+        type: object
+        properties:
+            eval_uuid:
+                type: string
+                description: UUID of the evaluation
+                example: Aut maiores.
+            new_state:
+                type: string
+                description: New state of the submission
+                example: Quia in enim aut voluptatem dolor.
+            subm_uuid:
+                type: string
+                description: UUID of the submission
+                example: Ut qui.
+        example:
+            eval_uuid: Sit dolor earum labore amet.
+            new_state: Sint fugiat sed.
+            subm_uuid: Ut laudantium.
+        required:
+            - subm_uuid
+            - new_state
+            - eval_uuid
     SubmissionsCreateSubmissionRequestBody:
         title: SubmissionsCreateSubmissionRequestBody
         type: object
@@ -1178,145 +1223,129 @@ definitions:
             created_at:
                 type: string
                 description: Creation time of the submission
-                example: Consectetur aliquam.
+                example: Unde voluptas.
             eval_scoring_subtasks:
                 type: array
                 items:
                     $ref: '#/definitions/SubtaskResultResponseBody'
                 description: Scoring / results of the subtasks
                 example:
-                    - accepted_tests: 7720553144753357615
-                      subtask_id: 9167221839465390447
-                      subtask_score: 1408663125023114345
-                      untested_tests: 3775575383567604714
-                      wrong_tests: 5744809029649609504
-                    - accepted_tests: 7720553144753357615
-                      subtask_id: 9167221839465390447
-                      subtask_score: 1408663125023114345
-                      untested_tests: 3775575383567604714
-                      wrong_tests: 5744809029649609504
-                    - accepted_tests: 7720553144753357615
-                      subtask_id: 9167221839465390447
-                      subtask_score: 1408663125023114345
-                      untested_tests: 3775575383567604714
-                      wrong_tests: 5744809029649609504
+                    - accepted_tests: 2524123002320840
+                      subtask_id: 3815997190531863537
+                      subtask_score: 1164447941286999095
+                      untested_tests: 4919690584421977662
+                      wrong_tests: 8184465610989926589
+                    - accepted_tests: 2524123002320840
+                      subtask_id: 3815997190531863537
+                      subtask_score: 1164447941286999095
+                      untested_tests: 4919690584421977662
+                      wrong_tests: 8184465610989926589
             eval_scoring_testgroups:
                 type: array
                 items:
                     $ref: '#/definitions/TestGroupResultResponseBody'
                 description: Scoring / results of the test groups
                 example:
-                    - accepted_tests: 5715237542301360531
-                      statement_subtask: 8883933417640871930
-                      test_group_id: 4853875059777515226
-                      test_group_score: 8790711861458765932
-                      untested_tests: 4032304587011601647
-                      wrong_tests: 2946795653221984534
-                    - accepted_tests: 5715237542301360531
-                      statement_subtask: 8883933417640871930
-                      test_group_id: 4853875059777515226
-                      test_group_score: 8790711861458765932
-                      untested_tests: 4032304587011601647
-                      wrong_tests: 2946795653221984534
-                    - accepted_tests: 5715237542301360531
-                      statement_subtask: 8883933417640871930
-                      test_group_id: 4853875059777515226
-                      test_group_score: 8790711861458765932
-                      untested_tests: 4032304587011601647
-                      wrong_tests: 2946795653221984534
-                    - accepted_tests: 5715237542301360531
-                      statement_subtask: 8883933417640871930
-                      test_group_id: 4853875059777515226
-                      test_group_score: 8790711861458765932
-                      untested_tests: 4032304587011601647
-                      wrong_tests: 2946795653221984534
+                    - accepted_tests: 1558140665671054117
+                      statement_subtask: 4389630032395887761
+                      test_group_id: 8409830294111935840
+                      test_group_score: 1664960979858139649
+                      untested_tests: 6498697405408565279
+                      wrong_tests: 6081030264311576743
+                    - accepted_tests: 1558140665671054117
+                      statement_subtask: 4389630032395887761
+                      test_group_id: 8409830294111935840
+                      test_group_score: 1664960979858139649
+                      untested_tests: 6498697405408565279
+                      wrong_tests: 6081030264311576743
             eval_scoring_tests:
                 $ref: '#/definitions/TestsResultResponseBody'
             eval_status:
                 type: string
                 description: Status of the current evaluation
-                example: Et ut similique fugiat harum corporis voluptas.
+                example: Autem fuga quibusdam sunt.
+            eval_uuid:
+                type: string
+                description: UUID of the evaluation
+                example: Sint et.
             p_lang_display_name:
                 type: string
                 description: Display name of the programming language
-                example: Dignissimos et tempora.
+                example: Aperiam omnis.
             p_lang_id:
                 type: string
                 description: ID of the programming language
-                example: Consequatur recusandae officia.
+                example: Eum sit nobis incidunt aliquam ullam.
             p_lang_monaco_id:
                 type: string
                 description: Monaco editor ID for the programming language
-                example: Aspernatur laboriosam aut qui voluptatibus minus.
+                example: Eum cum ratione architecto iusto.
             subm_uuid:
                 type: string
                 description: UUID of the submission
-                example: Qui voluptatibus et dolorum suscipit accusantium.
+                example: Delectus a.
             submission:
                 type: string
                 description: The code submission
-                example: Modi tenetur.
+                example: Sequi eveniet non non.
             task_id:
                 type: string
                 description: Code of the task associated with the submission
-                example: Exercitationem sequi quasi ex et ut.
+                example: Ea beatae dolor excepturi est.
             task_name:
                 type: string
                 description: Name of the task associated with the submission
-                example: Eum facere delectus ullam sit unde.
+                example: Qui ut.
             username:
                 type: string
                 description: Username of the user who submitted
-                example: Possimus voluptates ea dolores sequi.
+                example: Aut quos aspernatur officiis blanditiis.
         example:
-            created_at: Autem repudiandae ut nostrum quod corporis repellendus.
+            created_at: Sit non modi quia ipsam eius et.
             eval_scoring_subtasks:
-                - accepted_tests: 7720553144753357615
-                  subtask_id: 9167221839465390447
-                  subtask_score: 1408663125023114345
-                  untested_tests: 3775575383567604714
-                  wrong_tests: 5744809029649609504
-                - accepted_tests: 7720553144753357615
-                  subtask_id: 9167221839465390447
-                  subtask_score: 1408663125023114345
-                  untested_tests: 3775575383567604714
-                  wrong_tests: 5744809029649609504
-                - accepted_tests: 7720553144753357615
-                  subtask_id: 9167221839465390447
-                  subtask_score: 1408663125023114345
-                  untested_tests: 3775575383567604714
-                  wrong_tests: 5744809029649609504
-                - accepted_tests: 7720553144753357615
-                  subtask_id: 9167221839465390447
-                  subtask_score: 1408663125023114345
-                  untested_tests: 3775575383567604714
-                  wrong_tests: 5744809029649609504
+                - accepted_tests: 2524123002320840
+                  subtask_id: 3815997190531863537
+                  subtask_score: 1164447941286999095
+                  untested_tests: 4919690584421977662
+                  wrong_tests: 8184465610989926589
+                - accepted_tests: 2524123002320840
+                  subtask_id: 3815997190531863537
+                  subtask_score: 1164447941286999095
+                  untested_tests: 4919690584421977662
+                  wrong_tests: 8184465610989926589
             eval_scoring_testgroups:
-                - accepted_tests: 5715237542301360531
-                  statement_subtask: 8883933417640871930
-                  test_group_id: 4853875059777515226
-                  test_group_score: 8790711861458765932
-                  untested_tests: 4032304587011601647
-                  wrong_tests: 2946795653221984534
-                - accepted_tests: 5715237542301360531
-                  statement_subtask: 8883933417640871930
-                  test_group_id: 4853875059777515226
-                  test_group_score: 8790711861458765932
-                  untested_tests: 4032304587011601647
-                  wrong_tests: 2946795653221984534
+                - accepted_tests: 1558140665671054117
+                  statement_subtask: 4389630032395887761
+                  test_group_id: 8409830294111935840
+                  test_group_score: 1664960979858139649
+                  untested_tests: 6498697405408565279
+                  wrong_tests: 6081030264311576743
+                - accepted_tests: 1558140665671054117
+                  statement_subtask: 4389630032395887761
+                  test_group_id: 8409830294111935840
+                  test_group_score: 1664960979858139649
+                  untested_tests: 6498697405408565279
+                  wrong_tests: 6081030264311576743
+                - accepted_tests: 1558140665671054117
+                  statement_subtask: 4389630032395887761
+                  test_group_id: 8409830294111935840
+                  test_group_score: 1664960979858139649
+                  untested_tests: 6498697405408565279
+                  wrong_tests: 6081030264311576743
             eval_scoring_tests:
-                accepted: 3785261307906550490
-                untested: 4223040205366050515
-                wrong: 4062866428432752107
-            eval_status: Architecto et.
-            p_lang_display_name: Expedita sed deserunt consequatur fugit delectus.
-            p_lang_id: Itaque provident soluta architecto maxime maxime quis.
-            p_lang_monaco_id: Autem fugit animi aut eligendi.
-            subm_uuid: Tenetur explicabo qui in.
-            submission: Quia et dolor voluptatem.
-            task_id: Quam illo id.
-            task_name: Beatae similique.
-            username: Voluptatem iure ab.
+                accepted: 4401638572233241483
+                untested: 8439219991192523214
+                wrong: 3392342282335858688
+            eval_status: Aut est pariatur repudiandae dolores alias.
+            eval_uuid: Explicabo error enim reprehenderit nulla.
+            p_lang_display_name: Autem est doloribus similique voluptas doloribus illo.
+            p_lang_id: Officiis soluta sunt qui.
+            p_lang_monaco_id: Rerum qui adipisci occaecati.
+            subm_uuid: Ut fugit iusto molestiae.
+            submission: Dolores sit in.
+            task_id: Itaque ab maxime.
+            task_name: Ipsam maxime quia.
+            username: Laudantium eaque optio nobis facere.
         required:
             - subm_uuid
             - submission
@@ -1328,6 +1357,7 @@ definitions:
             - p_lang_monaco_id
             - task_name
             - task_id
+            - eval_uuid
     SubmissionsGetSubmissionResponseBody:
         title: SubmissionsGetSubmissionResponseBody
         type: object
@@ -1335,128 +1365,156 @@ definitions:
             created_at:
                 type: string
                 description: Creation time of the submission
-                example: Tenetur velit eligendi nostrum et.
+                example: Eaque omnis eligendi.
             eval_scoring_subtasks:
                 type: array
                 items:
                     $ref: '#/definitions/SubtaskResultResponseBody'
                 description: Scoring / results of the subtasks
                 example:
-                    - accepted_tests: 7720553144753357615
-                      subtask_id: 9167221839465390447
-                      subtask_score: 1408663125023114345
-                      untested_tests: 3775575383567604714
-                      wrong_tests: 5744809029649609504
-                    - accepted_tests: 7720553144753357615
-                      subtask_id: 9167221839465390447
-                      subtask_score: 1408663125023114345
-                      untested_tests: 3775575383567604714
-                      wrong_tests: 5744809029649609504
+                    - accepted_tests: 2524123002320840
+                      subtask_id: 3815997190531863537
+                      subtask_score: 1164447941286999095
+                      untested_tests: 4919690584421977662
+                      wrong_tests: 8184465610989926589
+                    - accepted_tests: 2524123002320840
+                      subtask_id: 3815997190531863537
+                      subtask_score: 1164447941286999095
+                      untested_tests: 4919690584421977662
+                      wrong_tests: 8184465610989926589
+                    - accepted_tests: 2524123002320840
+                      subtask_id: 3815997190531863537
+                      subtask_score: 1164447941286999095
+                      untested_tests: 4919690584421977662
+                      wrong_tests: 8184465610989926589
+                    - accepted_tests: 2524123002320840
+                      subtask_id: 3815997190531863537
+                      subtask_score: 1164447941286999095
+                      untested_tests: 4919690584421977662
+                      wrong_tests: 8184465610989926589
             eval_scoring_testgroups:
                 type: array
                 items:
                     $ref: '#/definitions/TestGroupResultResponseBody'
                 description: Scoring / results of the test groups
                 example:
-                    - accepted_tests: 5715237542301360531
-                      statement_subtask: 8883933417640871930
-                      test_group_id: 4853875059777515226
-                      test_group_score: 8790711861458765932
-                      untested_tests: 4032304587011601647
-                      wrong_tests: 2946795653221984534
-                    - accepted_tests: 5715237542301360531
-                      statement_subtask: 8883933417640871930
-                      test_group_id: 4853875059777515226
-                      test_group_score: 8790711861458765932
-                      untested_tests: 4032304587011601647
-                      wrong_tests: 2946795653221984534
+                    - accepted_tests: 1558140665671054117
+                      statement_subtask: 4389630032395887761
+                      test_group_id: 8409830294111935840
+                      test_group_score: 1664960979858139649
+                      untested_tests: 6498697405408565279
+                      wrong_tests: 6081030264311576743
+                    - accepted_tests: 1558140665671054117
+                      statement_subtask: 4389630032395887761
+                      test_group_id: 8409830294111935840
+                      test_group_score: 1664960979858139649
+                      untested_tests: 6498697405408565279
+                      wrong_tests: 6081030264311576743
+                    - accepted_tests: 1558140665671054117
+                      statement_subtask: 4389630032395887761
+                      test_group_id: 8409830294111935840
+                      test_group_score: 1664960979858139649
+                      untested_tests: 6498697405408565279
+                      wrong_tests: 6081030264311576743
             eval_scoring_tests:
                 $ref: '#/definitions/TestsResultResponseBody'
             eval_status:
                 type: string
                 description: Status of the current evaluation
-                example: Dignissimos dolorem.
+                example: Sit aut.
+            eval_uuid:
+                type: string
+                description: UUID of the evaluation
+                example: Non perferendis provident iusto beatae.
             p_lang_display_name:
                 type: string
                 description: Display name of the programming language
-                example: Voluptatum sint.
+                example: Reiciendis illum eligendi nihil.
             p_lang_id:
                 type: string
                 description: ID of the programming language
-                example: Quisquam qui aliquam quisquam doloribus aspernatur quia.
+                example: Sed fugit.
             p_lang_monaco_id:
                 type: string
                 description: Monaco editor ID for the programming language
-                example: Et maiores quia est hic est et.
+                example: Laudantium odio delectus saepe accusantium.
             subm_uuid:
                 type: string
                 description: UUID of the submission
-                example: Rem sed ipsum.
+                example: Voluptatem sit ut.
             submission:
                 type: string
                 description: The code submission
-                example: Sint perspiciatis cum quis.
+                example: Ipsam sapiente quia eum at id debitis.
             task_id:
                 type: string
                 description: Code of the task associated with the submission
-                example: Alias eveniet expedita.
+                example: Laborum sit qui enim.
             task_name:
                 type: string
                 description: Name of the task associated with the submission
-                example: Et placeat consequatur eaque quam.
+                example: Excepturi dolores ullam quia et.
             username:
                 type: string
                 description: Username of the user who submitted
-                example: Error sed beatae non repudiandae a.
+                example: Et corporis rerum ratione.
         example:
-            created_at: Molestiae ut animi.
+            created_at: Eum asperiores doloribus et iste nulla voluptatem.
             eval_scoring_subtasks:
-                - accepted_tests: 7720553144753357615
-                  subtask_id: 9167221839465390447
-                  subtask_score: 1408663125023114345
-                  untested_tests: 3775575383567604714
-                  wrong_tests: 5744809029649609504
-                - accepted_tests: 7720553144753357615
-                  subtask_id: 9167221839465390447
-                  subtask_score: 1408663125023114345
-                  untested_tests: 3775575383567604714
-                  wrong_tests: 5744809029649609504
-                - accepted_tests: 7720553144753357615
-                  subtask_id: 9167221839465390447
-                  subtask_score: 1408663125023114345
-                  untested_tests: 3775575383567604714
-                  wrong_tests: 5744809029649609504
-                - accepted_tests: 7720553144753357615
-                  subtask_id: 9167221839465390447
-                  subtask_score: 1408663125023114345
-                  untested_tests: 3775575383567604714
-                  wrong_tests: 5744809029649609504
+                - accepted_tests: 2524123002320840
+                  subtask_id: 3815997190531863537
+                  subtask_score: 1164447941286999095
+                  untested_tests: 4919690584421977662
+                  wrong_tests: 8184465610989926589
+                - accepted_tests: 2524123002320840
+                  subtask_id: 3815997190531863537
+                  subtask_score: 1164447941286999095
+                  untested_tests: 4919690584421977662
+                  wrong_tests: 8184465610989926589
+                - accepted_tests: 2524123002320840
+                  subtask_id: 3815997190531863537
+                  subtask_score: 1164447941286999095
+                  untested_tests: 4919690584421977662
+                  wrong_tests: 8184465610989926589
             eval_scoring_testgroups:
-                - accepted_tests: 5715237542301360531
-                  statement_subtask: 8883933417640871930
-                  test_group_id: 4853875059777515226
-                  test_group_score: 8790711861458765932
-                  untested_tests: 4032304587011601647
-                  wrong_tests: 2946795653221984534
-                - accepted_tests: 5715237542301360531
-                  statement_subtask: 8883933417640871930
-                  test_group_id: 4853875059777515226
-                  test_group_score: 8790711861458765932
-                  untested_tests: 4032304587011601647
-                  wrong_tests: 2946795653221984534
+                - accepted_tests: 1558140665671054117
+                  statement_subtask: 4389630032395887761
+                  test_group_id: 8409830294111935840
+                  test_group_score: 1664960979858139649
+                  untested_tests: 6498697405408565279
+                  wrong_tests: 6081030264311576743
+                - accepted_tests: 1558140665671054117
+                  statement_subtask: 4389630032395887761
+                  test_group_id: 8409830294111935840
+                  test_group_score: 1664960979858139649
+                  untested_tests: 6498697405408565279
+                  wrong_tests: 6081030264311576743
+                - accepted_tests: 1558140665671054117
+                  statement_subtask: 4389630032395887761
+                  test_group_id: 8409830294111935840
+                  test_group_score: 1664960979858139649
+                  untested_tests: 6498697405408565279
+                  wrong_tests: 6081030264311576743
+                - accepted_tests: 1558140665671054117
+                  statement_subtask: 4389630032395887761
+                  test_group_id: 8409830294111935840
+                  test_group_score: 1664960979858139649
+                  untested_tests: 6498697405408565279
+                  wrong_tests: 6081030264311576743
             eval_scoring_tests:
-                accepted: 3785261307906550490
-                untested: 4223040205366050515
-                wrong: 4062866428432752107
-            eval_status: Modi ratione quod.
-            p_lang_display_name: Tempora repellat.
-            p_lang_id: Adipisci sit velit perferendis est quas.
-            p_lang_monaco_id: Voluptatem sed repellat.
-            subm_uuid: Occaecati temporibus non quis at aut cupiditate.
-            submission: Quae tempora qui hic quo reiciendis.
-            task_id: Sint ullam pariatur aliquam tempore in.
-            task_name: Provident blanditiis est.
-            username: Distinctio amet et et.
+                accepted: 4401638572233241483
+                untested: 8439219991192523214
+                wrong: 3392342282335858688
+            eval_status: Suscipit culpa.
+            eval_uuid: Et sunt eaque corporis.
+            p_lang_display_name: Repellendus quos sit.
+            p_lang_id: Corporis illum.
+            p_lang_monaco_id: Omnis repellendus nulla doloremque.
+            subm_uuid: Reiciendis facilis ut facere aut iusto.
+            submission: Ipsa voluptatibus asperiores.
+            task_id: Ut at voluptas.
+            task_name: Omnis vero cum.
+            username: Corporis quae quia iure autem sed.
         required:
             - subm_uuid
             - submission
@@ -1468,58 +1526,85 @@ definitions:
             - p_lang_monaco_id
             - task_name
             - task_id
+            - eval_uuid
     SubmissionsStreamSubmissionUpdatesResponseBody:
         title: SubmissionsStreamSubmissionUpdatesResponseBody
         type: object
         properties:
+            state_update:
+                $ref: '#/definitions/SubmissionStateUpdateResponseBody'
             subm_created:
                 $ref: '#/definitions/SubmissionResponseBody'
+            testgroup_res_update:
+                $ref: '#/definitions/TestgroupScoreUpdateResponseBody'
         example:
+            state_update:
+                eval_uuid: Est ullam aut odit amet molestiae.
+                new_state: Deleniti sit consequatur et molestias officiis omnis.
+                subm_uuid: Rerum aut dicta molestiae fugiat et.
             subm_created:
-                created_at: Nisi nobis quos totam.
+                created_at: Ipsam sed nemo vero nostrum.
                 eval_scoring_subtasks:
-                    - accepted_tests: 7720553144753357615
-                      subtask_id: 9167221839465390447
-                      subtask_score: 1408663125023114345
-                      untested_tests: 3775575383567604714
-                      wrong_tests: 5744809029649609504
-                    - accepted_tests: 7720553144753357615
-                      subtask_id: 9167221839465390447
-                      subtask_score: 1408663125023114345
-                      untested_tests: 3775575383567604714
-                      wrong_tests: 5744809029649609504
+                    - accepted_tests: 2524123002320840
+                      subtask_id: 3815997190531863537
+                      subtask_score: 1164447941286999095
+                      untested_tests: 4919690584421977662
+                      wrong_tests: 8184465610989926589
+                    - accepted_tests: 2524123002320840
+                      subtask_id: 3815997190531863537
+                      subtask_score: 1164447941286999095
+                      untested_tests: 4919690584421977662
+                      wrong_tests: 8184465610989926589
+                    - accepted_tests: 2524123002320840
+                      subtask_id: 3815997190531863537
+                      subtask_score: 1164447941286999095
+                      untested_tests: 4919690584421977662
+                      wrong_tests: 8184465610989926589
                 eval_scoring_testgroups:
-                    - accepted_tests: 5715237542301360531
-                      statement_subtask: 8883933417640871930
-                      test_group_id: 4853875059777515226
-                      test_group_score: 8790711861458765932
-                      untested_tests: 4032304587011601647
-                      wrong_tests: 2946795653221984534
-                    - accepted_tests: 5715237542301360531
-                      statement_subtask: 8883933417640871930
-                      test_group_id: 4853875059777515226
-                      test_group_score: 8790711861458765932
-                      untested_tests: 4032304587011601647
-                      wrong_tests: 2946795653221984534
-                    - accepted_tests: 5715237542301360531
-                      statement_subtask: 8883933417640871930
-                      test_group_id: 4853875059777515226
-                      test_group_score: 8790711861458765932
-                      untested_tests: 4032304587011601647
-                      wrong_tests: 2946795653221984534
+                    - accepted_tests: 1558140665671054117
+                      statement_subtask: 4389630032395887761
+                      test_group_id: 8409830294111935840
+                      test_group_score: 1664960979858139649
+                      untested_tests: 6498697405408565279
+                      wrong_tests: 6081030264311576743
+                    - accepted_tests: 1558140665671054117
+                      statement_subtask: 4389630032395887761
+                      test_group_id: 8409830294111935840
+                      test_group_score: 1664960979858139649
+                      untested_tests: 6498697405408565279
+                      wrong_tests: 6081030264311576743
+                    - accepted_tests: 1558140665671054117
+                      statement_subtask: 4389630032395887761
+                      test_group_id: 8409830294111935840
+                      test_group_score: 1664960979858139649
+                      untested_tests: 6498697405408565279
+                      wrong_tests: 6081030264311576743
+                    - accepted_tests: 1558140665671054117
+                      statement_subtask: 4389630032395887761
+                      test_group_id: 8409830294111935840
+                      test_group_score: 1664960979858139649
+                      untested_tests: 6498697405408565279
+                      wrong_tests: 6081030264311576743
                 eval_scoring_tests:
-                    accepted: 3785261307906550490
-                    untested: 4223040205366050515
-                    wrong: 4062866428432752107
-                eval_status: Provident eos.
-                p_lang_display_name: Natus velit rerum.
-                p_lang_id: Rerum reprehenderit itaque quia facilis.
-                p_lang_monaco_id: Omnis et delectus sed.
-                subm_uuid: Corporis modi rerum aut iste enim.
-                submission: Repellat non mollitia.
-                task_id: Ut rerum excepturi sunt labore expedita quas.
-                task_name: Nostrum necessitatibus.
-                username: Veniam rerum quia.
+                    accepted: 4401638572233241483
+                    untested: 8439219991192523214
+                    wrong: 3392342282335858688
+                eval_status: Quo ut eos non consequatur.
+                eval_uuid: Maiores ea repellendus non.
+                p_lang_display_name: Consequatur laboriosam alias ut nam est sit.
+                p_lang_id: Et dolorum commodi ipsam enim et.
+                p_lang_monaco_id: Autem maiores deleniti delectus delectus.
+                subm_uuid: Id modi voluptatibus eos.
+                submission: Non esse incidunt quo eveniet cum consectetur.
+                task_id: Perspiciatis hic occaecati voluptas quaerat modi.
+                task_name: Temporibus doloremque quisquam aspernatur repellat.
+                username: Ea fuga omnis nihil et.
+            testgroup_res_update:
+                accepted_tests: 2868456470534353623
+                eval_uuid: Id ut id molestiae illo.
+                subm_uuid: Error facere quis iure assumenda numquam officia.
+                untested_tests: 2024748454163110625
+                wrong_tests: 7409820282880422768
     SubtaskResultResponse:
         title: SubtaskResultResponse
         type: object
@@ -1527,34 +1612,34 @@ definitions:
             accepted_tests:
                 type: integer
                 description: Number of accepted tests
-                example: 3714240805071084463
+                example: 6669594473094201827
                 format: int64
             subtask_id:
                 type: integer
                 description: ID of the subtask
-                example: 2760528595163296319
+                example: 4997093775493336729
                 format: int64
             subtask_score:
                 type: integer
                 description: Score of the subtask
-                example: 2723965450477083936
+                example: 9192207805017678769
                 format: int64
             untested_tests:
                 type: integer
                 description: Number of untested tests
-                example: 8476565198932655189
+                example: 4500341591108722488
                 format: int64
             wrong_tests:
                 type: integer
                 description: Number of wrong tests
-                example: 4470438659502700200
+                example: 474544028920332410
                 format: int64
         example:
-            accepted_tests: 4769693870415153005
-            subtask_id: 3497725713534783153
-            subtask_score: 1263055568589522164
-            untested_tests: 5458538501693646188
-            wrong_tests: 1110633425801091880
+            accepted_tests: 7631848019233278959
+            subtask_id: 2827109795894021778
+            subtask_score: 9060475433526044920
+            untested_tests: 7407141686949653305
+            wrong_tests: 8908067696396668901
         required:
             - subtask_id
             - subtask_score
@@ -1568,34 +1653,34 @@ definitions:
             accepted_tests:
                 type: integer
                 description: Number of accepted tests
-                example: 6525236365683776612
+                example: 1997250676841213612
                 format: int64
             subtask_id:
                 type: integer
                 description: ID of the subtask
-                example: 7129051918799560562
+                example: 1110633425801091880
                 format: int64
             subtask_score:
                 type: integer
                 description: Score of the subtask
-                example: 1675693617267979079
+                example: 5458538501693646188
                 format: int64
             untested_tests:
                 type: integer
                 description: Number of untested tests
-                example: 5663343235276601923
+                example: 6021826861501837781
                 format: int64
             wrong_tests:
                 type: integer
                 description: Number of wrong tests
-                example: 4842591045124852242
+                example: 6405073023675590451
                 format: int64
         example:
-            accepted_tests: 4439457734112074533
-            subtask_id: 8073818959170797864
-            subtask_score: 5814664335677350420
-            untested_tests: 1041934259683168661
-            wrong_tests: 8904366152971050455
+            accepted_tests: 6228484555631348392
+            subtask_id: 5194029293197574426
+            subtask_score: 6913173445465812434
+            untested_tests: 724774361254274767
+            wrong_tests: 5318941345947308392
         required:
             - subtask_id
             - subtask_score
@@ -1641,7 +1726,7 @@ definitions:
                         .XXX.XX..
                         X.X.X..X.
                         ...XX....
-                      md_note: Et nisi et earum sed error perferendis.
+                      md_note: Eum pariatur velit quia.
                       output: |
                         10
                     - input: |
@@ -1651,17 +1736,7 @@ definitions:
                         .XXX.XX..
                         X.X.X..X.
                         ...XX....
-                      md_note: Et nisi et earum sed error perferendis.
-                      output: |
-                        10
-                    - input: |
-                        5 9 3
-                        A....X..B
-                        ..X..X.X.
-                        .XXX.XX..
-                        X.X.X..X.
-                        ...XX....
-                      md_note: Et nisi et earum sed error perferendis.
+                      md_note: Eum pariatur velit quia.
                       output: |
                         10
             illustration_img_url:
@@ -1680,7 +1755,7 @@ definitions:
                     lv: Uzdevums parādījās Latvijas 37. informātikas olimpiādes (2023./2024. gads) skolas kārtā.
                 additionalProperties:
                     type: string
-                    example: Est enim.
+                    example: Blanditiis quasi minima.
             origin_olympiad:
                 type: string
                 description: Origin olympiad of the task
@@ -1749,39 +1824,14 @@ definitions:
                           XXXX
                           X.BX
                       subtask: 1
-                    - inputs:
-                        - |
-                          5 5 3
-                          A.X..
-                          X.B.X
-                          ....X
-                          XX...
-                          X.XXX
-                        - |
-                          6 3 1
-                          ...
-                          XA.
-                          .X.
-                          X..
-                          B..
-                          ...
-                        - |
-                          6 4 2
-                          X...
-                          .AXX
-                          X..X
-                          .X.X
-                          XXXX
-                          X.BX
-                      subtask: 1
         description: Represents a competitive programming task
         example:
             cpu_time_limit_seconds: 0.5
             default_md_statement:
                 input: Ievaddatu pirmajā rindā dotas trīs naturālu skaitļu...
-                notes: Rerum cupiditate dolores qui fugit necessitatibus ut.
+                notes: Quo delectus rerum necessitatibus delectus et.
                 output: Izvaddatu vienīgajā rindā jābūt veselam skaitlim...
-                scoring: Natus qui.
+                scoring: Et aspernatur fugit.
                 story: Krišjānis ir uzkonstruējis kvadrātveida putekļsūcēju (saīsināti – KP), kas ir neaizstājams palīgs viņa darbnīcas uzkopšanā...
             default_pdf_statement_url: https://dvhk4hiwp1rmf.cloudfront.net/task-pdf-statements/f27386f1b69f3c020335fe7c84316c5da099933832043e6a5820bcdb0cd66a81.pdf
             difficulty_rating: 3
@@ -1793,7 +1843,7 @@ definitions:
                     .XXX.XX..
                     X.X.X..X.
                     ...XX....
-                  md_note: Et nisi et earum sed error perferendis.
+                  md_note: Eum pariatur velit quia.
                   output: |
                     10
                 - input: |
@@ -1803,17 +1853,7 @@ definitions:
                     .XXX.XX..
                     X.X.X..X.
                     ...XX....
-                  md_note: Et nisi et earum sed error perferendis.
-                  output: |
-                    10
-                - input: |
-                    5 9 3
-                    A....X..B
-                    ..X..X.X.
-                    .XXX.XX..
-                    X.X.X..X.
-                    ...XX....
-                  md_note: Et nisi et earum sed error perferendis.
+                  md_note: Eum pariatur velit quia.
                   output: |
                     10
             illustration_img_url: https://dvhk4hiwp1rmf.cloudfront.net/task-illustrations/bafcc0aa1b4c56faa44f5f3b2a5abd9529af941eb9a9b10f541b436762d4948a.png
@@ -1824,56 +1864,6 @@ definitions:
             published_task_id: kvadrputekl
             task_full_name: Kvadrātveida putekļsūcējs
             visible_input_subtasks:
-                - inputs:
-                    - |
-                      5 5 3
-                      A.X..
-                      X.B.X
-                      ....X
-                      XX...
-                      X.XXX
-                    - |
-                      6 3 1
-                      ...
-                      XA.
-                      .X.
-                      X..
-                      B..
-                      ...
-                    - |
-                      6 4 2
-                      X...
-                      .AXX
-                      X..X
-                      .X.X
-                      XXXX
-                      X.BX
-                  subtask: 1
-                - inputs:
-                    - |
-                      5 5 3
-                      A.X..
-                      X.B.X
-                      ....X
-                      XX...
-                      X.XXX
-                    - |
-                      6 3 1
-                      ...
-                      XA.
-                      .X.
-                      X..
-                      B..
-                      ...
-                    - |
-                      6 4 2
-                      X...
-                      .AXX
-                      X..X
-                      .X.X
-                      XXXX
-                      X.BX
-                  subtask: 1
                 - inputs:
                     - |
                       5 5 3
@@ -1970,7 +1960,7 @@ definitions:
                         .XXX.XX..
                         X.X.X..X.
                         ...XX....
-                      md_note: Natus qui est in et placeat accusantium.
+                      md_note: Tenetur temporibus harum assumenda.
                       output: |
                         10
                     - input: |
@@ -1980,7 +1970,17 @@ definitions:
                         .XXX.XX..
                         X.X.X..X.
                         ...XX....
-                      md_note: Natus qui est in et placeat accusantium.
+                      md_note: Tenetur temporibus harum assumenda.
+                      output: |
+                        10
+                    - input: |
+                        5 9 3
+                        A....X..B
+                        ..X..X.X.
+                        .XXX.XX..
+                        X.X.X..X.
+                        ...XX....
+                      md_note: Tenetur temporibus harum assumenda.
                       output: |
                         10
             illustration_img_url:
@@ -1999,7 +1999,7 @@ definitions:
                     lv: Uzdevums parādījās Latvijas 37. informātikas olimpiādes (2023./2024. gads) skolas kārtā.
                 additionalProperties:
                     type: string
-                    example: Totam sit porro maxime recusandae cum hic.
+                    example: Et provident explicabo aliquam possimus rerum molestias.
             origin_olympiad:
                 type: string
                 description: Origin olympiad of the task
@@ -2093,13 +2093,38 @@ definitions:
                           XXXX
                           X.BX
                       subtask: 1
+                    - inputs:
+                        - |
+                          5 5 3
+                          A.X..
+                          X.B.X
+                          ....X
+                          XX...
+                          X.XXX
+                        - |
+                          6 3 1
+                          ...
+                          XA.
+                          .X.
+                          X..
+                          B..
+                          ...
+                        - |
+                          6 4 2
+                          X...
+                          .AXX
+                          X..X
+                          .X.X
+                          XXXX
+                          X.BX
+                      subtask: 1
         example:
             cpu_time_limit_seconds: 0.5
             default_md_statement:
                 input: Ievaddatu pirmajā rindā dotas trīs naturālu skaitļu...
-                notes: Quas aliquid incidunt.
+                notes: Quam est repudiandae.
                 output: Izvaddatu vienīgajā rindā jābūt veselam skaitlim...
-                scoring: Optio enim reprehenderit similique.
+                scoring: Quo at.
                 story: Krišjānis ir uzkonstruējis kvadrātveida putekļsūcēju (saīsināti – KP), kas ir neaizstājams palīgs viņa darbnīcas uzkopšanā...
             default_pdf_statement_url: https://dvhk4hiwp1rmf.cloudfront.net/task-pdf-statements/f27386f1b69f3c020335fe7c84316c5da099933832043e6a5820bcdb0cd66a81.pdf
             difficulty_rating: 3
@@ -2111,7 +2136,7 @@ definitions:
                     .XXX.XX..
                     X.X.X..X.
                     ...XX....
-                  md_note: Natus qui est in et placeat accusantium.
+                  md_note: Tenetur temporibus harum assumenda.
                   output: |
                     10
                 - input: |
@@ -2121,7 +2146,27 @@ definitions:
                     .XXX.XX..
                     X.X.X..X.
                     ...XX....
-                  md_note: Natus qui est in et placeat accusantium.
+                  md_note: Tenetur temporibus harum assumenda.
+                  output: |
+                    10
+                - input: |
+                    5 9 3
+                    A....X..B
+                    ..X..X.X.
+                    .XXX.XX..
+                    X.X.X..X.
+                    ...XX....
+                  md_note: Tenetur temporibus harum assumenda.
+                  output: |
+                    10
+                - input: |
+                    5 9 3
+                    A....X..B
+                    ..X..X.X.
+                    .XXX.XX..
+                    X.X.X..X.
+                    ...XX....
+                  md_note: Tenetur temporibus harum assumenda.
                   output: |
                     10
             illustration_img_url: https://dvhk4hiwp1rmf.cloudfront.net/task-illustrations/bafcc0aa1b4c56faa44f5f3b2a5abd9529af941eb9a9b10f541b436762d4948a.png
@@ -2196,40 +2241,40 @@ definitions:
             accepted_tests:
                 type: integer
                 description: Number of accepted tests
-                example: 7238394484754986589
+                example: 4182886058047212094
                 format: int64
             statement_subtask:
                 type: integer
                 description: Statement subtask
-                example: 2151370807264002479
+                example: 3477093095148565804
                 format: int64
             test_group_id:
                 type: integer
                 description: ID of the test group
-                example: 7902985266179654472
+                example: 1961969177032172753
                 format: int64
             test_group_score:
                 type: integer
                 description: Score of the test group
-                example: 3012404554171537457
+                example: 330596274620518218
                 format: int64
             untested_tests:
                 type: integer
                 description: Number of untested tests
-                example: 7301723945278998086
+                example: 1565661209327856290
                 format: int64
             wrong_tests:
                 type: integer
                 description: Number of wrong tests
-                example: 3509156052911213946
+                example: 1479549113723039711
                 format: int64
         example:
-            accepted_tests: 4346437879039791365
-            statement_subtask: 1560744677294678597
-            test_group_id: 7043932894695346466
-            test_group_score: 4550172427793342521
-            untested_tests: 8858195169480252262
-            wrong_tests: 5539742536539017847
+            accepted_tests: 8036747345805335239
+            statement_subtask: 6107291508476225675
+            test_group_id: 5097354851782123508
+            test_group_score: 1722458100900655918
+            untested_tests: 3365130913189702284
+            wrong_tests: 8137349426488053777
         required:
             - test_group_id
             - test_group_score
@@ -2244,44 +2289,78 @@ definitions:
             accepted_tests:
                 type: integer
                 description: Number of accepted tests
-                example: 788632609907663062
+                example: 8858195169480252262
                 format: int64
             statement_subtask:
                 type: integer
                 description: Statement subtask
-                example: 3290367430032503707
+                example: 5539742536539017847
                 format: int64
             test_group_id:
                 type: integer
                 description: ID of the test group
-                example: 1168084153786294571
+                example: 1560744677294678597
                 format: int64
             test_group_score:
                 type: integer
                 description: Score of the test group
-                example: 697025592814383388
+                example: 4346437879039791365
                 format: int64
             untested_tests:
                 type: integer
                 description: Number of untested tests
-                example: 8413010299530637710
+                example: 6343844629412818719
                 format: int64
             wrong_tests:
                 type: integer
                 description: Number of wrong tests
-                example: 2419156263464795975
+                example: 3411123774126533742
                 format: int64
         example:
-            accepted_tests: 8474091188572250459
-            statement_subtask: 3623559335759720554
-            test_group_id: 3750102190491168969
-            test_group_score: 1908893899637385191
-            untested_tests: 2463692137979114569
-            wrong_tests: 1214170189507418011
+            accepted_tests: 2812299617994635766
+            statement_subtask: 6359100421257944120
+            test_group_id: 2472923165088459209
+            test_group_score: 7736993225338320097
+            untested_tests: 2760528595163296319
+            wrong_tests: 5305036420635614281
         required:
             - test_group_id
             - test_group_score
             - statement_subtask
+            - accepted_tests
+            - wrong_tests
+            - untested_tests
+    TestgroupScoreUpdateResponseBody:
+        title: TestgroupScoreUpdateResponseBody
+        type: object
+        properties:
+            accepted_tests:
+                type: integer
+                example: 6372143044617848805
+                format: int64
+            eval_uuid:
+                type: string
+                example: Recusandae cum hic vel nesciunt esse nemo.
+            subm_uuid:
+                type: string
+                example: Voluptate molestiae officia totam sit porro.
+            untested_tests:
+                type: integer
+                example: 6824618116566897874
+                format: int64
+            wrong_tests:
+                type: integer
+                example: 5685311884609161457
+                format: int64
+        example:
+            accepted_tests: 1052060727696432326
+            eval_uuid: Itaque accusantium tempora aut dolores perspiciatis.
+            subm_uuid: Magnam illum.
+            untested_tests: 238380376241890630
+            wrong_tests: 3527345564940119837
+        required:
+            - subm_uuid
+            - eval_uuid
             - accepted_tests
             - wrong_tests
             - untested_tests
@@ -2292,22 +2371,22 @@ definitions:
             accepted:
                 type: integer
                 description: Number of accepted tests
-                example: 6343844629412818719
+                example: 7263619966080841056
                 format: int64
             untested:
                 type: integer
                 description: Number of untested tests
-                example: 7736993225338320097
+                example: 3066123200948061058
                 format: int64
             wrong:
                 type: integer
                 description: Number of wrong tests
-                example: 2472923165088459209
+                example: 8276098453717850096
                 format: int64
         example:
-            accepted: 6359100421257944120
-            untested: 5305036420635614281
-            wrong: 2812299617994635766
+            accepted: 4835405545693259419
+            untested: 6966530128300552612
+            wrong: 4893363946894601893
         required:
             - accepted
             - wrong
@@ -2319,22 +2398,22 @@ definitions:
             accepted:
                 type: integer
                 description: Number of accepted tests
-                example: 2584079856354107807
+                example: 3714240805071084463
                 format: int64
             untested:
                 type: integer
                 description: Number of untested tests
-                example: 8602522160886379926
+                example: 8476565198932655189
                 format: int64
             wrong:
                 type: integer
                 description: Number of wrong tests
-                example: 1380431545792949627
+                example: 4470438659502700200
                 format: int64
         example:
-            accepted: 295311317242245282
-            untested: 5660532298958846914
-            wrong: 1599226889289017558
+            accepted: 3497725713534783153
+            untested: 4769693870415153005
+            wrong: 1263055568589522164
         required:
             - accepted
             - wrong
@@ -2476,69 +2555,65 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Eligendi nihil molestias laudantium odio delectus saepe.
+                    example: Officia error maiores et.
                 example:
-                    - Excepturi dolores ullam quia et.
-                    - Laborum sit qui enim.
-                    - Reiciendis facilis ut facere aut iusto.
-                    - Ipsa voluptatibus asperiores.
+                    - Officia inventore est nobis.
+                    - Veniam quaerat.
             email:
                 type: string
-                example: Sapiente quia.
+                example: Animi deserunt eaque.
             expires_at:
                 type: string
-                example: Corporis quae quia iure autem sed.
+                example: Eum omnis.
             firstname:
                 type: string
-                example: Quo et quaerat voluptatem.
+                example: Quo id et necessitatibus magni autem dolores.
             issued_at:
                 type: string
-                example: Eum asperiores doloribus et iste nulla voluptatem.
+                example: Perspiciatis cum beatae deserunt.
             issuer:
                 type: string
-                example: Sit aut.
+                example: Perspiciatis aliquam corporis.
             lastname:
                 type: string
-                example: Ut sed.
+                example: Et sequi deleniti reprehenderit et ut dolor.
             not_before:
                 type: string
-                example: Et sunt eaque corporis.
+                example: Non fuga quis incidunt voluptatem debitis.
             scopes:
                 type: array
                 items:
                     type: string
-                    example: Vel eaque.
+                    example: Omnis ratione.
                 example:
-                    - Dicta non perferendis.
-                    - Iusto beatae.
+                    - Amet atque ea occaecati molestias.
+                    - Temporibus omnis architecto.
             subject:
                 type: string
-                example: Laboriosam quia sed fugit voluptate reiciendis.
+                example: Molestias perferendis modi nihil maxime magni quis.
             username:
                 type: string
-                example: Itaque accusantium tempora aut dolores perspiciatis.
+                example: Quis sed sequi.
             uuid:
                 type: string
-                example: At id debitis qui et corporis rerum.
+                example: Blanditiis occaecati ea officia rerum qui aliquam.
         example:
             audience:
-                - Blanditiis quasi minima.
-                - Quo recusandae omnis magni alias est sed.
-            email: Doloremque qui omnis vero cum.
-            expires_at: Quidem molestiae similique iusto dolor.
-            firstname: Eius architecto corporis illum dolore repellendus.
-            issued_at: Aut illo voluptas dignissimos repudiandae et.
-            issuer: Qui pariatur maiores est.
-            lastname: Sit odit omnis repellendus.
-            not_before: Repellendus molestias adipisci qui sequi et.
+                - Voluptatem dolorum.
+                - Eius delectus cumque.
+            email: Labore reiciendis culpa at esse.
+            expires_at: Repellat assumenda doloremque voluptas dolore.
+            firstname: Laudantium quos consequatur aut.
+            issued_at: Aut ut nobis deserunt.
+            issuer: Non et commodi deleniti quos omnis iure.
+            lastname: Fuga temporibus eos.
+            not_before: Et quidem.
             scopes:
-                - Quia quibusdam quod ea.
-                - Occaecati autem beatae delectus architecto.
-                - Sunt soluta aut aut ut ipsam vel.
-                - Veniam in aut.
-            subject: Minima a et blanditiis.
-            username: Suscipit culpa.
-            uuid: Ut at voluptas.
+                - Praesentium accusantium quia.
+                - Quos dolor.
+            subject: Illo mollitia eius adipisci.
+            username: Dolorem eum et accusantium fuga.
+            uuid: Atque molestiae distinctio atque.
 securityDefinitions:
     jwt_header_Authorization:
         type: apiKey

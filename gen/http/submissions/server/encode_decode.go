@@ -428,6 +428,7 @@ func marshalSubmissionsSubmissionToSubmissionResponse(v *submissions.Submission)
 		Submission:       v.Submission,
 		Username:         v.Username,
 		CreatedAt:        v.CreatedAt,
+		EvalUUID:         v.EvalUUID,
 		EvalStatus:       v.EvalStatus,
 		PLangID:          v.PLangID,
 		PLangDisplayName: v.PLangDisplayName,
@@ -516,6 +517,7 @@ func marshalSubmissionsSubmissionToSubmissionResponseBody(v *submissions.Submiss
 		Submission:       v.Submission,
 		Username:         v.Username,
 		CreatedAt:        v.CreatedAt,
+		EvalUUID:         v.EvalUUID,
 		EvalStatus:       v.EvalStatus,
 		PLangID:          v.PLangID,
 		PLangDisplayName: v.PLangDisplayName,
@@ -537,6 +539,40 @@ func marshalSubmissionsSubmissionToSubmissionResponseBody(v *submissions.Submiss
 		for i, val := range v.EvalScoringSubtasks {
 			res.EvalScoringSubtasks[i] = marshalSubmissionsSubtaskResultToSubtaskResultResponseBody(val)
 		}
+	}
+
+	return res
+}
+
+// marshalSubmissionsSubmissionStateUpdateToSubmissionStateUpdateResponseBody
+// builds a value of type *SubmissionStateUpdateResponseBody from a value of
+// type *submissions.SubmissionStateUpdate.
+func marshalSubmissionsSubmissionStateUpdateToSubmissionStateUpdateResponseBody(v *submissions.SubmissionStateUpdate) *SubmissionStateUpdateResponseBody {
+	if v == nil {
+		return nil
+	}
+	res := &SubmissionStateUpdateResponseBody{
+		SubmUUID: v.SubmUUID,
+		EvalUUID: v.EvalUUID,
+		NewState: v.NewState,
+	}
+
+	return res
+}
+
+// marshalSubmissionsTestgroupScoreUpdateToTestgroupScoreUpdateResponseBody
+// builds a value of type *TestgroupScoreUpdateResponseBody from a value of
+// type *submissions.TestgroupScoreUpdate.
+func marshalSubmissionsTestgroupScoreUpdateToTestgroupScoreUpdateResponseBody(v *submissions.TestgroupScoreUpdate) *TestgroupScoreUpdateResponseBody {
+	if v == nil {
+		return nil
+	}
+	res := &TestgroupScoreUpdateResponseBody{
+		SubmUUID:      v.SubmUUID,
+		EvalUUID:      v.EvalUUID,
+		AcceptedTests: v.AcceptedTests,
+		WrongTests:    v.WrongTests,
+		UntestedTests: v.UntestedTests,
 	}
 
 	return res
