@@ -268,6 +268,7 @@ type SubmissionStateUpdateResponseBody struct {
 type TestgroupScoreUpdateResponseBody struct {
 	SubmUUID      string `form:"subm_uuid" json:"subm_uuid" xml:"subm_uuid"`
 	EvalUUID      string `form:"eval_uuid" json:"eval_uuid" xml:"eval_uuid"`
+	TestGroupID   int    `form:"test_group_id" json:"test_group_id" xml:"test_group_id"`
 	AcceptedTests int    `form:"accepted_tests" json:"accepted_tests" xml:"accepted_tests"`
 	WrongTests    int    `form:"wrong_tests" json:"wrong_tests" xml:"wrong_tests"`
 	UntestedTests int    `form:"untested_tests" json:"untested_tests" xml:"untested_tests"`

@@ -505,7 +505,7 @@ definitions:
             md_note:
                 type: string
                 description: Markdown note for the example
-                example: Pariatur maiores est.
+                example: Minima ut quo recusandae omnis magni alias.
             output:
                 type: string
                 description: Example output
@@ -520,7 +520,7 @@ definitions:
                 .XXX.XX..
                 X.X.X..X.
                 ...XX....
-            md_note: Minima a et blanditiis.
+            md_note: Sed nostrum quidem molestiae similique iusto.
             output: |
                 10
         required:
@@ -543,7 +543,7 @@ definitions:
             md_note:
                 type: string
                 description: Markdown note for the example
-                example: Aspernatur adipisci quo et enim.
+                example: Rerum molestias pariatur adipisci aspernatur quia corrupti.
             output:
                 type: string
                 description: Example output
@@ -558,7 +558,7 @@ definitions:
                 .XXX.XX..
                 X.X.X..X.
                 ...XX....
-            md_note: Magnam sed officia.
+            md_note: Ullam et iste sit quo quis.
             output: |
                 10
         required:
@@ -575,7 +575,7 @@ definitions:
             notes:
                 type: string
                 description: Notes section of the markdown statement
-                example: Tempora quia quibusdam quod ea quia.
+                example: Ipsam vel eos veniam in aut autem.
             output:
                 type: string
                 description: Output section of the markdown statement
@@ -583,7 +583,7 @@ definitions:
             scoring:
                 type: string
                 description: Scoring section of the markdown statement
-                example: Autem beatae delectus architecto est.
+                example: Pariatur maiores est.
             story:
                 type: string
                 description: Story section of the markdown statement
@@ -591,9 +591,9 @@ definitions:
         description: Represents a markdown statement for a task
         example:
             input: Ievaddatu pirmajā rindā dotas trīs naturālu skaitļu...
-            notes: Soluta aut aut.
+            notes: Minima a et blanditiis.
             output: Izvaddatu vienīgajā rindā jābūt veselam skaitlim...
-            scoring: Ipsam vel eos veniam in aut autem.
+            scoring: Rerum blanditiis.
             story: Krišjānis ir uzkonstruējis kvadrātveida putekļsūcēju (saīsināti – KP), kas ir neaizstājams palīgs viņa darbnīcas uzkopšanā...
         required:
             - story
@@ -610,7 +610,7 @@ definitions:
             notes:
                 type: string
                 description: Notes section of the markdown statement
-                example: Iusto dolor exercitationem aut illo.
+                example: Aspernatur adipisci quo et enim.
             output:
                 type: string
                 description: Output section of the markdown statement
@@ -618,7 +618,7 @@ definitions:
             scoring:
                 type: string
                 description: Scoring section of the markdown statement
-                example: Dignissimos repudiandae et.
+                example: Magnam sed officia.
             story:
                 type: string
                 description: Story section of the markdown statement
@@ -626,9 +626,9 @@ definitions:
         description: Represents a markdown statement for a task
         example:
             input: Ievaddatu pirmajā rindā dotas trīs naturālu skaitļu...
-            notes: Repellendus molestias adipisci qui sequi et.
+            notes: Magnam et.
             output: Izvaddatu vienīgajā rindā jābūt veselam skaitlim...
-            scoring: Enim modi.
+            scoring: Explicabo aliquam.
             story: Krišjānis ir uzkonstruējis kvadrātveida putekļsūcēju (saīsināti – KP), kas ir neaizstājams palīgs viņa darbnīcas uzkopšanā...
         required:
             - story
@@ -720,7 +720,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Quo recusandae omnis magni alias est sed.
+                    example: Repellendus molestias adipisci qui sequi et.
                 description: Inputs for the subtask
                 example:
                     - |
@@ -789,7 +789,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Adipisci aspernatur quia corrupti voluptates ullam.
+                    example: Vitae et.
                 description: Inputs for the subtask
                 example:
                     - |
@@ -1365,7 +1365,7 @@ definitions:
             created_at:
                 type: string
                 description: Creation time of the submission
-                example: Eaque omnis eligendi.
+                example: Eligendi dicta non perferendis provident iusto.
             eval_scoring_subtasks:
                 type: array
                 items:
@@ -1421,45 +1421,45 @@ definitions:
             eval_status:
                 type: string
                 description: Status of the current evaluation
-                example: Sit aut.
+                example: Fugit voluptate reiciendis illum.
             eval_uuid:
                 type: string
                 description: UUID of the evaluation
-                example: Non perferendis provident iusto beatae.
+                example: Nesciunt sit aut qui laboriosam quia.
             p_lang_display_name:
                 type: string
                 description: Display name of the programming language
-                example: Reiciendis illum eligendi nihil.
+                example: Excepturi dolores ullam quia et.
             p_lang_id:
                 type: string
                 description: ID of the programming language
-                example: Sed fugit.
+                example: Laudantium odio delectus saepe accusantium.
             p_lang_monaco_id:
                 type: string
                 description: Monaco editor ID for the programming language
-                example: Laudantium odio delectus saepe accusantium.
+                example: Laborum sit qui enim.
             subm_uuid:
                 type: string
                 description: UUID of the submission
-                example: Voluptatem sit ut.
+                example: Sapiente quia.
             submission:
                 type: string
                 description: The code submission
-                example: Ipsam sapiente quia eum at id debitis.
+                example: At id debitis qui et corporis rerum.
             task_id:
                 type: string
                 description: Code of the task associated with the submission
-                example: Laborum sit qui enim.
+                example: Ipsa voluptatibus asperiores.
             task_name:
                 type: string
                 description: Name of the task associated with the submission
-                example: Excepturi dolores ullam quia et.
+                example: Reiciendis facilis ut facere aut iusto.
             username:
                 type: string
                 description: Username of the user who submitted
-                example: Et corporis rerum ratione.
+                example: Vel eaque.
         example:
-            created_at: Eum asperiores doloribus et iste nulla voluptatem.
+            created_at: Suscipit culpa.
             eval_scoring_subtasks:
                 - accepted_tests: 2524123002320840
                   subtask_id: 3815997190531863537
@@ -1505,16 +1505,16 @@ definitions:
                 accepted: 4401638572233241483
                 untested: 8439219991192523214
                 wrong: 3392342282335858688
-            eval_status: Suscipit culpa.
-            eval_uuid: Et sunt eaque corporis.
-            p_lang_display_name: Repellendus quos sit.
-            p_lang_id: Corporis illum.
-            p_lang_monaco_id: Omnis repellendus nulla doloremque.
-            subm_uuid: Reiciendis facilis ut facere aut iusto.
-            submission: Ipsa voluptatibus asperiores.
-            task_id: Ut at voluptas.
-            task_name: Omnis vero cum.
-            username: Corporis quae quia iure autem sed.
+            eval_status: Sit odit omnis repellendus.
+            eval_uuid: Eius architecto corporis illum dolore repellendus.
+            p_lang_display_name: Ut at voluptas.
+            p_lang_id: Omnis vero cum.
+            p_lang_monaco_id: Tempora quia quibusdam quod ea quia.
+            subm_uuid: Corporis quae quia iure autem sed.
+            submission: Eum asperiores doloribus et iste nulla voluptatem.
+            task_id: Soluta aut aut.
+            task_name: Autem beatae delectus architecto est.
+            username: Et sunt eaque corporis.
         required:
             - subm_uuid
             - submission
@@ -1600,11 +1600,12 @@ definitions:
                 task_name: Temporibus doloremque quisquam aspernatur repellat.
                 username: Ea fuga omnis nihil et.
             testgroup_res_update:
-                accepted_tests: 2868456470534353623
+                accepted_tests: 7409820282880422768
                 eval_uuid: Id ut id molestiae illo.
                 subm_uuid: Error facere quis iure assumenda numquam officia.
-                untested_tests: 2024748454163110625
-                wrong_tests: 7409820282880422768
+                test_group_id: 2868456470534353623
+                untested_tests: 8736898891923357999
+                wrong_tests: 2024748454163110625
     SubtaskResultResponse:
         title: SubtaskResultResponse
         type: object
@@ -1739,6 +1740,26 @@ definitions:
                       md_note: Eum pariatur velit quia.
                       output: |
                         10
+                    - input: |
+                        5 9 3
+                        A....X..B
+                        ..X..X.X.
+                        .XXX.XX..
+                        X.X.X..X.
+                        ...XX....
+                      md_note: Eum pariatur velit quia.
+                      output: |
+                        10
+                    - input: |
+                        5 9 3
+                        A....X..B
+                        ..X..X.X.
+                        .XXX.XX..
+                        X.X.X..X.
+                        ...XX....
+                      md_note: Eum pariatur velit quia.
+                      output: |
+                        10
             illustration_img_url:
                 type: string
                 description: URL of the illustration image
@@ -1755,7 +1776,7 @@ definitions:
                     lv: Uzdevums parādījās Latvijas 37. informātikas olimpiādes (2023./2024. gads) skolas kārtā.
                 additionalProperties:
                     type: string
-                    example: Blanditiis quasi minima.
+                    example: Aut illo voluptas dignissimos repudiandae et.
             origin_olympiad:
                 type: string
                 description: Origin olympiad of the task
@@ -1774,6 +1795,31 @@ definitions:
                     $ref: '#/definitions/StInputsResponse'
                 description: Visible input subtasks
                 example:
+                    - inputs:
+                        - |
+                          5 5 3
+                          A.X..
+                          X.B.X
+                          ....X
+                          XX...
+                          X.XXX
+                        - |
+                          6 3 1
+                          ...
+                          XA.
+                          .X.
+                          X..
+                          B..
+                          ...
+                        - |
+                          6 4 2
+                          X...
+                          .AXX
+                          X..X
+                          .X.X
+                          XXXX
+                          X.BX
+                      subtask: 1
                     - inputs:
                         - |
                           5 5 3
@@ -1856,6 +1902,26 @@ definitions:
                   md_note: Eum pariatur velit quia.
                   output: |
                     10
+                - input: |
+                    5 9 3
+                    A....X..B
+                    ..X..X.X.
+                    .XXX.XX..
+                    X.X.X..X.
+                    ...XX....
+                  md_note: Eum pariatur velit quia.
+                  output: |
+                    10
+                - input: |
+                    5 9 3
+                    A....X..B
+                    ..X..X.X.
+                    .XXX.XX..
+                    X.X.X..X.
+                    ...XX....
+                  md_note: Eum pariatur velit quia.
+                  output: |
+                    10
             illustration_img_url: https://dvhk4hiwp1rmf.cloudfront.net/task-illustrations/bafcc0aa1b4c56faa44f5f3b2a5abd9529af941eb9a9b10f541b436762d4948a.png
             memory_limit_megabytes: 256
             origin_notes:
@@ -1864,6 +1930,31 @@ definitions:
             published_task_id: kvadrputekl
             task_full_name: Kvadrātveida putekļsūcējs
             visible_input_subtasks:
+                - inputs:
+                    - |
+                      5 5 3
+                      A.X..
+                      X.B.X
+                      ....X
+                      XX...
+                      X.XXX
+                    - |
+                      6 3 1
+                      ...
+                      XA.
+                      .X.
+                      X..
+                      B..
+                      ...
+                    - |
+                      6 4 2
+                      X...
+                      .AXX
+                      X..X
+                      .X.X
+                      XXXX
+                      X.BX
+                  subtask: 1
                 - inputs:
                     - |
                       5 5 3
@@ -1973,16 +2064,6 @@ definitions:
                       md_note: Tenetur temporibus harum assumenda.
                       output: |
                         10
-                    - input: |
-                        5 9 3
-                        A....X..B
-                        ..X..X.X.
-                        .XXX.XX..
-                        X.X.X..X.
-                        ...XX....
-                      md_note: Tenetur temporibus harum assumenda.
-                      output: |
-                        10
             illustration_img_url:
                 type: string
                 description: URL of the illustration image
@@ -1999,7 +2080,7 @@ definitions:
                     lv: Uzdevums parādījās Latvijas 37. informātikas olimpiādes (2023./2024. gads) skolas kārtā.
                 additionalProperties:
                     type: string
-                    example: Et provident explicabo aliquam possimus rerum molestias.
+                    example: Optio quo id et necessitatibus magni autem.
             origin_olympiad:
                 type: string
                 description: Origin olympiad of the task
@@ -2149,26 +2230,6 @@ definitions:
                   md_note: Tenetur temporibus harum assumenda.
                   output: |
                     10
-                - input: |
-                    5 9 3
-                    A....X..B
-                    ..X..X.X.
-                    .XXX.XX..
-                    X.X.X..X.
-                    ...XX....
-                  md_note: Tenetur temporibus harum assumenda.
-                  output: |
-                    10
-                - input: |
-                    5 9 3
-                    A....X..B
-                    ..X..X.X.
-                    .XXX.XX..
-                    X.X.X..X.
-                    ...XX....
-                  md_note: Tenetur temporibus harum assumenda.
-                  output: |
-                    10
             illustration_img_url: https://dvhk4hiwp1rmf.cloudfront.net/task-illustrations/bafcc0aa1b4c56faa44f5f3b2a5abd9529af941eb9a9b10f541b436762d4948a.png
             memory_limit_megabytes: 256
             origin_notes:
@@ -2177,6 +2238,31 @@ definitions:
             published_task_id: kvadrputekl
             task_full_name: Kvadrātveida putekļsūcējs
             visible_input_subtasks:
+                - inputs:
+                    - |
+                      5 5 3
+                      A.X..
+                      X.B.X
+                      ....X
+                      XX...
+                      X.XXX
+                    - |
+                      6 3 1
+                      ...
+                      XA.
+                      .X.
+                      X..
+                      B..
+                      ...
+                    - |
+                      6 4 2
+                      X...
+                      .AXX
+                      X..X
+                      .X.X
+                      XXXX
+                      X.BX
+                  subtask: 1
                 - inputs:
                     - |
                       5 5 3
@@ -2336,7 +2422,7 @@ definitions:
         properties:
             accepted_tests:
                 type: integer
-                example: 6372143044617848805
+                example: 5685311884609161457
                 format: int64
             eval_uuid:
                 type: string
@@ -2344,26 +2430,32 @@ definitions:
             subm_uuid:
                 type: string
                 example: Voluptate molestiae officia totam sit porro.
+            test_group_id:
+                type: integer
+                example: 6372143044617848805
+                format: int64
             untested_tests:
                 type: integer
-                example: 6824618116566897874
+                example: 7269993074199505690
                 format: int64
             wrong_tests:
                 type: integer
-                example: 5685311884609161457
+                example: 6824618116566897874
                 format: int64
         example:
-            accepted_tests: 1052060727696432326
-            eval_uuid: Itaque accusantium tempora aut dolores perspiciatis.
-            subm_uuid: Magnam illum.
-            untested_tests: 238380376241890630
-            wrong_tests: 3527345564940119837
+            accepted_tests: 5574341143985949077
+            eval_uuid: Aut dolores perspiciatis debitis quo et quaerat.
+            subm_uuid: Illum natus itaque accusantium.
+            test_group_id: 1495632466622569375
+            untested_tests: 7264340976954118971
+            wrong_tests: 736169680693899573
         required:
             - subm_uuid
             - eval_uuid
             - accepted_tests
             - wrong_tests
             - untested_tests
+            - test_group_id
     TestsResultResponse:
         title: TestsResultResponse
         type: object
@@ -2555,65 +2647,69 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Officia error maiores et.
+                    example: Deserunt consequatur non fuga quis incidunt.
                 example:
-                    - Officia inventore est nobis.
-                    - Veniam quaerat.
+                    - Eius dolorem eum et.
+                    - Fuga ullam.
+                    - Quos consequatur aut ex fuga temporibus.
             email:
                 type: string
-                example: Animi deserunt eaque.
+                example: Omnis ratione.
             expires_at:
                 type: string
-                example: Eum omnis.
+                example: Delectus labore reiciendis culpa at esse.
             firstname:
                 type: string
-                example: Quo id et necessitatibus magni autem dolores.
+                example: Deserunt eaque deleniti blanditiis.
             issued_at:
                 type: string
-                example: Perspiciatis cum beatae deserunt.
+                example: Atque molestiae distinctio atque.
             issuer:
                 type: string
-                example: Perspiciatis aliquam corporis.
+                example: Inventore est nobis ducimus veniam quaerat cum.
             lastname:
                 type: string
-                example: Et sequi deleniti reprehenderit et ut dolor.
+                example: Ea officia rerum qui aliquam.
             not_before:
                 type: string
-                example: Non fuga quis incidunt voluptatem debitis.
+                example: Esse praesentium accusantium quia.
             scopes:
                 type: array
                 items:
                     type: string
-                    example: Omnis ratione.
+                    example: Omnis architecto consequatur.
                 example:
-                    - Amet atque ea occaecati molestias.
-                    - Temporibus omnis architecto.
+                    - Corporis autem molestias perferendis modi.
+                    - Maxime magni quis vitae officia.
+                    - Maiores et et maiores.
             subject:
                 type: string
-                example: Molestias perferendis modi nihil maxime magni quis.
+                example: Omnis sequi perspiciatis cum.
             username:
                 type: string
-                example: Quis sed sequi.
+                example: Ut dolor molestiae.
             uuid:
                 type: string
-                example: Blanditiis occaecati ea officia rerum qui aliquam.
+                example: Qui amet atque ea occaecati molestias quia.
         example:
             audience:
-                - Voluptatem dolorum.
-                - Eius delectus cumque.
-            email: Labore reiciendis culpa at esse.
-            expires_at: Repellat assumenda doloremque voluptas dolore.
-            firstname: Laudantium quos consequatur aut.
-            issued_at: Aut ut nobis deserunt.
-            issuer: Non et commodi deleniti quos omnis iure.
-            lastname: Fuga temporibus eos.
-            not_before: Et quidem.
+                - Molestiae est non est ea praesentium.
+                - Facilis ipsam sed est facere voluptatem.
+            email: Vero voluptatem.
+            expires_at: Vel quam dolorum autem.
+            firstname: Non et commodi deleniti quos omnis iure.
+            issued_at: Et voluptate et sed.
+            issuer: Quia labore iusto et magnam magni numquam.
+            lastname: Illo mollitia eius adipisci.
+            not_before: Dolorem omnis rerum.
             scopes:
-                - Praesentium accusantium quia.
-                - Quos dolor.
-            subject: Illo mollitia eius adipisci.
-            username: Dolorem eum et accusantium fuga.
-            uuid: Atque molestiae distinctio atque.
+                - Voluptas dolore voluptatem aut ut nobis.
+                - Placeat et.
+                - Cupiditate consequatur dolorum velit dolore ut et.
+                - Minima veritatis necessitatibus.
+            subject: Quia facilis voluptatibus quia.
+            username: Quos dolor.
+            uuid: A eius delectus cumque aut repellat.
 securityDefinitions:
     jwt_header_Authorization:
         type: apiKey

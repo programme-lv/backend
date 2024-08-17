@@ -268,6 +268,7 @@ type SubmissionStateUpdateResponseBody struct {
 type TestgroupScoreUpdateResponseBody struct {
 	SubmUUID      *string `form:"subm_uuid,omitempty" json:"subm_uuid,omitempty" xml:"subm_uuid,omitempty"`
 	EvalUUID      *string `form:"eval_uuid,omitempty" json:"eval_uuid,omitempty" xml:"eval_uuid,omitempty"`
+	TestGroupID   *int    `form:"test_group_id,omitempty" json:"test_group_id,omitempty" xml:"test_group_id,omitempty"`
 	AcceptedTests *int    `form:"accepted_tests,omitempty" json:"accepted_tests,omitempty" xml:"accepted_tests,omitempty"`
 	WrongTests    *int    `form:"wrong_tests,omitempty" json:"wrong_tests,omitempty" xml:"wrong_tests,omitempty"`
 	UntestedTests *int    `form:"untested_tests,omitempty" json:"untested_tests,omitempty" xml:"untested_tests,omitempty"`
@@ -982,6 +983,9 @@ func ValidateTestgroupScoreUpdateResponseBody(body *TestgroupScoreUpdateResponse
 	}
 	if body.UntestedTests == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("untested_tests", "body"))
+	}
+	if body.TestGroupID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("test_group_id", "body"))
 	}
 	return
 }

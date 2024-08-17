@@ -93,18 +93,17 @@ var SubmissionStateUpdate = dsl.Type("SubmissionStateUpdate", func() {
 var TestgroupResultUpdate = dsl.Type("TestgroupScoreUpdate", func() {
 	dsl.Attribute("subm_uuid", dsl.String)
 	dsl.Attribute("eval_uuid", dsl.String)
+	dsl.Attribute("test_group_id", dsl.Int)
 	dsl.Attribute("accepted_tests", dsl.Int)
 	dsl.Attribute("wrong_tests", dsl.Int)
 	dsl.Attribute("untested_tests", dsl.Int)
-	dsl.Required("subm_uuid", "eval_uuid", "accepted_tests", "wrong_tests", "untested_tests")
+	dsl.Required("subm_uuid", "eval_uuid", "accepted_tests", "wrong_tests", "untested_tests", "test_group_id")
 })
 
 var SubmListUpdate = dsl.Type("SubmissionListUpdate", func() {
 	dsl.Attribute("subm_created", Submission, "Submission that was created")
 	dsl.Attribute("state_update", SubmissionStateUpdate)
 	dsl.Attribute("testgroup_res_update", TestgroupResultUpdate)
-	// TODO: status update
-	// TODO: scoring update
 })
 
 var _ = dsl.Service("submissions", func() {

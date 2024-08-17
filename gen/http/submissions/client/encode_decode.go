@@ -782,6 +782,7 @@ func unmarshalTestgroupScoreUpdateResponseBodyToSubmissionsTestgroupScoreUpdate(
 	res := &submissions.TestgroupScoreUpdate{
 		SubmUUID:      *v.SubmUUID,
 		EvalUUID:      *v.EvalUUID,
+		TestGroupID:   *v.TestGroupID,
 		AcceptedTests: *v.AcceptedTests,
 		WrongTests:    *v.WrongTests,
 		UntestedTests: *v.UntestedTests,

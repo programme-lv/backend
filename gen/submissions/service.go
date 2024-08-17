@@ -203,6 +203,7 @@ type TestGroupResult struct {
 type TestgroupScoreUpdate struct {
 	SubmUUID      string
 	EvalUUID      string
+	TestGroupID   int
 	AcceptedTests int
 	WrongTests    int
 	UntestedTests int

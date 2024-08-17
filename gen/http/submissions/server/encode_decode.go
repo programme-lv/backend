@@ -570,6 +570,7 @@ func marshalSubmissionsTestgroupScoreUpdateToTestgroupScoreUpdateResponseBody(v 
 	res := &TestgroupScoreUpdateResponseBody{
 		SubmUUID:      v.SubmUUID,
 		EvalUUID:      v.EvalUUID,
+		TestGroupID:   v.TestGroupID,
 		AcceptedTests: v.AcceptedTests,
 		WrongTests:    v.WrongTests,
 		UntestedTests: v.UntestedTests,

@@ -53,6 +53,7 @@ type SubmissionStateUpdate struct {
 type TestgroupResultUpdate struct {
 	SubmUuid      string
 	EvalUuid      string
+	TestgroupId   int
 	AcceptedTests int
 	WrongTests    int
 	UntestedTests int
@@ -223,6 +224,20 @@ func (s *submissionssrvc) StartStreamingSubmListUpdates(ctx context.Context) {
 					NewState: stateUpdate.NewState,
 				},
 			}
+			sendUpdate(update)
+		case testgroupResUpdate := <-s.updateTestgroupResChan:
+			// notify all listeners about the testgroup result update
+			update := &submgen.SubmissionListUpdate{
+				TestgroupResUpdate: &submgen.TestgroupScoreUpdate{
+					SubmUUID:      testgroupResUpdate.SubmUuid,
+					EvalUUID:      testgroupResUpdate.EvalUuid,
+					TestGroupID:   testgroupResUpdate.TestgroupId,
+					AcceptedTests: testgroupResUpdate.AcceptedTests,
+					WrongTests:    testgroupResUpdate.WrongTests,
+					UntestedTests: testgroupResUpdate.UntestedTests,
+				},
+			}
+
 			sendUpdate(update)
 		}
 	}

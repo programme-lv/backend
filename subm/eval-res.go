@@ -723,9 +723,16 @@ func (s *submissionssrvc) processEvalResult(evalUuid string, msgType string, fie
 						log.Printf("failed to update submission testgroup: %v", err)
 						return
 					}
+				} else {
+					s.updateTestgroupResChan <- &TestgroupResultUpdate{
+						SubmUuid:      submUuid,
+						EvalUuid:      evalUuid,
+						TestgroupId:   *testSubtasksTestGroups.TestGroup,
+						AcceptedTests: testgroupRow.AcceptedTests,
+						WrongTests:    testgroupRow.WrongTests,
+						UntestedTests: testgroupRow.UntestedTests,
+					}
 				}
-
-				// TODO: notify listeners that the test was accepted
 
 				break
 			}
