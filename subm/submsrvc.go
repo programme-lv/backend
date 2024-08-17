@@ -268,11 +268,11 @@ func (s *submissionssrvc) StreamSubmissionUpdates(ctx context.Context, p submgen
 	for {
 		select {
 		case <-ctx.Done():
-			return nil
+			return p.Close()
 		case update := <-myChan:
 			err = p.Send(update)
 			if err != nil {
-				return err
+				return p.Close()
 			}
 		}
 	}
