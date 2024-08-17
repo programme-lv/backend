@@ -24,7 +24,7 @@ import (
 //
 //	command (subcommand1|subcommand2|...)
 func UsageCommands() string {
-	return `submissions (create-submission|list-submissions|get-submission|list-programming-languages)
+	return `submissions (create-submission|list-submissions|stream-submission-updates|get-submission|list-programming-languages)
 tasks (list-tasks|get-task)
 users (get-user|create-user|delete-user|login|query-current-jwt)
 `
@@ -51,6 +51,8 @@ func ParseEndpoint(
 	enc func(*http.Request) goahttp.Encoder,
 	dec func(*http.Response) goahttp.Decoder,
 	restore bool,
+	dialer goahttp.Dialer,
+	submissionsConfigurer *submissionsc.ConnConfigurer,
 ) (goa.Endpoint, any, error) {
 	var (
 		submissionsFlags = flag.NewFlagSet("submissions", flag.ContinueOnError)
@@ -60,6 +62,8 @@ func ParseEndpoint(
 		submissionsCreateSubmissionTokenFlag = submissionsCreateSubmissionFlags.String("token", "REQUIRED", "")
 
 		submissionsListSubmissionsFlags = flag.NewFlagSet("list-submissions", flag.ExitOnError)
+
+		submissionsStreamSubmissionUpdatesFlags = flag.NewFlagSet("stream-submission-updates", flag.ExitOnError)
 
 		submissionsGetSubmissionFlags    = flag.NewFlagSet("get-submission", flag.ExitOnError)
 		submissionsGetSubmissionUUIDFlag = submissionsGetSubmissionFlags.String("uuid", "REQUIRED", "UUID of the submission")
@@ -95,6 +99,7 @@ func ParseEndpoint(
 	submissionsFlags.Usage = submissionsUsage
 	submissionsCreateSubmissionFlags.Usage = submissionsCreateSubmissionUsage
 	submissionsListSubmissionsFlags.Usage = submissionsListSubmissionsUsage
+	submissionsStreamSubmissionUpdatesFlags.Usage = submissionsStreamSubmissionUpdatesUsage
 	submissionsGetSubmissionFlags.Usage = submissionsGetSubmissionUsage
 	submissionsListProgrammingLanguagesFlags.Usage = submissionsListProgrammingLanguagesUsage
 
@@ -152,6 +157,9 @@ func ParseEndpoint(
 
 			case "list-submissions":
 				epf = submissionsListSubmissionsFlags
+
+			case "stream-submission-updates":
+				epf = submissionsStreamSubmissionUpdatesFlags
 
 			case "get-submission":
 				epf = submissionsGetSubmissionFlags
@@ -211,13 +219,15 @@ func ParseEndpoint(
 	{
 		switch svcn {
 		case "submissions":
-			c := submissionsc.NewClient(scheme, host, doer, enc, dec, restore)
+			c := submissionsc.NewClient(scheme, host, doer, enc, dec, restore, dialer, submissionsConfigurer)
 			switch epn {
 			case "create-submission":
 				endpoint = c.CreateSubmission()
 				data, err = submissionsc.BuildCreateSubmissionPayload(*submissionsCreateSubmissionBodyFlag, *submissionsCreateSubmissionTokenFlag)
 			case "list-submissions":
 				endpoint = c.ListSubmissions()
+			case "stream-submission-updates":
+				endpoint = c.StreamSubmissionUpdates()
 			case "get-submission":
 				endpoint = c.GetSubmission()
 				data, err = submissionsc.BuildGetSubmissionPayload(*submissionsGetSubmissionUUIDFlag)
@@ -271,6 +281,7 @@ Usage:
 COMMAND:
     create-submission: Create a new submission
     list-submissions: List all submissions
+    stream-submission-updates: Stream updates to all submissions in real-time
     get-submission: Get a submission by UUID
     list-programming-languages: List all available programming languages
 
@@ -302,6 +313,16 @@ List all submissions
 
 Example:
     %[1]s submissions list-submissions
+`, os.Args[0])
+}
+
+func submissionsStreamSubmissionUpdatesUsage() {
+	fmt.Fprintf(os.Stderr, `%[1]s [flags] submissions stream-submission-updates
+
+Stream updates to all submissions in real-time
+
+Example:
+    %[1]s submissions stream-submission-updates
 `, os.Args[0])
 }
 
@@ -440,6 +461,6 @@ Query current JWT
     -token STRING: 
 
 Example:
-    %[1]s users query-current-jwt --token "Ipsa exercitationem."
+    %[1]s users query-current-jwt --token "Voluptate eum est odit quod est laudantium."
 `, os.Args[0])
 }

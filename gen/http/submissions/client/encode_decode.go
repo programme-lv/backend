@@ -252,6 +252,115 @@ func DecodeListSubmissionsResponse(decoder func(*http.Response) goahttp.Decoder,
 	}
 }
 
+// BuildStreamSubmissionUpdatesRequest instantiates a HTTP request object with
+// method and path set to call the "submissions" service
+// "streamSubmissionUpdates" endpoint
+func (c *Client) BuildStreamSubmissionUpdatesRequest(ctx context.Context, v any) (*http.Request, error) {
+	scheme := c.scheme
+	switch c.scheme {
+	case "http":
+		scheme = "ws"
+	case "https":
+		scheme = "wss"
+	}
+	u := &url.URL{Scheme: scheme, Host: c.host, Path: StreamSubmissionUpdatesSubmissionsPath()}
+	req, err := http.NewRequest("GET", u.String(), nil)
+	if err != nil {
+		return nil, goahttp.ErrInvalidURL("submissions", "streamSubmissionUpdates", u.String(), err)
+	}
+	if ctx != nil {
+		req = req.WithContext(ctx)
+	}
+
+	return req, nil
+}
+
+// DecodeStreamSubmissionUpdatesResponse returns a decoder for responses
+// returned by the submissions streamSubmissionUpdates endpoint. restoreBody
+// controls whether the response body should be restored after having been read.
+// DecodeStreamSubmissionUpdatesResponse may return the following errors:
+//   - "InternalError" (type submissions.InternalError): http.StatusInternalServerError
+//   - "InvalidSubmissionDetails" (type submissions.InvalidSubmissionDetails): http.StatusBadRequest
+//   - "NotFound" (type submissions.NotFound): http.StatusNotFound
+//   - "unauthorized" (type submissions.Unauthorized): http.StatusUnauthorized
+//   - error: internal error
+func DecodeStreamSubmissionUpdatesResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
+	return func(resp *http.Response) (any, error) {
+		if restoreBody {
+			b, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return nil, err
+			}
+			resp.Body = io.NopCloser(bytes.NewBuffer(b))
+			defer func() {
+				resp.Body = io.NopCloser(bytes.NewBuffer(b))
+			}()
+		} else {
+			defer resp.Body.Close()
+		}
+		switch resp.StatusCode {
+		case http.StatusOK:
+			var (
+				body StreamSubmissionUpdatesResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("submissions", "streamSubmissionUpdates", err)
+			}
+			err = ValidateStreamSubmissionUpdatesResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("submissions", "streamSubmissionUpdates", err)
+			}
+			res := NewStreamSubmissionUpdatesSubmissionListUpdateOK(&body)
+			return res, nil
+		case http.StatusInternalServerError:
+			var (
+				body string
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("submissions", "streamSubmissionUpdates", err)
+			}
+			return nil, NewStreamSubmissionUpdatesInternalError(body)
+		case http.StatusBadRequest:
+			var (
+				body string
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("submissions", "streamSubmissionUpdates", err)
+			}
+			return nil, NewStreamSubmissionUpdatesInvalidSubmissionDetails(body)
+		case http.StatusNotFound:
+			var (
+				body string
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("submissions", "streamSubmissionUpdates", err)
+			}
+			return nil, NewStreamSubmissionUpdatesNotFound(body)
+		case http.StatusUnauthorized:
+			var (
+				body string
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("submissions", "streamSubmissionUpdates", err)
+			}
+			return nil, NewStreamSubmissionUpdatesUnauthorized(body)
+		default:
+			body, _ := io.ReadAll(resp.Body)
+			return nil, goahttp.ErrInvalidResponse("submissions", "streamSubmissionUpdates", resp.StatusCode, string(body))
+		}
+	}
+}
+
 // BuildGetSubmissionRequest instantiates a HTTP request object with method and
 // path set to call the "submissions" service "getSubmission" endpoint
 func (c *Client) BuildGetSubmissionRequest(ctx context.Context, v any) (*http.Request, error) {
@@ -603,6 +712,43 @@ func unmarshalSubtaskResultResponseToSubmissionsSubtaskResult(v *SubtaskResultRe
 		AcceptedTests: *v.AcceptedTests,
 		WrongTests:    *v.WrongTests,
 		UntestedTests: *v.UntestedTests,
+	}
+
+	return res
+}
+
+// unmarshalSubmissionResponseBodyToSubmissionsSubmission builds a value of
+// type *submissions.Submission from a value of type *SubmissionResponseBody.
+func unmarshalSubmissionResponseBodyToSubmissionsSubmission(v *SubmissionResponseBody) *submissions.Submission {
+	if v == nil {
+		return nil
+	}
+	res := &submissions.Submission{
+		SubmUUID:         *v.SubmUUID,
+		Submission:       *v.Submission,
+		Username:         *v.Username,
+		CreatedAt:        *v.CreatedAt,
+		EvalStatus:       *v.EvalStatus,
+		PLangID:          *v.PLangID,
+		PLangDisplayName: *v.PLangDisplayName,
+		PLangMonacoID:    *v.PLangMonacoID,
+		TaskName:         *v.TaskName,
+		TaskID:           *v.TaskID,
+	}
+	if v.EvalScoringTestgroups != nil {
+		res.EvalScoringTestgroups = make([]*submissions.TestGroupResult, len(v.EvalScoringTestgroups))
+		for i, val := range v.EvalScoringTestgroups {
+			res.EvalScoringTestgroups[i] = unmarshalTestGroupResultResponseBodyToSubmissionsTestGroupResult(val)
+		}
+	}
+	if v.EvalScoringTests != nil {
+		res.EvalScoringTests = unmarshalTestsResultResponseBodyToSubmissionsTestsResult(v.EvalScoringTests)
+	}
+	if v.EvalScoringSubtasks != nil {
+		res.EvalScoringSubtasks = make([]*submissions.SubtaskResult, len(v.EvalScoringSubtasks))
+		for i, val := range v.EvalScoringSubtasks {
+			res.EvalScoringSubtasks[i] = unmarshalSubtaskResultResponseBodyToSubmissionsSubtaskResult(val)
+		}
 	}
 
 	return res

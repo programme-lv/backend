@@ -60,6 +60,13 @@ type CreateSubmissionResponseBody struct {
 // "listSubmissions" endpoint HTTP response body.
 type ListSubmissionsResponseBody []*SubmissionResponse
 
+// StreamSubmissionUpdatesResponseBody is the type of the "submissions" service
+// "streamSubmissionUpdates" endpoint HTTP response body.
+type StreamSubmissionUpdatesResponseBody struct {
+	// Submission that was created
+	SubmCreated *SubmissionResponseBody `form:"subm_created,omitempty" json:"subm_created,omitempty" xml:"subm_created,omitempty"`
+}
+
 // GetSubmissionResponseBody is the type of the "submissions" service
 // "getSubmission" endpoint HTTP response body.
 type GetSubmissionResponseBody struct {
@@ -205,6 +212,36 @@ type SubtaskResultResponse struct {
 	UntestedTests int `form:"untested_tests" json:"untested_tests" xml:"untested_tests"`
 }
 
+// SubmissionResponseBody is used to define fields on response body types.
+type SubmissionResponseBody struct {
+	// UUID of the submission
+	SubmUUID string `form:"subm_uuid" json:"subm_uuid" xml:"subm_uuid"`
+	// The code submission
+	Submission string `form:"submission" json:"submission" xml:"submission"`
+	// Username of the user who submitted
+	Username string `form:"username" json:"username" xml:"username"`
+	// Creation time of the submission
+	CreatedAt string `form:"created_at" json:"created_at" xml:"created_at"`
+	// Status of the current evaluation
+	EvalStatus string `form:"eval_status" json:"eval_status" xml:"eval_status"`
+	// Scoring / results of the test groups
+	EvalScoringTestgroups []*TestGroupResultResponseBody `form:"eval_scoring_testgroups,omitempty" json:"eval_scoring_testgroups,omitempty" xml:"eval_scoring_testgroups,omitempty"`
+	// Scoring / results of the all tests
+	EvalScoringTests *TestsResultResponseBody `form:"eval_scoring_tests,omitempty" json:"eval_scoring_tests,omitempty" xml:"eval_scoring_tests,omitempty"`
+	// Scoring / results of the subtasks
+	EvalScoringSubtasks []*SubtaskResultResponseBody `form:"eval_scoring_subtasks,omitempty" json:"eval_scoring_subtasks,omitempty" xml:"eval_scoring_subtasks,omitempty"`
+	// ID of the programming language
+	PLangID string `form:"p_lang_id" json:"p_lang_id" xml:"p_lang_id"`
+	// Display name of the programming language
+	PLangDisplayName string `form:"p_lang_display_name" json:"p_lang_display_name" xml:"p_lang_display_name"`
+	// Monaco editor ID for the programming language
+	PLangMonacoID string `form:"p_lang_monaco_id" json:"p_lang_monaco_id" xml:"p_lang_monaco_id"`
+	// Name of the task associated with the submission
+	TaskName string `form:"task_name" json:"task_name" xml:"task_name"`
+	// Code of the task associated with the submission
+	TaskID string `form:"task_id" json:"task_id" xml:"task_id"`
+}
+
 // ProgrammingLangResponse is used to define fields on response body types.
 type ProgrammingLangResponse struct {
 	// ID of the programming language
@@ -268,6 +305,17 @@ func NewListSubmissionsResponseBody(res []*submissions.Submission) ListSubmissio
 	body := make([]*SubmissionResponse, len(res))
 	for i, val := range res {
 		body[i] = marshalSubmissionsSubmissionToSubmissionResponse(val)
+	}
+	return body
+}
+
+// NewStreamSubmissionUpdatesResponseBody builds the HTTP response body from
+// the result of the "streamSubmissionUpdates" endpoint of the "submissions"
+// service.
+func NewStreamSubmissionUpdatesResponseBody(res *submissions.SubmissionListUpdate) *StreamSubmissionUpdatesResponseBody {
+	body := &StreamSubmissionUpdatesResponseBody{}
+	if res.SubmCreated != nil {
+		body.SubmCreated = marshalSubmissionsSubmissionToSubmissionResponseBody(res.SubmCreated)
 	}
 	return body
 }

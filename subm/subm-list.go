@@ -113,10 +113,6 @@ func (s *submissionssrvc) ListSubmissions(ctx context.Context) (res []*submgen.S
 		}
 	}
 
-	for k, v := range submMap {
-		log.Printf(ctx, "submission %v: %+v", k, v)
-	}
-
 	tasks, err := s.taskSrvc.ListTasks(ctx)
 	if err != nil {
 		return nil, submgen.InternalError("failed to fetch tasks")

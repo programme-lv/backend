@@ -17,15 +17,17 @@ import (
 type Client struct {
 	CreateSubmissionEndpoint         goa.Endpoint
 	ListSubmissionsEndpoint          goa.Endpoint
+	StreamSubmissionUpdatesEndpoint  goa.Endpoint
 	GetSubmissionEndpoint            goa.Endpoint
 	ListProgrammingLanguagesEndpoint goa.Endpoint
 }
 
 // NewClient initializes a "submissions" service client given the endpoints.
-func NewClient(createSubmission, listSubmissions, getSubmission, listProgrammingLanguages goa.Endpoint) *Client {
+func NewClient(createSubmission, listSubmissions, streamSubmissionUpdates, getSubmission, listProgrammingLanguages goa.Endpoint) *Client {
 	return &Client{
 		CreateSubmissionEndpoint:         createSubmission,
 		ListSubmissionsEndpoint:          listSubmissions,
+		StreamSubmissionUpdatesEndpoint:  streamSubmissionUpdates,
 		GetSubmissionEndpoint:            getSubmission,
 		ListProgrammingLanguagesEndpoint: listProgrammingLanguages,
 	}
@@ -63,6 +65,23 @@ func (c *Client) ListSubmissions(ctx context.Context) (res []*Submission, err er
 		return
 	}
 	return ires.([]*Submission), nil
+}
+
+// StreamSubmissionUpdates calls the "streamSubmissionUpdates" endpoint of the
+// "submissions" service.
+// StreamSubmissionUpdates may return the following errors:
+//   - "unauthorized" (type Unauthorized)
+//   - "InvalidSubmissionDetails" (type InvalidSubmissionDetails)
+//   - "NotFound" (type NotFound)
+//   - "InternalError" (type InternalError)
+//   - error: internal error
+func (c *Client) StreamSubmissionUpdates(ctx context.Context) (res StreamSubmissionUpdatesClientStream, err error) {
+	var ires any
+	ires, err = c.StreamSubmissionUpdatesEndpoint(ctx, nil)
+	if err != nil {
+		return
+	}
+	return ires.(StreamSubmissionUpdatesClientStream), nil
 }
 
 // GetSubmission calls the "getSubmission" endpoint of the "submissions"

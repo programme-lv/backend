@@ -184,6 +184,54 @@ func EncodeListSubmissionsError(encoder func(context.Context, http.ResponseWrite
 	}
 }
 
+// EncodeStreamSubmissionUpdatesError returns an encoder for errors returned by
+// the streamSubmissionUpdates submissions endpoint.
+func EncodeStreamSubmissionUpdatesError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+	encodeError := goahttp.ErrorEncoder(encoder, formatter)
+	return func(ctx context.Context, w http.ResponseWriter, v error) error {
+		var en goa.GoaErrorNamer
+		if !errors.As(v, &en) {
+			return encodeError(ctx, w, v)
+		}
+		switch en.GoaErrorName() {
+		case "InternalError":
+			var res submissions.InternalError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			body := res
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusInternalServerError)
+			return enc.Encode(body)
+		case "InvalidSubmissionDetails":
+			var res submissions.InvalidSubmissionDetails
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			body := res
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusBadRequest)
+			return enc.Encode(body)
+		case "NotFound":
+			var res submissions.NotFound
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			body := res
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusNotFound)
+			return enc.Encode(body)
+		case "unauthorized":
+			var res submissions.Unauthorized
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			body := res
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusUnauthorized)
+			return enc.Encode(body)
+		default:
+			return encodeError(ctx, w, v)
+		}
+	}
+}
+
 // EncodeGetSubmissionResponse returns an encoder for responses returned by the
 // submissions getSubmission endpoint.
 func EncodeGetSubmissionResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
@@ -452,6 +500,43 @@ func marshalSubmissionsSubtaskResultToSubtaskResultResponse(v *submissions.Subta
 		AcceptedTests: v.AcceptedTests,
 		WrongTests:    v.WrongTests,
 		UntestedTests: v.UntestedTests,
+	}
+
+	return res
+}
+
+// marshalSubmissionsSubmissionToSubmissionResponseBody builds a value of type
+// *SubmissionResponseBody from a value of type *submissions.Submission.
+func marshalSubmissionsSubmissionToSubmissionResponseBody(v *submissions.Submission) *SubmissionResponseBody {
+	if v == nil {
+		return nil
+	}
+	res := &SubmissionResponseBody{
+		SubmUUID:         v.SubmUUID,
+		Submission:       v.Submission,
+		Username:         v.Username,
+		CreatedAt:        v.CreatedAt,
+		EvalStatus:       v.EvalStatus,
+		PLangID:          v.PLangID,
+		PLangDisplayName: v.PLangDisplayName,
+		PLangMonacoID:    v.PLangMonacoID,
+		TaskName:         v.TaskName,
+		TaskID:           v.TaskID,
+	}
+	if v.EvalScoringTestgroups != nil {
+		res.EvalScoringTestgroups = make([]*TestGroupResultResponseBody, len(v.EvalScoringTestgroups))
+		for i, val := range v.EvalScoringTestgroups {
+			res.EvalScoringTestgroups[i] = marshalSubmissionsTestGroupResultToTestGroupResultResponseBody(val)
+		}
+	}
+	if v.EvalScoringTests != nil {
+		res.EvalScoringTests = marshalSubmissionsTestsResultToTestsResultResponseBody(v.EvalScoringTests)
+	}
+	if v.EvalScoringSubtasks != nil {
+		res.EvalScoringSubtasks = make([]*SubtaskResultResponseBody, len(v.EvalScoringSubtasks))
+		for i, val := range v.EvalScoringSubtasks {
+			res.EvalScoringSubtasks[i] = marshalSubmissionsSubtaskResultToSubtaskResultResponseBody(val)
+		}
 	}
 
 	return res

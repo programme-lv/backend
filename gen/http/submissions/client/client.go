@@ -10,7 +10,9 @@ package client
 import (
 	"context"
 	"net/http"
+	"time"
 
+	"github.com/gorilla/websocket"
 	goahttp "goa.design/goa/v3/http"
 	goa "goa.design/goa/v3/pkg"
 )
@@ -24,6 +26,10 @@ type Client struct {
 	// ListSubmissions Doer is the HTTP client used to make requests to the
 	// listSubmissions endpoint.
 	ListSubmissionsDoer goahttp.Doer
+
+	// StreamSubmissionUpdates Doer is the HTTP client used to make requests to the
+	// streamSubmissionUpdates endpoint.
+	StreamSubmissionUpdatesDoer goahttp.Doer
 
 	// GetSubmission Doer is the HTTP client used to make requests to the
 	// getSubmission endpoint.
@@ -40,10 +46,12 @@ type Client struct {
 	// decoding so they can be read again.
 	RestoreResponseBody bool
 
-	scheme  string
-	host    string
-	encoder func(*http.Request) goahttp.Encoder
-	decoder func(*http.Response) goahttp.Decoder
+	scheme     string
+	host       string
+	encoder    func(*http.Request) goahttp.Encoder
+	decoder    func(*http.Response) goahttp.Decoder
+	dialer     goahttp.Dialer
+	configurer *ConnConfigurer
 }
 
 // NewClient instantiates HTTP clients for all the submissions service servers.
@@ -54,10 +62,16 @@ func NewClient(
 	enc func(*http.Request) goahttp.Encoder,
 	dec func(*http.Response) goahttp.Decoder,
 	restoreBody bool,
+	dialer goahttp.Dialer,
+	cfn *ConnConfigurer,
 ) *Client {
+	if cfn == nil {
+		cfn = &ConnConfigurer{}
+	}
 	return &Client{
 		CreateSubmissionDoer:         doer,
 		ListSubmissionsDoer:          doer,
+		StreamSubmissionUpdatesDoer:  doer,
 		GetSubmissionDoer:            doer,
 		ListProgrammingLanguagesDoer: doer,
 		CORSDoer:                     doer,
@@ -66,6 +80,8 @@ func NewClient(
 		host:                         host,
 		decoder:                      dec,
 		encoder:                      enc,
+		dialer:                       dialer,
+		configurer:                   cfn,
 	}
 }
 
@@ -109,6 +125,43 @@ func (c *Client) ListSubmissions() goa.Endpoint {
 			return nil, goahttp.ErrRequestError("submissions", "listSubmissions", err)
 		}
 		return decodeResponse(resp)
+	}
+}
+
+// StreamSubmissionUpdates returns an endpoint that makes HTTP requests to the
+// submissions service streamSubmissionUpdates server.
+func (c *Client) StreamSubmissionUpdates() goa.Endpoint {
+	var (
+		decodeResponse = DecodeStreamSubmissionUpdatesResponse(c.decoder, c.RestoreResponseBody)
+	)
+	return func(ctx context.Context, v any) (any, error) {
+		req, err := c.BuildStreamSubmissionUpdatesRequest(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		conn, resp, err := c.dialer.DialContext(ctx, req.URL.String(), req.Header)
+		if err != nil {
+			if resp != nil {
+				return decodeResponse(resp)
+			}
+			return nil, goahttp.ErrRequestError("submissions", "streamSubmissionUpdates", err)
+		}
+		if c.configurer.StreamSubmissionUpdatesFn != nil {
+			var cancel context.CancelFunc
+			ctx, cancel = context.WithCancel(ctx)
+			conn = c.configurer.StreamSubmissionUpdatesFn(conn, cancel)
+		}
+		go func() {
+			<-ctx.Done()
+			conn.WriteControl(
+				websocket.CloseMessage,
+				websocket.FormatCloseMessage(websocket.CloseNormalClosure, "client closing connection"),
+				time.Now().Add(time.Second),
+			)
+			conn.Close()
+		}()
+		stream := &StreamSubmissionUpdatesClientStream{conn: conn}
+		return stream, nil
 	}
 }
 

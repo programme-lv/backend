@@ -60,6 +60,13 @@ type CreateSubmissionResponseBody struct {
 // "listSubmissions" endpoint HTTP response body.
 type ListSubmissionsResponseBody []*SubmissionResponse
 
+// StreamSubmissionUpdatesResponseBody is the type of the "submissions" service
+// "streamSubmissionUpdates" endpoint HTTP response body.
+type StreamSubmissionUpdatesResponseBody struct {
+	// Submission that was created
+	SubmCreated *SubmissionResponseBody `form:"subm_created,omitempty" json:"subm_created,omitempty" xml:"subm_created,omitempty"`
+}
+
 // GetSubmissionResponseBody is the type of the "submissions" service
 // "getSubmission" endpoint HTTP response body.
 type GetSubmissionResponseBody struct {
@@ -205,6 +212,36 @@ type SubtaskResultResponse struct {
 	UntestedTests *int `form:"untested_tests,omitempty" json:"untested_tests,omitempty" xml:"untested_tests,omitempty"`
 }
 
+// SubmissionResponseBody is used to define fields on response body types.
+type SubmissionResponseBody struct {
+	// UUID of the submission
+	SubmUUID *string `form:"subm_uuid,omitempty" json:"subm_uuid,omitempty" xml:"subm_uuid,omitempty"`
+	// The code submission
+	Submission *string `form:"submission,omitempty" json:"submission,omitempty" xml:"submission,omitempty"`
+	// Username of the user who submitted
+	Username *string `form:"username,omitempty" json:"username,omitempty" xml:"username,omitempty"`
+	// Creation time of the submission
+	CreatedAt *string `form:"created_at,omitempty" json:"created_at,omitempty" xml:"created_at,omitempty"`
+	// Status of the current evaluation
+	EvalStatus *string `form:"eval_status,omitempty" json:"eval_status,omitempty" xml:"eval_status,omitempty"`
+	// Scoring / results of the test groups
+	EvalScoringTestgroups []*TestGroupResultResponseBody `form:"eval_scoring_testgroups,omitempty" json:"eval_scoring_testgroups,omitempty" xml:"eval_scoring_testgroups,omitempty"`
+	// Scoring / results of the all tests
+	EvalScoringTests *TestsResultResponseBody `form:"eval_scoring_tests,omitempty" json:"eval_scoring_tests,omitempty" xml:"eval_scoring_tests,omitempty"`
+	// Scoring / results of the subtasks
+	EvalScoringSubtasks []*SubtaskResultResponseBody `form:"eval_scoring_subtasks,omitempty" json:"eval_scoring_subtasks,omitempty" xml:"eval_scoring_subtasks,omitempty"`
+	// ID of the programming language
+	PLangID *string `form:"p_lang_id,omitempty" json:"p_lang_id,omitempty" xml:"p_lang_id,omitempty"`
+	// Display name of the programming language
+	PLangDisplayName *string `form:"p_lang_display_name,omitempty" json:"p_lang_display_name,omitempty" xml:"p_lang_display_name,omitempty"`
+	// Monaco editor ID for the programming language
+	PLangMonacoID *string `form:"p_lang_monaco_id,omitempty" json:"p_lang_monaco_id,omitempty" xml:"p_lang_monaco_id,omitempty"`
+	// Name of the task associated with the submission
+	TaskName *string `form:"task_name,omitempty" json:"task_name,omitempty" xml:"task_name,omitempty"`
+	// Code of the task associated with the submission
+	TaskID *string `form:"task_id,omitempty" json:"task_id,omitempty" xml:"task_id,omitempty"`
+}
+
 // ProgrammingLangResponse is used to define fields on response body types.
 type ProgrammingLangResponse struct {
 	// ID of the programming language
@@ -345,6 +382,49 @@ func NewListSubmissionsNotFound(body string) submissions.NotFound {
 // NewListSubmissionsUnauthorized builds a submissions service listSubmissions
 // endpoint unauthorized error.
 func NewListSubmissionsUnauthorized(body string) submissions.Unauthorized {
+	v := submissions.Unauthorized(body)
+
+	return v
+}
+
+// NewStreamSubmissionUpdatesSubmissionListUpdateOK builds a "submissions"
+// service "streamSubmissionUpdates" endpoint result from a HTTP "OK" response.
+func NewStreamSubmissionUpdatesSubmissionListUpdateOK(body *StreamSubmissionUpdatesResponseBody) *submissions.SubmissionListUpdate {
+	v := &submissions.SubmissionListUpdate{}
+	if body.SubmCreated != nil {
+		v.SubmCreated = unmarshalSubmissionResponseBodyToSubmissionsSubmission(body.SubmCreated)
+	}
+
+	return v
+}
+
+// NewStreamSubmissionUpdatesInternalError builds a submissions service
+// streamSubmissionUpdates endpoint InternalError error.
+func NewStreamSubmissionUpdatesInternalError(body string) submissions.InternalError {
+	v := submissions.InternalError(body)
+
+	return v
+}
+
+// NewStreamSubmissionUpdatesInvalidSubmissionDetails builds a submissions
+// service streamSubmissionUpdates endpoint InvalidSubmissionDetails error.
+func NewStreamSubmissionUpdatesInvalidSubmissionDetails(body string) submissions.InvalidSubmissionDetails {
+	v := submissions.InvalidSubmissionDetails(body)
+
+	return v
+}
+
+// NewStreamSubmissionUpdatesNotFound builds a submissions service
+// streamSubmissionUpdates endpoint NotFound error.
+func NewStreamSubmissionUpdatesNotFound(body string) submissions.NotFound {
+	v := submissions.NotFound(body)
+
+	return v
+}
+
+// NewStreamSubmissionUpdatesUnauthorized builds a submissions service
+// streamSubmissionUpdates endpoint unauthorized error.
+func NewStreamSubmissionUpdatesUnauthorized(body string) submissions.Unauthorized {
 	v := submissions.Unauthorized(body)
 
 	return v
@@ -509,6 +589,17 @@ func ValidateCreateSubmissionResponseBody(body *CreateSubmissionResponseBody) (e
 			if err2 := ValidateSubtaskResultResponseBody(e); err2 != nil {
 				err = goa.MergeErrors(err, err2)
 			}
+		}
+	}
+	return
+}
+
+// ValidateStreamSubmissionUpdatesResponseBody runs the validations defined on
+// StreamSubmissionUpdatesResponseBody
+func ValidateStreamSubmissionUpdatesResponseBody(body *StreamSubmissionUpdatesResponseBody) (err error) {
+	if body.SubmCreated != nil {
+		if err2 := ValidateSubmissionResponseBody(body.SubmCreated); err2 != nil {
+			err = goa.MergeErrors(err, err2)
 		}
 	}
 	return
@@ -739,6 +830,61 @@ func ValidateSubtaskResultResponse(body *SubtaskResultResponse) (err error) {
 	}
 	if body.UntestedTests == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("untested_tests", "body"))
+	}
+	return
+}
+
+// ValidateSubmissionResponseBody runs the validations defined on
+// SubmissionResponseBody
+func ValidateSubmissionResponseBody(body *SubmissionResponseBody) (err error) {
+	if body.SubmUUID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("subm_uuid", "body"))
+	}
+	if body.Submission == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("submission", "body"))
+	}
+	if body.Username == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("username", "body"))
+	}
+	if body.CreatedAt == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("created_at", "body"))
+	}
+	if body.EvalStatus == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("eval_status", "body"))
+	}
+	if body.PLangID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("p_lang_id", "body"))
+	}
+	if body.PLangDisplayName == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("p_lang_display_name", "body"))
+	}
+	if body.PLangMonacoID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("p_lang_monaco_id", "body"))
+	}
+	if body.TaskName == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("task_name", "body"))
+	}
+	if body.TaskID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("task_id", "body"))
+	}
+	for _, e := range body.EvalScoringTestgroups {
+		if e != nil {
+			if err2 := ValidateTestGroupResultResponseBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	if body.EvalScoringTests != nil {
+		if err2 := ValidateTestsResultResponseBody(body.EvalScoringTests); err2 != nil {
+			err = goa.MergeErrors(err, err2)
+		}
+	}
+	for _, e := range body.EvalScoringSubtasks {
+		if e != nil {
+			if err2 := ValidateSubtaskResultResponseBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
 	}
 	return
 }

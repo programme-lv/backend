@@ -21,6 +21,11 @@ func ListSubmissionsSubmissionsPath() string {
 	return "/submissions"
 }
 
+// StreamSubmissionUpdatesSubmissionsPath returns the URL path to the submissions service streamSubmissionUpdates HTTP endpoint.
+func StreamSubmissionUpdatesSubmissionsPath() string {
+	return "/subm-updates"
+}
+
 // GetSubmissionSubmissionsPath returns the URL path to the submissions service getSubmission HTTP endpoint.
 func GetSubmissionSubmissionsPath(uuid string) string {
 	return fmt.Sprintf("/submissions/%v", uuid)

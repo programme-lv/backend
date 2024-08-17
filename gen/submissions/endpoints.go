@@ -18,8 +18,17 @@ import (
 type Endpoints struct {
 	CreateSubmission         goa.Endpoint
 	ListSubmissions          goa.Endpoint
+	StreamSubmissionUpdates  goa.Endpoint
 	GetSubmission            goa.Endpoint
 	ListProgrammingLanguages goa.Endpoint
+}
+
+// StreamSubmissionUpdatesEndpointInput holds both the payload and the server
+// stream of the "streamSubmissionUpdates" method.
+type StreamSubmissionUpdatesEndpointInput struct {
+	// Stream is the server stream used by the "streamSubmissionUpdates" method to
+	// send data.
+	Stream StreamSubmissionUpdatesServerStream
 }
 
 // NewEndpoints wraps the methods of the "submissions" service with endpoints.
@@ -29,6 +38,7 @@ func NewEndpoints(s Service) *Endpoints {
 	return &Endpoints{
 		CreateSubmission:         NewCreateSubmissionEndpoint(s, a.JWTAuth),
 		ListSubmissions:          NewListSubmissionsEndpoint(s),
+		StreamSubmissionUpdates:  NewStreamSubmissionUpdatesEndpoint(s),
 		GetSubmission:            NewGetSubmissionEndpoint(s),
 		ListProgrammingLanguages: NewListProgrammingLanguagesEndpoint(s),
 	}
@@ -38,6 +48,7 @@ func NewEndpoints(s Service) *Endpoints {
 func (e *Endpoints) Use(m func(goa.Endpoint) goa.Endpoint) {
 	e.CreateSubmission = m(e.CreateSubmission)
 	e.ListSubmissions = m(e.ListSubmissions)
+	e.StreamSubmissionUpdates = m(e.StreamSubmissionUpdates)
 	e.GetSubmission = m(e.GetSubmission)
 	e.ListProgrammingLanguages = m(e.ListProgrammingLanguages)
 }
@@ -66,6 +77,15 @@ func NewCreateSubmissionEndpoint(s Service, authJWTFn security.AuthJWTFunc) goa.
 func NewListSubmissionsEndpoint(s Service) goa.Endpoint {
 	return func(ctx context.Context, req any) (any, error) {
 		return s.ListSubmissions(ctx)
+	}
+}
+
+// NewStreamSubmissionUpdatesEndpoint returns an endpoint function that calls
+// the method "streamSubmissionUpdates" of service "submissions".
+func NewStreamSubmissionUpdatesEndpoint(s Service) goa.Endpoint {
+	return func(ctx context.Context, req any) (any, error) {
+		ep := req.(*StreamSubmissionUpdatesEndpointInput)
+		return nil, s.StreamSubmissionUpdates(ctx, ep.Stream)
 	}
 }
 

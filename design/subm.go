@@ -82,6 +82,12 @@ var CreateSubmissionPayload = dsl.Type("CreateSubmissionPayload", func() {
 	dsl.Required("submission", "username", "programming_lang_id", "task_code_id", "token")
 })
 
+var SubmListUpdate = dsl.Type("SubmissionListUpdate", func() {
+	dsl.Attribute("subm_created", Submission, "Submission that was created")
+	// TODO: status update
+	// TODO: scoring update
+})
+
 var _ = dsl.Service("submissions", func() {
 	dsl.Description("Service for managing submissions")
 
@@ -114,6 +120,15 @@ var _ = dsl.Service("submissions", func() {
 		dsl.Result(dsl.ArrayOf(Submission))
 		dsl.HTTP(func() {
 			dsl.GET("/submissions")
+			dsl.Response(dsl.StatusOK)
+		})
+	})
+
+	dsl.Method("streamSubmissionUpdates", func() {
+		dsl.Description("Stream updates to all submissions in real-time")
+		dsl.StreamingResult(SubmListUpdate) // Streamed results are a list of `Submission`
+		dsl.HTTP(func() {
+			dsl.GET("/subm-updates")
 			dsl.Response(dsl.StatusOK)
 		})
 	})

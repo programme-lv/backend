@@ -20,6 +20,8 @@ type Service interface {
 	CreateSubmission(context.Context, *CreateSubmissionPayload) (res *Submission, err error)
 	// List all submissions
 	ListSubmissions(context.Context) (res []*Submission, err error)
+	// Stream updates to all submissions in real-time
+	StreamSubmissionUpdates(context.Context, StreamSubmissionUpdatesServerStream) (err error)
 	// Get a submission by UUID
 	GetSubmission(context.Context, *GetSubmissionPayload) (res *Submission, err error)
 	// List all available programming languages
@@ -46,7 +48,23 @@ const ServiceName = "submissions"
 // MethodNames lists the service method names as defined in the design. These
 // are the same values that are set in the endpoint request contexts under the
 // MethodKey key.
-var MethodNames = [4]string{"createSubmission", "listSubmissions", "getSubmission", "listProgrammingLanguages"}
+var MethodNames = [5]string{"createSubmission", "listSubmissions", "streamSubmissionUpdates", "getSubmission", "listProgrammingLanguages"}
+
+// StreamSubmissionUpdatesServerStream is the interface a
+// "streamSubmissionUpdates" endpoint server stream must satisfy.
+type StreamSubmissionUpdatesServerStream interface {
+	// Send streams instances of "SubmissionListUpdate".
+	Send(*SubmissionListUpdate) error
+	// Close closes the stream.
+	Close() error
+}
+
+// StreamSubmissionUpdatesClientStream is the interface a
+// "streamSubmissionUpdates" endpoint client stream must satisfy.
+type StreamSubmissionUpdatesClientStream interface {
+	// Recv reads instances of "SubmissionListUpdate" from the stream.
+	Recv() (*SubmissionListUpdate, error)
+}
 
 // CreateSubmissionPayload is the payload type of the submissions service
 // createSubmission method.
@@ -132,6 +150,13 @@ type Submission struct {
 	TaskName string
 	// Code of the task associated with the submission
 	TaskID string
+}
+
+// SubmissionListUpdate is the result type of the submissions service
+// streamSubmissionUpdates method.
+type SubmissionListUpdate struct {
+	// Submission that was created
+	SubmCreated *Submission
 }
 
 type SubtaskResult struct {

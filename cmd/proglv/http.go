@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gorilla/websocket"
 	submssvr "github.com/programme-lv/backend/gen/http/submissions/server"
 	taskssvr "github.com/programme-lv/backend/gen/http/tasks/server"
 	userssvr "github.com/programme-lv/backend/gen/http/users/server"
@@ -57,7 +58,8 @@ func handleHTTPServer(ctx context.Context, u *url.URL, tasksEndpoints *tasks.End
 		eh := errorHandler(ctx)
 		tasksServer = taskssvr.New(tasksEndpoints, mux, dec, enc, eh, nil)
 		usersServer = userssvr.New(usersEndpoints, mux, dec, enc, eh, nil)
-		submsServer = submssvr.New(submsEndpoints, mux, dec, enc, eh, nil)
+		upgrader := &websocket.Upgrader{}
+		submsServer = submssvr.New(submsEndpoints, mux, dec, enc, eh, nil, upgrader, nil)
 	}
 
 	// Configure the mux.

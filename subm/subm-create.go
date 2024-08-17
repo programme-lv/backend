@@ -484,6 +484,8 @@ func (s *submissionssrvc) createSubmissionWithValidatedInput(
 		TaskID:                task.PublishedTaskID,
 	}
 
+	s.createdSubmChan <- res
+
 	return res, nil
 }
 

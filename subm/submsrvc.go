@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -31,6 +32,11 @@ type submissionssrvc struct {
 	jwtKey        []byte
 	sqsClient     *sqs.Client
 	submQueueUrl  string
+
+	createdSubmChan      chan *submgen.Submission
+	submUpdListenerLock  sync.Mutex
+	submUpdateListeners  []chan *submgen.SubmissionListUpdate
+	toBeRemovedListeners []chan *submgen.SubmissionListUpdate
 }
 
 // NewSubmissions returns the submissions service implementation.
@@ -69,16 +75,20 @@ func NewSubmissions(ctx context.Context) submgen.Service {
 	}
 
 	srvc := &submissionssrvc{
-		submTableName: submTableName,
-		ddbClient:     dynamodbClient,
-		userSrvc:      user.NewUsers(ctx),
-		taskSrvc:      task.NewTasks(ctx),
-		jwtKey:        []byte(jwtKey),
-		sqsClient:     sqsClient,
-		submQueueUrl:  submQueueUrl,
+		ddbClient:            dynamodbClient,
+		submTableName:        submTableName,
+		userSrvc:             user.NewUsers(ctx),
+		taskSrvc:             task.NewTasks(ctx),
+		jwtKey:               []byte(jwtKey),
+		sqsClient:            sqsClient,
+		submQueueUrl:         submQueueUrl,
+		createdSubmChan:      make(chan *submgen.Submission, 1000),
+		submUpdateListeners:  make([]chan *submgen.SubmissionListUpdate, 0, 100),
+		toBeRemovedListeners: make([]chan *submgen.SubmissionListUpdate, 0, 100),
 	}
 
 	go srvc.StartProcessingSubmEvalResults(ctx)
+	go srvc.StartStreamingSubmListUpdates(ctx)
 
 	return srvc
 }
@@ -159,4 +169,60 @@ func (subm *SubmissionContent) IsValid() error {
 
 func (subm *SubmissionContent) String() string {
 	return subm.Value
+}
+
+func (s *submissionssrvc) StartStreamingSubmListUpdates(ctx context.Context) {
+	for {
+		select {
+		case created := <-s.createdSubmChan:
+			// notify all listeners about the new submission
+			update := &submgen.SubmissionListUpdate{
+				SubmCreated: created,
+			}
+
+			s.submUpdListenerLock.Lock()
+			for _, listener := range s.submUpdateListeners {
+				if len(listener) == cap(listener) {
+					<-listener
+				}
+				listener <- update
+			}
+			s.submUpdListenerLock.Unlock()
+		}
+	}
+}
+
+// StreamSubmissionUpdates implements submissions.Service.
+func (s *submissionssrvc) StreamSubmissionUpdates(ctx context.Context, p submgen.StreamSubmissionUpdatesServerStream) (err error) {
+	// register myself as a listener to the submission updates
+	myChan := make(chan *submgen.SubmissionListUpdate, 1000)
+	s.submUpdListenerLock.Lock()
+	s.submUpdateListeners = append(s.submUpdateListeners, myChan)
+	s.submUpdListenerLock.Unlock()
+
+	defer func() {
+		// lock listener slice
+		s.submUpdListenerLock.Lock()
+		// remove myself from the listeners slice
+		for i, listener := range s.submUpdateListeners {
+			if listener == myChan {
+				s.submUpdateListeners = append(s.submUpdateListeners[:i], s.submUpdateListeners[i+1:]...)
+				break
+			}
+		}
+		s.submUpdListenerLock.Unlock()
+		close(myChan)
+	}()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		case update := <-myChan:
+			err = p.Send(update)
+			if err != nil {
+				return err
+			}
+		}
+	}
 }
