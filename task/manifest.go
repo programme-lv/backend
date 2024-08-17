@@ -9,15 +9,15 @@ import (
 
 type TaskManifest struct {
 	FullName   string
-	Contraints Constraints
-	Statement  Statement
-	Metadata   Metadata
+	Contraints ManifestConstraints
+	Statement  ManifestStatement
+	Metadata   ManifestMetadata
 
-	Tests      []Test
-	TestGroups []TestGroup
+	Tests      []ManifestTest
+	TestGroups []TomlTestGroup
 }
 
-type Metadata struct {
+type ManifestMetadata struct {
 	ProblemTags       []string
 	Difficulty        int
 	TaskAuthors       []string
@@ -26,20 +26,20 @@ type Metadata struct {
 	OriginInstitution string
 }
 
-type Constraints struct {
+type ManifestConstraints struct {
 	MemoryLimMB   int
 	CpuTimeInSecs float64
 }
 
-type Test struct {
+type ManifestTest struct {
 	InputSHA256  string
 	AnswerSHA256 string
 }
 
-type Statement struct {
-	PDFs      []PDF
-	MDs       []MdStatement
-	Examples  []Example
+type ManifestStatement struct {
+	PDFs      []ManifestPDF
+	MDs       []ManifestMdStatement
+	Examples  []ManifestExample
 	VisInpSTs []VisibleInputSubtask
 
 	IllustrationImg IllustrationImg
@@ -54,31 +54,31 @@ type VisibleInputSubtask struct {
 	Inputs  []string
 }
 
-type PDF struct {
+type ManifestPDF struct {
 	Language language.Tag
 	SHA256   string
 }
 
-type MdStatement struct {
+type ManifestMdStatement struct {
 	Language language.Tag
-	Story    MdSection
-	Input    MdSection
-	Output   MdSection
-	Notes    MdSection
-	Scoring  MdSection
+	Story    ManifestMdSection
+	Input    ManifestMdSection
+	Output   ManifestMdSection
+	Notes    ManifestMdSection
+	Scoring  ManifestMdSection
 
 	ImgUuidToS3Key map[string]string
 }
 
-type MdSection struct {
+type ManifestMdSection struct {
 	Content string
 }
 
-type MdImage struct {
+type ManifestMdImage struct {
 	S3ObjKey string
 }
 
-type Example struct {
+type ManifestExample struct {
 	Input  string
 	Output string
 	MdNote *string
@@ -91,7 +91,7 @@ func ParseTaskTomlManifest(manifest string) (*TaskManifest, error) {
 		return nil, fmt.Errorf("failed to unmarshal manifest: %v", err)
 	}
 
-	var mdStatements []MdStatement
+	var mdStatements []ManifestMdStatement
 	for _, md := range taskTomlManifest.MDStatements {
 		lang := language.English
 		if md.Language != nil {
@@ -111,35 +111,35 @@ func ParseTaskTomlManifest(manifest string) (*TaskManifest, error) {
 			scoring = *md.Scoring
 		}
 
-		mdStatement := MdStatement{
+		mdStatement := ManifestMdStatement{
 			Language:       lang,
-			Story:          MdSection{md.Story},
-			Input:          MdSection{md.Input},
-			Output:         MdSection{md.Output},
-			Notes:          MdSection{notes},
-			Scoring:        MdSection{scoring},
+			Story:          ManifestMdSection{md.Story},
+			Input:          ManifestMdSection{md.Input},
+			Output:         ManifestMdSection{md.Output},
+			Notes:          ManifestMdSection{notes},
+			Scoring:        ManifestMdSection{scoring},
 			ImgUuidToS3Key: taskTomlManifest.ImgUuidToObjKey,
 		}
 
 		mdStatements = append(mdStatements, mdStatement)
 	}
 
-	var tests []Test
+	var tests []ManifestTest
 	for _, test := range taskTomlManifest.TestSHA256s {
-		tests = append(tests, Test{
+		tests = append(tests, ManifestTest{
 			InputSHA256:  test.InputSHA256,
 			AnswerSHA256: test.AnswerSHA256,
 		})
 	}
 
-	var examples []Example = make([]Example, 0)
+	var examples []ManifestExample = make([]ManifestExample, 0)
 	for _, ex := range taskTomlManifest.Examples {
 		var mdNote *string = nil
 		if mdNoteStr := ex.MdNote; mdNoteStr != "" {
 			mdNote = &mdNoteStr
 		}
 
-		examples = append(examples, Example{
+		examples = append(examples, ManifestExample{
 			Input:  ex.Input,
 			Output: ex.Output,
 			MdNote: mdNote,
@@ -154,19 +154,19 @@ func ParseTaskTomlManifest(manifest string) (*TaskManifest, error) {
 		})
 	}
 
-	var testGroups []TestGroup = make([]TestGroup, 0)
+	var testGroups []TomlTestGroup = make([]TomlTestGroup, 0)
 	for _, tg := range taskTomlManifest.TestGroups {
-		testGroups = append(testGroups, TestGroup(tg))
+		testGroups = append(testGroups, TomlTestGroup(tg))
 	}
 
-	var pdfs []PDF = make([]PDF, 0)
+	var pdfs []ManifestPDF = make([]ManifestPDF, 0)
 	for _, pdf := range taskTomlManifest.PDFSHA256s {
 		lang, err := language.Parse(pdf.Language)
 		if err != nil {
 			return nil, fmt.Errorf("could not parse language %s", pdf.Language)
 		}
 
-		pdfs = append(pdfs, PDF{
+		pdfs = append(pdfs, ManifestPDF{
 			Language: lang,
 			SHA256:   pdf.SHA256,
 		})
@@ -174,11 +174,11 @@ func ParseTaskTomlManifest(manifest string) (*TaskManifest, error) {
 
 	return &TaskManifest{
 		FullName: taskTomlManifest.TaskFullName,
-		Contraints: Constraints{
+		Contraints: ManifestConstraints{
 			MemoryLimMB:   taskTomlManifest.MemoryLimMB,
 			CpuTimeInSecs: taskTomlManifest.CpuTimeInSecs,
 		},
-		Statement: Statement{
+		Statement: ManifestStatement{
 			PDFs:      pdfs,
 			MDs:       mdStatements,
 			Examples:  examples,
@@ -187,7 +187,7 @@ func ParseTaskTomlManifest(manifest string) (*TaskManifest, error) {
 				S3ObjKey: taskTomlManifest.IllustrationImg,
 			},
 		},
-		Metadata: Metadata{
+		Metadata: ManifestMetadata{
 			ProblemTags:       taskTomlManifest.ProblemTags,
 			Difficulty:        taskTomlManifest.Difficulty,
 			TaskAuthors:       taskTomlManifest.TaskAuthors,
@@ -206,16 +206,16 @@ type TaskTomlManifest struct {
 	MDStatements    []TomlMDStatement       `toml:"md_statements"`
 	ImgUuidToObjKey map[string]string       `toml:"img_uuid_to_obj_key"`
 
-	TaskFullName    string      `toml:"task_full_name"`
-	MemoryLimMB     int         `toml:"memory_lim_megabytes"`
-	CpuTimeInSecs   float64     `toml:"cpu_time_in_seconds"`
-	ProblemTags     []string    `toml:"problem_tags"`
-	Difficulty      int         `toml:"difficulty_1_to_5"`
-	TaskAuthors     []string    `toml:"task_authors"`
-	OriginOlympiad  string      `toml:"origin_olympiad"`
-	VisibleInputSTs []int       `toml:"visible_input_subtasks"`
-	VisInpStInputs  []StInputs  `toml:"vis_inp_subtask_inputs"`
-	TestGroups      []TestGroup `toml:"test_groups"`
+	TaskFullName    string          `toml:"task_full_name"`
+	MemoryLimMB     int             `toml:"memory_lim_megabytes"`
+	CpuTimeInSecs   float64         `toml:"cpu_time_in_seconds"`
+	ProblemTags     []string        `toml:"problem_tags"`
+	Difficulty      int             `toml:"difficulty_1_to_5"`
+	TaskAuthors     []string        `toml:"task_authors"`
+	OriginOlympiad  string          `toml:"origin_olympiad"`
+	VisibleInputSTs []int           `toml:"visible_input_subtasks"`
+	VisInpStInputs  []TomlStInputs  `toml:"vis_inp_subtask_inputs"`
+	TestGroups      []TomlTestGroup `toml:"test_groups"`
 
 	IllustrationImg string `toml:"illustration_img_s3objkey, omitempty"`
 
@@ -225,7 +225,7 @@ type TaskTomlManifest struct {
 	Examples []TomlExample `toml:"examples,omitempty"`
 }
 
-type StInputs struct {
+type TomlStInputs struct {
 	Subtask int      `toml:"subtask"`
 	Inputs  []string `toml:"inputs,multiline"`
 }
@@ -247,7 +247,7 @@ type PDFStatemenSHA256tRef struct {
 	SHA256   string `toml:"sha256"`
 }
 
-type TestGroup struct {
+type TomlTestGroup struct {
 	GroupID int   `toml:"group_id"`
 	Points  int   `toml:"points"`
 	Public  bool  `toml:"public"`

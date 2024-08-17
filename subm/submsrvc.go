@@ -14,9 +14,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
-	submgen "github.com/programme-lv/backend/gen/submissions"
 	taskgen "github.com/programme-lv/backend/gen/tasks"
-	usergen "github.com/programme-lv/backend/gen/users"
 	"github.com/programme-lv/backend/task"
 	"github.com/programme-lv/backend/user"
 	"goa.design/clue/log"
@@ -24,22 +22,22 @@ import (
 
 // submissions service example implementation.
 // The example methods log the requests and return zero values.
-type submissionssrvc struct {
+type SubmissionsService struct {
 	ddbClient     *dynamodb.Client
 	submTableName string
-	userSrvc      usergen.Service
+	userSrvc      *user.UsersSrvc
 	taskSrvc      taskgen.Service
 	jwtKey        []byte
 	sqsClient     *sqs.Client
 	submQueueUrl  string
 
-	createdSubmChan        chan *submgen.Submission
+	createdSubmChan        chan *Submission
 	updateSubmStateChan    chan *SubmissionStateUpdate
 	updateTestgroupResChan chan *TestgroupResultUpdate
 
 	updateListenerLock     sync.Mutex
-	updateListeners        []chan *submgen.SubmissionListUpdate
-	updateRemovedListeners []chan *submgen.SubmissionListUpdate
+	updateListeners        []chan *SubmissionListUpdate
+	updateRemovedListeners []chan *SubmissionListUpdate
 
 	evalUuidToSubmUuid map[string]string
 }
@@ -60,7 +58,7 @@ type TestgroupResultUpdate struct {
 }
 
 // NewSubmissions returns the submissions service implementation.
-func NewSubmissions(ctx context.Context) submgen.Service {
+func NewSubmissions(ctx context.Context) *SubmissionsService {
 	cfg, err := config.LoadDefaultConfig(context.TODO(),
 		config.WithRegion("eu-central-1"),
 		config.WithSharedConfigProfile("kp"),
@@ -94,7 +92,7 @@ func NewSubmissions(ctx context.Context) submgen.Service {
 		panic("SUBM_SQS_QUEUE_URL not set in .env file")
 	}
 
-	srvc := &submissionssrvc{
+	srvc := &SubmissionsService{
 		ddbClient:              dynamodbClient,
 		submTableName:          submTableName,
 		userSrvc:               user.NewUsers(ctx),
@@ -102,12 +100,12 @@ func NewSubmissions(ctx context.Context) submgen.Service {
 		jwtKey:                 []byte(jwtKey),
 		sqsClient:              sqsClient,
 		submQueueUrl:           submQueueUrl,
-		createdSubmChan:        make(chan *submgen.Submission, 1000),
+		createdSubmChan:        make(chan *Submission, 1000),
 		updateSubmStateChan:    make(chan *SubmissionStateUpdate, 1000),
 		updateTestgroupResChan: make(chan *TestgroupResultUpdate, 1000),
 		updateListenerLock:     sync.Mutex{},
-		updateListeners:        make([]chan *submgen.SubmissionListUpdate, 0, 100),
-		updateRemovedListeners: make([]chan *submgen.SubmissionListUpdate, 0, 100),
+		updateListeners:        make([]chan *SubmissionListUpdate, 0, 100),
+		updateRemovedListeners: make([]chan *SubmissionListUpdate, 0, 100),
 		evalUuidToSubmUuid:     map[string]string{},
 	}
 
@@ -117,7 +115,7 @@ func NewSubmissions(ctx context.Context) submgen.Service {
 	return srvc
 }
 
-func (s *submissionssrvc) StartProcessingSubmEvalResults(ctx context.Context) (err error) {
+func (s *SubmissionsService) StartProcessingSubmEvalResults(ctx context.Context) (err error) {
 	submEvalResQueueUrl := "https://sqs.eu-central-1.amazonaws.com/975049886115/standard_subm_eval_results"
 	throtleChan := make(chan struct{}, 100)
 	for i := 0; i < 100; i++ {
@@ -182,11 +180,9 @@ type SubmissionContent struct {
 }
 
 func (subm *SubmissionContent) IsValid() error {
-	const maxSubmissionLength = 64000 // 64 KB
-	if len(subm.Value) > maxSubmissionLength {
-		return submgen.InvalidSubmissionDetails(
-			"maksimālais iesūtījuma garums ir 64 KB",
-		)
+	const maxSubmissionLengthKilobytes = 64 // 64 KB
+	if len(subm.Value) > maxSubmissionLengthKilobytes*1000 {
+		return newErrInvalidSubmissionDetailsContentTooLong(maxSubmissionLengthKilobytes)
 	}
 	return nil
 }
@@ -195,8 +191,8 @@ func (subm *SubmissionContent) String() string {
 	return subm.Value
 }
 
-func (s *submissionssrvc) StartStreamingSubmListUpdates(ctx context.Context) {
-	sendUpdate := func(update *submgen.SubmissionListUpdate) {
+func (s *SubmissionsService) StartStreamingSubmListUpdates(ctx context.Context) {
+	sendUpdate := func(update *SubmissionListUpdate) {
 		s.updateListenerLock.Lock()
 		for _, listener := range s.updateListeners {
 			if len(listener) == cap(listener) {
@@ -211,24 +207,24 @@ func (s *submissionssrvc) StartStreamingSubmListUpdates(ctx context.Context) {
 		select {
 		case created := <-s.createdSubmChan:
 			// notify all listeners about the new submission
-			update := &submgen.SubmissionListUpdate{
+			update := &SubmissionListUpdate{
 				SubmCreated: created,
 			}
 			sendUpdate(update)
 		case stateUpdate := <-s.updateSubmStateChan:
 			// notify all listeners about the state update
-			update := &submgen.SubmissionListUpdate{
-				StateUpdate: &submgen.SubmissionStateUpdate{
-					SubmUUID: stateUpdate.SubmUuid,
-					EvalUUID: stateUpdate.EvalUuid,
+			update := &SubmissionListUpdate{
+				StateUpdate: &SubmissionStateUpdate{
+					SubmUuid: stateUpdate.SubmUuid,
+					EvalUuid: stateUpdate.EvalUuid,
 					NewState: stateUpdate.NewState,
 				},
 			}
 			sendUpdate(update)
 		case testgroupResUpdate := <-s.updateTestgroupResChan:
 			// notify all listeners about the testgroup result update
-			update := &submgen.SubmissionListUpdate{
-				TestgroupResUpdate: &submgen.TestgroupScoreUpdate{
+			update := &SubmissionListUpdate{
+				TestgroupResUpdate: &TestgroupScoreUpdate{
 					SubmUUID:      testgroupResUpdate.SubmUuid,
 					EvalUUID:      testgroupResUpdate.EvalUuid,
 					TestGroupID:   testgroupResUpdate.TestgroupId,
@@ -243,37 +239,37 @@ func (s *submissionssrvc) StartStreamingSubmListUpdates(ctx context.Context) {
 	}
 }
 
-// StreamSubmissionUpdates implements submissions.Service.
-func (s *submissionssrvc) StreamSubmissionUpdates(ctx context.Context, p submgen.StreamSubmissionUpdatesServerStream) (err error) {
-	// register myself as a listener to the submission updates
-	myChan := make(chan *submgen.SubmissionListUpdate, 1000)
-	s.updateListenerLock.Lock()
-	s.updateListeners = append(s.updateListeners, myChan)
-	s.updateListenerLock.Unlock()
+// // StreamSubmissionUpdates implements submissions.Service.
+// func (s *SubmissionsService) StreamSubmissionUpdates(ctx context.Context, p StreamSubmissionUpdatesServerStream) (err error) {
+// 	// register myself as a listener to the submission updates
+// 	myChan := make(chan *SubmissionListUpdate, 1000)
+// 	s.updateListenerLock.Lock()
+// 	s.updateListeners = append(s.updateListeners, myChan)
+// 	s.updateListenerLock.Unlock()
 
-	defer func() {
-		// lock listener slice
-		s.updateListenerLock.Lock()
-		// remove myself from the listeners slice
-		for i, listener := range s.updateListeners {
-			if listener == myChan {
-				s.updateListeners = append(s.updateListeners[:i], s.updateListeners[i+1:]...)
-				break
-			}
-		}
-		s.updateListenerLock.Unlock()
-		close(myChan)
-	}()
+// 	defer func() {
+// 		// lock listener slice
+// 		s.updateListenerLock.Lock()
+// 		// remove myself from the listeners slice
+// 		for i, listener := range s.updateListeners {
+// 			if listener == myChan {
+// 				s.updateListeners = append(s.updateListeners[:i], s.updateListeners[i+1:]...)
+// 				break
+// 			}
+// 		}
+// 		s.updateListenerLock.Unlock()
+// 		close(myChan)
+// 	}()
 
-	for {
-		select {
-		case <-ctx.Done():
-			return p.Close()
-		case update := <-myChan:
-			err = p.Send(update)
-			if err != nil {
-				return p.Close()
-			}
-		}
-	}
-}
+// 	for {
+// 		select {
+// 		case <-ctx.Done():
+// 			return p.Close()
+// 		case update := <-myChan:
+// 			err = p.Send(update)
+// 			if err != nil {
+// 				return p.Close()
+// 			}
+// 		}
+// 	}
+// }

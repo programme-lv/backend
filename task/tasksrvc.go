@@ -11,17 +11,16 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
-	taskgen "github.com/programme-lv/backend/gen/tasks"
 )
 
 // tasks service example implementation.
 // The example methods log the requests and return zero values.
-type taskssrvc struct {
+type TaskSrvc struct {
 	ddbTaskTable *DynamoDbTaskTable
 }
 
 // NewTasks returns the tasks service implementation.
-func NewTasks(ctx context.Context) taskgen.Service {
+func NewTasks(ctx context.Context) *TaskSrvc {
 	cfg, err := config.LoadDefaultConfig(context.TODO(),
 		config.WithRegion("eu-central-1"),
 		config.WithSharedConfigProfile("kp"),
@@ -38,19 +37,19 @@ func NewTasks(ctx context.Context) taskgen.Service {
 			"cant read DDB_TASK_TABLE_NAME from env in new tasks service constructor")
 	}
 
-	return &taskssrvc{
+	return &TaskSrvc{
 		ddbTaskTable: NewDynamoDbTaskTable(dynamodbClient, taskTableName),
 	}
 }
 
 // List all tasks
-func (s *taskssrvc) ListTasks(ctx context.Context) (res []*taskgen.Task, err error) {
+func (s *TaskSrvc) ListTasks(ctx context.Context) (res []*Task, err error) {
 	all, err := s.ddbTaskTable.List(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("could not list tasks: %w", err)
 	}
 
-	res = make([]*taskgen.Task, 0)
+	res = make([]*Task, 0)
 
 	for _, row := range all {
 		task, err := ddbTaskRowToResponse(row)
@@ -64,26 +63,26 @@ func (s *taskssrvc) ListTasks(ctx context.Context) (res []*taskgen.Task, err err
 }
 
 // Get a task by its ID
-func (s *taskssrvc) GetTask(ctx context.Context, p *taskgen.GetTaskPayload) (res *taskgen.Task, err error) {
+func (s *TaskSrvc) GetTask(ctx context.Context, p *GetTaskPayload) (res *Task, err error) {
 	row, err := s.ddbTaskTable.Get(ctx, p.TaskID)
 	if err != nil {
 		return nil, fmt.Errorf("could not get task: %w", err)
 	}
 	if row == nil {
-		return nil, taskgen.TaskNotFound("task not found")
+		return nil, newErrTaskNotFound()
 	}
 
 	return ddbTaskRowToResponse(row)
 }
 
-func ddbTaskRowToResponse(row *TaskRow) (res *taskgen.Task, err error) {
+func ddbTaskRowToResponse(row *TaskRow) (res *Task, err error) {
 	taskManifest, err := ParseTaskTomlManifest(row.TomlManifest)
 	if err != nil {
 		return nil, fmt.Errorf("could not parse task toml manifest: %w", err)
 	}
 
 	mds := taskManifest.Statement.MDs
-	var responseDefaulMdStatement *taskgen.MarkdownStatement = nil
+	var responseDefaulMdStatement *MarkdownStatement = nil
 	if len(mds) > 0 {
 		defaultMd := mds[0]
 		resolveImgsToUrls := func(mdSection string) string {
@@ -104,7 +103,7 @@ func ddbTaskRowToResponse(row *TaskRow) (res *taskgen.Task, err error) {
 			scoring = &scoringStr
 		}
 
-		responseDefaulMdStatement = &taskgen.MarkdownStatement{
+		responseDefaulMdStatement = &MarkdownStatement{
 			Story:   resolveImgsToUrls(defaultMd.Story.Content),
 			Input:   resolveImgsToUrls(defaultMd.Input.Content),
 			Output:  resolveImgsToUrls(defaultMd.Output.Content),
@@ -119,18 +118,18 @@ func ddbTaskRowToResponse(row *TaskRow) (res *taskgen.Task, err error) {
 		illustrationImgUrl = &illustrationImgUrlStrl
 	}
 
-	var examples []*taskgen.Example = make([]*taskgen.Example, 0)
+	var examples []*Example = make([]*Example, 0)
 	for _, example := range taskManifest.Statement.Examples {
-		examples = append(examples, &taskgen.Example{
+		examples = append(examples, &Example{
 			Input:  example.Input,
 			Output: example.Output,
 			MdNote: example.MdNote,
 		})
 	}
 
-	var stInputs []*taskgen.StInputs = make([]*taskgen.StInputs, 0)
+	var stInputs []*StInputs = make([]*StInputs, 0)
 	for _, st := range taskManifest.Statement.VisInpSTs {
-		stInputs = append(stInputs, &taskgen.StInputs{
+		stInputs = append(stInputs, &StInputs{
 			Subtask: st.Subtask,
 			Inputs:  st.Inputs,
 		})
@@ -143,7 +142,7 @@ func ddbTaskRowToResponse(row *TaskRow) (res *taskgen.Task, err error) {
 		defaultPdfStatementURL = &defaultPdfStatementURLStr
 	}
 
-	res = &taskgen.Task{
+	res = &Task{
 		PublishedTaskID:        row.Id,
 		TaskFullName:           taskManifest.FullName,
 		MemoryLimitMegabytes:   taskManifest.Contraints.MemoryLimMB,
@@ -162,13 +161,13 @@ func ddbTaskRowToResponse(row *TaskRow) (res *taskgen.Task, err error) {
 }
 
 // GetTaskSubmEvalData implements tasks.Service.
-func (s *taskssrvc) GetTaskSubmEvalData(ctx context.Context, p *taskgen.GetTaskSubmEvalDataPayload) (res *taskgen.TaskSubmEvalData, err error) {
+func (s *TaskSrvc) GetTaskSubmEvalData(ctx context.Context, p *GetTaskSubmEvalDataPayload) (res *TaskSubmEvalData, err error) {
 	row, err := s.ddbTaskTable.Get(ctx, p.TaskID)
 	if err != nil {
 		return nil, fmt.Errorf("could not get task: %w", err)
 	}
 	if row == nil {
-		return nil, taskgen.TaskNotFound("task not found")
+		return nil, newErrTaskNotFound()
 	}
 
 	taskManifest, err := ParseTaskTomlManifest(row.TomlManifest)
@@ -176,8 +175,8 @@ func (s *taskssrvc) GetTaskSubmEvalData(ctx context.Context, p *taskgen.GetTaskS
 		return nil, fmt.Errorf("could not parse task toml manifest: %w", err)
 	}
 
-	tests := make([]*taskgen.TaskEvalTestInformation, 0)
-	testToTestGroupMap := make(map[int]*TestGroup)
+	tests := make([]*TaskEvalTestInformation, 0)
+	testToTestGroupMap := make(map[int]*TomlTestGroup)
 	for j, testGroup := range taskManifest.TestGroups {
 		for i := range testGroup.TestIDs {
 			testToTestGroupMap[testGroup.TestIDs[i]] = &taskManifest.TestGroups[j]
@@ -195,7 +194,7 @@ func (s *taskssrvc) GetTaskSubmEvalData(ctx context.Context, p *taskgen.GetTaskS
 		if testGroup, ok := testToTestGroupMap[i+1]; ok {
 			testGroupId = &testGroup.GroupID
 		}
-		tests = append(tests, &taskgen.TaskEvalTestInformation{
+		tests = append(tests, &TaskEvalTestInformation{
 			TestID:          i + 1,
 			FullInputS3URI:  fmt.Sprintf("s3://proglv-tests/%s.zst", test.InputSHA256),
 			InputSha256:     test.InputSHA256,
@@ -206,23 +205,23 @@ func (s *taskssrvc) GetTaskSubmEvalData(ctx context.Context, p *taskgen.GetTaskS
 		})
 	}
 
-	testgroups := make([]*taskgen.TaskEvalTestGroupInformation, 0)
+	testgroups := make([]*TaskEvalTestGroupInformation, 0)
 	for _, testGroup := range taskManifest.TestGroups {
-		testgroups = append(testgroups, &taskgen.TaskEvalTestGroupInformation{
+		testgroups = append(testgroups, &TaskEvalTestGroupInformation{
 			TestGroupID: testGroup.GroupID,
 			Score:       testGroup.Points,
 			Subtask:     testGroup.Subtask,
 		})
 	}
 
-	res = &taskgen.TaskSubmEvalData{
+	res = &TaskSubmEvalData{
 		PublishedTaskID:      row.Id,
 		TaskFullName:         taskManifest.FullName,
 		MemoryLimitMegabytes: taskManifest.Contraints.MemoryLimMB,
 		CPUTimeLimitSeconds:  taskManifest.Contraints.CpuTimeInSecs,
 		Tests:                tests,
 		TestlibCheckerCode:   testlib_default_checker,
-		SubtaskScores:        []*taskgen.TaskEvalSubtaskScore{},
+		SubtaskScores:        []*TaskEvalSubtaskScore{},
 		TestGroupInformation: testgroups,
 	}
 

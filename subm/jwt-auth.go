@@ -17,7 +17,7 @@ var (
 
 type ClaimsKey string
 
-func (s *submissionssrvc) JWTAuth(ctx context.Context, token string, scheme *security.JWTScheme) (context.Context, error) {
+func (s *SubmissionsService) JWTAuth(ctx context.Context, token string, scheme *security.JWTScheme) (context.Context, error) {
 	claims, err := auth.ValidateJWT(token, s.jwtKey)
 	if err != nil {
 		fmt.Println(err)

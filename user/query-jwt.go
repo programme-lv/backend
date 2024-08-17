@@ -4,11 +4,25 @@ import (
 	"context"
 
 	"github.com/programme-lv/backend/auth"
-	usergen "github.com/programme-lv/backend/gen/users"
 )
 
+type JwtClaims struct {
+	Username  *string
+	Firstname *string
+	Lastname  *string
+	Email     *string
+	UUID      *string
+	Scopes    []string
+	Issuer    *string
+	Subject   *string
+	Audience  []string
+	ExpiresAt *string
+	IssuedAt  *string
+	NotBefore *string
+}
+
 // QueryCurrentJWT implements users.Service.
-func (s *userssrvc) QueryCurrentJWT(ctx context.Context, p *usergen.QueryCurrentJWTPayload) (res *usergen.JWTClaims, err error) {
+func (s *UsersSrvc) QueryCurrentJWT(ctx context.Context) (res *JwtClaims, err error) {
 	claims := ctx.Value(ClaimsKey("claims")).(*auth.Claims)
 
 	var expiresAt *string = nil
@@ -29,7 +43,7 @@ func (s *userssrvc) QueryCurrentJWT(ctx context.Context, p *usergen.QueryCurrent
 		*notBefore = claims.NotBefore.String()
 	}
 
-	res = &usergen.JWTClaims{
+	res = &JwtClaims{
 		Username:  &claims.Username,
 		Firstname: claims.Firstname,
 		Lastname:  claims.Lastname,

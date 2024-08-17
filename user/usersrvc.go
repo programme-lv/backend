@@ -15,12 +15,12 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-type userssrvc struct {
+type UsersSrvc struct {
 	jwtKey       []byte
 	ddbUserTable *DynamoDbUserTable
 }
 
-func NewUsers(ctx context.Context) usergen.Service {
+func NewUsers(ctx context.Context) *UsersSrvc {
 	// read jwt key from env
 	jwtKey := os.Getenv("JWT_KEY")
 	if jwtKey == "" {
@@ -45,7 +45,7 @@ func NewUsers(ctx context.Context) usergen.Service {
 			"cant read DDB_USER_TABLE_NAME from env in new user service constructor")
 	}
 
-	return &userssrvc{
+	return &UsersSrvc{
 		jwtKey: []byte(jwtKey),
 		ddbUserTable: NewDynamoDbUsersTable(
 			dynamodbClient, userTableName),
@@ -54,7 +54,7 @@ func NewUsers(ctx context.Context) usergen.Service {
 
 type ClaimsKey string
 
-func (s *userssrvc) JWTAuth(ctx context.Context, token string, scheme *security.JWTScheme) (context.Context, error) {
+func (s *UsersSrvc) JWTAuth(ctx context.Context, token string, scheme *security.JWTScheme) (context.Context, error) {
 	claims, err := auth.ValidateJWT(token, s.jwtKey)
 	if err != nil {
 		fmt.Println(err)
@@ -73,7 +73,7 @@ func (s *userssrvc) JWTAuth(ctx context.Context, token string, scheme *security.
 }
 
 // User login
-func (s *userssrvc) Login(ctx context.Context, p *usergen.LoginPayload) (res string, err error) {
+func (s *UsersSrvc) Login(ctx context.Context, p *usergen.LoginPayload) (res string, err error) {
 	allUsers, err := s.ddbUserTable.List(ctx)
 	if err != nil {
 		return "", fmt.Errorf("error listing users: %w", err)
@@ -103,13 +103,13 @@ func (s *userssrvc) Login(ctx context.Context, p *usergen.LoginPayload) (res str
 }
 
 // GetUserByUsername implements users.Service.
-func (s *userssrvc) GetUserByUsername(ctx context.Context, p *usergen.GetUserByUsernamePayload) (res *usergen.User, err error) {
+func (s *UsersSrvc) GetUserByUsername(ctx context.Context, p *usergen.GetUserByUsernamePayload) (res *User, err error) {
 	allUsers, err := s.ddbUserTable.List(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("error listing users: %w", err)
 	}
 
-	var resSlice []usergen.User = make([]usergen.User, 0)
+	var resSlice []User = make([]User, 0)
 	for _, user := range allUsers {
 		if user.Username == p.Username {
 			if len(resSlice) == 1 {
@@ -126,7 +126,7 @@ func (s *userssrvc) GetUserByUsername(ctx context.Context, p *usergen.GetUserByU
 				lastname = *user.Lastname
 			}
 
-			genUser := usergen.User{
+			genUser := User{
 				UUID:      user.Uuid,
 				Username:  user.Username,
 				Email:     user.Email,

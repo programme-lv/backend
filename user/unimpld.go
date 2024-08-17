@@ -7,11 +7,11 @@ import (
 )
 
 // DeleteUser implements users.Service.
-func (s *userssrvc) DeleteUser(context.Context, *usergen.SecureUUIDPayload) (err error) {
+func (s *UsersSrvc) DeleteUser(context.Context, *usergen.SecureUUIDPayload) (err error) {
 	panic("unimplemented")
 }
 
 // GetUser implements users.Service.
-func (s *userssrvc) GetUser(context.Context, *usergen.SecureUUIDPayload) (res *usergen.User, err error) {
+func (s *UsersSrvc) GetUser(context.Context, *usergen.SecureUUIDPayload) (res *usergen.User, err error) {
 	panic("unimplemented")
 }

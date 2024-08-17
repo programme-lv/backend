@@ -9,7 +9,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/guregu/dynamo/v2"
-	usergen "github.com/programme-lv/backend/gen/users"
 	"goa.design/clue/log"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -26,15 +25,10 @@ func (u *Username) IsValid() error {
 	const minUsernameLength = 2
 	const maxUsernameLength = 32
 	if len(u.value) < minUsernameLength {
-		return usergen.InvalidUserDetails(fmt.Sprintf(
-			"lietotājvārdam jābūt vismaz %d simbolus garam",
-			minUsernameLength,
-		))
+		return newErrUsernameTooShort(minUsernameLength)
 	}
 	if len(u.value) > maxUsernameLength {
-		return usergen.InvalidUserDetails(
-			"lietotājvārds ir pārāk garš",
-		)
+		return newErrUsernameTooLong()
 	}
 	return nil
 }
@@ -50,18 +44,16 @@ type Email struct {
 func (e *Email) IsValid() error {
 	const maxEmailLength = 320
 	if len(e.Value) > maxEmailLength {
-		return usergen.InvalidUserDetails(
-			"epasts ir pārāk garš",
-		)
+		return newErrEmailTooLong()
 	}
 
 	if len(e.Value) == 0 {
-		return usergen.InvalidUserDetails("epasts ir obligāts")
+		return newErrEmailEmpty()
 	}
 
 	_, err := mail.ParseAddress(e.Value)
 	if err != nil {
-		return usergen.InvalidUserDetails("epasts nav derīgs")
+		return newErrEmailInvalid()
 	}
 
 	return nil
@@ -78,13 +70,10 @@ type Password struct {
 func (p *Password) IsValid() error {
 	const minPasswordLength = 8
 	if len(p.Value) < minPasswordLength {
-		return usergen.InvalidUserDetails(fmt.Sprintf(
-			"parolei jābūt vismaz %d simbolus garai",
-			minPasswordLength,
-		))
+		return newErrPasswordTooShort(minPasswordLength)
 	}
 	if len(p.Value) > 1024 {
-		return usergen.InvalidUserDetails("parole ir neadekvāti gara")
+		return newErrPasswordTooLong()
 	}
 	return nil
 }
@@ -96,10 +85,7 @@ type Firstname struct {
 func (f *Firstname) IsValid() error {
 	const maxFirstnameLength = 35
 	if len(f.Value) > maxFirstnameLength {
-		return usergen.InvalidUserDetails(fmt.Sprintf(
-			"vārds nedrīkst būt garāks par %d simboliem",
-			maxFirstnameLength,
-		))
+		return newErrFirstnameTooLong(maxFirstnameLength)
 	}
 	return nil
 }
@@ -111,15 +97,12 @@ type Lastname struct {
 func (l *Lastname) IsValid() error {
 	const maxLastnameLength = 35
 	if len(l.Value) > maxLastnameLength {
-		return usergen.InvalidUserDetails(fmt.Sprintf(
-			"uzvārds nedrīkst būt garāks par %d simboliem",
-			maxLastnameLength,
-		))
+		return newErrLastnameTooLong(maxLastnameLength)
 	}
 	return nil
 }
 
-func (s *userssrvc) CreateUser(ctx context.Context, p *usergen.UserPayload) (res *usergen.User, err error) {
+func (s *UsersSrvc) CreateUser(ctx context.Context, p *UserPayload) (res *User, err error) {
 	username := Username{p.Username}
 	email := Email{p.Email}
 	password := Password{p.Password}
@@ -140,12 +123,12 @@ func (s *userssrvc) CreateUser(ctx context.Context, p *usergen.UserPayload) (res
 
 	for _, user := range allUsers {
 		if user.Username == p.Username {
-			return nil, usergen.UsernameExistsConflict(
+			return nil, UsernameExistsConflict(
 				fmt.Sprintf("lietotājvārds %s jau eksistē", p.Username),
 			)
 		}
 		if user.Email == p.Email {
-			return nil, usergen.EmailExistsConflict(
+			return nil, EmailExistsConflict(
 				fmt.Sprintf("epasts %s jau eksistē", p.Email),
 			)
 		}
@@ -184,14 +167,14 @@ func (s *userssrvc) CreateUser(ctx context.Context, p *usergen.UserPayload) (res
 		// TODO: automatically retry with exponential backoff on version conflict
 		if dynamo.IsCondCheckFailed(err) {
 			log.Errorf(ctx, err, "version conflict saving user")
-			return nil, usergen.InternalError("version conflict saving user")
+			return nil, newErrInternalServerError()
 		} else {
 			log.Errorf(ctx, err, "error saving user")
-			return nil, usergen.InternalError("error saving user")
+			return nil, newErrInternalServerError()
 		}
 	}
 
-	res = &usergen.User{
+	res = &User{
 		UUID:      uuid.String(),
 		Username:  p.Username,
 		Email:     p.Email,

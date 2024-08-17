@@ -9,12 +9,11 @@ import (
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
-	submgen "github.com/programme-lv/backend/gen/submissions"
 	"goa.design/clue/log"
 )
 
 // List all submissions
-func (s *submissionssrvc) ListSubmissions(ctx context.Context) (res []*submgen.Submission, err error) {
+func (s *SubmissionsService) ListSubmissions(ctx context.Context) (res []*Submission, err error) {
 	input := &dynamodb.QueryInput{
 		TableName:              aws.String(s.submTableName),
 		IndexName:              aws.String("gsi1_pk-gsi1_sk-index"),
@@ -30,7 +29,7 @@ func (s *submissionssrvc) ListSubmissions(ctx context.Context) (res []*submgen.S
 	result, err := s.ddbClient.Query(context.TODO(), input)
 	if err != nil {
 		log.Printf(ctx, "failed to query items: %v", err)
-		return nil, submgen.InternalError("failed to query items")
+		return nil, newErrInternal("failed to query items")
 	}
 
 	type ddmSubmTestGroupResult struct {
@@ -77,7 +76,7 @@ func (s *submissionssrvc) ListSubmissions(ctx context.Context) (res []*submgen.S
 			err := attributevalue.UnmarshalMap(item, &submScoringTestgroupRow)
 			if err != nil {
 				log.Printf(ctx, "failed to unmarshal item: %v", err)
-				return nil, submgen.InternalError("failed to unmarshal item")
+				return nil, newErrInternal("failed to unmarshal item")
 			}
 
 			if submMap[submUuid].TestGroupResults == nil {
@@ -99,7 +98,7 @@ func (s *submissionssrvc) ListSubmissions(ctx context.Context) (res []*submgen.S
 			err := attributevalue.UnmarshalMap(item, &submDetailsRow)
 			if err != nil {
 				log.Printf(ctx, "failed to unmarshal item: %v", err)
-				return nil, submgen.InternalError("failed to unmarshal item")
+				return nil, newErrInternal("failed to unmarshal item")
 			}
 
 			submMap[submUuid].SubmContent = submDetailsRow.Content
@@ -115,7 +114,7 @@ func (s *submissionssrvc) ListSubmissions(ctx context.Context) (res []*submgen.S
 
 	tasks, err := s.taskSrvc.ListTasks(ctx)
 	if err != nil {
-		return nil, submgen.InternalError("failed to fetch tasks")
+		return nil, newErrInternal("failed to fetch tasks")
 	}
 	mapTaskIdToName := make(map[string]string)
 	for _, task := range tasks {
@@ -124,7 +123,7 @@ func (s *submissionssrvc) ListSubmissions(ctx context.Context) (res []*submgen.S
 
 	users, err := s.userSrvc.ListUsers(ctx)
 	if err != nil {
-		return nil, submgen.InternalError("failed to fetch users")
+		return nil, newErrInternal("failed to fetch users")
 	}
 	mapUserUuidToUsername := make(map[string]string)
 	for _, user := range users {
@@ -133,7 +132,7 @@ func (s *submissionssrvc) ListSubmissions(ctx context.Context) (res []*submgen.S
 
 	pLangs, err := s.ListProgrammingLanguages(ctx)
 	if err != nil {
-		return nil, submgen.InternalError("failed to fetch programming languages")
+		return nil, newErrInternal("failed to fetch programming languages")
 	}
 	mapPLangIdToDisplayName := make(map[string]string)
 	mapPLangIdToMonacoId := make(map[string]string)
@@ -142,13 +141,13 @@ func (s *submissionssrvc) ListSubmissions(ctx context.Context) (res []*submgen.S
 		mapPLangIdToMonacoId[pLang.ID] = pLang.MonacoID
 	}
 
-	res = make([]*submgen.Submission, 0, len(submMap))
+	res = make([]*Submission, 0, len(submMap))
 	for k, v := range submMap {
-		var testgroups []*submgen.TestGroupResult = nil
+		var testgroups []*TestGroupResult = nil
 		if v.TestGroupResults != nil {
-			testgroups = make([]*submgen.TestGroupResult, 0, len(v.TestGroupResults))
+			testgroups = make([]*TestGroupResult, 0, len(v.TestGroupResults))
 			for testGroupId, testGroupResult := range v.TestGroupResults {
-				testgroups = append(testgroups, &submgen.TestGroupResult{
+				testgroups = append(testgroups, &TestGroupResult{
 					TestGroupID:      testGroupId,
 					TestGroupScore:   testGroupResult.Score,
 					StatementSubtask: testGroupResult.Subtask,
@@ -158,7 +157,7 @@ func (s *submissionssrvc) ListSubmissions(ctx context.Context) (res []*submgen.S
 				})
 			}
 		}
-		res = append(res, &submgen.Submission{
+		res = append(res, &Submission{
 			SubmUUID:              k,
 			Submission:            v.SubmContent, // TODO: reconsider retrieving submission content in submission list
 			Username:              mapUserUuidToUsername[v.AuthorUuid],

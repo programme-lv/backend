@@ -121,18 +121,6 @@ var _ = dsl.Service("submissions", func() {
 		dsl.Response("InternalError", dsl.StatusInternalServerError)
 	})
 
-	dsl.Method("createSubmission", func() {
-		dsl.Description("Create a new submission")
-		dsl.Security(JWTAuth, func() {})
-		dsl.Payload(CreateSubmissionPayload)
-		dsl.Result(Submission)
-		dsl.HTTP(func() {
-			dsl.POST("/submissions")
-			dsl.Response(dsl.StatusCreated)
-		})
-		dsl.Error("InvalidSubmissionDetails")
-	})
-
 	dsl.Method("listSubmissions", func() {
 		dsl.Description("List all submissions")
 		dsl.Result(dsl.ArrayOf(Submission))
