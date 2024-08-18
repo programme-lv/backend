@@ -8,6 +8,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/programme-lv/backend/http"
 	"github.com/programme-lv/backend/subm"
+	"github.com/programme-lv/backend/user"
 )
 
 func main() {
@@ -23,7 +24,8 @@ func main() {
 	}
 
 	submSrvc := subm.NewSubmissions()
-	httpServer := http.NewHttpServer(submSrvc, []byte(jwtKey))
+	userSrvc := user.NewUsers()
+	httpServer := http.NewHttpServer(submSrvc, userSrvc, []byte(jwtKey))
 
 	address := ":8080"
 	log.Printf("Starting server on %s", address)

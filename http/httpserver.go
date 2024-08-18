@@ -1,6 +1,7 @@
 package http
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -11,15 +12,20 @@ import (
 	"github.com/golang-jwt/jwt/v5/request"
 	"github.com/programme-lv/backend/auth"
 	"github.com/programme-lv/backend/subm"
+	"github.com/programme-lv/backend/user"
 )
 
 type HttpServer struct {
-	submSrvc *subm.SubmissionsService
+	submSrvc *subm.SubmissionSrvc
+	userSrvc *user.UserService
 	router   *chi.Mux
-	jwtKey   []byte
 }
 
-func NewHttpServer(submSrvc *subm.SubmissionsService, jwtKey []byte) *HttpServer {
+func NewHttpServer(
+	submSrvc *subm.SubmissionSrvc,
+	userSrvc *user.UserService,
+	jwtKey []byte,
+) *HttpServer {
 	router := chi.NewRouter()
 
 	logger := httplog.NewLogger("proglv", httplog.Options{
@@ -35,10 +41,50 @@ func NewHttpServer(submSrvc *subm.SubmissionsService, jwtKey []byte) *HttpServer
 
 	router.Use(httplog.RequestLogger(logger))
 
-	router.Use(func(next http.Handler) http.Handler {
+	router.Use(getJwtAuthMiddleware(jwtKey))
+
+	corsMiddleware := cors.New(cors.Options{
+		AllowedOrigins:   []string{"http://localhost:3000", "https://programme.lv", "https://www.programme.lv"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+		ExposedHeaders:   []string{"Link"},
+		AllowCredentials: true,
+		MaxAge:           3000,
+	})
+
+	router.Use(corsMiddleware.Handler)
+
+	server := &HttpServer{
+		submSrvc: submSrvc,
+		userSrvc: userSrvc,
+		router:   router,
+	}
+
+	server.routes()
+
+	return server
+}
+
+func (httpserver *HttpServer) Start(address string) error {
+	return http.ListenAndServe(address, httpserver.router)
+}
+
+func (httpserver *HttpServer) routes() {
+	r := httpserver.router
+	r.Post("/submissions", httpserver.createSubmission)
+	r.Get("/submissions", httpserver.listSubmissions)
+	r.Post("/auth/login", httpserver.authLogin)
+}
+
+func getJwtAuthMiddleware(jwtKey []byte) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
 		hfn := func(w http.ResponseWriter, r *http.Request) {
 			token, err := request.BearerExtractor{}.ExtractToken(r)
 			if err != nil {
+				if errors.Is(err, request.ErrNoTokenInRequest) {
+					next.ServeHTTP(w, r)
+					return
+				}
 				http.Error(w, err.Error(), http.StatusUnauthorized)
 				return
 			}
@@ -54,34 +100,5 @@ func NewHttpServer(submSrvc *subm.SubmissionsService, jwtKey []byte) *HttpServer
 			next.ServeHTTP(w, r)
 		}
 		return http.HandlerFunc(hfn)
-	})
-
-	corsMiddleware := cors.New(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:3000", "https://programme.lv", "https://www.programme.lv"},
-		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
-		ExposedHeaders:   []string{"Link"},
-		AllowCredentials: true,
-		MaxAge:           3000,
-	})
-
-	router.Use(corsMiddleware.Handler)
-
-	server := &HttpServer{
-		submSrvc: submSrvc,
-		router:   router,
 	}
-
-	server.routes()
-
-	return server
-}
-
-func (httpserver *HttpServer) Start(address string) error {
-	return http.ListenAndServe(address, httpserver.router)
-}
-
-func (httpserver *HttpServer) routes() {
-	httpserver.router.Post("/submissions", httpserver.createSubmission)
-	httpserver.router.Get("/submissions", httpserver.listSubmissions)
 }

@@ -2,35 +2,25 @@ package user
 
 import (
 	"context"
-	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb" // assuming custom Latvian translations
 	"github.com/programme-lv/backend/auth"
-	"goa.design/clue/log"
 	"golang.org/x/crypto/bcrypt"
 )
 
-type UsersSrvc struct {
+type UserService struct {
 	jwtKey       []byte
 	ddbUserTable *DynamoDbUserTable
 }
 
-func NewUsers(ctx context.Context) *UsersSrvc {
-	// read jwt key from env
-	jwtKey := os.Getenv("JWT_KEY")
-	if jwtKey == "" {
-		log.Fatalf(ctx,
-			errors.New("JWT_KEY is not set"),
-			"cant read JWT_KEY from env in new user service constructor")
-	}
-
+func NewUsers() *UserService {
 	cfg, err := config.LoadDefaultConfig(context.TODO(),
 		config.WithRegion("eu-central-1"),
-		config.WithSharedConfigProfile("kp"),
-		config.WithLogger(log.AsAWSLogger(ctx)))
+		config.WithSharedConfigProfile("kp"))
 	if err != nil {
 		panic(fmt.Sprintf("unable to load SDK config, %v", err))
 	}
@@ -38,20 +28,18 @@ func NewUsers(ctx context.Context) *UsersSrvc {
 
 	userTableName := os.Getenv("DDB_USER_TABLE_NAME")
 	if userTableName == "" {
-		log.Fatalf(ctx,
-			errors.New("DDB_USER_TABLE_NAME is not set"),
-			"cant read DDB_USER_TABLE_NAME from env in new user service constructor")
+		slog.Error("DDB_USER_TABLE_NAME is not set")
+		os.Exit(1)
 	}
 
-	return &UsersSrvc{
-		jwtKey: []byte(jwtKey),
+	return &UserService{
 		ddbUserTable: NewDynamoDbUsersTable(
 			dynamodbClient, userTableName),
 	}
 }
 
 // User login
-func (s *UsersSrvc) Login(ctx context.Context, p *LoginPayload) (res string, err error) {
+func (s *UserService) Login(ctx context.Context, p *LoginPayload) (res string, err error) {
 	allUsers, err := s.ddbUserTable.List(ctx)
 	if err != nil {
 		return "", fmt.Errorf("error listing users: %w", err)
@@ -81,7 +69,7 @@ func (s *UsersSrvc) Login(ctx context.Context, p *LoginPayload) (res string, err
 }
 
 // GetUserByUsername implements users.Service.
-func (s *UsersSrvc) GetUserByUsername(ctx context.Context, p *GetUserByUsernamePayload) (res *User, err error) {
+func (s *UserService) GetUserByUsername(ctx context.Context, p *GetUserByUsernamePayload) (res *User, err error) {
 	allUsers, err := s.ddbUserTable.List(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("error listing users: %w", err)

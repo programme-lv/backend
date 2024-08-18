@@ -5,7 +5,7 @@ import (
 )
 
 // ListProgrammingLanguages implements submissions.Service.
-func (s *SubmissionsService) ListProgrammingLanguages(context.Context) (res []*ProgrammingLang, err error) {
+func (s *SubmissionSrvc) ListProgrammingLanguages(context.Context) (res []*ProgrammingLang, err error) {
 	res = make([]*ProgrammingLang, 0)
 	langs := getHardcodedLanguageList()
 	for _, lang := range langs {

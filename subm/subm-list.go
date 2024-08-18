@@ -14,7 +14,7 @@ import (
 )
 
 // List all submissions
-func (s *SubmissionsService) ListSubmissions(ctx context.Context) (res []*Submission, err error) {
+func (s *SubmissionSrvc) ListSubmissions(ctx context.Context) (res []*Submission, err error) {
 	input := &dynamodb.QueryInput{
 		TableName:              aws.String(s.submTableName),
 		IndexName:              aws.String("gsi1_pk-gsi1_sk-index"),

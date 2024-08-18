@@ -18,7 +18,7 @@ import (
 	"goa.design/clue/log"
 )
 
-func (s *SubmissionsService) createSubmissionWithValidatedInput(
+func (s *SubmissionSrvc) createSubmissionWithValidatedInput(
 	subm *string,
 	user *user.User,
 	task *task.TaskSubmEvalData,
@@ -480,7 +480,7 @@ func determineScoringMethod(task *task.TaskSubmEvalData) string {
 }
 
 // CreateSubmission implements submissions.Service.
-func (s *SubmissionsService) CreateSubmission(ctx context.Context, p *CreateSubmissionPayload) (res *Submission, err error) {
+func (s *SubmissionSrvc) CreateSubmission(ctx context.Context, p *CreateSubmissionPayload) (res *Submission, err error) {
 	submContent := SubmissionContent{Value: p.Submission}
 
 	for _, v := range []Validatable{&submContent} {
@@ -493,7 +493,7 @@ func (s *SubmissionsService) CreateSubmission(ctx context.Context, p *CreateSubm
 	userByUsername, err := s.userSrvc.GetUserByUsername(ctx, &user.GetUserByUsernamePayload{Username: p.Username})
 	if err != nil {
 		log.Errorf(ctx, err, "error getting user: %+v", err.Error())
-		if e, ok := err.(*user.Error); ok && e.ErrorCode() == user.ErrUserNotFoundCode {
+		if e, ok := err.(*user.Error); ok && e.ErrorCode() == user.ErrCodeUserNotFound {
 			return nil, newErrInvalidSubmissionDetailsUserNotFound()
 		}
 		return nil, fmt.Errorf("error getting user: %w", err)

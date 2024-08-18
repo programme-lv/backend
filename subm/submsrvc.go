@@ -20,10 +20,10 @@ import (
 
 // submissions service example implementation.
 // The example methods log the requests and return zero values.
-type SubmissionsService struct {
+type SubmissionSrvc struct {
 	ddbClient     *dynamodb.Client
 	submTableName string
-	userSrvc      *user.UsersSrvc
+	userSrvc      *user.UserService
 	taskSrvc      *task.TaskSrvc
 	jwtKey        []byte
 	sqsClient     *sqs.Client
@@ -56,7 +56,7 @@ type TestgroupResultUpdate struct {
 }
 
 // NewSubmissions returns the submissions service implementation.
-func NewSubmissions() *SubmissionsService {
+func NewSubmissions() *SubmissionSrvc {
 	cfg, err := config.LoadDefaultConfig(context.TODO(),
 		config.WithRegion("eu-central-1"),
 		config.WithSharedConfigProfile("kp"),
@@ -82,10 +82,10 @@ func NewSubmissions() *SubmissionsService {
 		panic("SUBM_SQS_QUEUE_URL not set in .env file")
 	}
 
-	srvc := &SubmissionsService{
+	srvc := &SubmissionSrvc{
 		ddbClient:              dynamodbClient,
 		submTableName:          submTableName,
-		userSrvc:               user.NewUsers(context.TODO()),
+		userSrvc:               user.NewUsers(),
 		taskSrvc:               task.NewTasks(context.TODO()),
 		sqsClient:              sqsClient,
 		submQueueUrl:           submQueueUrl,
@@ -104,7 +104,7 @@ func NewSubmissions() *SubmissionsService {
 	return srvc
 }
 
-func (s *SubmissionsService) StartProcessingSubmEvalResults(ctx context.Context) (err error) {
+func (s *SubmissionSrvc) StartProcessingSubmEvalResults(ctx context.Context) (err error) {
 	submEvalResQueueUrl := "https://sqs.eu-central-1.amazonaws.com/975049886115/standard_subm_eval_results"
 	throtleChan := make(chan struct{}, 100)
 	for i := 0; i < 100; i++ {
@@ -180,7 +180,7 @@ func (subm *SubmissionContent) String() string {
 	return subm.Value
 }
 
-func (s *SubmissionsService) StartStreamingSubmListUpdates(ctx context.Context) {
+func (s *SubmissionSrvc) StartStreamingSubmListUpdates(ctx context.Context) {
 	sendUpdate := func(update *SubmissionListUpdate) {
 		s.updateListenerLock.Lock()
 		for _, listener := range s.updateListeners {

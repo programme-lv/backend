@@ -5,7 +5,7 @@ import (
 )
 
 // ListUsers implements users.Service.
-func (s *UsersSrvc) ListUsers(ctx context.Context) (res []*User, err error) {
+func (s *UserService) ListUsers(ctx context.Context) (res []*User, err error) {
 	users, err := s.ddbUserTable.List(ctx)
 	if err != nil {
 		// TODO: log "failed to list users from ddb"

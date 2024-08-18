@@ -16,7 +16,7 @@ import (
 	"golang.org/x/exp/rand"
 )
 
-func (s *SubmissionsService) processEvalResult(evalUuid string, msgType string, fields *json.RawMessage) {
+func (s *SubmissionSrvc) processEvalResult(evalUuid string, msgType string, fields *json.RawMessage) {
 	baseDelay := 100 * time.Millisecond
 
 	var submUuid string

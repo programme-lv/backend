@@ -102,7 +102,7 @@ func (l *Lastname) IsValid() error {
 	return nil
 }
 
-func (s *UsersSrvc) CreateUser(ctx context.Context, p *UserPayload) (res *User, err error) {
+func (s *UserService) CreateUser(ctx context.Context, p *UserPayload) (res *User, err error) {
 	username := Username{p.Username}
 	email := Email{p.Email}
 	password := Password{p.Password}

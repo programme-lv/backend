@@ -182,12 +182,6 @@ type UserPayload struct {
 	Password  string `json:"password"`
 }
 
-// LoginPayload represents the payload for user login.
-type LoginPayload struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
-}
-
 // SecureUUIDPayload defines a payload with a JWT token and UUID.
 type SecureUUIDPayload struct {
 	Token string `json:"token"`

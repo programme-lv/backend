@@ -1,11 +1,16 @@
 package user
 
-import "fmt"
+import (
+	"fmt"
+	"net/http"
+)
 
 type Error struct {
 	errorCode  string
 	msgToUser  string // public
 	dbgInfoErr error  // private, for debugging
+
+	httpStatus int // optional, for HTTP responses
 }
 
 func (e *Error) Error() string {
@@ -24,104 +29,153 @@ func (e *Error) SetDebugInfo(err error) {
 	e.dbgInfoErr = err
 }
 
-const ErrUsernameTooShortCode = "username_too_short"
+func (e *Error) HttpStatusCode() int {
+	if e.httpStatus == 0 {
+		return http.StatusInternalServerError
+	}
+	return e.httpStatus
+}
+
+func (e *Error) SetHttpStatusCode(code int) {
+	e.httpStatus = code
+}
+
+const ErrCodeUsernameTooShort = "username_too_short"
 
 func newErrUsernameTooShort(minLength int) *Error {
 	return &Error{
-		errorCode: ErrUsernameTooShortCode,
-		msgToUser: fmt.Sprintf("lietotājvārdam jābūt vismaz %d simbolus garam", minLength),
+		errorCode:  ErrCodeUsernameTooShort,
+		msgToUser:  fmt.Sprintf("lietotājvārdam jābūt vismaz %d simbolus garam", minLength),
+		httpStatus: http.StatusBadRequest,
 	}
 }
+
+const ErrCodeUsernameTooLong = "username_too_long"
 
 func newErrUsernameTooLong() *Error {
 	return &Error{
-		errorCode: "username_too_long",
-		msgToUser: "lietotājvārds ir pārāk garš",
+		errorCode:  "username_too_long",
+		msgToUser:  "lietotājvārds ir pārāk garš",
+		httpStatus: http.StatusBadRequest,
 	}
 }
+
+const ErrCodeUsernameAlreadyExists = "username_exists"
 
 func newErrUsernameExists() *Error {
 	return &Error{
-		errorCode: "username_exists",
-		msgToUser: "lietotājvārds jau eksistē",
+		errorCode:  ErrCodeUsernameAlreadyExists,
+		msgToUser:  "lietotājvārds jau eksistē",
+		httpStatus: http.StatusConflict,
 	}
 }
+
+const ErrCodeEmailAlreadyExists = "email_exists"
 
 func newErrEmailExists() *Error {
 	return &Error{
-		errorCode: "email_exists",
-		msgToUser: "epasts jau eksistē",
+		errorCode:  ErrCodeEmailAlreadyExists,
+		msgToUser:  "epasts jau eksistē",
+		httpStatus: http.StatusConflict,
 	}
 }
+
+const ErrCodeInternalServerError = "internal_server_error"
 
 func newErrInternalServerError() *Error {
 	return &Error{
-		errorCode: "internal_server_error",
-		msgToUser: "iekšēja servera kļūda",
+		errorCode:  ErrCodeInternalServerError,
+		msgToUser:  "iekšēja servera kļūda",
+		httpStatus: http.StatusInternalServerError,
 	}
 }
+
+const ErrCodeEmailTooLong = "email_too_long"
 
 func newErrEmailTooLong() *Error {
 	return &Error{
-		errorCode: "email_too_long",
-		msgToUser: "epasts ir pārāk garš",
+		errorCode:  ErrCodeEmailTooLong,
+		msgToUser:  "epasts ir pārāk garš",
+		httpStatus: http.StatusBadRequest,
 	}
 }
+
+const ErrCodeEmailEmpty = "email_empty"
 
 func newErrEmailEmpty() *Error {
 	return &Error{
-		errorCode: "email_empty",
-		msgToUser: "epasts nedrīkst būt tukšs",
+		errorCode:  ErrCodeEmailEmpty,
+		msgToUser:  "epasts nedrīkst būt tukšs",
+		httpStatus: http.StatusBadRequest,
 	}
 }
+
+const ErrCodePasswordEmpty = "password_empty"
 
 func newErrEmailInvalid() *Error {
 	return &Error{
-		errorCode: "email_invalid",
-		msgToUser: "epasts ir nederīgs",
+		errorCode:  ErrCodePasswordEmpty,
+		msgToUser:  "epasts ir nederīgs",
+		httpStatus: http.StatusBadRequest,
 	}
 }
+
+const ErrCodePasswordTooShort = "password_too_short"
 
 func newErrPasswordTooShort(minLength int) *Error {
 	return &Error{
-		errorCode: "password_too_short",
-		msgToUser: fmt.Sprintf("parolei jābūt vismaz %d simbolus garai", minLength),
+		errorCode:  ErrCodePasswordTooShort,
+		msgToUser:  fmt.Sprintf("parolei jābūt vismaz %d simbolus garai", minLength),
+		httpStatus: http.StatusBadRequest,
 	}
 }
+
+const ErrCodePasswordTooLong = "password_too_long"
 
 func newErrPasswordTooLong() *Error {
 	return &Error{
-		errorCode: "password_too_long",
-		msgToUser: "parole ir pārāk gara",
+		errorCode:  ErrCodePasswordTooLong,
+		msgToUser:  "parole ir pārāk gara",
+		httpStatus: http.StatusBadRequest,
 	}
 }
+
+const ErrCodeFirstnameTooLong = "firstname_too_long"
 
 func newErrFirstnameTooLong(maxLength int) *Error {
 	return &Error{
-		errorCode: "firstname_too_long",
-		msgToUser: fmt.Sprintf("vārds nedrīkst būt garāks par %d simboliem", maxLength),
+		errorCode:  ErrCodeFirstnameTooLong,
+		msgToUser:  fmt.Sprintf("vārds nedrīkst būt garāks par %d simboliem", maxLength),
+		httpStatus: http.StatusBadRequest,
 	}
 }
+
+const ErrCodeLastnameTooLong = "lastname_too_long"
 
 func newErrLastnameTooLong(maxLength int) *Error {
 	return &Error{
-		errorCode: "lastname_too_long",
-		msgToUser: fmt.Sprintf("uzvārds nedrīkst būt garāks par %d simboliem", maxLength),
+		errorCode:  ErrCodeLastnameTooLong,
+		msgToUser:  fmt.Sprintf("uzvārds nedrīkst būt garāks par %d simboliem", maxLength),
+		httpStatus: http.StatusBadRequest,
 	}
 }
 
-const ErrUserNotFoundCode = "user_not_found"
+const ErrCodeUserNotFound = "user_not_found"
 
 func newErrUserNotFound() *Error {
 	return &Error{
-		errorCode: ErrUserNotFoundCode,
-		msgToUser: "lietotājs netika atrasts",
+		errorCode:  ErrCodeUserNotFound,
+		msgToUser:  "lietotājs netika atrasts",
+		httpStatus: http.StatusNotFound,
 	}
 }
 
+const ErrCodeUsernameOrPasswordIncorrect = "username_or_password_incorrect"
+
 func newErrUsernameOrPasswordIncorrect() *Error {
 	return &Error{
-		errorCode: "username_or_password_incorrect",
-		msgToUser: "lietotājvārds vai parole nav pareiza",
+		errorCode:  ErrCodeUsernameOrPasswordIncorrect,
+		msgToUser:  "lietotājvārds vai parole nav pareiza",
+		httpStatus: http.StatusUnauthorized,
 	}
 }
