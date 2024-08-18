@@ -79,6 +79,7 @@ func (httpserver *HttpServer) routes() {
 	r.Post("/users", httpserver.authRegister)
 	r.Get("/tasks", httpserver.listTasks)
 	r.Get("/tasks/{taskId}", httpserver.getTask)
+	r.Get("/programming-languages", httpserver.listProgrammingLangs)
 }
 
 func getJwtAuthMiddleware(jwtKey []byte) func(next http.Handler) http.Handler {

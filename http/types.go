@@ -78,16 +78,16 @@ type SubmissionListUpdate struct {
 
 // ProgrammingLang represents a programming language.
 type ProgrammingLang struct {
-	ID               string `json:"id"`
-	FullName         string `json:"fullName"`
-	CodeFilename     string `json:"codeFilename"`
-	CompileCmd       string `json:"compileCmd"`
-	ExecuteCmd       string `json:"executeCmd"`
-	EnvVersionCmd    string `json:"envVersionCmd"`
-	HelloWorldCode   string `json:"helloWorldCode"`
-	MonacoID         string `json:"monacoId"`
-	CompiledFilename string `json:"compiledFilename"`
-	Enabled          bool   `json:"enabled"`
+	ID               string  `json:"id"`
+	FullName         string  `json:"fullName"`
+	CodeFilename     string  `json:"codeFilename"`
+	CompileCmd       *string `json:"compileCmd"`
+	ExecuteCmd       string  `json:"executeCmd"`
+	EnvVersionCmd    string  `json:"envVersionCmd"`
+	HelloWorldCode   string  `json:"helloWorldCode"`
+	MonacoID         string  `json:"monacoId"`
+	CompiledFilename *string `json:"compiledFilename"`
+	Enabled          bool    `json:"enabled"`
 }
 
 // TaskSubmEvalData represents the evaluation data of a task submission.
