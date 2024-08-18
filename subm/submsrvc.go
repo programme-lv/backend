@@ -24,7 +24,7 @@ type SubmissionSrvc struct {
 	ddbClient     *dynamodb.Client
 	submTableName string
 	userSrvc      *user.UserService
-	taskSrvc      *task.TaskSrvc
+	taskSrvc      *task.TaskService
 	jwtKey        []byte
 	sqsClient     *sqs.Client
 	submQueueUrl  string
@@ -86,7 +86,7 @@ func NewSubmissions() *SubmissionSrvc {
 		ddbClient:              dynamodbClient,
 		submTableName:          submTableName,
 		userSrvc:               user.NewUsers(),
-		taskSrvc:               task.NewTasks(context.TODO()),
+		taskSrvc:               task.NewTasks(),
 		sqsClient:              sqsClient,
 		submQueueUrl:           submQueueUrl,
 		createdSubmChan:        make(chan *Submission, 1000),

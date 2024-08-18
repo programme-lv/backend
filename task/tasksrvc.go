@@ -2,12 +2,11 @@ package task
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"strings"
 
-	"goa.design/clue/log"
+	"golang.org/x/exp/slog"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
@@ -15,12 +14,12 @@ import (
 
 // tasks service example implementation.
 // The example methods log the requests and return zero values.
-type TaskSrvc struct {
+type TaskService struct {
 	ddbTaskTable *DynamoDbTaskTable
 }
 
 // NewTasks returns the tasks service implementation.
-func NewTasks(ctx context.Context) *TaskSrvc {
+func NewTasks() *TaskService {
 	cfg, err := config.LoadDefaultConfig(context.TODO(),
 		config.WithRegion("eu-central-1"),
 		config.WithSharedConfigProfile("kp"),
@@ -32,18 +31,17 @@ func NewTasks(ctx context.Context) *TaskSrvc {
 
 	taskTableName := os.Getenv("DDB_TASK_TABLE_NAME")
 	if taskTableName == "" {
-		log.Fatalf(ctx,
-			errors.New("DDB_TASK_TABLE_NAME is not set"),
-			"cant read DDB_TASK_TABLE_NAME from env in new tasks service constructor")
+		slog.Error("DDB_TASK_TABLE_NAME is not set")
+		os.Exit(1)
 	}
 
-	return &TaskSrvc{
+	return &TaskService{
 		ddbTaskTable: NewDynamoDbTaskTable(dynamodbClient, taskTableName),
 	}
 }
 
 // List all tasks
-func (s *TaskSrvc) ListTasks(ctx context.Context) (res []*Task, err error) {
+func (s *TaskService) ListTasks(ctx context.Context) (res []*Task, err error) {
 	all, err := s.ddbTaskTable.List(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("could not list tasks: %w", err)
@@ -63,7 +61,7 @@ func (s *TaskSrvc) ListTasks(ctx context.Context) (res []*Task, err error) {
 }
 
 // Get a task by its ID
-func (s *TaskSrvc) GetTask(ctx context.Context, p *GetTaskPayload) (res *Task, err error) {
+func (s *TaskService) GetTask(ctx context.Context, p *GetTaskPayload) (res *Task, err error) {
 	row, err := s.ddbTaskTable.Get(ctx, p.TaskID)
 	if err != nil {
 		return nil, fmt.Errorf("could not get task: %w", err)
@@ -161,7 +159,7 @@ func ddbTaskRowToResponse(row *TaskRow) (res *Task, err error) {
 }
 
 // GetTaskSubmEvalData implements tasks.Service.
-func (s *TaskSrvc) GetTaskSubmEvalData(ctx context.Context, p *GetTaskSubmEvalDataPayload) (res *TaskSubmEvalData, err error) {
+func (s *TaskService) GetTaskSubmEvalData(ctx context.Context, p *GetTaskSubmEvalDataPayload) (res *TaskSubmEvalData, err error) {
 	row, err := s.ddbTaskTable.Get(ctx, p.TaskID)
 	if err != nil {
 		return nil, fmt.Errorf("could not get task: %w", err)

@@ -90,22 +90,6 @@ type ProgrammingLang struct {
 	Enabled          bool   `json:"enabled"`
 }
 
-// Task represents a competitive programming task.
-type Task struct {
-	PublishedTaskID        string            `json:"published_task_id"`
-	TaskFullName           string            `json:"task_full_name"`
-	MemoryLimitMegabytes   int               `json:"memory_limit_megabytes"`
-	CPUTimeLimitSeconds    float64           `json:"cpu_time_limit_seconds"`
-	OriginOlympiad         string            `json:"origin_olympiad"`
-	IllustrationImgURL     string            `json:"illustration_img_url"`
-	DifficultyRating       int               `json:"difficulty_rating"`
-	DefaultMDStatement     MarkdownStatement `json:"default_md_statement"`
-	Examples               []Example         `json:"examples"`
-	DefaultPDFStatementURL string            `json:"default_pdf_statement_url"`
-	OriginNotes            map[string]string `json:"origin_notes"`
-	VisibleInputSubtasks   []StInputs        `json:"visible_input_subtasks"`
-}
-
 // TaskSubmEvalData represents the evaluation data of a task submission.
 type TaskSubmEvalData struct {
 	PublishedTaskID      string                         `json:"published_task_id"`
@@ -140,28 +124,6 @@ type TaskEvalTestInformation struct {
 	AnswerSHA256    string `json:"answer_sha256"`
 	Subtasks        []int  `json:"subtasks"`
 	TestGroup       int    `json:"test_group"`
-}
-
-// MarkdownStatement represents a markdown statement for a task.
-type MarkdownStatement struct {
-	Story   string `json:"story"`
-	Input   string `json:"input"`
-	Output  string `json:"output"`
-	Notes   string `json:"notes,omitempty"`
-	Scoring string `json:"scoring,omitempty"`
-}
-
-// StInputs represents subtask inputs for a task.
-type StInputs struct {
-	Subtask int      `json:"subtask"`
-	Inputs  []string `json:"inputs"`
-}
-
-// Example represents an example for a task.
-type Example struct {
-	Input  string `json:"input"`
-	Output string `json:"output"`
-	MDNote string `json:"md_note,omitempty"`
 }
 
 // User represents a user.

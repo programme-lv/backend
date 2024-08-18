@@ -12,18 +12,21 @@ import (
 	"github.com/golang-jwt/jwt/v5/request"
 	"github.com/programme-lv/backend/auth"
 	"github.com/programme-lv/backend/subm"
+	"github.com/programme-lv/backend/task"
 	"github.com/programme-lv/backend/user"
 )
 
 type HttpServer struct {
 	submSrvc *subm.SubmissionSrvc
 	userSrvc *user.UserService
+	taskSrvc *task.TaskService
 	router   *chi.Mux
 }
 
 func NewHttpServer(
 	submSrvc *subm.SubmissionSrvc,
 	userSrvc *user.UserService,
+	taskSrvc *task.TaskService,
 	jwtKey []byte,
 ) *HttpServer {
 	router := chi.NewRouter()
@@ -55,6 +58,7 @@ func NewHttpServer(
 	server := &HttpServer{
 		submSrvc: submSrvc,
 		userSrvc: userSrvc,
+		taskSrvc: taskSrvc,
 		router:   router,
 	}
 
@@ -73,6 +77,8 @@ func (httpserver *HttpServer) routes() {
 	r.Get("/submissions", httpserver.listSubmissions)
 	r.Post("/auth/login", httpserver.authLogin)
 	r.Post("/users", httpserver.authRegister)
+	r.Get("/tasks", httpserver.listTasks)
+	r.Get("/tasks/{taskId}", httpserver.getTask)
 }
 
 func getJwtAuthMiddleware(jwtKey []byte) func(next http.Handler) http.Handler {
