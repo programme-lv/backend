@@ -5,10 +5,13 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/go-chi/httplog/v2"
 	"github.com/programme-lv/backend/subm"
 )
 
 func (httpserver *HttpServer) createSubmission(w http.ResponseWriter, r *http.Request) {
+	logger := httplog.LogEntry(r.Context())
+
 	type createSubmissionRequest struct {
 		Submission        string `json:"submission"`
 		Username          string `json:"username"`
@@ -23,9 +26,6 @@ func (httpserver *HttpServer) createSubmission(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	// TODO: JWT authentification
-	// TODO: make JWT claims an explicit parameter
-
 	subm, err := httpserver.submSrvc.CreateSubmission(context.TODO(), &subm.CreateSubmissionPayload{
 		Submission:        request.Submission,
 		Username:          request.Username,
@@ -35,8 +35,7 @@ func (httpserver *HttpServer) createSubmission(w http.ResponseWriter, r *http.Re
 	})
 
 	if err != nil {
-		// TODO: better error handling
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		handleJsonSrvcError(logger, w, err)
 		return
 	}
 
