@@ -41,18 +41,16 @@ func NewHttpServer(
 
 	router.Use(httplog.RequestLogger(logger))
 
-	router.Use(getJwtAuthMiddleware(jwtKey))
-
-	corsMiddleware := cors.New(cors.Options{
+	router.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{"http://localhost:3000", "https://programme.lv", "https://www.programme.lv"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+		AllowedHeaders:   []string{"*"},
 		ExposedHeaders:   []string{"Link"},
 		AllowCredentials: true,
 		MaxAge:           3000,
-	})
+	}))
 
-	router.Use(corsMiddleware.Handler)
+	router.Use(getJwtAuthMiddleware(jwtKey))
 
 	server := &HttpServer{
 		submSrvc: submSrvc,
@@ -74,6 +72,7 @@ func (httpserver *HttpServer) routes() {
 	r.Post("/submissions", httpserver.createSubmission)
 	r.Get("/submissions", httpserver.listSubmissions)
 	r.Post("/auth/login", httpserver.authLogin)
+	r.Post("/users", httpserver.authRegister)
 }
 
 func getJwtAuthMiddleware(jwtKey []byte) func(next http.Handler) http.Handler {

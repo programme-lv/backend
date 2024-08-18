@@ -173,15 +173,6 @@ type User struct {
 	Lastname  string `json:"lastname"`
 }
 
-// UserPayload represents the payload for creating and updating a user.
-type UserPayload struct {
-	Username  string `json:"username"`
-	Email     string `json:"email"`
-	Firstname string `json:"firstname"`
-	Lastname  string `json:"lastname"`
-	Password  string `json:"password"`
-}
-
 // SecureUUIDPayload defines a payload with a JWT token and UUID.
 type SecureUUIDPayload struct {
 	Token string `json:"token"`
