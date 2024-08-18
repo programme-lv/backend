@@ -2,24 +2,22 @@ package subm
 
 import (
 	"context"
-
-	submgen "github.com/programme-lv/backend/gen/submissions"
 )
 
 // ListProgrammingLanguages implements submissions.Service.
-func (s *SubmissionsService) ListProgrammingLanguages(context.Context) (res []*submgen.ProgrammingLang, err error) {
-	res = make([]*submgen.ProgrammingLang, 0)
+func (s *SubmissionsService) ListProgrammingLanguages(context.Context) (res []*ProgrammingLang, err error) {
+	res = make([]*ProgrammingLang, 0)
 	langs := getHardcodedLanguageList()
 	for _, lang := range langs {
-		res = append(res, &submgen.ProgrammingLang{
+		res = append(res, &ProgrammingLang{
 			ID:               lang.ID,
 			FullName:         lang.FullName,
-			CodeFilename:     &lang.CodeFilename,
+			CodeFilename:     lang.CodeFilename,
 			CompileCmd:       lang.CompileCmd,
 			ExecuteCmd:       lang.ExecuteCmd,
 			EnvVersionCmd:    lang.EnvVersionCmd,
 			HelloWorldCode:   lang.HelloWorldCode,
-			MonacoID:         lang.MonacoId,
+			MonacoId:         lang.MonacoId,
 			CompiledFilename: lang.CompiledFilename,
 			Enabled:          lang.Enabled,
 		})

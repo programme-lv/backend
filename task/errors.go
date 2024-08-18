@@ -1,23 +1,23 @@
 package task
 
-import "fmt"
-
-type ErrTaskNotFound struct {
+type Error struct {
 	errorCode string
-	msgToUser string
+	msgToUser string // public
 }
 
-func (e *ErrTaskNotFound) Error() string {
-	return fmt.Sprintf("[%s]: %s", e.errorCode, e.msgToUser)
+func (e *Error) Error() string {
+	return e.msgToUser
 }
 
-func (e *ErrTaskNotFound) ErrorCode() string {
+func (e *Error) ErrorCode() string {
 	return e.errorCode
 }
 
-func newErrTaskNotFound() error {
-	return &ErrTaskNotFound{
-		errorCode: "task_not_found",
+const ErrTaskNotFoundCode = "task_not_found"
+
+func newErrTaskNotFound() *Error {
+	return &Error{
+		errorCode: ErrTaskNotFoundCode,
 		msgToUser: "uzdevums netika atrasts",
 	}
 }

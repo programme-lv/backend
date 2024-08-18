@@ -8,7 +8,7 @@ import (
 	"github.com/programme-lv/backend/subm"
 )
 
-func (httpserver *HttpServer) listSubmissions(w http.ResponseWriter, r *http.Request) {
+func (httpserver *HttpServer) listSubmissions(w http.ResponseWriter, _ *http.Request) {
 	type listSubmissionsResponse []*submissionResponse
 	// TODO: JWT authentification
 	subms, err := httpserver.submSrvc.ListSubmissions(context.TODO())
@@ -28,6 +28,7 @@ func (httpserver *HttpServer) listSubmissions(w http.ResponseWriter, r *http.Req
 
 	response := mapSubmissionsResponse(subms)
 
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(response)
 }

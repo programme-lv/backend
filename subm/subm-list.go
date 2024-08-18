@@ -2,6 +2,7 @@ package subm
 
 import (
 	"context"
+	"fmt"
 	"sort"
 	"strings"
 
@@ -28,8 +29,7 @@ func (s *SubmissionsService) ListSubmissions(ctx context.Context) (res []*Submis
 
 	result, err := s.ddbClient.Query(context.TODO(), input)
 	if err != nil {
-		log.Printf(ctx, "failed to query items: %v", err)
-		return nil, newErrInternal("failed to query items")
+		return nil, fmt.Errorf("failed to query items: %w", err)
 	}
 
 	type ddmSubmTestGroupResult struct {
@@ -75,8 +75,7 @@ func (s *SubmissionsService) ListSubmissions(ctx context.Context) (res []*Submis
 			var submScoringTestgroupRow SubmScoringTestgroupRow
 			err := attributevalue.UnmarshalMap(item, &submScoringTestgroupRow)
 			if err != nil {
-				log.Printf(ctx, "failed to unmarshal item: %v", err)
-				return nil, newErrInternal("failed to unmarshal item")
+				return nil, fmt.Errorf("failed to unmarshal item: %w", err)
 			}
 
 			if submMap[submUuid].TestGroupResults == nil {
@@ -97,8 +96,7 @@ func (s *SubmissionsService) ListSubmissions(ctx context.Context) (res []*Submis
 			var submDetailsRow SubmDetailsRow
 			err := attributevalue.UnmarshalMap(item, &submDetailsRow)
 			if err != nil {
-				log.Printf(ctx, "failed to unmarshal item: %v", err)
-				return nil, newErrInternal("failed to unmarshal item")
+				return nil, fmt.Errorf("failed to unmarshal item: %w", err)
 			}
 
 			submMap[submUuid].SubmContent = submDetailsRow.Content
@@ -114,7 +112,7 @@ func (s *SubmissionsService) ListSubmissions(ctx context.Context) (res []*Submis
 
 	tasks, err := s.taskSrvc.ListTasks(ctx)
 	if err != nil {
-		return nil, newErrInternal("failed to fetch tasks")
+		return nil, fmt.Errorf("failed to fetch tasks: %w", err)
 	}
 	mapTaskIdToName := make(map[string]string)
 	for _, task := range tasks {
@@ -123,7 +121,7 @@ func (s *SubmissionsService) ListSubmissions(ctx context.Context) (res []*Submis
 
 	users, err := s.userSrvc.ListUsers(ctx)
 	if err != nil {
-		return nil, newErrInternal("failed to fetch users")
+		return nil, fmt.Errorf("failed to fetch users: %w", err)
 	}
 	mapUserUuidToUsername := make(map[string]string)
 	for _, user := range users {
@@ -132,13 +130,13 @@ func (s *SubmissionsService) ListSubmissions(ctx context.Context) (res []*Submis
 
 	pLangs, err := s.ListProgrammingLanguages(ctx)
 	if err != nil {
-		return nil, newErrInternal("failed to fetch programming languages")
+		return nil, fmt.Errorf("failed to fetch programming languages: %w", err)
 	}
 	mapPLangIdToDisplayName := make(map[string]string)
 	mapPLangIdToMonacoId := make(map[string]string)
 	for _, pLang := range pLangs {
 		mapPLangIdToDisplayName[pLang.ID] = pLang.FullName
-		mapPLangIdToMonacoId[pLang.ID] = pLang.MonacoID
+		mapPLangIdToMonacoId[pLang.ID] = pLang.MonacoId
 	}
 
 	res = make([]*Submission, 0, len(submMap))

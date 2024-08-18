@@ -50,6 +50,9 @@ func mapSubmissionResponse(x *subm.Submission) *submissionResponse {
 	}
 
 	mapEvalTestGroupResults := func(testGroups []*subm.TestGroupResult) []*testGroupResultResponseBody {
+		if testGroups == nil {
+			return nil
+		}
 		result := make([]*testGroupResultResponseBody, len(testGroups))
 		for i, tg := range testGroups {
 			result[i] = &testGroupResultResponseBody{
@@ -65,6 +68,9 @@ func mapSubmissionResponse(x *subm.Submission) *submissionResponse {
 	}
 
 	mapEvalTestsResult := func(tests *subm.TestsResult) *testsResultResponseBody {
+		if tests == nil {
+			return nil
+		}
 		return &testsResultResponseBody{
 			Accepted: tests.Accepted,
 			Wrong:    tests.Wrong,
@@ -73,6 +79,9 @@ func mapSubmissionResponse(x *subm.Submission) *submissionResponse {
 	}
 
 	mapEvalSubtaskResults := func(subtasks []*subm.SubtaskResult) []*subtaskResultResponseBody {
+		if subtasks == nil {
+			return nil
+		}
 		result := make([]*subtaskResultResponseBody, len(subtasks))
 		for i, st := range subtasks {
 			result[i] = &subtaskResultResponseBody{

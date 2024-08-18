@@ -17,6 +17,8 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
+type ClaimsKey string
+
 func GenerateJWT(username, email, uuid string, firstname, lastname *string, jwtKey []byte) (string, error) {
 	expirationTime := time.Now().Add(24 * time.Hour)
 	claims := &Claims{

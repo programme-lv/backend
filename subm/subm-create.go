@@ -13,17 +13,15 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/google/uuid"
 	"github.com/programme-lv/backend/auth"
-	taskgen "github.com/programme-lv/backend/gen/tasks"
-	usergen "github.com/programme-lv/backend/gen/users"
+	"github.com/programme-lv/backend/task"
 	"github.com/programme-lv/backend/user"
 	"goa.design/clue/log"
 )
 
 func (s *SubmissionsService) createSubmissionWithValidatedInput(
-	ctx context.Context,
 	subm *string,
 	user *user.User,
-	task *taskgen.TaskSubmEvalData,
+	task *task.TaskSubmEvalData,
 	lang *ProgrammingLang,
 ) (*Submission, error) {
 
@@ -48,14 +46,12 @@ func (s *SubmissionsService) createSubmissionWithValidatedInput(
 		}
 		item, err := attributevalue.MarshalMap(evalScoringTestsRow)
 		if err != nil {
-			log.Printf(ctx, "error marshalling eval scoring tests row: %+v", err)
-			return nil, newErrInternal("error marshalling eval scoring tests row")
+			return nil, fmt.Errorf("error marshalling eval scoring tests row: %w", err)
 		}
 		_, err = s.ddbClient.PutItem(context.TODO(), &dynamodb.PutItemInput{
 			TableName: &s.submTableName, Item: item})
 		if err != nil {
-			log.Printf(ctx, "error saving evaluation scoring tests: %+v", err)
-			return nil, newErrInternal("error saving evaluation scoring tests")
+			return nil, fmt.Errorf("error saving evaluation scoring tests: %w", err)
 		}
 
 		// PUT SUBMISSION SCORING TESTS ROW
@@ -72,14 +68,12 @@ func (s *SubmissionsService) createSubmissionWithValidatedInput(
 		}
 		item, err = attributevalue.MarshalMap(submScoringTestsRow)
 		if err != nil {
-			log.Printf(ctx, "error marshalling scoring tests row: %+v", err)
-			return nil, newErrInternal("error marshalling scoring tests row")
+			return nil, fmt.Errorf("error marshalling scoring tests row: %w", err)
 		}
 		_, err = s.ddbClient.PutItem(context.TODO(), &dynamodb.PutItemInput{
 			TableName: &s.submTableName, Item: item})
 		if err != nil {
-			log.Printf(ctx, "error saving submission scoring tests: %+v", err)
-			return nil, newErrInternal("error saving submission scoring tests")
+			return nil, fmt.Errorf("error saving submission scoring tests: %w", err)
 		}
 	case "subtask":
 		// PUT EVALUATION, SUBMISSION SCORING SUBTASK ROWS
@@ -128,8 +122,7 @@ func (s *SubmissionsService) createSubmissionWithValidatedInput(
 			for i := range len(batch) {
 				item, err := attributevalue.MarshalMap(batch[i])
 				if err != nil {
-					log.Printf(ctx, "error marshalling scoring subtask row: %+v", err)
-					return nil, newErrInternal("error marshalling scoring subtask row")
+					return nil, fmt.Errorf("error marshalling scoring subtask row: %w", err)
 				}
 				items[i] = types.WriteRequest{PutRequest: &types.PutRequest{Item: item}}
 			}
@@ -137,8 +130,7 @@ func (s *SubmissionsService) createSubmissionWithValidatedInput(
 				RequestItems: map[string][]types.WriteRequest{s.submTableName: items},
 			})
 			if err != nil {
-				log.Printf(ctx, "error saving submission scoring subtasks: %+v", err)
-				return nil, newErrInternal("error saving submission scoring subtasks")
+				return nil, fmt.Errorf("error saving submission scoring subtasks: %w", err)
 			}
 			start = end
 		}
@@ -151,8 +143,7 @@ func (s *SubmissionsService) createSubmissionWithValidatedInput(
 			for i := range len(batch) {
 				item, err := attributevalue.MarshalMap(batch[i])
 				if err != nil {
-					log.Printf(ctx, "error marshalling eval scoring subtask row: %+v", err)
-					return nil, newErrInternal("error marshalling eval scoring subtask row")
+					return nil, fmt.Errorf("error marshalling eval scoring subtask row: %w", err)
 				}
 				items[i] = types.WriteRequest{PutRequest: &types.PutRequest{Item: item}}
 			}
@@ -160,8 +151,7 @@ func (s *SubmissionsService) createSubmissionWithValidatedInput(
 				RequestItems: map[string][]types.WriteRequest{s.submTableName: items},
 			})
 			if err != nil {
-				log.Printf(ctx, "error saving evaluation scoring subtasks: %+v", err)
-				return nil, newErrInternal("error saving evaluation scoring subtasks")
+				return nil, fmt.Errorf("error saving evaluation scoring subtasks: %w", err)
 			}
 			start = end
 		}
@@ -213,8 +203,7 @@ func (s *SubmissionsService) createSubmissionWithValidatedInput(
 			for i := range len(batch) {
 				item, err := attributevalue.MarshalMap(batch[i])
 				if err != nil {
-					log.Printf(ctx, "error marshalling scoring testgroup row: %+v", err)
-					return nil, newErrInternal("error marshalling scoring testgroup row")
+					return nil, fmt.Errorf("error marshalling scoring testgroup row: %w", err)
 				}
 				items[i] = types.WriteRequest{PutRequest: &types.PutRequest{Item: item}}
 			}
@@ -222,8 +211,7 @@ func (s *SubmissionsService) createSubmissionWithValidatedInput(
 				RequestItems: map[string][]types.WriteRequest{s.submTableName: items},
 			})
 			if err != nil {
-				log.Printf(ctx, "error saving submission scoring testgroups: %+v", err)
-				return nil, newErrInternal("error saving submission scoring testgroups")
+				return nil, fmt.Errorf("error saving submission scoring testgroups: %w", err)
 			}
 			start = end
 		}
@@ -236,8 +224,7 @@ func (s *SubmissionsService) createSubmissionWithValidatedInput(
 			for i := range len(batch) {
 				item, err := attributevalue.MarshalMap(batch[i])
 				if err != nil {
-					log.Printf(ctx, "error marshalling eval scoring testgroup row: %+v", err)
-					return nil, newErrInternal("error marshalling eval scoring testgroup row")
+					return nil, fmt.Errorf("error marshalling eval scoring testgroup row: %w", err)
 				}
 				items[i] = types.WriteRequest{PutRequest: &types.PutRequest{Item: item}}
 			}
@@ -245,8 +232,7 @@ func (s *SubmissionsService) createSubmissionWithValidatedInput(
 				RequestItems: map[string][]types.WriteRequest{s.submTableName: items},
 			})
 			if err != nil {
-				log.Printf(ctx, "error saving evaluation scoring testgroups: %+v", err)
-				return nil, newErrInternal("error saving evaluation scoring testgroups")
+				return nil, fmt.Errorf("error saving evaluation scoring testgroups: %w", err)
 			}
 			start = end
 		}
@@ -279,14 +265,12 @@ func (s *SubmissionsService) createSubmissionWithValidatedInput(
 	}
 	item, err := attributevalue.MarshalMap(evalDetailsRow)
 	if err != nil {
-		log.Printf(ctx, "error marshalling eval details row: %+v", err)
-		return nil, newErrInternal("error marshalling eval details row")
+		return nil, fmt.Errorf("error marshalling eval details row: %w", err)
 	}
 	_, err = s.ddbClient.PutItem(context.TODO(), &dynamodb.PutItemInput{
 		TableName: &s.submTableName, Item: item})
 	if err != nil {
-		log.Printf(ctx, "error saving submission evaluation details: %+v", err)
-		return nil, newErrInternal("error saving submission evaluation details")
+		return nil, fmt.Errorf("error saving evaluation details: %w", err)
 	}
 
 	// PUT EVALUATION TEST ROWS
@@ -327,8 +311,7 @@ func (s *SubmissionsService) createSubmissionWithValidatedInput(
 		for i := range len(batch) {
 			item, err := attributevalue.MarshalMap(batch[i])
 			if err != nil {
-				log.Printf(ctx, "error marshalling evaluation test row: %+v", err)
-				return nil, newErrInternal("error marshalling evaluation test row")
+				return nil, fmt.Errorf("error marshalling evaluation test row: %w", err)
 			}
 			items[i] = types.WriteRequest{PutRequest: &types.PutRequest{Item: item}}
 		}
@@ -336,8 +319,7 @@ func (s *SubmissionsService) createSubmissionWithValidatedInput(
 			RequestItems: map[string][]types.WriteRequest{s.submTableName: items},
 		})
 		if err != nil {
-			log.Printf(ctx, "error saving submission evaluation tests: %+v", err)
-			return nil, newErrInternal("error saving submission evaluation tests")
+			return nil, fmt.Errorf("error saving evaluation tests: %w", err)
 		}
 		start = end
 	}
@@ -359,14 +341,12 @@ func (s *SubmissionsService) createSubmissionWithValidatedInput(
 	}
 	item, err = attributevalue.MarshalMap(submDetailsRow)
 	if err != nil {
-		log.Printf(ctx, "error marshalling submission details row: %+v", err)
-		return nil, newErrInternal("error marshalling submission details row")
+		return nil, fmt.Errorf("error marshalling submission details row: %w", err)
 	}
 	_, err = s.ddbClient.PutItem(context.TODO(), &dynamodb.PutItemInput{
 		TableName: &s.submTableName, Item: item})
 	if err != nil {
-		log.Printf(ctx, "error saving submission details: %+v", err)
-		return nil, newErrInternal("error saving submission details")
+		return nil, fmt.Errorf("error saving submission details: %w", err)
 	}
 
 	// ENQUEUE EVALUATION REQUEST TO SQS
@@ -406,16 +386,14 @@ func (s *SubmissionsService) createSubmissionWithValidatedInput(
 	}
 	jsonReq, err := json.Marshal(reqWithUuid)
 	if err != nil {
-		log.Printf(ctx, "error marshalling eval request: %+v", err)
-		return nil, newErrInternal("error marshalling eval request")
+		return nil, fmt.Errorf("error marshalling eval request: %w", err)
 	}
 	_, err = s.sqsClient.SendMessage(context.TODO(), &sqs.SendMessageInput{
 		QueueUrl:    aws.String(s.submQueueUrl),
 		MessageBody: aws.String(string(jsonReq)),
 	})
 	if err != nil {
-		fmt.Printf("failed to send message %s, %v\n", submDetailsRow.SubmUuid, err)
-		return nil, newErrInternal("error sending message to evaluation queue")
+		return nil, fmt.Errorf("error sending message to evaluation queue: %w", err)
 	}
 
 	var evalScoringTestgroups []*TestGroupResult = nil
@@ -491,7 +469,7 @@ func (s *SubmissionsService) createSubmissionWithValidatedInput(
 	return res, nil
 }
 
-func determineScoringMethod(task *taskgen.TaskSubmEvalData) string {
+func determineScoringMethod(task *task.TaskSubmEvalData) string {
 	if len(task.SubtaskScores) > 0 {
 		return "subtask"
 	}
@@ -512,27 +490,27 @@ func (s *SubmissionsService) CreateSubmission(ctx context.Context, p *CreateSubm
 		}
 	}
 
-	userByUsername, err := s.userSrvc.GetUserByUsername(ctx, &usergen.GetUserByUsernamePayload{Username: p.Username})
+	userByUsername, err := s.userSrvc.GetUserByUsername(ctx, &user.GetUserByUsernamePayload{Username: p.Username})
 	if err != nil {
 		log.Errorf(ctx, err, "error getting user: %+v", err.Error())
-		if _, ok := err.(usergen.NotFound); ok {
+		if e, ok := err.(*user.Error); ok && e.ErrorCode() == user.ErrUserNotFoundCode {
 			return nil, newErrInvalidSubmissionDetailsUserNotFound()
 		}
-		return nil, newErrInternalServerErrorGettingUser()
+		return nil, fmt.Errorf("error getting user: %w", err)
 	}
 
-	claims := ctx.Value(ClaimsKey("claims")).(*auth.Claims)
+	claims := ctx.Value(auth.ClaimsKey("claims")).(*auth.Claims)
 	log.Printf(ctx, "%+v", claims)
 
 	if claims.UUID != userByUsername.UUID {
 		return nil, newErrUnauthorizedJwtClaimsDidNotMatchUsername()
 	}
 
-	taskEvalData, err := s.taskSrvc.GetTaskSubmEvalData(ctx, &taskgen.GetTaskSubmEvalDataPayload{
+	taskEvalData, err := s.taskSrvc.GetTaskSubmEvalData(ctx, &task.GetTaskSubmEvalDataPayload{
 		TaskID: p.TaskCodeID,
 	})
 	if err != nil {
-		if _, ok := err.(taskgen.TaskNotFound); ok {
+		if e, ok := err.(*task.Error); ok && e.ErrorCode() == task.ErrTaskNotFoundCode {
 			return nil, newErrInvalidSubmissionDetailsTaskNotFound()
 		}
 		log.Errorf(ctx, err, "error getting task: %+v", err.Error())
@@ -551,5 +529,5 @@ func (s *SubmissionsService) CreateSubmission(ctx context.Context, p *CreateSubm
 		return nil, newErrInvalidSubmissionDetailsInvalidProgrammingLanguage()
 	}
 
-	return s.createSubmissionWithValidatedInput(ctx, &submContent.Value, userByUsername, taskEvalData, foundPLang)
+	return s.createSubmissionWithValidatedInput(&submContent.Value, userByUsername, taskEvalData, foundPLang)
 }

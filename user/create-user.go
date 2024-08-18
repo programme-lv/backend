@@ -123,14 +123,14 @@ func (s *UsersSrvc) CreateUser(ctx context.Context, p *UserPayload) (res *User, 
 
 	for _, user := range allUsers {
 		if user.Username == p.Username {
-			return nil, UsernameExistsConflict(
-				fmt.Sprintf("lietotājvārds %s jau eksistē", p.Username),
-			)
+			errRes := newErrUsernameExists()
+			errRes.SetDebugInfo(fmt.Errorf("username %s already exists", p.Username))
+			return nil, errRes
 		}
 		if user.Email == p.Email {
-			return nil, EmailExistsConflict(
-				fmt.Sprintf("epasts %s jau eksistē", p.Email),
-			)
+			errRes := newErrEmailExists()
+			errRes.SetDebugInfo(fmt.Errorf("email %s already exists", p.Email))
+			return nil, errRes
 		}
 	}
 

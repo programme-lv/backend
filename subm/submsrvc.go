@@ -3,8 +3,8 @@ package subm
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"sync"
 	"time"
@@ -14,10 +14,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
-	taskgen "github.com/programme-lv/backend/gen/tasks"
 	"github.com/programme-lv/backend/task"
 	"github.com/programme-lv/backend/user"
-	"goa.design/clue/log"
 )
 
 // submissions service example implementation.
@@ -26,7 +24,7 @@ type SubmissionsService struct {
 	ddbClient     *dynamodb.Client
 	submTableName string
 	userSrvc      *user.UsersSrvc
-	taskSrvc      taskgen.Service
+	taskSrvc      *task.TaskSrvc
 	jwtKey        []byte
 	sqsClient     *sqs.Client
 	submQueueUrl  string
@@ -58,7 +56,7 @@ type TestgroupResultUpdate struct {
 }
 
 // NewSubmissions returns the submissions service implementation.
-func NewSubmissions(ctx context.Context) *SubmissionsService {
+func NewSubmissions() *SubmissionsService {
 	cfg, err := config.LoadDefaultConfig(context.TODO(),
 		config.WithRegion("eu-central-1"),
 		config.WithSharedConfigProfile("kp"),
@@ -71,18 +69,10 @@ func NewSubmissions(ctx context.Context) *SubmissionsService {
 	}
 	dynamodbClient := dynamodb.NewFromConfig(cfg)
 
-	jwtKey := os.Getenv("JWT_KEY")
-	if jwtKey == "" {
-		log.Fatalf(ctx,
-			errors.New("JWT_KEY is not set"),
-			"cant read JWT_KEY from env in new user service constructor")
-	}
-
 	submTableName := os.Getenv("DDB_SUBM_TABLE_NAME")
 	if submTableName == "" {
-		log.Fatalf(ctx,
-			errors.New("DDB_SUBM_TABLE_NAME is not set"),
-			"cant read DDB_SUBM_TABLE_NAME from env in new user service constructor")
+		slog.Error("DDB_SUBM_TABLE_NAME is not set")
+		os.Exit(1)
 	}
 
 	sqsClient := sqs.NewFromConfig(cfg)
@@ -95,9 +85,8 @@ func NewSubmissions(ctx context.Context) *SubmissionsService {
 	srvc := &SubmissionsService{
 		ddbClient:              dynamodbClient,
 		submTableName:          submTableName,
-		userSrvc:               user.NewUsers(ctx),
-		taskSrvc:               task.NewTasks(ctx),
-		jwtKey:                 []byte(jwtKey),
+		userSrvc:               user.NewUsers(context.TODO()),
+		taskSrvc:               task.NewTasks(context.TODO()),
 		sqsClient:              sqsClient,
 		submQueueUrl:           submQueueUrl,
 		createdSubmChan:        make(chan *Submission, 1000),
@@ -109,8 +98,8 @@ func NewSubmissions(ctx context.Context) *SubmissionsService {
 		evalUuidToSubmUuid:     map[string]string{},
 	}
 
-	go srvc.StartProcessingSubmEvalResults(ctx)
-	go srvc.StartStreamingSubmListUpdates(ctx)
+	go srvc.StartProcessingSubmEvalResults(context.TODO())
+	go srvc.StartStreamingSubmListUpdates(context.TODO())
 
 	return srvc
 }
@@ -142,7 +131,7 @@ func (s *SubmissionsService) StartProcessingSubmEvalResults(ctx context.Context)
 				fmt.Printf("failed to delete message, %v\n", err)
 			}
 
-			log.Printf(ctx, "received eval message: %s\n", (*message.Body)[:min(200, len(*message.Body))])
+			slog.Info("received eval message", "body", (*message.Body)[:min(200, len(*message.Body))])
 
 			var qMsg struct {
 				EvalUuid string           `json:"eval_uuid"`

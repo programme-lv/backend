@@ -2,6 +2,7 @@ package user
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/programme-lv/backend/auth"
 )
@@ -23,7 +24,10 @@ type JwtClaims struct {
 
 // QueryCurrentJWT implements users.Service.
 func (s *UsersSrvc) QueryCurrentJWT(ctx context.Context) (res *JwtClaims, err error) {
-	claims := ctx.Value(ClaimsKey("claims")).(*auth.Claims)
+	claims := ctx.Value(auth.ClaimsKey("claims")).(*auth.Claims)
+	if claims == nil {
+		return nil, fmt.Errorf("no claims found in context")
+	}
 
 	var expiresAt *string = nil
 	if claims.ExpiresAt != nil {

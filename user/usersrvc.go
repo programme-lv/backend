@@ -9,9 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb" // assuming custom Latvian translations
 	"github.com/programme-lv/backend/auth"
-	usergen "github.com/programme-lv/backend/gen/users"
 	"goa.design/clue/log"
-	"goa.design/goa/v3/security"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -52,28 +50,8 @@ func NewUsers(ctx context.Context) *UsersSrvc {
 	}
 }
 
-type ClaimsKey string
-
-func (s *UsersSrvc) JWTAuth(ctx context.Context, token string, scheme *security.JWTScheme) (context.Context, error) {
-	claims, err := auth.ValidateJWT(token, s.jwtKey)
-	if err != nil {
-		fmt.Println(err)
-		return ctx, ErrInvalidToken
-	}
-
-	scopesInToken := claims.Scopes
-
-	if err := scheme.Validate(scopesInToken); err != nil {
-		fmt.Println("invalid scopes in token")
-		return ctx, ErrMissingScope
-	}
-
-	ctx = context.WithValue(ctx, ClaimsKey("claims"), claims)
-	return ctx, nil
-}
-
 // User login
-func (s *UsersSrvc) Login(ctx context.Context, p *usergen.LoginPayload) (res string, err error) {
+func (s *UsersSrvc) Login(ctx context.Context, p *LoginPayload) (res string, err error) {
 	allUsers, err := s.ddbUserTable.List(ctx)
 	if err != nil {
 		return "", fmt.Errorf("error listing users: %w", err)
@@ -99,11 +77,11 @@ func (s *UsersSrvc) Login(ctx context.Context, p *usergen.LoginPayload) (res str
 		}
 	}
 
-	return "", usergen.InvalidCredentials("lietotājvārds vai parole nav pareiza")
+	return "", newErrUsernameOrPasswordIncorrect()
 }
 
 // GetUserByUsername implements users.Service.
-func (s *UsersSrvc) GetUserByUsername(ctx context.Context, p *usergen.GetUserByUsernamePayload) (res *User, err error) {
+func (s *UsersSrvc) GetUserByUsername(ctx context.Context, p *GetUserByUsernamePayload) (res *User, err error) {
 	allUsers, err := s.ddbUserTable.List(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("error listing users: %w", err)
@@ -113,7 +91,7 @@ func (s *UsersSrvc) GetUserByUsername(ctx context.Context, p *usergen.GetUserByU
 	for _, user := range allUsers {
 		if user.Username == p.Username {
 			if len(resSlice) == 1 {
-				return nil, usergen.InternalError("vairāki lietotāji ar vienādu lietotājvārdu")
+				return nil, fmt.Errorf("multiple users with the same username")
 			}
 
 			firstname := ""
@@ -137,7 +115,9 @@ func (s *UsersSrvc) GetUserByUsername(ctx context.Context, p *usergen.GetUserByU
 		}
 	}
 	if len(resSlice) == 0 {
-		return nil, usergen.NotFound("lietotājs ar šādu lietotājvārdu neeksistē")
+		errRes := newErrUserNotFound()
+		errRes.SetDebugInfo(fmt.Errorf("user with username %s not found", p.Username))
+		return nil, errRes
 	}
 
 	return &resSlice[0], nil
