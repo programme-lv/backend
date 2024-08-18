@@ -1,67 +1,60 @@
 package subm
 
-import "fmt"
+import (
+	"fmt"
+	"net/http"
 
-type Error struct {
-	errorCode  string
-	msgToUser  string // public
-	dbgInfoErr error  // private, for debugging
+	"github.com/programme-lv/backend/srvcerr"
+)
+
+const ErrCodeSubmissionTooLong = "submission_too_long"
+
+func newErrSubmissionTooLong(maxSubmLengthKB int) *srvcerr.Error {
+	return srvcerr.New(
+		ErrCodeSubmissionTooLong,
+		fmt.Sprintf("Iesūtījuma kods ir pārāk garš, maksimālais garums ir %d KB", maxSubmLengthKB),
+	).SetHttpStatusCode(http.StatusBadRequest)
 }
 
-func (e *Error) Error() string {
-	return e.msgToUser
+const ErrCodeTaskNotFound = "task_not_found"
+
+func newErrTaskNotFound() *srvcerr.Error {
+	return srvcerr.New(
+		ErrCodeTaskNotFound,
+		"Atbilstošais uzdevums netika atrasts",
+	).SetHttpStatusCode(http.StatusNotFound)
 }
 
-func (e *Error) ErrorCode() string {
-	return e.errorCode
+const ErrCodeUserNotFound = "user_not_found"
+
+func newErrUserNotFound() *srvcerr.Error {
+	return srvcerr.New(
+		ErrCodeUserNotFound,
+		"Norādītais lietotājs netika atrasts",
+	).SetHttpStatusCode(http.StatusNotFound)
 }
 
-func (e *Error) DebugInfo() error {
-	return e.dbgInfoErr
+const ErrCodeInvalidProgLang = "invalid_programming_language"
+
+func newErrInvalidProgLang() *srvcerr.Error {
+	return srvcerr.New(
+		ErrCodeInvalidProgLang,
+		"Nederīga programmēšanas valoda",
+	).SetHttpStatusCode(http.StatusBadRequest)
 }
 
-func (e *Error) SetDebugInfo(err error) {
-	e.dbgInfoErr = err
+const ErrCodeUnauthorized = "unauthorized_access"
+
+func newErrUnauthorizedUsernameMismatch() *srvcerr.Error {
+	return srvcerr.New(
+		ErrCodeUnauthorized,
+		"JWT norādītais lietotājvārds nesakrīt ar pieprasīto lietotājvārdu",
+	).SetHttpStatusCode(http.StatusUnauthorized)
 }
 
-func newErrInvalidSubmissionDetailsContentTooLong(maxSubmLengthKB int) *Error {
-	return &Error{
-		errorCode: "invalid_submission_details",
-		msgToUser: fmt.Sprintf("iesūtījuma kods ir pārāk garš, maksimālais garums ir %d KB", maxSubmLengthKB),
-	}
-}
-
-func newErrInvalidSubmissionDetailsTaskNotFound() *Error {
-	return &Error{
-		errorCode: "invalid_submission_details",
-		msgToUser: "atbilstošais uzdevums netika atrasts",
-	}
-}
-
-func newErrInvalidSubmissionDetailsUserNotFound() *Error {
-	return &Error{
-		errorCode: "invalid_submission_details",
-		msgToUser: "norādītais lietotājs netika atrasts",
-	}
-}
-
-func newErrInvalidSubmissionDetailsInvalidProgrammingLanguage() *Error {
-	return &Error{
-		errorCode: "invalid_submission_details",
-		msgToUser: "nederīga programmēšanas valoda",
-	}
-}
-
-func newErrInternalServerErrorGettingTask() *Error {
-	return &Error{
-		errorCode: "internal_server_error",
-		msgToUser: "neizdevās iegūt uzdevumu",
-	}
-}
-
-func newErrUnauthorizedJwtClaimsDidNotMatchUsername() *Error {
-	return &Error{
-		errorCode: "authentication_authorization_failed",
-		msgToUser: "JWT norādītais lietotājvārds nesakrīt ar pieprasīto lietotājvārdu",
-	}
+func newErrJwtTokenMissing() *srvcerr.Error {
+	return srvcerr.New(
+		ErrCodeUnauthorized,
+		"JWT netika atrasts",
+	).SetHttpStatusCode(http.StatusUnauthorized)
 }

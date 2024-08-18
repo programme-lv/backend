@@ -1,16 +1,12 @@
 package http
 
 import (
-	"errors"
-	"fmt"
 	"log/slog"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
 	"github.com/go-chi/httplog/v2"
-	"github.com/golang-jwt/jwt/v5/request"
-	"github.com/programme-lv/backend/auth"
 	"github.com/programme-lv/backend/subm"
 	"github.com/programme-lv/backend/task"
 	"github.com/programme-lv/backend/user"
@@ -21,6 +17,7 @@ type HttpServer struct {
 	userSrvc *user.UserService
 	taskSrvc *task.TaskService
 	router   *chi.Mux
+	JwtKey   []byte
 }
 
 func NewHttpServer(
@@ -60,6 +57,7 @@ func NewHttpServer(
 		userSrvc: userSrvc,
 		taskSrvc: taskSrvc,
 		router:   router,
+		JwtKey:   jwtKey,
 	}
 
 	server.routes()
@@ -80,31 +78,4 @@ func (httpserver *HttpServer) routes() {
 	r.Get("/tasks", httpserver.listTasks)
 	r.Get("/tasks/{taskId}", httpserver.getTask)
 	r.Get("/programming-languages", httpserver.listProgrammingLangs)
-}
-
-func getJwtAuthMiddleware(jwtKey []byte) func(next http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		hfn := func(w http.ResponseWriter, r *http.Request) {
-			token, err := request.BearerExtractor{}.ExtractToken(r)
-			if err != nil {
-				if errors.Is(err, request.ErrNoTokenInRequest) {
-					next.ServeHTTP(w, r)
-					return
-				}
-				http.Error(w, err.Error(), http.StatusUnauthorized)
-				return
-			}
-
-			claims, err := auth.ValidateJWT(token, jwtKey)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusUnauthorized)
-				return
-			}
-
-			fmt.Printf("claims: %+v\n", claims)
-
-			next.ServeHTTP(w, r)
-		}
-		return http.HandlerFunc(hfn)
-	}
 }

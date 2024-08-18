@@ -7,7 +7,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-type Claims struct {
+type JwtClaims struct {
 	Username  string   `json:"username,omitempty"`
 	Firstname *string  `json:"firstname,omitempty"`
 	Lastname  *string  `json:"lastname,omitempty"`
@@ -17,11 +17,13 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
-type ClaimsKey string
+type ClaimsKeyType string
+
+var CtxJwtClaimsKey ClaimsKeyType = "jwtClaims"
 
 func GenerateJWT(username, email, uuid string, firstname, lastname *string, jwtKey []byte) (string, error) {
 	expirationTime := time.Now().Add(24 * time.Hour)
-	claims := &Claims{
+	claims := &JwtClaims{
 		Username:         username,
 		Firstname:        firstname,
 		Lastname:         lastname,
@@ -34,8 +36,8 @@ func GenerateJWT(username, email, uuid string, firstname, lastname *string, jwtK
 	return token.SignedString(jwtKey)
 }
 
-func ValidateJWT(tokenStr string, jwtKey []byte) (*Claims, error) {
-	claims := &Claims{}
+func ValidateJWT(tokenStr string, jwtKey []byte) (*JwtClaims, error) {
+	claims := &JwtClaims{}
 	token, err := jwt.ParseWithClaims(tokenStr, claims, func(token *jwt.Token) (interface{}, error) {
 		return jwtKey, nil
 	})

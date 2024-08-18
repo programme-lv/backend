@@ -13,21 +13,12 @@ func (s *UserService) ListUsers(ctx context.Context) (res []*User, err error) {
 	}
 	res = make([]*User, 0)
 	for _, user := range users {
-		firstname := ""
-		if user.Firstname != nil {
-			firstname = *user.Firstname
-		}
-		lastname := ""
-		if user.Lastname != nil {
-			lastname = *user.Lastname
-		}
-
 		res = append(res, &User{
 			UUID:      user.Uuid,
 			Username:  user.Username,
 			Email:     user.Email,
-			Firstname: firstname,
-			Lastname:  lastname,
+			Firstname: user.Firstname,
+			Lastname:  user.Lastname,
 		})
 	}
 	return res, nil

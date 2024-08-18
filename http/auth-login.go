@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/go-chi/httplog/v2"
+	"github.com/programme-lv/backend/auth"
 	"github.com/programme-lv/backend/user"
 )
 
@@ -25,13 +26,24 @@ func (httpserver *HttpServer) authLogin(w http.ResponseWriter, r *http.Request) 
 
 	logger.Info("received login request", "username", request.Username)
 
-	token, err := httpserver.userSrvc.Login(context.TODO(), &user.LoginPayload{
+	user, err := httpserver.userSrvc.Login(context.TODO(), &user.LoginPayload{
 		Username: request.Username,
 		Password: request.Password,
 	})
-
 	if err != nil {
 		handleJsonSrvcError(logger, w, err)
+		return
+	}
+
+	token, err := auth.GenerateJWT(
+		user.Username,
+		user.Email, user.UUID,
+		user.Firstname, user.Lastname,
+		httpserver.JwtKey)
+	if err != nil {
+		logger := httplog.LogEntry(r.Context())
+		logger.Error("failed to generate JWT", "error", err)
+		writeJsonInternalServerError(w)
 		return
 	}
 

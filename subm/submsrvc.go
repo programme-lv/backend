@@ -25,7 +25,6 @@ type SubmissionSrvc struct {
 	submTableName string
 	userSrvc      *user.UserService
 	taskSrvc      *task.TaskService
-	jwtKey        []byte
 	sqsClient     *sqs.Client
 	submQueueUrl  string
 
@@ -38,21 +37,6 @@ type SubmissionSrvc struct {
 	updateRemovedListeners []chan *SubmissionListUpdate
 
 	evalUuidToSubmUuid map[string]string
-}
-
-type SubmissionStateUpdate struct {
-	SubmUuid string
-	EvalUuid string
-	NewState string
-}
-
-type TestgroupResultUpdate struct {
-	SubmUuid      string
-	EvalUuid      string
-	TestgroupId   int
-	AcceptedTests int
-	WrongTests    int
-	UntestedTests int
 }
 
 // NewSubmissions returns the submissions service implementation.
@@ -171,7 +155,7 @@ type SubmissionContent struct {
 func (subm *SubmissionContent) IsValid() error {
 	const maxSubmissionLengthKilobytes = 64 // 64 KB
 	if len(subm.Value) > maxSubmissionLengthKilobytes*1000 {
-		return newErrInvalidSubmissionDetailsContentTooLong(maxSubmissionLengthKilobytes)
+		return newErrSubmissionTooLong(maxSubmissionLengthKilobytes)
 	}
 	return nil
 }

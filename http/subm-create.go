@@ -1,7 +1,6 @@
 package http
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
 
@@ -26,7 +25,7 @@ func (httpserver *HttpServer) createSubmission(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	subm, err := httpserver.submSrvc.CreateSubmission(context.TODO(), &subm.CreateSubmissionPayload{
+	subm, err := httpserver.submSrvc.CreateSubmission(r.Context(), &subm.CreateSubmissionPayload{
 		Submission:        request.Submission,
 		Username:          request.Username,
 		ProgrammingLangID: request.ProgrammingLangID,

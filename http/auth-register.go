@@ -13,19 +13,19 @@ func (httpserver *HttpServer) authRegister(w http.ResponseWriter, r *http.Reques
 	logger := httplog.LogEntry(r.Context())
 
 	type registerRequest struct {
-		Username  string `json:"username"`
-		Email     string `json:"email"`
-		Firstname string `json:"firstname"`
-		Lastname  string `json:"lastname"`
-		Password  string `json:"password"`
+		Username  string  `json:"username"`
+		Email     string  `json:"email"`
+		Firstname *string `json:"firstname"`
+		Lastname  *string `json:"lastname"`
+		Password  string  `json:"password"`
 	}
 
 	type registerResponse struct {
-		UUID      string `json:"uuid"`
-		Username  string `json:"username"`
-		Email     string `json:"email"`
-		Firstname string `json:"firstname"`
-		Lastname  string `json:"lastname"`
+		UUID      string  `json:"uuid"`
+		Username  string  `json:"username"`
+		Email     string  `json:"email"`
+		Firstname *string `json:"firstname"`
+		Lastname  *string `json:"lastname"`
 	}
 
 	var request registerRequest

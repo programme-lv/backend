@@ -79,24 +79,31 @@ func (p *Password) IsValid() error {
 }
 
 type Firstname struct {
-	Value string
+	Value *string
 }
 
 func (f *Firstname) IsValid() error {
+	if f.Value == nil {
+		return nil
+	}
+
 	const maxFirstnameLength = 35
-	if len(f.Value) > maxFirstnameLength {
+	if len(*f.Value) > maxFirstnameLength {
 		return newErrFirstnameTooLong(maxFirstnameLength)
 	}
 	return nil
 }
 
 type Lastname struct {
-	Value string
+	Value *string
 }
 
 func (l *Lastname) IsValid() error {
+	if l.Value == nil {
+		return nil
+	}
 	const maxLastnameLength = 35
-	if len(l.Value) > maxLastnameLength {
+	if len(*l.Value) > maxLastnameLength {
 		return newErrLastnameTooLong(maxLastnameLength)
 	}
 	return nil
@@ -141,23 +148,13 @@ func (s *UserService) CreateUser(ctx context.Context, p *UserPayload) (res *User
 
 	uuid := uuid.New()
 
-	var firstnamePtr *string = nil
-	if p.Firstname != "" {
-		firstnamePtr = &firstname.Value
-	}
-
-	var lastnamePtr *string = nil
-	if p.Lastname != "" {
-		lastnamePtr = &lastname.Value
-	}
-
 	row := &UserRow{
 		Uuid:      uuid.String(),
 		Username:  username.String(),
 		Email:     email.String(),
 		BcryptPwd: bcryptPwd,
-		Firstname: firstnamePtr,
-		Lastname:  lastnamePtr,
+		Firstname: firstname.Value,
+		Lastname:  lastname.Value,
 		Version:   0,
 		CreatedAt: time.Now(),
 	}

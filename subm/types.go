@@ -62,3 +62,18 @@ type TestsResult struct {
 	Wrong    int
 	Untested int
 }
+
+type SubmissionStateUpdate struct {
+	SubmUuid string
+	EvalUuid string
+	NewState string
+}
+
+type TestgroupResultUpdate struct {
+	SubmUuid      string
+	EvalUuid      string
+	TestgroupId   int
+	AcceptedTests int
+	WrongTests    int
+	UntestedTests int
+}

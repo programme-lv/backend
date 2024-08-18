@@ -8,12 +8,10 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb" // assuming custom Latvian translations
-	"github.com/programme-lv/backend/auth"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type UserService struct {
-	jwtKey       []byte
 	ddbUserTable *DynamoDbUserTable
 }
 
@@ -33,42 +31,34 @@ func NewUsers() *UserService {
 	}
 
 	return &UserService{
-		ddbUserTable: NewDynamoDbUsersTable(
-			dynamodbClient, userTableName),
+		ddbUserTable: NewDynamoDbUsersTable(dynamodbClient, userTableName),
 	}
 }
 
-// User login
-func (s *UserService) Login(ctx context.Context, p *LoginPayload) (res string, err error) {
+func (s *UserService) Login(ctx context.Context, p *LoginPayload) (res *User, err error) {
 	allUsers, err := s.ddbUserTable.List(ctx)
 	if err != nil {
-		return "", fmt.Errorf("error listing users: %w", err)
+		return nil, fmt.Errorf("error listing users: %w", err)
 	}
 
 	for _, user := range allUsers {
 		if user.Username == p.Username {
 			err = bcrypt.CompareHashAndPassword(user.BcryptPwd, []byte(p.Password))
 			if err == nil {
-				token, err := auth.GenerateJWT(
-					user.Username,
-					user.Email, user.Uuid,
-					user.Firstname, user.Lastname,
-					s.jwtKey)
-				if err != nil {
-					return "", fmt.Errorf("error generating JWT: %w", err)
-				}
-				if token == "" {
-					return "", fmt.Errorf("error generating JWT")
-				}
-				return token, nil
+				return &User{
+					UUID:      user.Uuid,
+					Username:  user.Username,
+					Email:     user.Email,
+					Firstname: user.Firstname,
+					Lastname:  user.Lastname,
+				}, nil
 			}
 		}
 	}
 
-	return "", newErrUsernameOrPasswordIncorrect()
+	return nil, newErrUsernameOrPasswordIncorrect()
 }
 
-// GetUserByUsername implements users.Service.
 func (s *UserService) GetUserByUsername(ctx context.Context, p *GetUserByUsernamePayload) (res *User, err error) {
 	allUsers, err := s.ddbUserTable.List(ctx)
 	if err != nil {
@@ -82,22 +72,12 @@ func (s *UserService) GetUserByUsername(ctx context.Context, p *GetUserByUsernam
 				return nil, fmt.Errorf("multiple users with the same username")
 			}
 
-			firstname := ""
-			if user.Firstname != nil {
-				firstname = *user.Firstname
-			}
-
-			lastname := ""
-			if user.Lastname != nil {
-				lastname = *user.Lastname
-			}
-
 			genUser := User{
 				UUID:      user.Uuid,
 				Username:  user.Username,
 				Email:     user.Email,
-				Firstname: firstname,
-				Lastname:  lastname,
+				Firstname: user.Firstname,
+				Lastname:  user.Lastname,
 			}
 			resSlice = append(resSlice, genUser)
 		}

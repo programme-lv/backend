@@ -495,16 +495,20 @@ func (s *SubmissionSrvc) CreateSubmission(ctx context.Context, p *CreateSubmissi
 	if err != nil {
 		log.Errorf(ctx, err, "error getting user: %+v", err.Error())
 		if e, ok := err.(*srvcerr.Error); ok && e.ErrorCode() == user.ErrCodeUserNotFound {
-			return nil, newErrInvalidSubmissionDetailsUserNotFound()
+			return nil, newErrUserNotFound()
 		}
 		return nil, fmt.Errorf("error getting user: %w", err)
 	}
 
-	claims := ctx.Value(auth.ClaimsKey("claims")).(*auth.Claims)
+	claims, ok := ctx.Value(auth.CtxJwtClaimsKey).(*auth.JwtClaims)
+	if !ok {
+		return nil, newErrJwtTokenMissing()
+	}
+
 	log.Printf(ctx, "%+v", claims)
 
 	if claims.UUID != userByUsername.UUID {
-		return nil, newErrUnauthorizedJwtClaimsDidNotMatchUsername()
+		return nil, newErrUnauthorizedUsernameMismatch()
 	}
 
 	taskEvalData, err := s.taskSrvc.GetTaskSubmEvalData(ctx, &task.GetTaskSubmEvalDataPayload{
@@ -512,10 +516,9 @@ func (s *SubmissionSrvc) CreateSubmission(ctx context.Context, p *CreateSubmissi
 	})
 	if err != nil {
 		if e, ok := err.(*task.Error); ok && e.ErrorCode() == task.ErrTaskNotFoundCode {
-			return nil, newErrInvalidSubmissionDetailsTaskNotFound()
+			return nil, newErrTaskNotFound()
 		}
-		log.Errorf(ctx, err, "error getting task: %+v", err.Error())
-		return nil, newErrInternalServerErrorGettingTask()
+		return nil, fmt.Errorf("error getting task: %w", err)
 	}
 
 	langs := getHardcodedLanguageList()
@@ -527,7 +530,7 @@ func (s *SubmissionSrvc) CreateSubmission(ctx context.Context, p *CreateSubmissi
 	}
 
 	if foundPLang == nil {
-		return nil, newErrInvalidSubmissionDetailsInvalidProgrammingLanguage()
+		return nil, newErrInvalidProgLang()
 	}
 
 	return s.createSubmissionWithValidatedInput(&submContent.Value, userByUsername, taskEvalData, foundPLang)

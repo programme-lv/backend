@@ -4,8 +4,8 @@ type User struct {
 	UUID      string
 	Username  string
 	Email     string
-	Firstname string
-	Lastname  string
+	Firstname *string
+	Lastname  *string
 }
 
 type JWTClaims struct {
@@ -42,8 +42,8 @@ type SecureUUIDPayload struct {
 type UserPayload struct {
 	Username  string
 	Email     string
-	Firstname string
-	Lastname  string
+	Firstname *string
+	Lastname  *string
 	Password  string
 }
 
