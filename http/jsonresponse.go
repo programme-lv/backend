@@ -2,7 +2,11 @@ package http
 
 import (
 	"encoding/json"
+	"errors"
+	"log/slog"
 	"net/http"
+
+	"github.com/programme-lv/backend/srvcerr"
 )
 
 type JsonResponse struct {
@@ -35,4 +39,17 @@ func writeJsonErrorResponse(w http.ResponseWriter, errMsg string, statusCode int
 
 func writeJsonInternalServerError(w http.ResponseWriter) {
 	writeJsonErrorResponse(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError, "internal_server_error")
+}
+
+func handleJsonSrvcError(logger *slog.Logger, w http.ResponseWriter, err error) {
+	srvcErr := &srvcerr.Error{}
+	if errors.As(err, &srvcErr) {
+		if srvcErr.HttpStatusCode() == http.StatusInternalServerError {
+			logger.Error("internal server error", "error", err)
+		}
+		writeJsonErrorResponse(w, srvcErr.Error(), srvcErr.HttpStatusCode(), srvcErr.ErrorCode())
+		return
+	}
+	logger.Error("internal server error", "error", err)
+	writeJsonInternalServerError(w)
 }

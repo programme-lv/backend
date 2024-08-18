@@ -13,6 +13,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/google/uuid"
 	"github.com/programme-lv/backend/auth"
+	"github.com/programme-lv/backend/srvcerr"
 	"github.com/programme-lv/backend/task"
 	"github.com/programme-lv/backend/user"
 	"goa.design/clue/log"
@@ -493,7 +494,7 @@ func (s *SubmissionSrvc) CreateSubmission(ctx context.Context, p *CreateSubmissi
 	userByUsername, err := s.userSrvc.GetUserByUsername(ctx, &user.GetUserByUsernamePayload{Username: p.Username})
 	if err != nil {
 		log.Errorf(ctx, err, "error getting user: %+v", err.Error())
-		if e, ok := err.(*user.Error); ok && e.ErrorCode() == user.ErrCodeUserNotFound {
+		if e, ok := err.(*srvcerr.Error); ok && e.ErrorCode() == user.ErrCodeUserNotFound {
 			return nil, newErrInvalidSubmissionDetailsUserNotFound()
 		}
 		return nil, fmt.Errorf("error getting user: %w", err)

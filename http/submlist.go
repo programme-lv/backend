@@ -2,19 +2,20 @@ package http
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 
+	"github.com/go-chi/httplog/v2"
 	"github.com/programme-lv/backend/subm"
 )
 
-func (httpserver *HttpServer) listSubmissions(w http.ResponseWriter, _ *http.Request) {
+func (httpserver *HttpServer) listSubmissions(w http.ResponseWriter, r *http.Request) {
+	logger := httplog.LogEntry(r.Context())
+
 	type listSubmissionsResponse []*submissionResponse
-	// TODO: JWT authentification
+
 	subms, err := httpserver.submSrvc.ListSubmissions(context.TODO())
 	if err != nil {
-		// TODO: better error handling
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		handleJsonSrvcError(logger, w, err)
 		return
 	}
 
@@ -28,7 +29,5 @@ func (httpserver *HttpServer) listSubmissions(w http.ResponseWriter, _ *http.Req
 
 	response := mapSubmissionsResponse(subms)
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(response)
+	writeJsonSuccessResponse(w, response)
 }

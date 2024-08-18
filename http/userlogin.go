@@ -3,7 +3,6 @@ package http
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"net/http"
 
 	"github.com/go-chi/httplog/v2"
@@ -32,13 +31,7 @@ func (httpserver *HttpServer) authLogin(w http.ResponseWriter, r *http.Request) 
 	})
 
 	if err != nil {
-		userErr := &user.Error{}
-		if errors.As(err, &userErr) {
-			writeJsonErrorResponse(w, userErr.Error(), userErr.HttpStatusCode(), userErr.ErrorCode())
-			return
-		}
-		logger.Error("internal server error", "error", err)
-		writeJsonInternalServerError(w)
+		handleJsonSrvcError(logger, w, err)
 		return
 	}
 
