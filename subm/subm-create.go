@@ -462,6 +462,7 @@ func (s *SubmissionSrvc) createSubmissionWithValidatedInput(
 		PLangMonacoID:         lang.MonacoId,
 		TaskName:              task.TaskFullName,
 		TaskID:                task.PublishedTaskID,
+		EvalUUID:              evalUuid.String(),
 	}
 
 	s.createdSubmChan <- res
