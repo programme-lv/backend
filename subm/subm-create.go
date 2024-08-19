@@ -505,6 +505,10 @@ func (s *SubmissionSrvc) CreateSubmission(ctx context.Context, p *CreateSubmissi
 		return nil, newErrJwtTokenMissing()
 	}
 
+	if claims == nil {
+		return nil, newErrJwtTokenMissing()
+	}
+
 	log.Printf(ctx, "%+v", claims)
 
 	if claims.UUID != userByUsername.UUID {

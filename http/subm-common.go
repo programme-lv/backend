@@ -27,7 +27,7 @@ type subtaskResultResponseBody struct {
 	UntestedTests int `json:"untested_tests"`
 }
 
-type submissionResponse struct {
+type Submission struct {
 	SubmUUID              string                         `json:"subm_uuid"`
 	Submission            string                         `json:"submission"`
 	Username              string                         `json:"username"`
@@ -44,7 +44,7 @@ type submissionResponse struct {
 	TaskID                string                         `json:"task_id"`
 }
 
-func mapSubmissionResponse(x *subm.Submission) *submissionResponse {
+func mapSubm(x *subm.Submission) *Submission {
 	if x == nil {
 		return nil
 	}
@@ -95,7 +95,7 @@ func mapSubmissionResponse(x *subm.Submission) *submissionResponse {
 		return result
 	}
 
-	return &submissionResponse{
+	return &Submission{
 		SubmUUID:              x.SubmUUID,
 		Submission:            x.Submission,
 		Username:              x.Username,

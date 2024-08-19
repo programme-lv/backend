@@ -34,48 +34,6 @@ type SubtaskResult struct {
 	UntestedTests int `json:"untested_tests"`
 }
 
-// Submission represents a code submission.
-type Submission struct {
-	SubmUUID              string            `json:"subm_uuid"`
-	Submission            string            `json:"submission"`
-	Username              string            `json:"username"`
-	CreatedAt             string            `json:"created_at"`
-	EvalUUID              string            `json:"eval_uuid"`
-	EvalStatus            string            `json:"eval_status"`
-	EvalScoringTestgroups []TestGroupResult `json:"eval_scoring_testgroups"`
-	EvalScoringTests      TestsResult       `json:"eval_scoring_tests"`
-	EvalScoringSubtasks   []SubtaskResult   `json:"eval_scoring_subtasks"`
-	PLangID               string            `json:"p_lang_id"`
-	PLangDisplayName      string            `json:"p_lang_display_name"`
-	PLangMonacoID         string            `json:"p_lang_monaco_id"`
-	TaskName              string            `json:"task_name"`
-	TaskID                string            `json:"task_id"`
-}
-
-// SubmissionStateUpdate represents the update state of a submission.
-type SubmissionStateUpdate struct {
-	SubmUUID string `json:"subm_uuid"`
-	EvalUUID string `json:"eval_uuid"`
-	NewState string `json:"new_state"`
-}
-
-// TestGroupScoreUpdate represents the score update for a test group.
-type TestGroupScoreUpdate struct {
-	SubmUUID      string `json:"subm_uuid"`
-	EvalUUID      string `json:"eval_uuid"`
-	TestGroupID   int    `json:"test_group_id"`
-	AcceptedTests int    `json:"accepted_tests"`
-	WrongTests    int    `json:"wrong_tests"`
-	UntestedTests int    `json:"untested_tests"`
-}
-
-// SubmissionListUpdate represents the update of a submission list.
-type SubmissionListUpdate struct {
-	SubmCreated        Submission            `json:"subm_created"`
-	StateUpdate        SubmissionStateUpdate `json:"state_update"`
-	TestGroupResUpdate TestGroupScoreUpdate  `json:"testgroup_res_update"`
-}
-
 // ProgrammingLang represents a programming language.
 type ProgrammingLang struct {
 	ID               string  `json:"id"`

@@ -50,37 +50,42 @@ func (s *SubmissionSrvc) StartStreamingSubmListUpdates(ctx context.Context) {
 	}
 }
 
+type Streamee interface {
+	Send(*SubmissionListUpdate) error
+	Close() error
+}
+
 // StreamSubmissionUpdates implements submissions.Service.
-// func (s *SubmissionSrvc) StreamSubmissionUpdates(ctx context.Context, p StreamSubmissionUpdatesServerStream) (err error) {
-// 	// register myself as a listener to the submission updates
-// 	myChan := make(chan *SubmissionListUpdate, 1000)
-// 	s.updateListenerLock.Lock()
-// 	s.updateListeners = append(s.updateListeners, myChan)
-// 	s.updateListenerLock.Unlock()
+func (s *SubmissionSrvc) StreamSubmissionUpdates(ctx context.Context, stream Streamee) (err error) {
+	// register myself as a listener to the submission updates
+	myChan := make(chan *SubmissionListUpdate, 10000)
+	s.updateListenerLock.Lock()
+	s.updateListeners = append(s.updateListeners, myChan)
+	s.updateListenerLock.Unlock()
 
-// 	defer func() {
-// 		// lock listener slice
-// 		s.updateListenerLock.Lock()
-// 		// remove myself from the listeners slice
-// 		for i, listener := range s.updateListeners {
-// 			if listener == myChan {
-// 				s.updateListeners = append(s.updateListeners[:i], s.updateListeners[i+1:]...)
-// 				break
-// 			}
-// 		}
-// 		s.updateListenerLock.Unlock()
-// 		close(myChan)
-// 	}()
+	defer func() {
+		// lock listener slice
+		s.updateListenerLock.Lock()
+		// remove myself from the listeners slice
+		for i, listener := range s.updateListeners {
+			if listener == myChan {
+				s.updateListeners = append(s.updateListeners[:i], s.updateListeners[i+1:]...)
+				break
+			}
+		}
+		s.updateListenerLock.Unlock()
+		close(myChan)
+	}()
 
-// 	for {
-// 		select {
-// 		case <-ctx.Done():
-// 			return p.Close()
-// 		case update := <-myChan:
-// 			err = p.Send(update)
-// 			if err != nil {
-// 				return p.Close()
-// 			}
-// 		}
-// 	}
-// }
+	for {
+		select {
+		case <-ctx.Done():
+			return stream.Close()
+		case update := <-myChan:
+			err = stream.Send(update)
+			if err != nil {
+				return stream.Close()
+			}
+		}
+	}
+}

@@ -11,7 +11,7 @@ import (
 func (httpserver *HttpServer) listSubmissions(w http.ResponseWriter, r *http.Request) {
 	logger := httplog.LogEntry(r.Context())
 
-	type listSubmissionsResponse []*submissionResponse
+	type listSubmissionsResponse []*Submission
 
 	subms, err := httpserver.submSrvc.ListSubmissions(context.TODO())
 	if err != nil {
@@ -19,15 +19,15 @@ func (httpserver *HttpServer) listSubmissions(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	mapSubmissionsResponse := func(subms []*subm.Submission) listSubmissionsResponse {
+	mapSubmList := func(subms []*subm.Submission) listSubmissionsResponse {
 		response := make(listSubmissionsResponse, len(subms))
 		for i, subm := range subms {
-			response[i] = mapSubmissionResponse(subm)
+			response[i] = mapSubm(subm)
 		}
 		return response
 	}
 
-	response := mapSubmissionsResponse(subms)
+	response := mapSubmList(subms)
 
 	writeJsonSuccessResponse(w, response)
 }

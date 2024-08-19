@@ -38,7 +38,7 @@ func (httpserver *HttpServer) createSubmission(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	response := mapSubmissionResponse(subm)
+	response := mapSubm(subm)
 
 	w.WriteHeader(http.StatusCreated)
 	w.Header().Set("Content-Type", "application/json")
