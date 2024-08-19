@@ -384,13 +384,14 @@ func (s *SubmissionSrvc) createSubmissionWithValidatedInput(
 			Tests:          tests,
 			TestlibChecker: task.TestlibCheckerCode,
 		},
+		ResponseSqsUrl: aws.String(s.responseSqsUrl),
 	}
 	jsonReq, err := json.Marshal(reqWithUuid)
 	if err != nil {
 		return nil, fmt.Errorf("error marshalling eval request: %w", err)
 	}
 	_, err = s.sqsClient.SendMessage(context.TODO(), &sqs.SendMessageInput{
-		QueueUrl:    aws.String(s.submQueueUrl),
+		QueueUrl:    aws.String(s.submSqsUrl),
 		MessageBody: aws.String(string(jsonReq)),
 	})
 	if err != nil {

@@ -3,6 +3,7 @@ package subm
 type EvalReqWithUuid struct {
 	EvaluationUuid string      `json:"evaluation_uuid"`
 	Request        EvalRequest `json:"request"`
+	ResponseSqsUrl *string     `json:"response_sqs_url"`
 }
 
 type EvalRequest struct {

@@ -21,12 +21,13 @@ import (
 // submissions service example implementation.
 // The example methods log the requests and return zero values.
 type SubmissionSrvc struct {
-	ddbClient     *dynamodb.Client
-	submTableName string
-	userSrvc      *user.UserService
-	taskSrvc      *task.TaskService
-	sqsClient     *sqs.Client
-	submQueueUrl  string
+	ddbClient      *dynamodb.Client
+	submTableName  string
+	userSrvc       *user.UserService
+	taskSrvc       *task.TaskService
+	sqsClient      *sqs.Client
+	submSqsUrl     string
+	responseSqsUrl string
 
 	createdSubmChan        chan *Submission
 	updateSubmStateChan    chan *SubmissionStateUpdate
@@ -66,13 +67,18 @@ func NewSubmissions() *SubmissionSrvc {
 		panic("SUBM_SQS_QUEUE_URL not set in .env file")
 	}
 
+	responseSQSURL := os.Getenv("RESPONSE_SQS_URL")
+	if responseSQSURL == "" {
+		panic("RESPONSE_SQS_URL not set in .env file")
+	}
+
 	srvc := &SubmissionSrvc{
 		ddbClient:              dynamodbClient,
 		submTableName:          submTableName,
 		userSrvc:               user.NewUsers(),
 		taskSrvc:               task.NewTasks(),
 		sqsClient:              sqsClient,
-		submQueueUrl:           submQueueUrl,
+		submSqsUrl:             submQueueUrl,
 		createdSubmChan:        make(chan *Submission, 1000),
 		updateSubmStateChan:    make(chan *SubmissionStateUpdate, 1000),
 		updateTestgroupResChan: make(chan *TestgroupResultUpdate, 1000),
@@ -80,6 +86,7 @@ func NewSubmissions() *SubmissionSrvc {
 		updateListeners:        make([]chan *SubmissionListUpdate, 0, 100),
 		updateRemovedListeners: make([]chan *SubmissionListUpdate, 0, 100),
 		evalUuidToSubmUuid:     map[string]string{},
+		responseSqsUrl:         responseSQSURL,
 	}
 
 	go srvc.StartProcessingSubmEvalResults(context.TODO())
@@ -89,7 +96,7 @@ func NewSubmissions() *SubmissionSrvc {
 }
 
 func (s *SubmissionSrvc) StartProcessingSubmEvalResults(ctx context.Context) (err error) {
-	submEvalResQueueUrl := "https://sqs.eu-central-1.amazonaws.com/975049886115/standard_subm_eval_results"
+	submEvalResQueueUrl := s.responseSqsUrl
 	throtleChan := make(chan struct{}, 100)
 	for i := 0; i < 100; i++ {
 		throtleChan <- struct{}{}
