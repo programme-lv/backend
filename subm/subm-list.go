@@ -158,6 +158,7 @@ func (s *SubmissionSrvc) ListSubmissions(ctx context.Context) (res []*Submission
 		res = append(res, &Submission{
 			SubmUUID:              k,
 			Submission:            v.SubmContent, // TODO: reconsider retrieving submission content in submission list
+			EvalUUID:              v.CurrEvalUuid,
 			Username:              mapUserUuidToUsername[v.AuthorUuid],
 			CreatedAt:             v.CreatedAtRfc3339,
 			EvalStatus:            v.CurrEvalStatus,
