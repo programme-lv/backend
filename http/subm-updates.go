@@ -3,9 +3,11 @@ package http
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/programme-lv/backend/subm"
 )
@@ -76,6 +78,33 @@ func (httpserver *HttpServer) listenToSubmUpdates(w http.ResponseWriter, r *http
 		}
 	}
 
+	var writeMutex sync.Mutex
+
+	// Create a helper function for thread-safe writing
+	safeWrite := func(data string) {
+		writeMutex.Lock()
+		defer writeMutex.Unlock()
+		io.WriteString(w, data)
+		flusher.Flush()
+	}
+
+	keepAliveTicker := time.NewTicker(15 * time.Second)
+	defer keepAliveTicker.Stop()
+
+	done := make(chan bool)
+	defer close(done)
+
+	go func() {
+		for {
+			select {
+			case <-done:
+				return
+			case <-keepAliveTicker.C:
+				safeWrite(": keep-alive\n\n")
+			}
+		}
+	}()
+
 	for update := range listener.Listen() {
 		message := SubmissionListUpdate{
 			SubmCreated:        mapSubm(update.SubmCreated),
@@ -87,12 +116,11 @@ func (httpserver *HttpServer) listenToSubmUpdates(w http.ResponseWriter, r *http
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-
 		log.Println(string(marshalled))
-
-		fmt.Fprintf(w, "data: %s\n\n", marshalled)
-		flusher.Flush()
+		safeWrite("data: " + string(marshalled) + "\n\n")
 	}
+
+	done <- true
 }
 
 type submUpdateListener struct {
