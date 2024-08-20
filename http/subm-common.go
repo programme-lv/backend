@@ -27,9 +27,8 @@ type subtaskResultResponseBody struct {
 	UntestedTests int `json:"untested_tests"`
 }
 
-type Submission struct {
+type BriefSubmission struct {
 	SubmUUID              string                         `json:"subm_uuid"`
-	Submission            string                         `json:"submission"`
 	Username              string                         `json:"username"`
 	CreatedAt             string                         `json:"created_at"`
 	EvalUUID              string                         `json:"eval_uuid"`
@@ -44,7 +43,7 @@ type Submission struct {
 	TaskID                string                         `json:"task_id"`
 }
 
-func mapSubm(x *subm.Submission) *Submission {
+func mapSubm(x *subm.BriefSubmission) *BriefSubmission {
 	if x == nil {
 		return nil
 	}
@@ -95,9 +94,8 @@ func mapSubm(x *subm.Submission) *Submission {
 		return result
 	}
 
-	return &Submission{
+	return &BriefSubmission{
 		SubmUUID:              x.SubmUUID,
-		Submission:            x.Submission,
 		Username:              x.Username,
 		CreatedAt:             x.CreatedAt,
 		EvalUUID:              x.EvalUUID,

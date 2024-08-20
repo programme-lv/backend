@@ -8,9 +8,8 @@ type CreateSubmissionPayload struct {
 	Token             string
 }
 
-type Submission struct {
+type BriefSubmission struct {
 	SubmUUID              string
-	Submission            string
 	Username              string
 	CreatedAt             string
 	EvalUUID              string
@@ -26,7 +25,7 @@ type Submission struct {
 }
 
 type SubmissionListUpdate struct {
-	SubmCreated        *Submission
+	SubmCreated        *BriefSubmission
 	StateUpdate        *SubmissionStateUpdate
 	TestgroupResUpdate *TestgroupScoreUpdate
 }

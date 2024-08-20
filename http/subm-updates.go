@@ -48,7 +48,7 @@ func (httpserver *HttpServer) listenToSubmUpdates(w http.ResponseWriter, r *http
 	}
 
 	type SubmissionListUpdate struct {
-		SubmCreated        *Submission            `json:"subm_created"`
+		SubmCreated        *BriefSubmission       `json:"subm_created"`
 		StateUpdate        *SubmissionStateUpdate `json:"state_update"`
 		TestGroupResUpdate *TestGroupScoreUpdate  `json:"testgroup_res_update"`
 	}

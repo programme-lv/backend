@@ -29,7 +29,7 @@ type SubmissionSrvc struct {
 	submSqsUrl     string
 	responseSqsUrl string
 
-	createdSubmChan        chan *Submission
+	createdSubmChan        chan *BriefSubmission
 	updateSubmStateChan    chan *SubmissionStateUpdate
 	updateTestgroupResChan chan *TestgroupResultUpdate
 
@@ -79,7 +79,7 @@ func NewSubmissions() *SubmissionSrvc {
 		taskSrvc:               task.NewTasks(),
 		sqsClient:              sqsClient,
 		submSqsUrl:             submQueueUrl,
-		createdSubmChan:        make(chan *Submission, 1000),
+		createdSubmChan:        make(chan *BriefSubmission, 1000),
 		updateSubmStateChan:    make(chan *SubmissionStateUpdate, 1000),
 		updateTestgroupResChan: make(chan *TestgroupResultUpdate, 1000),
 		updateListenerLock:     sync.Mutex{},

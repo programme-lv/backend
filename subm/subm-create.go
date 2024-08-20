@@ -24,7 +24,7 @@ func (s *SubmissionSrvc) createSubmissionWithValidatedInput(
 	user *user.User,
 	task *task.TaskSubmEvalData,
 	lang *ProgrammingLang,
-) (*Submission, error) {
+) (*BriefSubmission, error) {
 
 	createdAt := time.Now().UTC()
 	submUuid := uuid.New()
@@ -448,9 +448,8 @@ func (s *SubmissionSrvc) createSubmissionWithValidatedInput(
 		}
 	}
 
-	res := &Submission{
+	res := &BriefSubmission{
 		SubmUUID:              submDetailsRow.SubmUuid,
-		Submission:            submDetailsRow.Content,
 		Username:              user.Username,
 		CreatedAt:             createdAt.Format(time.RFC3339),
 		EvalStatus:            "waiting",
@@ -483,7 +482,7 @@ func determineScoringMethod(task *task.TaskSubmEvalData) string {
 }
 
 // CreateSubmission implements submissions.Service.
-func (s *SubmissionSrvc) CreateSubmission(ctx context.Context, p *CreateSubmissionPayload) (res *Submission, err error) {
+func (s *SubmissionSrvc) CreateSubmission(ctx context.Context, p *CreateSubmissionPayload) (res *BriefSubmission, err error) {
 	submContent := SubmissionContent{Value: p.Submission}
 
 	for _, v := range []Validatable{&submContent} {

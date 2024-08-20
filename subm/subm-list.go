@@ -14,7 +14,7 @@ import (
 )
 
 // List all submissions
-func (s *SubmissionSrvc) ListSubmissions(ctx context.Context) (res []*Submission, err error) {
+func (s *SubmissionSrvc) ListSubmissions(ctx context.Context) (res []*BriefSubmission, err error) {
 	input := &dynamodb.QueryInput{
 		TableName:              aws.String(s.submTableName),
 		IndexName:              aws.String("gsi1_pk-gsi1_sk-index"),
@@ -50,11 +50,12 @@ func (s *SubmissionSrvc) ListSubmissions(ctx context.Context) (res []*Submission
 		CurrEvalStatus   string
 		ErrorMsg         *string
 		CreatedAtRfc3339 string
+		foundDetailsRow  bool
 
 		TestGroupResults map[int]ddmSubmTestGroupResult
 	}
 
-	// TODO: the last item might not have all of its data because of the paginated query
+	// note the order of the items should be that all items that provide additional information are lexicographically  > subm#details
 
 	submMap := make(map[string]*ddbSubm) // subm_uuid -> submission
 	log.Printf(ctx, "found %d items", len(result.Items))
@@ -99,7 +100,7 @@ func (s *SubmissionSrvc) ListSubmissions(ctx context.Context) (res []*Submission
 				return nil, fmt.Errorf("failed to unmarshal item: %w", err)
 			}
 
-			submMap[submUuid].SubmContent = submDetailsRow.Content
+			submMap[submUuid].foundDetailsRow = true
 			submMap[submUuid].AuthorUuid = submDetailsRow.AuthorUuid
 			submMap[submUuid].TaskId = submDetailsRow.TaskId
 			submMap[submUuid].ProgLangId = submDetailsRow.ProgLangId
@@ -139,8 +140,11 @@ func (s *SubmissionSrvc) ListSubmissions(ctx context.Context) (res []*Submission
 		mapPLangIdToMonacoId[pLang.ID] = pLang.MonacoId
 	}
 
-	res = make([]*Submission, 0, len(submMap))
+	res = make([]*BriefSubmission, 0, len(submMap))
 	for k, v := range submMap {
+		if !v.foundDetailsRow {
+			continue
+		}
 		var testgroups []*TestGroupResult = nil
 		if v.TestGroupResults != nil {
 			testgroups = make([]*TestGroupResult, 0, len(v.TestGroupResults))
@@ -155,9 +159,8 @@ func (s *SubmissionSrvc) ListSubmissions(ctx context.Context) (res []*Submission
 				})
 			}
 		}
-		res = append(res, &Submission{
+		res = append(res, &BriefSubmission{
 			SubmUUID:              k,
-			Submission:            v.SubmContent, // TODO: reconsider retrieving submission content in submission list
 			EvalUUID:              v.CurrEvalUuid,
 			Username:              mapUserUuidToUsername[v.AuthorUuid],
 			CreatedAt:             v.CreatedAtRfc3339,
