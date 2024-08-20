@@ -30,14 +30,14 @@ type EvalTestResults struct {
 	Ignored  bool
 	Finished bool
 
-	InputTrimmed  string
-	AnswerTrimmed string
+	InputTrimmed  *string
+	AnswerTrimmed *string
 
-	TimeLimitExceeded   bool
-	MemoryLimitExceeded bool
+	TimeLimitExceeded   *bool
+	MemoryLimitExceeded *bool
 
 	Subtasks  []int
-	TestGroup int
+	TestGroup *int
 
 	SubmCpuTimeMillis *int
 	SubmMemKibiBytes  *int
@@ -58,6 +58,13 @@ type FullSubmission struct {
 	BriefSubmission
 	SubmContent            string
 	CurrentEvalTestResults []*EvalTestResults
+
+	CompileCpuTimeMillis *int
+	CompileMemKibiBytes  *int
+	CompileWallTime      *int
+	CompileExitCode      *int
+	CompileStdoutTrimmed *string
+	CompileStderrTrimmed *string
 }
 
 type SubmissionListUpdate struct {

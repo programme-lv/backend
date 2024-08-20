@@ -100,6 +100,9 @@ type EvalDetailsRow struct {
 	EvalUuid        string `dynamodbav:"eval_uuid"`        // the uuid of the evaluation
 	EvaluationStage string `dynamodbav:"evaluation_stage"` // "waiting", "received", "compiling", "testing", "finished", "error"
 
+	CpuTimeLimitMillis *int `dynamodbav:"cpu_time_limit_millis"` // CPU time limit in milliseconds
+	MemLimitKibiBytes  *int `dynamodbav:"mem_limit_kibi_bytes"`  // memory limit in kibibytes
+
 	ErrorMsg *string `dynamodbav:"error_msg"` // error message if evaluation failed
 
 	TestlibCheckerCode string `dynamodbav:"testlib_checker_code"` // the code of the testlib checker
@@ -108,11 +111,11 @@ type EvalDetailsRow struct {
 
 	SubmCompileStdout   *string `dynamodbav:"subm_comp_stdout"` // might be trimmed
 	SubmCompileStderr   *string `dynamodbav:"subm_comp_stderr"` // might be trimmed
-	SubmCompileExitCode *int64  `dynamodbav:"subm_comp_exit_code"`
+	SubmCompileExitCode *int    `dynamodbav:"subm_comp_exit_code"`
 
-	SubmCompileCpuTimeMillis   *int64 `dynamodbav:"subm_comp_cpu_time_millis"`
-	SubmCompileWallTimeMillis  *int64 `dynamodbav:"subm_comp_wall_time_millis"`
-	SubmCompileMemoryKibiBytes *int64 `dynamodbav:"subm_comp_memory_kibi_bytes"`
+	SubmCompileCpuTimeMillis   *int `dynamodbav:"subm_comp_cpu_time_millis"`
+	SubmCompileWallTimeMillis  *int `dynamodbav:"subm_comp_wall_time_millis"`
+	SubmCompileMemoryKibiBytes *int `dynamodbav:"subm_comp_memory_kibi_bytes"`
 
 	ProgrammingLang EvalDetailsProgrammingLang `dynamodbav:"programming_lang"`
 
@@ -145,19 +148,19 @@ type EvalTestRow struct {
 
 	CheckerStdout   *string `dynamodbav:"checker_stdout"` // might be trimmed
 	CheckerStderr   *string `dynamodbav:"checker_stderr"` // might be trimmed
-	CheckerExitCode *int64  `dynamodbav:"checker_exit_code"`
+	CheckerExitCode *int    `dynamodbav:"checker_exit_code"`
 
-	CheckerCpuTimeMillis   *int64 `dynamodbav:"checker_cpu_time_millis"`
-	CheckerWallTimeMillis  *int64 `dynamodbav:"checker_wall_time_millis"`
-	CheckerMemoryKibiBytes *int64 `dynamodbav:"checker_memory_kibi_bytes"`
+	CheckerCpuTimeMillis   *int `dynamodbav:"checker_cpu_time_millis"`
+	CheckerWallTimeMillis  *int `dynamodbav:"checker_wall_time_millis"`
+	CheckerMemoryKibiBytes *int `dynamodbav:"checker_memory_kibi_bytes"`
 
 	SubmStdout   *string `dynamodbav:"subm_stdout"` // might be trimmed
 	SubmStderr   *string `dynamodbav:"subm_stderr"` // might be trimmed
-	SubmExitCode *int64  `dynamodbav:"subm_exit_code"`
+	SubmExitCode *int    `dynamodbav:"subm_exit_code"`
 
-	SubmCpuTimeMillis   *int64 `dynamodbav:"subm_cpu_time_millis"`
-	SubmWallTimeMillis  *int64 `dynamodbav:"subm_wall_time_millis"`
-	SubmMemoryKibiBytes *int64 `dynamodbav:"subm_memory_kibi_bytes"`
+	SubmCpuTimeMillis   *int `dynamodbav:"subm_cpu_time_millis"`
+	SubmWallTimeMillis  *int `dynamodbav:"subm_wall_time_millis"`
+	SubmMemoryKibiBytes *int `dynamodbav:"subm_memory_kibi_bytes"`
 
 	Subtasks  []int `dynamodbav:"subtasks"`   // subtasks that the test is part of
 	TestGroup *int  `dynamodbav:"test_group"` // test group that the test is part of

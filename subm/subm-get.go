@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -28,7 +29,7 @@ func (s *SubmissionSrvc) GetSubmission(ctx context.Context, submUuid string) (*F
 		return nil, fmt.Errorf("failed to query items: %w", err)
 	}
 
-	type ddmSubmTestGroupResult struct {
+	type ddbSubmTestGroupResult struct {
 		Score    int
 		Accepted int
 		Wrong    int
@@ -48,7 +49,10 @@ func (s *SubmissionSrvc) GetSubmission(ctx context.Context, submUuid string) (*F
 		CreatedAtRfc3339 string
 		foundDetailsRow  bool
 
-		TestGroupResults map[int]ddmSubmTestGroupResult
+		TestGroupResults map[int]ddbSubmTestGroupResult
+
+		EvalDetails     map[string]*EvalDetailsRow // maps eval uuid to EvalDetailsRow
+		EvalTestResults map[string][]*EvalTestResults
 	}
 
 	// note the order of the items should be that all items that provide additional information are lexicographically  > ...#details
@@ -75,12 +79,12 @@ func (s *SubmissionSrvc) GetSubmission(ctx context.Context, submUuid string) (*F
 			}
 
 			if submMap[submUuid].TestGroupResults == nil {
-				submMap[submUuid].TestGroupResults = make(map[int]ddmSubmTestGroupResult)
+				submMap[submUuid].TestGroupResults = make(map[int]ddbSubmTestGroupResult)
 			}
 
 			// submScoringTestgroupRow.TestGroupID()
 			testGroupId := submScoringTestgroupRow.TestGroupID()
-			submMap[submUuid].TestGroupResults[testGroupId] = ddmSubmTestGroupResult{
+			submMap[submUuid].TestGroupResults[testGroupId] = ddbSubmTestGroupResult{
 				Score:    submScoringTestgroupRow.TestgroupScore,
 				Accepted: submScoringTestgroupRow.AcceptedTests,
 				Wrong:    submScoringTestgroupRow.WrongTests,
@@ -104,6 +108,70 @@ func (s *SubmissionSrvc) GetSubmission(ctx context.Context, submUuid string) (*F
 			submMap[submUuid].CurrEvalStatus = submDetailsRow.CurrentEvalStatus
 			submMap[submUuid].ErrorMsg = submDetailsRow.ErrorMsg
 			submMap[submUuid].CreatedAtRfc3339 = submDetailsRow.CreatedAtRfc3339
+		} else if strings.Contains(sortKey, "#test#") {
+			// to get evaluation uuid, split by #, take the second element
+			hashTagParts := strings.Split(sortKey, "#")
+			evalUuid := hashTagParts[1]
+			// if the evaluation uuid is not in the map, create a new slice
+			if _, ok := submMap[submUuid].EvalTestResults[evalUuid]; !ok {
+				if submMap[submUuid].EvalTestResults == nil {
+					submMap[submUuid].EvalTestResults = make(map[string][]*EvalTestResults)
+				}
+				submMap[submUuid].EvalTestResults[evalUuid] = make([]*EvalTestResults, 0)
+			}
+			// to get test id, split by #, take the last element
+			testIdStr := hashTagParts[len(hashTagParts)-1]
+			// convert to integer
+			testId, err := strconv.Atoi(testIdStr)
+			if err != nil {
+				return nil, fmt.Errorf("failed to convert test id to integer: %w", err)
+			}
+
+			// parse it as EvalTestRow
+			var evalTestRow EvalTestRow
+			err = attributevalue.UnmarshalMap(item, &evalTestRow)
+			if err != nil {
+				return nil, fmt.Errorf("failed to unmarshal item: %w", err)
+			}
+
+			newEntry := &EvalTestResults{
+				TestId:               testId,
+				Reached:              evalTestRow.Reached,
+				Ignored:              evalTestRow.Ignored,
+				Finished:             evalTestRow.Finished,
+				InputTrimmed:         evalTestRow.InputTrimmed,
+				AnswerTrimmed:        evalTestRow.AnswerTrimmed,
+				Subtasks:             evalTestRow.Subtasks,
+				TestGroup:            evalTestRow.TestGroup,
+				SubmCpuTimeMillis:    evalTestRow.SubmCpuTimeMillis,
+				SubmMemKibiBytes:     evalTestRow.SubmMemoryKibiBytes,
+				SubmWallTime:         evalTestRow.SubmWallTimeMillis,
+				SubmExitCode:         evalTestRow.SubmExitCode,
+				SubmStdoutTrimmed:    evalTestRow.SubmStdout,
+				SubmStderrTrimmed:    evalTestRow.CheckerStderr,
+				CheckerCpuTimeMillis: evalTestRow.CheckerCpuTimeMillis,
+				CheckerMemKibiBytes:  evalTestRow.CheckerMemoryKibiBytes,
+				CheckerWallTime:      evalTestRow.CheckerWallTimeMillis,
+				CheckerExitCode:      evalTestRow.CheckerExitCode,
+				CheckerStdoutTrimmed: evalTestRow.CheckerStdout,
+				CheckerStderrTrimmed: evalTestRow.CheckerStderr,
+			}
+
+			submMap[submUuid].EvalTestResults[evalUuid] = append(submMap[submUuid].EvalTestResults[evalUuid], newEntry)
+		} else if strings.Contains(sortKey, "eval#") && strings.Contains(sortKey, "#details") {
+			// parse it as EvalDetailsRow
+			var evalDetailsRow EvalDetailsRow
+			err := attributevalue.UnmarshalMap(item, &evalDetailsRow)
+			if err != nil {
+				return nil, fmt.Errorf("failed to unmarshal item: %w", err)
+			}
+
+			if _, ok := submMap[submUuid].EvalDetails[evalDetailsRow.EvalUuid]; !ok {
+				if submMap[submUuid].EvalDetails == nil {
+					submMap[submUuid].EvalDetails = make(map[string]*EvalDetailsRow)
+				}
+				submMap[submUuid].EvalDetails[evalDetailsRow.EvalUuid] = &evalDetailsRow
+			}
 		}
 	}
 
@@ -157,7 +225,29 @@ func (s *SubmissionSrvc) GetSubmission(ctx context.Context, submUuid string) (*F
 				})
 			}
 		}
-		res = append(res, &FullSubmission{
+		evalDetails, ok := v.EvalDetails[v.CurrEvalUuid]
+		if !ok {
+			return nil, fmt.Errorf("eval details not found for eval uuid %s", v.CurrEvalUuid)
+		}
+		var testResults []*EvalTestResults
+		for evalUuid, evalTestResults := range v.EvalTestResults {
+			if evalUuid != v.CurrEvalUuid {
+				continue
+			}
+			for _, evalTestResult := range evalTestResults {
+				if evalTestResult.SubmCpuTimeMillis != nil && evalDetails.CpuTimeLimitMillis != nil {
+					res := *evalTestResult.SubmCpuTimeMillis > *evalDetails.CpuTimeLimitMillis
+					evalTestResult.TimeLimitExceeded = &res
+				}
+				if evalTestResult.SubmMemKibiBytes != nil && evalDetails.MemLimitKibiBytes != nil {
+					res := *evalTestResult.SubmMemKibiBytes > *evalDetails.MemLimitKibiBytes
+					evalTestResult.MemoryLimitExceeded = &res
+				}
+			}
+			testResults = evalTestResults
+		}
+		// TODO: check if user can see submission code, test inputs, answers, etc.
+		subm := &FullSubmission{
 			BriefSubmission: BriefSubmission{
 				SubmUUID:              k,
 				EvalUUID:              v.CurrEvalUuid,
@@ -173,9 +263,16 @@ func (s *SubmissionSrvc) GetSubmission(ctx context.Context, submUuid string) (*F
 				TaskName:              mapTaskIdToName[v.TaskId],
 				TaskID:                v.TaskId,
 			},
-			SubmContent: v.SubmContent,
-		},
-		)
+			SubmContent:            v.SubmContent,
+			CurrentEvalTestResults: testResults,
+			CompileCpuTimeMillis:   evalDetails.SubmCompileCpuTimeMillis,
+			CompileMemKibiBytes:    evalDetails.SubmCompileMemoryKibiBytes,
+			CompileWallTime:        evalDetails.SubmCompileWallTimeMillis,
+			CompileExitCode:        evalDetails.SubmCompileExitCode,
+			CompileStdoutTrimmed:   evalDetails.SubmCompileStdout,
+			CompileStderrTrimmed:   evalDetails.SubmCompileStderr,
+		}
+		res = append(res, subm)
 	}
 
 	// sort by created_at descending

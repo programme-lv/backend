@@ -239,9 +239,14 @@ func (s *SubmissionSrvc) createSubmissionWithValidatedInput(
 		}
 	}
 
+	cpuTimeLimitMillis := int(task.CPUTimeLimitSeconds * 1000)
+	memLimitKibiBytes := int(float64(task.MemoryLimitMegabytes) * 976.5625)
+
 	// PUT EVALUATION DETAILS ROW
 	evalDetailsRow := &EvalDetailsRow{
 		SubmUuid:                   submUuid.String(),
+		CpuTimeLimitMillis:         &cpuTimeLimitMillis,
+		MemLimitKibiBytes:          &memLimitKibiBytes,
 		SortKey:                    fmt.Sprintf("eval#%s#details", evalUuid.String()),
 		EvalUuid:                   evalUuid.String(),
 		EvaluationStage:            "waiting",

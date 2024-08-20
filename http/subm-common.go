@@ -49,14 +49,14 @@ type EvalTestResults struct {
 	Ignored  bool `json:"ignored"`
 	Finished bool `json:"finished"`
 
-	InputTrimmed  string `json:"input_trimmed"`
-	AnswerTrimmed string `json:"answer_trimmed"`
+	InputTrimmed  *string `json:"input_trimmed"`
+	AnswerTrimmed *string `json:"answer_trimmed"`
 
-	TimeLimitExceeded   bool `json:"time_limit_exceeded"`
-	MemoryLimitExceeded bool `json:"memory_limit_exceeded"`
+	TimeLimitExceeded   *bool `json:"time_limit_exceeded"`
+	MemoryLimitExceeded *bool `json:"memory_limit_exceeded"`
 
 	Subtasks  []int `json:"subtasks"`
-	TestGroup int   `json:"test_group"`
+	TestGroup *int  `json:"test_group"`
 
 	SubmCpuTimeMillis *int    `json:"subm_cpu_time_millis"`
 	SubmMemKibiBytes  *int    `json:"subm_mem_kibi_bytes"`
@@ -77,13 +77,69 @@ type FullSubmission struct {
 	BriefSubmission
 	SubmContent            string             `json:"subm_content"`
 	CurrentEvalTestResults []*EvalTestResults `json:"current_eval_test_results"`
+
+	CompileCpuTimeMillis *int    `json:"compile_cpu_time_millis"`
+	CompileMemKibiBytes  *int    `json:"compile_mem_kibi_bytes"`
+	CompileWallTime      *int    `json:"compile_wall_time"`
+	CompileExitCode      *int    `json:"compile_exit_code"`
+	CompileStdoutTrimmed *string `json:"compile_stdout_trimmed"`
+	CompileStderrTrimmed *string `json:"compile_stderr_trimmed"`
+}
+
+func mapEvalTestResults(x *subm.EvalTestResults) *EvalTestResults {
+	if x == nil {
+		return nil
+	}
+
+	return &EvalTestResults{
+		TestId:               x.TestId,
+		Reached:              x.Reached,
+		Ignored:              x.Ignored,
+		Finished:             x.Finished,
+		InputTrimmed:         x.InputTrimmed,
+		AnswerTrimmed:        x.AnswerTrimmed,
+		TimeLimitExceeded:    x.TimeLimitExceeded,
+		MemoryLimitExceeded:  x.MemoryLimitExceeded,
+		Subtasks:             x.Subtasks,
+		TestGroup:            x.TestGroup,
+		SubmCpuTimeMillis:    x.SubmCpuTimeMillis,
+		SubmMemKibiBytes:     x.SubmMemKibiBytes,
+		SubmWallTime:         x.SubmWallTime,
+		SubmExitCode:         x.SubmExitCode,
+		SubmStdoutTrimmed:    x.SubmStdoutTrimmed,
+		SubmStderrTrimmed:    x.SubmStderrTrimmed,
+		CheckerCpuTimeMillis: x.CheckerCpuTimeMillis,
+		CheckerMemKibiBytes:  x.CheckerMemKibiBytes,
+		CheckerWallTime:      x.CheckerWallTime,
+		CheckerExitCode:      x.CheckerExitCode,
+		CheckerStdoutTrimmed: x.CheckerStdoutTrimmed,
+		CheckerStderrTrimmed: x.CheckerStderrTrimmed,
+	}
+}
+
+func mapEvalTestResultsSlice(x []*subm.EvalTestResults) []*EvalTestResults {
+	if x == nil {
+		return nil
+	}
+
+	res := make([]*EvalTestResults, len(x))
+	for i, v := range x {
+		res[i] = mapEvalTestResults(v)
+	}
+	return res
 }
 
 func mapFullSubm(x *subm.FullSubmission) *FullSubmission {
 	res := &FullSubmission{
 		BriefSubmission:        *mapBriefSubm(&x.BriefSubmission),
 		SubmContent:            x.SubmContent,
-		CurrentEvalTestResults: []*EvalTestResults{},
+		CurrentEvalTestResults: mapEvalTestResultsSlice(x.CurrentEvalTestResults),
+		CompileCpuTimeMillis:   x.CompileCpuTimeMillis,
+		CompileMemKibiBytes:    x.CompileMemKibiBytes,
+		CompileWallTime:        x.CompileWallTime,
+		CompileExitCode:        x.CompileExitCode,
+		CompileStdoutTrimmed:   x.CompileStdoutTrimmed,
+		CompileStderrTrimmed:   x.CompileStderrTrimmed,
 	}
 
 	return res
