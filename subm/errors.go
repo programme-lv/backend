@@ -58,3 +58,12 @@ func newErrJwtTokenMissing() *srvcerr.Error {
 		"JWT netika atrasts",
 	).SetHttpStatusCode(http.StatusUnauthorized)
 }
+
+const ErrCodeSubmissionNotFound = "submission_not_found"
+
+func newErrSubmissionNotFound() *srvcerr.Error {
+	return srvcerr.New(
+		ErrCodeSubmissionNotFound,
+		"Atbilstošais iesūtījums netika atrasts",
+	).SetHttpStatusCode(http.StatusNotFound)
+}

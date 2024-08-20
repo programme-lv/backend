@@ -73,6 +73,7 @@ func (httpserver *HttpServer) routes() {
 	r := httpserver.router
 	r.Post("/submissions", httpserver.createSubmission)
 	r.Get("/submissions", httpserver.listSubmissions)
+	r.Get("/submissions/{submUuid}", httpserver.getSubmission)
 	r.Post("/auth/login", httpserver.authLogin)
 	r.Post("/users", httpserver.authRegister)
 	r.Get("/tasks", httpserver.listTasks)

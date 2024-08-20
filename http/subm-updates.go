@@ -107,7 +107,7 @@ func (httpserver *HttpServer) listenToSubmUpdates(w http.ResponseWriter, r *http
 
 	for update := range listener.Listen() {
 		message := SubmissionListUpdate{
-			SubmCreated:        mapSubm(update.SubmCreated),
+			SubmCreated:        mapBriefSubm(update.SubmCreated),
 			StateUpdate:        mapStateUpdate(update.StateUpdate),
 			TestGroupResUpdate: mapTestgroupResUpdate(update.TestgroupResUpdate),
 		}

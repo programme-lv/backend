@@ -24,6 +24,42 @@ type BriefSubmission struct {
 	TaskID                string
 }
 
+type EvalTestResults struct {
+	TestId   int
+	Reached  bool
+	Ignored  bool
+	Finished bool
+
+	InputTrimmed  string
+	AnswerTrimmed string
+
+	TimeLimitExceeded   bool
+	MemoryLimitExceeded bool
+
+	Subtasks  []int
+	TestGroup int
+
+	SubmCpuTimeMillis *int
+	SubmMemKibiBytes  *int
+	SubmWallTime      *int
+	SubmExitCode      *int
+	SubmStdoutTrimmed *string
+	SubmStderrTrimmed *string
+
+	CheckerCpuTimeMillis *int
+	CheckerMemKibiBytes  *int
+	CheckerWallTime      *int
+	CheckerExitCode      *int
+	CheckerStdoutTrimmed *string
+	CheckerStderrTrimmed *string
+}
+
+type FullSubmission struct {
+	BriefSubmission
+	SubmContent            string
+	CurrentEvalTestResults []*EvalTestResults
+}
+
 type SubmissionListUpdate struct {
 	SubmCreated        *BriefSubmission
 	StateUpdate        *SubmissionStateUpdate
