@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
@@ -19,7 +20,7 @@ func (s *SubmissionSrvc) GetSubmission(ctx context.Context, submUuid string) (*F
 		KeyConditionExpression: aws.String("subm_uuid = :pk"),
 		ExpressionAttributeValues: map[string]types.AttributeValue{
 			":pk": &types.AttributeValueMemberS{
-				Value: "51ca9748-44a1-4d9a-9bbf-a15581f938b5",
+				Value: submUuid,
 			},
 		},
 	}
@@ -235,6 +236,7 @@ func (s *SubmissionSrvc) GetSubmission(ctx context.Context, submUuid string) (*F
 				continue
 			}
 			for _, evalTestResult := range evalTestResults {
+				fmt.Printf("evalTestResult: %+v\n", evalTestResult)
 				if evalTestResult.SubmCpuTimeMillis != nil && evalDetails.CpuTimeLimitMillis != nil {
 					res := *evalTestResult.SubmCpuTimeMillis > *evalDetails.CpuTimeLimitMillis
 					evalTestResult.TimeLimitExceeded = &res
@@ -246,6 +248,15 @@ func (s *SubmissionSrvc) GetSubmission(ctx context.Context, submUuid string) (*F
 			}
 			testResults = evalTestResults
 		}
+		// parse rfc 3339
+		createdAt := time.Time{}
+		if v.CreatedAtRfc3339 != "" {
+			createdAt, err = time.Parse(time.RFC3339, v.CreatedAtRfc3339)
+			if err != nil {
+				return nil, fmt.Errorf("failed to parse created_at: %w", err)
+			}
+		}
+
 		// TODO: check if user can see submission code, test inputs, answers, etc.
 		subm := &FullSubmission{
 			BriefSubmission: BriefSubmission{
@@ -263,14 +274,31 @@ func (s *SubmissionSrvc) GetSubmission(ctx context.Context, submUuid string) (*F
 				TaskName:              mapTaskIdToName[v.TaskId],
 				TaskID:                v.TaskId,
 			},
-			SubmContent:            v.SubmContent,
-			CurrentEvalTestResults: testResults,
-			CompileCpuTimeMillis:   evalDetails.SubmCompileCpuTimeMillis,
-			CompileMemKibiBytes:    evalDetails.SubmCompileMemoryKibiBytes,
-			CompileWallTime:        evalDetails.SubmCompileWallTimeMillis,
-			CompileExitCode:        evalDetails.SubmCompileExitCode,
-			CompileStdoutTrimmed:   evalDetails.SubmCompileStdout,
-			CompileStderrTrimmed:   evalDetails.SubmCompileStderr,
+			SubmContent:     v.SubmContent,
+			EvalTestResults: testResults,
+			EvalDetails: &EvalDetails{
+				EvalUuid:             evalDetails.EvalUuid,
+				CreatedAt:            createdAt,
+				ErrorMsg:             evalDetails.ErrorMsg,
+				EvalStage:            evalDetails.EvaluationStage,
+				CpuTimeLimitMillis:   evalDetails.CpuTimeLimitMillis,
+				MemoryLimitKibiBytes: evalDetails.MemLimitKibiBytes,
+				ProgrammingLang: ProgrammingLang{
+					ID:               evalDetails.ProgrammingLang.PLangId,
+					FullName:         evalDetails.ProgrammingLang.DisplayName,
+					CodeFilename:     evalDetails.ProgrammingLang.SubmCodeFname,
+					CompileCmd:       evalDetails.ProgrammingLang.CompileCommand,
+					ExecuteCmd:       evalDetails.ProgrammingLang.ExecCommand,
+					CompiledFilename: evalDetails.ProgrammingLang.CompiledFname,
+				},
+				SystemInformation:    evalDetails.SystemInformation,
+				CompileCpuTimeMillis: evalDetails.SubmCompileCpuTimeMillis,
+				CompileMemKibiBytes:  evalDetails.SubmCompileMemoryKibiBytes,
+				CompileWallTime:      evalDetails.SubmCompileWallTimeMillis,
+				CompileExitCode:      evalDetails.SubmCompileExitCode,
+				CompileStdoutTrimmed: evalDetails.SubmCompileStdout,
+				CompileStderrTrimmed: evalDetails.SubmCompileStderr,
+			},
 		}
 		res = append(res, subm)
 	}

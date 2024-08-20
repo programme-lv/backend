@@ -1,6 +1,8 @@
 package http
 
 import (
+	"time"
+
 	"github.com/programme-lv/backend/subm"
 )
 
@@ -73,10 +75,18 @@ type EvalTestResults struct {
 	CheckerStderrTrimmed *string `json:"checker_stderr_trimmed"`
 }
 
-type FullSubmission struct {
-	BriefSubmission
-	SubmContent            string             `json:"subm_content"`
-	CurrentEvalTestResults []*EvalTestResults `json:"current_eval_test_results"`
+type EvalDetails struct {
+	EvalUuid string `json:"eval_uuid"`
+
+	CreatedAtRfc3339 string  `json:"created_at_rfc3339"`
+	ErrorMsg         *string `json:"error_msg"`
+	EvalStage        string  `json:"eval_stage"`
+
+	CpuTimeLimitMillis   *int `json:"cpu_time_limit_millis"`
+	MemoryLimitKibiBytes *int `json:"memory_limit_kibi_bytes"`
+
+	ProgrammingLang   ProgrammingLang `json:"programming_lang"`
+	SystemInformation *string         `json:"system_information"`
 
 	CompileCpuTimeMillis *int    `json:"compile_cpu_time_millis"`
 	CompileMemKibiBytes  *int    `json:"compile_mem_kibi_bytes"`
@@ -84,6 +94,13 @@ type FullSubmission struct {
 	CompileExitCode      *int    `json:"compile_exit_code"`
 	CompileStdoutTrimmed *string `json:"compile_stdout_trimmed"`
 	CompileStderrTrimmed *string `json:"compile_stderr_trimmed"`
+}
+
+type FullSubmission struct {
+	BriefSubmission
+	SubmContent     string             `json:"subm_content"`
+	EvalTestResults []*EvalTestResults `json:"eval_test_results"`
+	EvalDetails     *EvalDetails       `json:"eval_details"`
 }
 
 func mapEvalTestResults(x *subm.EvalTestResults) *EvalTestResults {
@@ -129,17 +146,47 @@ func mapEvalTestResultsSlice(x []*subm.EvalTestResults) []*EvalTestResults {
 	return res
 }
 
+func mapProgrammingLang(x subm.ProgrammingLang) ProgrammingLang {
+	return ProgrammingLang{
+		ID:               x.ID,
+		FullName:         x.FullName,
+		CodeFilename:     x.CodeFilename,
+		CompileCmd:       x.CompileCmd,
+		ExecuteCmd:       x.ExecuteCmd,
+		EnvVersionCmd:    x.EnvVersionCmd,
+		HelloWorldCode:   x.HelloWorldCode,
+		MonacoID:         x.MonacoId,
+		CompiledFilename: x.CompiledFilename,
+		Enabled:          x.Enabled,
+	}
+}
+
+func mapEvalDetails(x *subm.EvalDetails) *EvalDetails {
+	return &EvalDetails{
+		EvalUuid:             x.EvalUuid,
+		CreatedAtRfc3339:     x.CreatedAt.UTC().Format(time.RFC3339),
+		ErrorMsg:             x.ErrorMsg,
+		EvalStage:            x.EvalStage,
+		CpuTimeLimitMillis:   x.CpuTimeLimitMillis,
+		MemoryLimitKibiBytes: x.MemoryLimitKibiBytes,
+		ProgrammingLang:      mapProgrammingLang(x.ProgrammingLang),
+		SystemInformation:    x.SystemInformation,
+
+		CompileCpuTimeMillis: x.CompileCpuTimeMillis,
+		CompileMemKibiBytes:  x.CompileMemKibiBytes,
+		CompileWallTime:      x.CompileWallTime,
+		CompileExitCode:      x.CompileExitCode,
+		CompileStdoutTrimmed: x.CompileStdoutTrimmed,
+		CompileStderrTrimmed: x.CompileStderrTrimmed,
+	}
+}
+
 func mapFullSubm(x *subm.FullSubmission) *FullSubmission {
 	res := &FullSubmission{
-		BriefSubmission:        *mapBriefSubm(&x.BriefSubmission),
-		SubmContent:            x.SubmContent,
-		CurrentEvalTestResults: mapEvalTestResultsSlice(x.CurrentEvalTestResults),
-		CompileCpuTimeMillis:   x.CompileCpuTimeMillis,
-		CompileMemKibiBytes:    x.CompileMemKibiBytes,
-		CompileWallTime:        x.CompileWallTime,
-		CompileExitCode:        x.CompileExitCode,
-		CompileStdoutTrimmed:   x.CompileStdoutTrimmed,
-		CompileStderrTrimmed:   x.CompileStderrTrimmed,
+		BriefSubmission: *mapBriefSubm(&x.BriefSubmission),
+		SubmContent:     x.SubmContent,
+		EvalTestResults: mapEvalTestResultsSlice(x.EvalTestResults),
+		EvalDetails:     mapEvalDetails(x.EvalDetails),
 	}
 
 	return res

@@ -1,5 +1,7 @@
 package subm
 
+import "time"
+
 type CreateSubmissionPayload struct {
 	Submission        string
 	Username          string
@@ -54,10 +56,18 @@ type EvalTestResults struct {
 	CheckerStderrTrimmed *string
 }
 
-type FullSubmission struct {
-	BriefSubmission
-	SubmContent            string
-	CurrentEvalTestResults []*EvalTestResults
+type EvalDetails struct {
+	EvalUuid string
+
+	CreatedAt time.Time
+	ErrorMsg  *string
+	EvalStage string
+
+	CpuTimeLimitMillis   *int
+	MemoryLimitKibiBytes *int
+
+	ProgrammingLang   ProgrammingLang
+	SystemInformation *string
 
 	CompileCpuTimeMillis *int
 	CompileMemKibiBytes  *int
@@ -65,6 +75,13 @@ type FullSubmission struct {
 	CompileExitCode      *int
 	CompileStdoutTrimmed *string
 	CompileStderrTrimmed *string
+}
+
+type FullSubmission struct {
+	BriefSubmission
+	SubmContent     string
+	EvalTestResults []*EvalTestResults
+	EvalDetails     *EvalDetails
 }
 
 type SubmissionListUpdate struct {
