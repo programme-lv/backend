@@ -30,7 +30,7 @@ func (httpserver *HttpServer) listProgrammingLangs(w http.ResponseWriter, r *htt
 			HelloWorldCode:   lang.HelloWorldCode,
 			MonacoID:         lang.MonacoId,
 			CompiledFilename: lang.CompiledFilename,
-			Enabled:          false,
+			Enabled:          lang.Enabled,
 		}
 	}
 
