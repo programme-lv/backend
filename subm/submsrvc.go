@@ -99,8 +99,8 @@ func NewSubmissions() *SubmissionSrvc {
 
 func (s *SubmissionSrvc) StartProcessingSubmEvalResults(ctx context.Context) (err error) {
 	submEvalResQueueUrl := s.responseSqsUrl
-	throtleChan := make(chan struct{}, 1)
-	for i := 0; i < 1; i++ {
+	throtleChan := make(chan struct{}, 10)
+	for i := 0; i < 10; i++ {
 		throtleChan <- struct{}{}
 	}
 	for {
