@@ -588,6 +588,7 @@ func (s *SubmissionSrvc) processEvalResult(evalUuid string, msgType string, fiel
 
 		// get the test row to see subtasks and testgroups
 		// pk=subm_uuid, sk=eval#<eval_uuid>#test#0001, get "subtasks" (list) and "test_group" (int pointer)
+		// TODO: retrieving this information for each test is inefficient, consider caching it
 		o, err := s.ddbClient.GetItem(context.TODO(), &dynamodb.GetItemInput{
 			Key: map[string]types.AttributeValue{
 				"subm_uuid": &types.AttributeValueMemberS{Value: submUuid},
@@ -740,6 +741,42 @@ func (s *SubmissionSrvc) processEvalResult(evalUuid string, msgType string, fiel
 			return
 		}
 
+		// if the test has exceed the time limit, don't increase the score.
+		// to check that we have to retrieve evaluation detail row
+		// pk=subm_uuid, sk=eval#<eval_uuid>#details, get "cpu_time_limit_millis", "mem_limit_kibi_bytes"
+		// TODO: retrieving this information for each test is inefficient, consider caching it
+		o, err = s.ddbClient.GetItem(context.TODO(), &dynamodb.GetItemInput{
+			Key: map[string]types.AttributeValue{
+				"subm_uuid": &types.AttributeValueMemberS{Value: submUuid},
+				"sort_key":  &types.AttributeValueMemberS{Value: "eval#" + evalUuid + "#details"},
+			},
+			TableName:            aws.String(s.submTableName),
+			ProjectionExpression: aws.String("cpu_time_limit_millis, mem_limit_kibi_bytes"),
+		})
+
+		if err != nil {
+			log.Printf("failed to get evaluation details row: %v", err)
+			return
+		}
+
+		var evalLimits struct {
+			CpuTimeLimitMillis int64 `dynamodbav:"cpu_time_limit_millis"`
+			MemLimitKibiBytes  int64 `dynamodbav:"mem_limit_kibi_bytes"`
+		}
+
+		err = attributevalue.UnmarshalMap(o.Item, &evalLimits)
+		if err != nil {
+			log.Printf("failed to unmarshal evaluation details row: %v", err)
+			return
+		}
+
+		notExceededCpuTime := parsed.Submission.CpuTimeMillis <= evalLimits.CpuTimeLimitMillis
+		notExceededMemLim := parsed.Submission.MemoryKibiBytes <= evalLimits.MemLimitKibiBytes
+		notExceededWallTimeLimt := parsed.Submission.WallTimeMillis <= 15*1000 // 15 seconds
+		checkerOk := parsed.Checker.ExitCode == 0
+
+		AC := notExceededCpuTime && notExceededMemLim && notExceededWallTimeLimt && checkerOk
+
 		// if this test has a testgroup, update testgroup row
 		if testSubtasksTestGroups.TestGroup != nil {
 			// find pk=<subm_uuid>, sk=eval#<eval_uuid>#scoring#testgroup#<testgroup_id>
@@ -781,7 +818,7 @@ func (s *SubmissionSrvc) processEvalResult(evalUuid string, msgType string, fiel
 					continue
 				}
 
-				if parsed.Checker.ExitCode == 0 { // accepted
+				if AC {
 					testgroupRow.AcceptedTests++
 					testgroupRow.UntestedTests--
 				} else {
@@ -959,7 +996,7 @@ func (s *SubmissionSrvc) processEvalResult(evalUuid string, msgType string, fiel
 					log.Printf("failed to unmarshal tests row: %v", err)
 				}
 
-				if parsed.Checker.ExitCode == 0 { // accepted
+				if AC { // accepted
 					testsRow.AcceptedTests++
 					testsRow.UntestedTests--
 				} else {
@@ -1050,6 +1087,8 @@ func (s *SubmissionSrvc) processEvalResult(evalUuid string, msgType string, fiel
 						Untested: testsRow.UntestedTests,
 					}
 				}
+
+				break
 			}
 		}
 
