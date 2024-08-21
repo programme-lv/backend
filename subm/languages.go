@@ -64,6 +64,18 @@ func getHardcodedLanguageList() []ProgrammingLang {
 			HelloWorldCode:   `print("Hello, World!")`,
 			MonacoId:         "python",
 			CompiledFilename: nil,
+			Enabled:          false,
+		},
+		{
+			ID:               "python3.12",
+			FullName:         "Python 3.12",
+			CodeFilename:     "main.py",
+			CompileCmd:       nil,
+			ExecuteCmd:       "python3.12 main.py",
+			EnvVersionCmd:    "python3.12 --version",
+			HelloWorldCode:   `print("Hello, World!")`,
+			MonacoId:         "python",
+			CompiledFilename: nil,
 			Enabled:          true,
 		},
 		{
