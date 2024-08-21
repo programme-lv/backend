@@ -33,9 +33,9 @@ type SubmScoringTestsRow struct {
 
 	CurrentEvalUuid string `dynamodbav:"current_eval_uuid"` // the uuid of the current evaluation
 
-	Accepted int `dynamodbav:"accepted"`
-	Wrong    int `dynamodbav:"wrong"`
-	Untested int `dynamodbav:"untested"`
+	Accepted int `dynamodbav:"accepted_tests"`
+	Wrong    int `dynamodbav:"wrong_tests"`
+	Untested int `dynamodbav:"untested_tests"`
 
 	Gsi1Pk      int    `dynamodbav:"gsi1_pk"` // gsi1pk = 1
 	Gsi1SortKey string `dynamodbav:"gsi1_sk"` // <created_at_rfc3339_utc>#<subm_uuid>#scoring#tests
@@ -170,9 +170,9 @@ type EvalScoringTestsRow struct {
 	SubmUuid string `dynamodbav:"subm_uuid"` // partition key
 	SortKey  string `dynamodbav:"sort_key"`  // eval#<eval_uuid>#scoring#tests
 
-	Accepted int `dynamodbav:"accepted"`
-	Wrong    int `dynamodbav:"wrong"`
-	Untested int `dynamodbav:"untested"`
+	Accepted int `dynamodbav:"accepted_tests"`
+	Wrong    int `dynamodbav:"wrong_tests"`
+	Untested int `dynamodbav:"untested_tests"`
 
 	Version int64 `dynamodbav:"version"` // For optimistic locking
 }

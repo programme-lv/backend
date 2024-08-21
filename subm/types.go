@@ -88,6 +88,7 @@ type SubmissionListUpdate struct {
 	SubmCreated        *BriefSubmission
 	StateUpdate        *SubmissionStateUpdate
 	TestgroupResUpdate *TestgroupScoreUpdate
+	TestsResUpdate     *TestsScoreUpdate
 }
 
 type SubtaskResult struct {
@@ -135,4 +136,12 @@ type TestgroupResultUpdate struct {
 	AcceptedTests int
 	WrongTests    int
 	UntestedTests int
+}
+
+type TestsScoreUpdate struct {
+	SubmUuid string
+	EvalUuid string
+	Accepted int
+	Wrong    int
+	Untested int
 }

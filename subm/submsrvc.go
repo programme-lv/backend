@@ -32,6 +32,7 @@ type SubmissionSrvc struct {
 	createdSubmChan        chan *BriefSubmission
 	updateSubmStateChan    chan *SubmissionStateUpdate
 	updateTestgroupResChan chan *TestgroupResultUpdate
+	updateTestsResChan     chan *TestsScoreUpdate
 
 	updateListenerLock     sync.Mutex
 	updateListeners        []chan *SubmissionListUpdate
@@ -82,6 +83,7 @@ func NewSubmissions() *SubmissionSrvc {
 		createdSubmChan:        make(chan *BriefSubmission, 1000),
 		updateSubmStateChan:    make(chan *SubmissionStateUpdate, 1000),
 		updateTestgroupResChan: make(chan *TestgroupResultUpdate, 1000),
+		updateTestsResChan:     make(chan *TestsScoreUpdate, 1000),
 		updateListenerLock:     sync.Mutex{},
 		updateListeners:        make([]chan *SubmissionListUpdate, 0, 100),
 		updateRemovedListeners: make([]chan *SubmissionListUpdate, 0, 100),
@@ -97,8 +99,8 @@ func NewSubmissions() *SubmissionSrvc {
 
 func (s *SubmissionSrvc) StartProcessingSubmEvalResults(ctx context.Context) (err error) {
 	submEvalResQueueUrl := s.responseSqsUrl
-	throtleChan := make(chan struct{}, 100)
-	for i := 0; i < 100; i++ {
+	throtleChan := make(chan struct{}, 1)
+	for i := 0; i < 1; i++ {
 		throtleChan <- struct{}{}
 	}
 	for {
@@ -145,7 +147,7 @@ func (s *SubmissionSrvc) StartProcessingSubmEvalResults(ctx context.Context) (er
 
 			// TODO throttle for each eval uuid individually
 			<-throtleChan
-			go s.processEvalResult(qMsg.EvalUuid, msgType.MsgType, qMsg.Data)
+			s.processEvalResult(qMsg.EvalUuid, msgType.MsgType, qMsg.Data)
 			throtleChan <- struct{}{}
 		}
 	}

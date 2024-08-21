@@ -920,7 +920,137 @@ func (s *SubmissionSrvc) processEvalResult(evalUuid string, msgType string, fiel
 				panic("not implemented")
 			}
 		} else {
-			panic("not implemented")
+			// pk=<subm_uuid>, sk=eval#15fbd4b7-31b3-4ec9-9e4c-64867b0d6c4a#scoring#tests
+			// read "accepted_tests", "wrong_tests", "untested_tests", "version"
+			// increment "accepted_tests" by 1, decrement "untested_tests" by 1
+			// increment "version" by 1, save the new version
+			// on the condition that the current version is the same as the read version
+			// otherwise, retry the whole process for a maximum of 30 times with random sleep between 10ms and 100ms
+
+			testsPk := map[string]types.AttributeValue{
+				"subm_uuid": &types.AttributeValueMemberS{Value: submUuid},
+				"sort_key":  &types.AttributeValueMemberS{Value: "eval#" + evalUuid + "#scoring#tests"},
+			}
+
+			for attempt := 0; attempt < 30; attempt++ {
+				if attempt > 0 {
+					time.Sleep(time.Duration(10+rand.Intn(91)) * time.Millisecond)
+				}
+				// let's read the tests row
+				o, err := s.ddbClient.GetItem(context.TODO(), &dynamodb.GetItemInput{
+					Key:                  testsPk,
+					TableName:            aws.String(s.submTableName),
+					ProjectionExpression: aws.String("accepted_tests, wrong_tests, untested_tests, version"),
+				})
+				if err != nil {
+					log.Printf("failed to get tests row: %v", err)
+					continue
+				}
+
+				var testsRow struct {
+					AcceptedTests int   `dynamodbav:"accepted_tests"`
+					WrongTests    int   `dynamodbav:"wrong_tests"`
+					UntestedTests int   `dynamodbav:"untested_tests"`
+					Version       int64 `dynamodbav:"version"`
+				}
+
+				err = attributevalue.UnmarshalMap(o.Item, &testsRow)
+				if err != nil {
+					log.Printf("failed to unmarshal tests row: %v", err)
+				}
+
+				if parsed.Checker.ExitCode == 0 { // accepted
+					testsRow.AcceptedTests++
+					testsRow.UntestedTests--
+				} else {
+					testsRow.WrongTests++
+					testsRow.UntestedTests--
+				}
+
+				updTests := expression.
+					Set(expression.Name("accepted_tests"), expression.Value(testsRow.AcceptedTests)).
+					Set(expression.Name("untested_tests"), expression.Value(testsRow.UntestedTests)).
+					Set(expression.Name("wrong_tests"), expression.Value(testsRow.WrongTests)).
+					Set(expression.Name("version"), expression.Value(testsRow.Version+1))
+
+				updTestsCond := expression.Name("version").Equal(expression.Value(testsRow.Version))
+				updTestsExpr, err := expression.NewBuilder().WithUpdate(updTests).WithCondition(updTestsCond).Build()
+				if err != nil {
+					log.Printf("failed to build tests update expression: %v", err)
+					continue
+				}
+
+				_, err = s.ddbClient.UpdateItem(context.TODO(), &dynamodb.UpdateItemInput{
+					Key:                       testsPk,
+					TableName:                 aws.String(s.submTableName),
+					UpdateExpression:          updTestsExpr.Update(),
+					ConditionExpression:       updTestsExpr.Condition(),
+					ExpressionAttributeValues: updTestsExpr.Values(),
+					ExpressionAttributeNames:  updTestsExpr.Names(),
+				})
+
+				if err != nil {
+					var condFailed *types.ConditionalCheckFailedException
+					if errors.As(err, &condFailed) {
+						log.Printf("failed to update tests because the condition failed: %v", err)
+						continue
+					} else {
+						log.Printf("failed to update tests: %v", err)
+						return
+					}
+				}
+
+				// afterwards update submission row with the new version if the current version is the smaller than tests row's written version
+				// otherwise, stop because it is larger and the submission row was updated by another thread
+				// also make sure that the current_eval_uuid is the same as eval_uuid
+
+				// pk=subm_uuid, sk=subm#scoring#tests
+				submTestsPk := map[string]types.AttributeValue{
+					"subm_uuid": &types.AttributeValueMemberS{Value: submUuid},
+					"sort_key":  &types.AttributeValueMemberS{Value: "subm#scoring#tests"},
+				}
+
+				updSubmTests := expression.
+					Set(expression.Name("accepted_tests"), expression.Value(testsRow.AcceptedTests)).
+					Set(expression.Name("untested_tests"), expression.Value(testsRow.UntestedTests)).
+					Set(expression.Name("wrong_tests"), expression.Value(testsRow.WrongTests)).
+					Set(expression.Name("version"), expression.Value(testsRow.Version+1))
+
+				updSubmTestsCond := expression.Name("version").LessThanEqual(expression.Value(testsRow.Version)).
+					And(expression.Name("current_eval_uuid").Equal(expression.Value(evalUuid)))
+				updSubmTestsExpr, err := expression.NewBuilder().WithUpdate(updSubmTests).WithCondition(updSubmTestsCond).Build()
+				if err != nil {
+					log.Printf("failed to build submission tests update expression: %v", err)
+					return
+				}
+
+				_, err = s.ddbClient.UpdateItem(context.TODO(), &dynamodb.UpdateItemInput{
+					Key:                       submTestsPk,
+					TableName:                 aws.String(s.submTableName),
+					UpdateExpression:          updSubmTestsExpr.Update(),
+					ConditionExpression:       updSubmTestsExpr.Condition(),
+					ExpressionAttributeValues: updSubmTestsExpr.Values(),
+					ExpressionAttributeNames:  updSubmTestsExpr.Names(),
+				})
+
+				if err != nil {
+					var condFailed *types.ConditionalCheckFailedException
+					if errors.As(err, &condFailed) {
+						log.Printf("failed to update submission tests because the condition failed: %v", err)
+					} else {
+						log.Printf("failed to update submission tests: %v", err)
+						return
+					}
+				} else {
+					s.updateTestsResChan <- &TestsScoreUpdate{
+						SubmUuid: submUuid,
+						EvalUuid: evalUuid,
+						Accepted: testsRow.AcceptedTests,
+						Wrong:    testsRow.WrongTests,
+						Untested: testsRow.UntestedTests,
+					}
+				}
+			}
 		}
 
 	case "finished_testing":

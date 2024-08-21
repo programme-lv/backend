@@ -46,6 +46,12 @@ func (s *SubmissionSrvc) StartStreamingSubmListUpdates(ctx context.Context) {
 			}
 
 			sendUpdate(update)
+		case testsResUpdate := <-s.updateTestsResChan:
+			update := &SubmissionListUpdate{
+				TestsResUpdate: testsResUpdate,
+			}
+
+			sendUpdate(update)
 		}
 	}
 }

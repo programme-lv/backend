@@ -236,7 +236,6 @@ func (s *SubmissionSrvc) GetSubmission(ctx context.Context, submUuid string) (*F
 				continue
 			}
 			for _, evalTestResult := range evalTestResults {
-				fmt.Printf("evalTestResult: %+v\n", evalTestResult)
 				if evalTestResult.SubmCpuTimeMillis != nil && evalDetails.CpuTimeLimitMillis != nil {
 					res := *evalTestResult.SubmCpuTimeMillis > *evalDetails.CpuTimeLimitMillis
 					evalTestResult.TimeLimitExceeded = &res
