@@ -32,14 +32,6 @@ func (s *SubmissionSrvc) ListSubmissions(ctx context.Context) (res []*BriefSubmi
 		return nil, fmt.Errorf("failed to query items: %w", err)
 	}
 
-	type ddmSubmTestGroupResult struct {
-		Score    int
-		Accepted int
-		Wrong    int
-		Untested int
-		Subtask  int
-	}
-
 	type ddbSubm struct {
 		SubmUuid         string
 		SubmContent      string
@@ -52,7 +44,8 @@ func (s *SubmissionSrvc) ListSubmissions(ctx context.Context) (res []*BriefSubmi
 		CreatedAtRfc3339 string
 		foundDetailsRow  bool
 
-		TestGroupResults map[int]ddmSubmTestGroupResult
+		TestGroupResults map[int]*SubmScoringTestgroupRow
+		TestsScoringRes  *SubmScoringTestsRow
 	}
 
 	// note the order of the items should be that all items that provide additional information are lexicographically  > subm#details
@@ -80,18 +73,12 @@ func (s *SubmissionSrvc) ListSubmissions(ctx context.Context) (res []*BriefSubmi
 			}
 
 			if submMap[submUuid].TestGroupResults == nil {
-				submMap[submUuid].TestGroupResults = make(map[int]ddmSubmTestGroupResult)
+				submMap[submUuid].TestGroupResults = make(map[int]*SubmScoringTestgroupRow)
 			}
 
 			// submScoringTestgroupRow.TestGroupID()
 			testGroupId := submScoringTestgroupRow.TestGroupID()
-			submMap[submUuid].TestGroupResults[testGroupId] = ddmSubmTestGroupResult{
-				Score:    submScoringTestgroupRow.TestgroupScore,
-				Accepted: submScoringTestgroupRow.AcceptedTests,
-				Wrong:    submScoringTestgroupRow.WrongTests,
-				Untested: submScoringTestgroupRow.UntestedTests,
-				Subtask:  submScoringTestgroupRow.StatementSubtask,
-			}
+			submMap[submUuid].TestGroupResults[testGroupId] = &submScoringTestgroupRow
 		} else if strings.HasPrefix(sortKey, "subm#details") {
 			// parse it as SubmDetailsRow
 			var submDetailsRow SubmDetailsRow
@@ -108,6 +95,15 @@ func (s *SubmissionSrvc) ListSubmissions(ctx context.Context) (res []*BriefSubmi
 			submMap[submUuid].CurrEvalStatus = submDetailsRow.CurrentEvalStatus
 			submMap[submUuid].ErrorMsg = submDetailsRow.ErrorMsg
 			submMap[submUuid].CreatedAtRfc3339 = submDetailsRow.CreatedAtRfc3339
+		} else if strings.HasPrefix(sortKey, "subm#scoring#tests") {
+			// parse it as SubmScoringTestsRow
+			var submScoringTestsRow SubmScoringTestsRow
+			err := attributevalue.UnmarshalMap(item, &submScoringTestsRow)
+			if err != nil {
+				return nil, fmt.Errorf("failed to unmarshal item: %w", err)
+			}
+
+			submMap[submUuid].TestsScoringRes = &submScoringTestsRow
 		}
 	}
 
@@ -151,14 +147,23 @@ func (s *SubmissionSrvc) ListSubmissions(ctx context.Context) (res []*BriefSubmi
 			for testGroupId, testGroupResult := range v.TestGroupResults {
 				testgroups = append(testgroups, &TestGroupResult{
 					TestGroupID:      testGroupId,
-					TestGroupScore:   testGroupResult.Score,
-					StatementSubtask: testGroupResult.Subtask,
-					AcceptedTests:    testGroupResult.Accepted,
-					WrongTests:       testGroupResult.Wrong,
-					UntestedTests:    testGroupResult.Untested,
+					TestGroupScore:   testGroupResult.TestgroupScore,
+					StatementSubtask: testGroupResult.StatementSubtask,
+					AcceptedTests:    testGroupResult.AcceptedTests,
+					WrongTests:       testGroupResult.WrongTests,
+					UntestedTests:    testGroupResult.UntestedTests,
 				})
 			}
 		}
+		var tests *TestsResult = nil
+		if v.TestsScoringRes != nil {
+			tests = &TestsResult{
+				Accepted: v.TestsScoringRes.Accepted,
+				Wrong:    v.TestsScoringRes.Wrong,
+				Untested: v.TestsScoringRes.Untested,
+			}
+		}
+
 		res = append(res, &BriefSubmission{
 			SubmUUID:              k,
 			EvalUUID:              v.CurrEvalUuid,
@@ -166,7 +171,7 @@ func (s *SubmissionSrvc) ListSubmissions(ctx context.Context) (res []*BriefSubmi
 			CreatedAt:             v.CreatedAtRfc3339,
 			EvalStatus:            v.CurrEvalStatus,
 			EvalScoringTestgroups: testgroups,
-			EvalScoringTests:      nil, // TODO: tests
+			EvalScoringTests:      tests,
 			EvalScoringSubtasks:   nil, // TODO: subtasks
 			PLangID:               v.ProgLangId,
 			PLangDisplayName:      mapPLangIdToDisplayName[v.ProgLangId],
