@@ -249,6 +249,64 @@ func (s *SubmissionSrvc) processEvalResult(evalUuid string, msgType string, fiel
 			log.Printf("failed to update compilation details: %v", err)
 			return
 		}
+
+		// if the exit code is not 0, update the evaluation stage to "compile_error"
+		if parsed.RuntimeData.ExitCode != 0 || (parsed.RuntimeData.Stderr != nil && *parsed.RuntimeData.Stderr != "") {
+			updEvalStage := expression.Set(expression.Name("evaluation_stage"), expression.Value("compile_error"))
+			updEvalStageExpr, err := expression.NewBuilder().WithUpdate(updEvalStage).Build()
+			if err != nil {
+				log.Printf("failed to build evaluation stage update expression: %v", err)
+				return
+			}
+
+			_, err = s.ddbClient.UpdateItem(context.TODO(), &dynamodb.UpdateItemInput{
+				Key: map[string]types.AttributeValue{
+					"subm_uuid": &types.AttributeValueMemberS{Value: submUuid},
+					"sort_key":  &types.AttributeValueMemberS{Value: "eval#" + evalUuid + "#details"},
+				},
+				TableName:                 aws.String(s.submTableName),
+				UpdateExpression:          updEvalStageExpr.Update(),
+				ExpressionAttributeValues: updEvalStageExpr.Values(),
+				ExpressionAttributeNames:  updEvalStageExpr.Names(),
+			})
+
+			if err != nil {
+				log.Printf("failed to update evaluation stage: %v", err)
+				return
+			}
+
+			// update submission details row with "current_eval_status" = "compile_error" if the current_eval_uuid is the same as eval_uuid
+			updSubmCurrEvalStatus := expression.Set(expression.Name("current_eval_status"), expression.Value("compile_error"))
+			updSubmCurrEvalStatusCond := expression.Name("current_eval_uuid").Equal(expression.Value(evalUuid))
+			updSubmCurrEvalStatusExpr, err := expression.NewBuilder().WithUpdate(updSubmCurrEvalStatus).WithCondition(updSubmCurrEvalStatusCond).Build()
+			if err != nil {
+				log.Printf("failed to build current eval status update expression: %v", err)
+				return
+			}
+
+			_, err = s.ddbClient.UpdateItem(context.TODO(), &dynamodb.UpdateItemInput{
+				Key: map[string]types.AttributeValue{
+					"subm_uuid": &types.AttributeValueMemberS{Value: submUuid},
+					"sort_key":  &types.AttributeValueMemberS{Value: "subm#details"},
+				},
+				TableName:                 aws.String(s.submTableName),
+				UpdateExpression:          updSubmCurrEvalStatusExpr.Update(),
+				ExpressionAttributeValues: updSubmCurrEvalStatusExpr.Values(),
+				ExpressionAttributeNames:  updSubmCurrEvalStatusExpr.Names(),
+				ConditionExpression:       updSubmCurrEvalStatusExpr.Condition(),
+			})
+
+			if err != nil {
+				log.Printf("failed to update current eval status: %v", err)
+				return
+			}
+
+			s.updateSubmStateChan <- &SubmissionStateUpdate{
+				SubmUuid: submUuid,
+				EvalUuid: evalUuid,
+				NewState: "compile_error",
+			}
+		}
 	case "started_testing":
 		// in evaluation details row change evaluation stage to "testing" if it is still "compiling" or "received" or "waiting"
 
@@ -914,8 +972,8 @@ func (s *SubmissionSrvc) processEvalResult(evalUuid string, msgType string, fiel
 			}
 
 			updSubmFinished := expression.Set(expression.Name("current_eval_status"), expression.Value("finished"))
-			// if not error
-			updSubmFinishedCond := expression.Name("current_eval_status").NotEqual(expression.Value("error"))
+			// if not error and is not compile_error
+			updSubmFinishedCond := expression.Name("current_eval_status").NotEqual(expression.Value("error")).And(expression.Name("current_eval_status").NotEqual(expression.Value("compile_error")))
 			updSubmFinishedExpr, err := expression.NewBuilder().WithUpdate(updSubmFinished).WithCondition(updSubmFinishedCond).Build()
 			if err != nil {
 				log.Printf("failed to build submission finished update expression: %v", err)
