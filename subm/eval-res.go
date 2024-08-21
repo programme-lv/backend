@@ -622,7 +622,7 @@ func (s *SubmissionSrvc) processEvalResult(evalUuid string, msgType string, fiel
 				"sort_key":  &types.AttributeValueMemberS{Value: "eval#" + evalUuid + "#details"},
 			}
 
-			updEvalFailed := expression.Set(expression.Name("evaluation_stage"), expression.Value("error")).
+			updEvalFailed := expression.Set(expression.Name("evaluation_stage"), expression.Value("checker_error")).
 				Set(expression.Name("error_msg"), expression.Value(fmt.Sprintf("checker exited with code %d for test %d", parsed.Checker.ExitCode, parsed.TestId)))
 			updEvalFailedExpr, err := expression.NewBuilder().WithUpdate(updEvalFailed).Build()
 			if err != nil {
@@ -648,7 +648,7 @@ func (s *SubmissionSrvc) processEvalResult(evalUuid string, msgType string, fiel
 				"sort_key":  &types.AttributeValueMemberS{Value: "subm#details"},
 			}
 
-			updSubmFailed := expression.Set(expression.Name("current_eval_status"), expression.Value("error")).
+			updSubmFailed := expression.Set(expression.Name("current_eval_status"), expression.Value("checker_error")).
 				Set(expression.Name("error_msg"), expression.Value(fmt.Sprintf("checker exited with code %d for test %d", parsed.Checker.ExitCode, parsed.TestId)))
 			updSubmFailedExpr, err := expression.NewBuilder().WithUpdate(updSubmFailed).Build()
 			if err != nil {
@@ -675,6 +675,68 @@ func (s *SubmissionSrvc) processEvalResult(evalUuid string, msgType string, fiel
 				NewState: "error",
 			}
 
+			return
+		}
+
+		// if submission's exit code isn't zero or stderr isn't empty, don't increase the score, set the status to "runtime_error"
+		if parsed.Submission.ExitCode != 0 || (parsed.Submission.Stderr != nil && *parsed.Submission.Stderr != "") {
+			evalRowPk := map[string]types.AttributeValue{
+				"subm_uuid": &types.AttributeValueMemberS{Value: submUuid},
+				"sort_key":  &types.AttributeValueMemberS{Value: "eval#" + evalUuid + "#details"},
+			}
+
+			updEvalFailed := expression.Set(expression.Name("evaluation_stage"), expression.Value("runtime_error")).
+				Set(expression.Name("error_msg"), expression.Value(fmt.Sprintf("submission exited with code %d for test %d", parsed.Submission.ExitCode, parsed.TestId)))
+			updEvalFailedExpr, err := expression.NewBuilder().WithUpdate(updEvalFailed).Build()
+			if err != nil {
+				log.Printf("failed to build evaluation update expression: %v", err)
+				return
+			}
+
+			_, err = s.ddbClient.UpdateItem(context.TODO(), &dynamodb.UpdateItemInput{
+				Key:                       evalRowPk,
+				TableName:                 aws.String(s.submTableName),
+				UpdateExpression:          updEvalFailedExpr.Update(),
+				ExpressionAttributeValues: updEvalFailedExpr.Values(),
+				ExpressionAttributeNames:  updEvalFailedExpr.Names(),
+			})
+
+			if err != nil {
+				log.Printf("failed to update evaluation: %v", err)
+				return
+			}
+
+			submRowPk := map[string]types.AttributeValue{
+				"subm_uuid": &types.AttributeValueMemberS{Value: submUuid},
+				"sort_key":  &types.AttributeValueMemberS{Value: "subm#details"},
+			}
+
+			updSubmFailed := expression.Set(expression.Name("current_eval_status"), expression.Value("runtime_error")).
+				Set(expression.Name("error_msg"), expression.Value(fmt.Sprintf("submission exited with code %d for test %d", parsed.Submission.ExitCode, parsed.TestId)))
+			updSubmFailedExpr, err := expression.NewBuilder().WithUpdate(updSubmFailed).Build()
+			if err != nil {
+				log.Printf("failed to build submission failed update expression: %v", err)
+				return
+			}
+
+			_, err = s.ddbClient.UpdateItem(context.TODO(), &dynamodb.UpdateItemInput{
+				Key:                       submRowPk,
+				TableName:                 aws.String(s.submTableName),
+				UpdateExpression:          updSubmFailedExpr.Update(),
+				ExpressionAttributeValues: updSubmFailedExpr.Values(),
+				ExpressionAttributeNames:  updSubmFailedExpr.Names(),
+			})
+
+			if err != nil {
+				log.Printf("failed to update submission: %v", err)
+				return
+			}
+
+			s.updateSubmStateChan <- &SubmissionStateUpdate{
+				SubmUuid: submUuid,
+				EvalUuid: evalUuid,
+				NewState: "runtime_error",
+			}
 			return
 		}
 
@@ -945,7 +1007,9 @@ func (s *SubmissionSrvc) processEvalResult(evalUuid string, msgType string, fiel
 
 			updEvalFinished := expression.Set(expression.Name("evaluation_stage"), expression.Value("finished"))
 			// if not error
-			updEvalFinishedCond := expression.Name("evaluation_stage").NotEqual(expression.Value("error"))
+			updEvalFinishedCond := expression.Name("evaluation_stage").NotEqual(expression.Value("error")).
+				And(expression.Name("evaluation_stage").NotEqual(expression.Value("checker_error"))).
+				And(expression.Name("evaluation_stage").NotEqual(expression.Value("runtime_error")))
 			updEvalFinishedExpr, err := expression.NewBuilder().WithUpdate(updEvalFinished).WithCondition(updEvalFinishedCond).Build()
 			if err != nil {
 				log.Printf("failed to build evaluation finished update expression: %v", err)
