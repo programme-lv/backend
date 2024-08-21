@@ -17,46 +17,10 @@ import (
 )
 
 func (s *SubmissionSrvc) processEvalResult(evalUuid string, msgType string, fields *json.RawMessage) {
-	baseDelay := 100 * time.Millisecond
 
-	var submUuid string
-	var foundInMap bool
-	if submUuid, foundInMap = s.evalUuidToSubmUuid[evalUuid]; !foundInMap {
-		for attempt := 0; attempt < 5; attempt++ {
-			// sleep for 100ms * attempt^2
-			if attempt > 0 {
-				time.Sleep(baseDelay * time.Duration(attempt*attempt))
-			}
-			// Create the query input
-			input := &dynamodb.QueryInput{
-				TableName:              aws.String(s.submTableName),
-				IndexName:              aws.String("eval_uuid-index"),
-				KeyConditionExpression: aws.String("eval_uuid = :evalUUID"),
-				ExpressionAttributeValues: map[string]types.AttributeValue{
-					":evalUUID": &types.AttributeValueMemberS{Value: evalUuid},
-				},
-				ProjectionExpression: aws.String("subm_uuid"),
-			}
-
-			// Execute the query
-			result, err := s.ddbClient.Query(context.TODO(), input)
-			if err != nil {
-				log.Printf("failed to query items: %v", err)
-				continue
-			}
-
-			switch len(result.Items) {
-			case 0:
-				log.Printf("no submission found for eval_uuid %s", evalUuid)
-				continue
-			case 1:
-				// Success: return the subm_uuid
-				submUuid = result.Items[0]["subm_uuid"].(*types.AttributeValueMemberS).Value
-			}
-		}
-	}
-	if submUuid == "" {
-		log.Printf("failed to find submission for eval_uuid %s", evalUuid)
+	submUuid, err := s.getSubmUuidByEvalUuid(evalUuid)
+	if err != nil {
+		log.Printf("failed to get subm_uuid by eval_uuid: %v", err)
 		return
 	}
 
@@ -355,9 +319,11 @@ func (s *SubmissionSrvc) processEvalResult(evalUuid string, msgType string, fiel
 			EvalUuid: evalUuid,
 			NewState: "testing",
 		}
-	case "started_test":
+	case "reached_test":
 		var parsed struct {
-			TestId int64 `json:"test_id"`
+			TestId int64   `json:"test_id"`
+			Input  *string `json:"input"`
+			Answer *string `json:"answer"`
 		}
 		err := json.Unmarshal(*fields, &parsed)
 		if err != nil {
@@ -375,6 +341,60 @@ func (s *SubmissionSrvc) processEvalResult(evalUuid string, msgType string, fiel
 		if err != nil {
 			log.Printf("failed to build reached update expression: %v", err)
 			return
+		}
+
+		if parsed.Input != nil {
+			// update evaluation test row by setting attribute "input_trimmed" to the trimmed input. limit the length to 10000 characters
+			trimmedInput := *parsed.Input
+			if len(trimmedInput) > 10000 {
+				trimmedInput = trimmedInput[:10000]
+			}
+			updInput := expression.Set(expression.Name("input_trimmed"), expression.Value(trimmedInput))
+			updInputExpr, err := expression.NewBuilder().WithUpdate(updInput).Build()
+			if err != nil {
+				log.Printf("failed to build input update expression: %v", err)
+				return
+			}
+
+			_, err = s.ddbClient.UpdateItem(context.TODO(), &dynamodb.UpdateItemInput{
+				Key:                       testPk,
+				TableName:                 aws.String(s.submTableName),
+				UpdateExpression:          updInputExpr.Update(),
+				ExpressionAttributeValues: updInputExpr.Values(),
+				ExpressionAttributeNames:  updInputExpr.Names(),
+			})
+
+			if err != nil {
+				log.Printf("failed to update input: %v", err)
+				return
+			}
+		}
+
+		if parsed.Answer != nil {
+			// update evaluation test row by setting attribute "answer_trimmed" to the trimmed answer. limit the length to 10000 characters
+			trimmedAnswer := *parsed.Answer
+			if len(trimmedAnswer) > 10000 {
+				trimmedAnswer = trimmedAnswer[:10000]
+			}
+			updAnswer := expression.Set(expression.Name("answer_trimmed"), expression.Value(trimmedAnswer))
+			updAnswerExpr, err := expression.NewBuilder().WithUpdate(updAnswer).Build()
+			if err != nil {
+				log.Printf("failed to build answer update expression: %v", err)
+				return
+			}
+
+			_, err = s.ddbClient.UpdateItem(context.TODO(), &dynamodb.UpdateItemInput{
+				Key:                       testPk,
+				TableName:                 aws.String(s.submTableName),
+				UpdateExpression:          updAnswerExpr.Update(),
+				ExpressionAttributeValues: updAnswerExpr.Values(),
+				ExpressionAttributeNames:  updAnswerExpr.Names(),
+			})
+
+			if err != nil {
+				log.Printf("failed to update answer: %v", err)
+				return
+			}
 		}
 
 		_, err = s.ddbClient.UpdateItem(context.TODO(), &dynamodb.UpdateItemInput{
@@ -925,4 +945,52 @@ func (s *SubmissionSrvc) processEvalResult(evalUuid string, msgType string, fiel
 	}
 
 	log.Printf("processed msg type %s for subm_uuid %s, eval_uuid %s", msgType, submUuid, evalUuid)
+}
+
+func (s *SubmissionSrvc) getSubmUuidByEvalUuid(evalUuid string) (string, error) {
+	baseDelay := 100 * time.Millisecond
+
+	var submUuid string
+	var foundInMap bool
+	if submUuid, foundInMap = s.evalUuidToSubmUuid[evalUuid]; !foundInMap {
+		for attempt := 0; attempt < 5; attempt++ {
+			// sleep for 100ms * attempt^2
+			if attempt > 0 {
+				time.Sleep(baseDelay * time.Duration(attempt*attempt))
+			}
+			// Create the query input
+			input := &dynamodb.QueryInput{
+				TableName:              aws.String(s.submTableName),
+				IndexName:              aws.String("eval_uuid-index"),
+				KeyConditionExpression: aws.String("eval_uuid = :evalUUID"),
+				ExpressionAttributeValues: map[string]types.AttributeValue{
+					":evalUUID": &types.AttributeValueMemberS{Value: evalUuid},
+				},
+				ProjectionExpression: aws.String("subm_uuid"),
+			}
+
+			// Execute the query
+			result, err := s.ddbClient.Query(context.TODO(), input)
+			if err != nil {
+				log.Printf("failed to query items: %v", err)
+				continue
+			}
+
+			switch len(result.Items) {
+			case 0:
+				log.Printf("no submission found for eval_uuid %s", evalUuid)
+				continue
+			case 1:
+				// Success: return the subm_uuid
+				submUuid = result.Items[0]["subm_uuid"].(*types.AttributeValueMemberS).Value
+			}
+		}
+	}
+	if submUuid == "" {
+		return "", fmt.Errorf("failed to find submission for eval_uuid %s", evalUuid)
+	}
+
+	s.evalUuidToSubmUuid[evalUuid] = submUuid
+
+	return submUuid, nil
 }
