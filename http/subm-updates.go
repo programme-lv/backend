@@ -47,10 +47,32 @@ func (httpserver *HttpServer) listenToSubmUpdates(w http.ResponseWriter, r *http
 		UntestedTests int    `json:"untested_tests"`
 	}
 
+	type TestsScoreUpdate struct {
+		SubmUuid string `json:"subm_uuid"`
+		EvalUuid string `json:"eval_uuid"`
+		Accepted int    `json:"accepted"`
+		Wrong    int    `json:"wrong"`
+		Untested int    `json:"untested"`
+	}
+
 	type SubmissionListUpdate struct {
 		SubmCreated        *BriefSubmission       `json:"subm_created"`
 		StateUpdate        *SubmissionStateUpdate `json:"state_update"`
 		TestGroupResUpdate *TestGroupScoreUpdate  `json:"testgroup_res_update"`
+		TestsScoreUpdate   *TestsScoreUpdate      `json:"tests_score_update"`
+	}
+
+	mapTestsScoreUpdate := func(update *subm.TestsScoreUpdate) *TestsScoreUpdate {
+		if update == nil {
+			return nil
+		}
+		return &TestsScoreUpdate{
+			SubmUuid: update.SubmUuid,
+			EvalUuid: update.EvalUuid,
+			Accepted: update.Accepted,
+			Wrong:    update.Wrong,
+			Untested: update.Untested,
+		}
 	}
 
 	mapStateUpdate := func(update *subm.SubmissionStateUpdate) *SubmissionStateUpdate {
@@ -110,6 +132,7 @@ func (httpserver *HttpServer) listenToSubmUpdates(w http.ResponseWriter, r *http
 			SubmCreated:        mapBriefSubm(update.SubmCreated),
 			StateUpdate:        mapStateUpdate(update.StateUpdate),
 			TestGroupResUpdate: mapTestgroupResUpdate(update.TestgroupResUpdate),
+			TestsScoreUpdate:   mapTestsScoreUpdate(update.TestsResUpdate),
 		}
 		marshalled, err := json.Marshal(message)
 		if err != nil {
