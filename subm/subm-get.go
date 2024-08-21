@@ -51,6 +51,7 @@ func (s *SubmissionSrvc) GetSubmission(ctx context.Context, submUuid string) (*F
 		foundDetailsRow  bool
 
 		TestGroupResults map[int]ddbSubmTestGroupResult
+		TestsScoringRes  *SubmScoringTestsRow
 
 		EvalDetails     map[string]*EvalDetailsRow // maps eval uuid to EvalDetailsRow
 		EvalTestResults map[string][]*EvalTestResults
@@ -173,6 +174,15 @@ func (s *SubmissionSrvc) GetSubmission(ctx context.Context, submUuid string) (*F
 				}
 				submMap[submUuid].EvalDetails[evalDetailsRow.EvalUuid] = &evalDetailsRow
 			}
+		} else if strings.Contains(sortKey, "subm#scoring#tests") {
+			// parse it as SubmScoringTestsRow
+			var submScoringTestsRow SubmScoringTestsRow
+			err := attributevalue.UnmarshalMap(item, &submScoringTestsRow)
+			if err != nil {
+				return nil, fmt.Errorf("failed to unmarshal item: %w", err)
+			}
+
+			submMap[submUuid].TestsScoringRes = &submScoringTestsRow
 		}
 	}
 
@@ -255,6 +265,14 @@ func (s *SubmissionSrvc) GetSubmission(ctx context.Context, submUuid string) (*F
 				return nil, fmt.Errorf("failed to parse created_at: %w", err)
 			}
 		}
+		var tests *TestsResult = nil
+		if v.TestsScoringRes != nil {
+			tests = &TestsResult{
+				Accepted: v.TestsScoringRes.Accepted,
+				Wrong:    v.TestsScoringRes.Wrong,
+				Untested: v.TestsScoringRes.Untested,
+			}
+		}
 
 		// TODO: check if user can see submission code, test inputs, answers, etc.
 		subm := &FullSubmission{
@@ -265,7 +283,7 @@ func (s *SubmissionSrvc) GetSubmission(ctx context.Context, submUuid string) (*F
 				CreatedAt:             v.CreatedAtRfc3339,
 				EvalStatus:            v.CurrEvalStatus,
 				EvalScoringTestgroups: testgroups,
-				EvalScoringTests:      nil, // TODO: tests
+				EvalScoringTests:      tests,
 				EvalScoringSubtasks:   nil, // TODO: subtasks
 				PLangID:               v.ProgLangId,
 				PLangDisplayName:      mapPLangIdToDisplayName[v.ProgLangId],
