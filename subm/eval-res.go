@@ -16,6 +16,22 @@ import (
 	"golang.org/x/exp/rand"
 )
 
+type runtimeData struct {
+	Stdout   *string `json:"stdout"`
+	Stderr   *string `json:"stderr"`
+	ExitCode int64   `json:"exit_code"`
+
+	CpuTimeMillis   int64 `json:"cpu_time_millis"`
+	WallTimeMillis  int64 `json:"wall_time_millis"`
+	MemoryKibiBytes int64 `json:"memory_kibibytes"`
+
+	ContextSwitchesVoluntary int64 `json:"context_switches_voluntary"`
+	ContextSwitchesForced    int64 `json:"context_switches_forced"`
+
+	ExitSignal    *int64 `json:"exit_signal"`
+	IsolateStatus string `json:"isolate_status"`
+}
+
 func (s *SubmissionSrvc) processEvalResult(evalUuid string, msgType string, fields *json.RawMessage) {
 
 	submUuid, err := s.getSubmUuidByEvalUuid(evalUuid)
@@ -201,14 +217,7 @@ func (s *SubmissionSrvc) processEvalResult(evalUuid string, msgType string, fiel
 		}
 	case "finished_compilation":
 		var parsed struct {
-			RuntimeData struct {
-				Stdout          *string `json:"stdout"`
-				Stderr          *string `json:"stderr"`
-				ExitCode        int64   `json:"exit_code"`
-				CpuTimeMillis   int64   `json:"cpu_time_millis"`
-				WallTimeMillis  int64   `json:"wall_time_millis"`
-				MemoryKibiBytes int64   `json:"memory_kibibytes"`
-			} `json:"runtime_data"`
+			RuntimeData runtimeData `json:"runtime_data"`
 		}
 		err := json.Unmarshal(*fields, &parsed)
 		if err != nil {
@@ -229,7 +238,11 @@ func (s *SubmissionSrvc) processEvalResult(evalUuid string, msgType string, fiel
 			Set(expression.Name("subm_comp_exit_code"), expression.Value(parsed.RuntimeData.ExitCode)).
 			Set(expression.Name("subm_comp_cpu_time_millis"), expression.Value(parsed.RuntimeData.CpuTimeMillis)).
 			Set(expression.Name("subm_comp_wall_time_millis"), expression.Value(parsed.RuntimeData.WallTimeMillis)).
-			Set(expression.Name("subm_comp_memory_kibi_bytes"), expression.Value(parsed.RuntimeData.MemoryKibiBytes))
+			Set(expression.Name("subm_comp_memory_kibi_bytes"), expression.Value(parsed.RuntimeData.MemoryKibiBytes)).
+			Set(expression.Name("subm_comp_context_switches_voluntary"), expression.Value(parsed.RuntimeData.ContextSwitchesVoluntary)).
+			Set(expression.Name("subm_comp_context_switches_forced"), expression.Value(parsed.RuntimeData.ContextSwitchesForced)).
+			Set(expression.Name("subm_comp_exit_signal"), expression.Value(parsed.RuntimeData.ExitSignal)).
+			Set(expression.Name("subm_comp_isolate_status"), expression.Value(parsed.RuntimeData.IsolateStatus))
 
 		updCompDetailsExpr, err := expression.NewBuilder().WithUpdate(updCompDetails).Build()
 		if err != nil {
@@ -503,23 +516,9 @@ func (s *SubmissionSrvc) processEvalResult(evalUuid string, msgType string, fiel
 		}
 	case "finished_test":
 		var parsed struct {
-			TestId     int64 `json:"test_id"`
-			Submission struct {
-				Stdout          *string `json:"stdout"`
-				Stderr          *string `json:"stderr"`
-				ExitCode        int64   `json:"exit_code"`
-				CpuTimeMillis   int64   `json:"cpu_time_millis"`
-				WallTimeMillis  int64   `json:"wall_time_millis"`
-				MemoryKibiBytes int64   `json:"memory_kibibytes"`
-			} `json:"submission"`
-			Checker struct {
-				Stdout          *string `json:"stdout"`
-				Stderr          *string `json:"stderr"`
-				ExitCode        int64   `json:"exit_code"`
-				CpuTimeMillis   int64   `json:"cpu_time_millis"`
-				WallTimeMillis  int64   `json:"wall_time_millis"`
-				MemoryKibiBytes int64   `json:"memory_kibibytes"`
-			} `json:"checker"`
+			TestId     int64        `json:"test_id"`
+			Submission *runtimeData `json:"submission"`
+			Checker    *runtimeData `json:"checker"`
 		}
 		err := json.Unmarshal(*fields, &parsed)
 		if err != nil {
@@ -533,20 +532,35 @@ func (s *SubmissionSrvc) processEvalResult(evalUuid string, msgType string, fiel
 			"sort_key":  &types.AttributeValueMemberS{Value: "eval#" + evalUuid + "#test#" + fmt.Sprintf("%04d", parsed.TestId)},
 		}
 
-		updTest := expression.
-			Set(expression.Name("subm_stdout"), expression.Value(parsed.Submission.Stdout)).
-			Set(expression.Name("subm_stderr"), expression.Value(parsed.Submission.Stderr)).
-			Set(expression.Name("subm_exit_code"), expression.Value(parsed.Submission.ExitCode)).
-			Set(expression.Name("subm_cpu_time_millis"), expression.Value(parsed.Submission.CpuTimeMillis)).
-			Set(expression.Name("subm_wall_time_millis"), expression.Value(parsed.Submission.WallTimeMillis)).
-			Set(expression.Name("subm_memory_kibi_bytes"), expression.Value(parsed.Submission.MemoryKibiBytes)).
-			Set(expression.Name("checker_stdout"), expression.Value(parsed.Checker.Stdout)).
-			Set(expression.Name("checker_stderr"), expression.Value(parsed.Checker.Stderr)).
-			Set(expression.Name("checker_exit_code"), expression.Value(parsed.Checker.ExitCode)).
-			Set(expression.Name("checker_cpu_time_millis"), expression.Value(parsed.Checker.CpuTimeMillis)).
-			Set(expression.Name("checker_wall_time_millis"), expression.Value(parsed.Checker.WallTimeMillis)).
-			Set(expression.Name("checker_memory_kibi_bytes"), expression.Value(parsed.Checker.MemoryKibiBytes)).
-			Set(expression.Name("finished"), expression.Value(true))
+		updTest := expression.Set(expression.Name("finished"), expression.Value(true))
+
+		if parsed.Submission != nil {
+			updTest = updTest.
+				Set(expression.Name("subm_stdout"), expression.Value(parsed.Submission.Stdout)).
+				Set(expression.Name("subm_stderr"), expression.Value(parsed.Submission.Stderr)).
+				Set(expression.Name("subm_exit_code"), expression.Value(parsed.Submission.ExitCode)).
+				Set(expression.Name("subm_cpu_time_millis"), expression.Value(parsed.Submission.CpuTimeMillis)).
+				Set(expression.Name("subm_wall_time_millis"), expression.Value(parsed.Submission.WallTimeMillis)).
+				Set(expression.Name("subm_memory_kibi_bytes"), expression.Value(parsed.Submission.MemoryKibiBytes)).
+				Set(expression.Name("subm_context_switches_voluntary"), expression.Value(parsed.Submission.ContextSwitchesVoluntary)).
+				Set(expression.Name("subm_context_switches_forced"), expression.Value(parsed.Submission.ContextSwitchesForced)).
+				Set(expression.Name("subm_exit_signal"), expression.Value(parsed.Submission.ExitSignal)).
+				Set(expression.Name("subm_isolate_status"), expression.Value(parsed.Submission.IsolateStatus))
+		}
+
+		if parsed.Checker != nil {
+			updTest = updTest.
+				Set(expression.Name("checker_stdout"), expression.Value(parsed.Checker.Stdout)).
+				Set(expression.Name("checker_stderr"), expression.Value(parsed.Checker.Stderr)).
+				Set(expression.Name("checker_exit_code"), expression.Value(parsed.Checker.ExitCode)).
+				Set(expression.Name("checker_cpu_time_millis"), expression.Value(parsed.Checker.CpuTimeMillis)).
+				Set(expression.Name("checker_wall_time_millis"), expression.Value(parsed.Checker.WallTimeMillis)).
+				Set(expression.Name("checker_memory_kibi_bytes"), expression.Value(parsed.Checker.MemoryKibiBytes)).
+				Set(expression.Name("checker_context_switches_voluntary"), expression.Value(parsed.Checker.ContextSwitchesVoluntary)).
+				Set(expression.Name("checker_context_switches_forced"), expression.Value(parsed.Checker.ContextSwitchesForced)).
+				Set(expression.Name("checker_exit_signal"), expression.Value(parsed.Checker.ExitSignal)).
+				Set(expression.Name("checker_isolate_status"), expression.Value(parsed.Checker.IsolateStatus))
+		}
 
 		updTestCond := expression.Name("finished").Equal(expression.Value(false))
 		updTestExpr, err := expression.NewBuilder().WithUpdate(updTest).WithCondition(updTestCond).Build()
@@ -570,21 +584,6 @@ func (s *SubmissionSrvc) processEvalResult(evalUuid string, msgType string, fiel
 		}
 
 		// determine whether the test was accepted or not. change the tests, testgroup, or subtask row accordingly
-
-		/*
-			EXCERPT FROM THE OLD TESTER:
-			if checkerRunData.Output.ExitCode == 0 {
-				gath.FinishTestWithVerdictAccepted(int64(test.ID))
-				gath.IncrementScore(1)
-			} else if checkerRunData.Output.ExitCode == 1 ||
-				checkerRunData.Output.ExitCode == 2 {
-				gath.FinishTestWithVerdictWrongAnswer(int64(test.ID))
-			} else {
-				gath.FinishWithInternalServerError(fmt.Errorf("checker failed to run: %v",
-					checkerRunData))
-				return err
-			}
-		*/
 
 		// get the test row to see subtasks and testgroups
 		// pk=subm_uuid, sk=eval#<eval_uuid>#test#0001, get "subtasks" (list) and "test_group" (int pointer)
@@ -613,8 +612,133 @@ func (s *SubmissionSrvc) processEvalResult(evalUuid string, msgType string, fiel
 			return
 		}
 
+		// if submission's exit code isn't zero or stderr isn't empty, don't increase the score, set the status to "runtime_error"
+		if parsed.Submission != nil && (parsed.Submission.ExitCode != 0 || (parsed.Submission.Stderr != nil && *parsed.Submission.Stderr != "")) {
+			evalRowPk := map[string]types.AttributeValue{
+				"subm_uuid": &types.AttributeValueMemberS{Value: submUuid},
+				"sort_key":  &types.AttributeValueMemberS{Value: "eval#" + evalUuid + "#details"},
+			}
+
+			updEvalFailed := expression.Set(expression.Name("evaluation_stage"), expression.Value("runtime_error")).
+				Set(expression.Name("error_msg"), expression.Value(fmt.Sprintf("submission exited with code %d for test %d", parsed.Submission.ExitCode, parsed.TestId)))
+			updEvalFailedExpr, err := expression.NewBuilder().WithUpdate(updEvalFailed).Build()
+			if err != nil {
+				log.Printf("failed to build evaluation update expression: %v", err)
+				return
+			}
+
+			_, err = s.ddbClient.UpdateItem(context.TODO(), &dynamodb.UpdateItemInput{
+				Key:                       evalRowPk,
+				TableName:                 aws.String(s.submTableName),
+				UpdateExpression:          updEvalFailedExpr.Update(),
+				ExpressionAttributeValues: updEvalFailedExpr.Values(),
+				ExpressionAttributeNames:  updEvalFailedExpr.Names(),
+			})
+
+			if err != nil {
+				log.Printf("failed to update evaluation: %v", err)
+				return
+			}
+
+			submRowPk := map[string]types.AttributeValue{
+				"subm_uuid": &types.AttributeValueMemberS{Value: submUuid},
+				"sort_key":  &types.AttributeValueMemberS{Value: "subm#details"},
+			}
+
+			updSubmFailed := expression.Set(expression.Name("current_eval_status"), expression.Value("runtime_error")).
+				Set(expression.Name("error_msg"), expression.Value(fmt.Sprintf("submission exited with code %d for test %d", parsed.Submission.ExitCode, parsed.TestId)))
+			updSubmFailedExpr, err := expression.NewBuilder().WithUpdate(updSubmFailed).Build()
+			if err != nil {
+				log.Printf("failed to build submission failed update expression: %v", err)
+				return
+			}
+
+			_, err = s.ddbClient.UpdateItem(context.TODO(), &dynamodb.UpdateItemInput{
+				Key:                       submRowPk,
+				TableName:                 aws.String(s.submTableName),
+				UpdateExpression:          updSubmFailedExpr.Update(),
+				ExpressionAttributeValues: updSubmFailedExpr.Values(),
+				ExpressionAttributeNames:  updSubmFailedExpr.Names(),
+			})
+
+			if err != nil {
+				log.Printf("failed to update submission: %v", err)
+				return
+			}
+
+			s.updateSubmStateChan <- &SubmissionStateUpdate{
+				SubmUuid: submUuid,
+				EvalUuid: evalUuid,
+				NewState: "runtime_error",
+			}
+			return
+		}
+
+		if parsed.Submission != nil && parsed.Submission.ExitSignal != nil {
+			evalRowPk := map[string]types.AttributeValue{
+				"subm_uuid": &types.AttributeValueMemberS{Value: submUuid},
+				"sort_key":  &types.AttributeValueMemberS{Value: "eval#" + evalUuid + "#details"},
+			}
+
+			updEvalFailed := expression.Set(expression.Name("evaluation_stage"), expression.Value("runtime_error")).
+				Set(expression.Name("error_msg"), expression.Value(fmt.Sprintf("submission exited with signal %d for test %d", *parsed.Submission.ExitSignal, parsed.TestId)))
+
+			updEvalFailedExpr, err := expression.NewBuilder().WithUpdate(updEvalFailed).Build()
+			if err != nil {
+				log.Printf("failed to build evaluation update expression: %v", err)
+				return
+			}
+
+			_, err = s.ddbClient.UpdateItem(context.TODO(), &dynamodb.UpdateItemInput{
+				Key:                       evalRowPk,
+				TableName:                 aws.String(s.submTableName),
+				UpdateExpression:          updEvalFailedExpr.Update(),
+				ExpressionAttributeValues: updEvalFailedExpr.Values(),
+				ExpressionAttributeNames:  updEvalFailedExpr.Names(),
+			})
+
+			if err != nil {
+				log.Printf("failed to update evaluation: %v", err)
+				return
+			}
+
+			submRowPk := map[string]types.AttributeValue{
+				"subm_uuid": &types.AttributeValueMemberS{Value: submUuid},
+				"sort_key":  &types.AttributeValueMemberS{Value: "subm#details"},
+			}
+
+			updSubmFailed := expression.Set(expression.Name("current_eval_status"), expression.Value("runtime_error")).
+				Set(expression.Name("error_msg"), expression.Value(fmt.Sprintf("submission exited with signal %d for test %d", *parsed.Submission.ExitSignal, parsed.TestId)))
+			updSubmFailedExpr, err := expression.NewBuilder().WithUpdate(updSubmFailed).Build()
+			if err != nil {
+				log.Printf("failed to build submission failed update expression: %v", err)
+				return
+			}
+
+			_, err = s.ddbClient.UpdateItem(context.TODO(), &dynamodb.UpdateItemInput{
+				Key:                       submRowPk,
+				TableName:                 aws.String(s.submTableName),
+				UpdateExpression:          updSubmFailedExpr.Update(),
+				ExpressionAttributeValues: updSubmFailedExpr.Values(),
+				ExpressionAttributeNames:  updSubmFailedExpr.Names(),
+			})
+
+			if err != nil {
+				log.Printf("failed to update submission: %v", err)
+				return
+			}
+
+			s.updateSubmStateChan <- &SubmissionStateUpdate{
+				SubmUuid: submUuid,
+				EvalUuid: evalUuid,
+				NewState: "runtime_error",
+			}
+			return
+
+		}
+
 		// if checker output has exit code non-zero, that isn't 1 or 2
-		if parsed.Checker.ExitCode != 0 && parsed.Checker.ExitCode != 1 && parsed.Checker.ExitCode != 2 {
+		if parsed.Checker != nil && (parsed.Checker.ExitCode != 0 && parsed.Checker.ExitCode != 1 && parsed.Checker.ExitCode != 2) {
 			log.Printf("checker failed to run: %v", parsed.Checker)
 			// mark the evaluation as failed, submission as failed with the current eval_uuid = eval_uuid
 
@@ -679,65 +803,8 @@ func (s *SubmissionSrvc) processEvalResult(evalUuid string, msgType string, fiel
 			return
 		}
 
-		// if submission's exit code isn't zero or stderr isn't empty, don't increase the score, set the status to "runtime_error"
-		if parsed.Submission.ExitCode != 0 || (parsed.Submission.Stderr != nil && *parsed.Submission.Stderr != "") {
-			evalRowPk := map[string]types.AttributeValue{
-				"subm_uuid": &types.AttributeValueMemberS{Value: submUuid},
-				"sort_key":  &types.AttributeValueMemberS{Value: "eval#" + evalUuid + "#details"},
-			}
-
-			updEvalFailed := expression.Set(expression.Name("evaluation_stage"), expression.Value("runtime_error")).
-				Set(expression.Name("error_msg"), expression.Value(fmt.Sprintf("submission exited with code %d for test %d", parsed.Submission.ExitCode, parsed.TestId)))
-			updEvalFailedExpr, err := expression.NewBuilder().WithUpdate(updEvalFailed).Build()
-			if err != nil {
-				log.Printf("failed to build evaluation update expression: %v", err)
-				return
-			}
-
-			_, err = s.ddbClient.UpdateItem(context.TODO(), &dynamodb.UpdateItemInput{
-				Key:                       evalRowPk,
-				TableName:                 aws.String(s.submTableName),
-				UpdateExpression:          updEvalFailedExpr.Update(),
-				ExpressionAttributeValues: updEvalFailedExpr.Values(),
-				ExpressionAttributeNames:  updEvalFailedExpr.Names(),
-			})
-
-			if err != nil {
-				log.Printf("failed to update evaluation: %v", err)
-				return
-			}
-
-			submRowPk := map[string]types.AttributeValue{
-				"subm_uuid": &types.AttributeValueMemberS{Value: submUuid},
-				"sort_key":  &types.AttributeValueMemberS{Value: "subm#details"},
-			}
-
-			updSubmFailed := expression.Set(expression.Name("current_eval_status"), expression.Value("runtime_error")).
-				Set(expression.Name("error_msg"), expression.Value(fmt.Sprintf("submission exited with code %d for test %d", parsed.Submission.ExitCode, parsed.TestId)))
-			updSubmFailedExpr, err := expression.NewBuilder().WithUpdate(updSubmFailed).Build()
-			if err != nil {
-				log.Printf("failed to build submission failed update expression: %v", err)
-				return
-			}
-
-			_, err = s.ddbClient.UpdateItem(context.TODO(), &dynamodb.UpdateItemInput{
-				Key:                       submRowPk,
-				TableName:                 aws.String(s.submTableName),
-				UpdateExpression:          updSubmFailedExpr.Update(),
-				ExpressionAttributeValues: updSubmFailedExpr.Values(),
-				ExpressionAttributeNames:  updSubmFailedExpr.Names(),
-			})
-
-			if err != nil {
-				log.Printf("failed to update submission: %v", err)
-				return
-			}
-
-			s.updateSubmStateChan <- &SubmissionStateUpdate{
-				SubmUuid: submUuid,
-				EvalUuid: evalUuid,
-				NewState: "runtime_error",
-			}
+		if parsed.Submission == nil {
+			log.Printf("submission data is missing")
 			return
 		}
 
@@ -773,9 +840,10 @@ func (s *SubmissionSrvc) processEvalResult(evalUuid string, msgType string, fiel
 		notExceededCpuTime := parsed.Submission.CpuTimeMillis <= evalLimits.CpuTimeLimitMillis
 		notExceededMemLim := parsed.Submission.MemoryKibiBytes <= evalLimits.MemLimitKibiBytes
 		notExceededWallTimeLimt := parsed.Submission.WallTimeMillis <= 15*1000 // 15 seconds
-		checkerOk := parsed.Checker.ExitCode == 0
+		noExitSignal := parsed.Submission.ExitSignal == nil
+		checkerOk := parsed.Checker != nil && parsed.Checker.ExitCode == 0
 
-		AC := notExceededCpuTime && notExceededMemLim && notExceededWallTimeLimt && checkerOk
+		AC := notExceededCpuTime && notExceededMemLim && notExceededWallTimeLimt && checkerOk && noExitSignal
 
 		// if this test has a testgroup, update testgroup row
 		if testSubtasksTestGroups.TestGroup != nil {

@@ -117,6 +117,10 @@ type EvalDetailsRow struct {
 	SubmCompileWallTimeMillis  *int `dynamodbav:"subm_comp_wall_time_millis"`
 	SubmCompileMemoryKibiBytes *int `dynamodbav:"subm_comp_memory_kibi_bytes"`
 
+	SubmCompileContextSwitchesForced *int64  `dynamodbav:"subm_comp_context_switches_forced"`
+	SubmCompileExitSignal            *int64  `dynamodbav:"subm_comp_exit_signal"`
+	SubmCompileIsolateStatus         *string `dynamodbav:"subm_comp_isolate_status"`
+
 	ProgrammingLang EvalDetailsProgrammingLang `dynamodbav:"programming_lang"`
 
 	CreatedAtRfc3339 string `dynamodbav:"created_at_rfc3339_utc"`
@@ -154,6 +158,10 @@ type EvalTestRow struct {
 	CheckerWallTimeMillis  *int `dynamodbav:"checker_wall_time_millis"`
 	CheckerMemoryKibiBytes *int `dynamodbav:"checker_memory_kibi_bytes"`
 
+	CheckerContextSwitchesForced *int64  `dynamodbav:"checker_context_switches_forced"`
+	CheckerExitSignal            *int64  `dynamodbav:"checker_exit_signal"`
+	CheckerIsolateStatus         *string `dynamodbav:"checker_isolate_status"`
+
 	SubmStdout   *string `dynamodbav:"subm_stdout"` // might be trimmed
 	SubmStderr   *string `dynamodbav:"subm_stderr"` // might be trimmed
 	SubmExitCode *int    `dynamodbav:"subm_exit_code"`
@@ -161,6 +169,10 @@ type EvalTestRow struct {
 	SubmCpuTimeMillis   *int `dynamodbav:"subm_cpu_time_millis"`
 	SubmWallTimeMillis  *int `dynamodbav:"subm_wall_time_millis"`
 	SubmMemoryKibiBytes *int `dynamodbav:"subm_memory_kibi_bytes"`
+
+	SubmContextSwitchesForced *int64  `dynamodbav:"subm_context_switches_forced"`
+	SubmExitSignal            *int64  `dynamodbav:"subm_exit_signal"`
+	SubmIsolateStatus         *string `dynamodbav:"subm_isolate_status"`
 
 	Subtasks  []int `dynamodbav:"subtasks"`   // subtasks that the test is part of
 	TestGroup *int  `dynamodbav:"test_group"` // test group that the test is part of
