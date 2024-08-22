@@ -152,7 +152,7 @@ func (s *UserService) CreateUser(ctx context.Context, p *UserPayload) (res *User
 		Uuid:      uuid.String(),
 		Username:  username.String(),
 		Email:     email.String(),
-		BcryptPwd: bcryptPwd,
+		BcryptPwd: string(bcryptPwd),
 		Firstname: firstname.Value,
 		Lastname:  lastname.Value,
 		Version:   0,

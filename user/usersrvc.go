@@ -43,7 +43,7 @@ func (s *UserService) Login(ctx context.Context, p *LoginPayload) (res *User, er
 
 	for _, user := range allUsers {
 		if user.Username == p.Username {
-			err = bcrypt.CompareHashAndPassword(user.BcryptPwd, []byte(p.Password))
+			err = bcrypt.CompareHashAndPassword([]byte(user.BcryptPwd), []byte(p.Password))
 			if err == nil {
 				return &User{
 					UUID:      user.Uuid,

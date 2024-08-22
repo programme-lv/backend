@@ -15,7 +15,7 @@ type UserRow struct {
 	Uuid      string    `dynamo:"uuid,hash"` // Primary key
 	Username  string    `dynamo:"username"`
 	Email     string    `dynamo:"email"`
-	BcryptPwd []byte    `dynamo:"bcrypt_pwd"`
+	BcryptPwd string    `dynamo:"bcrypt_pwd"`
 	Firstname *string   `dynamo:"firstname"`
 	Lastname  *string   `dynamo:"lastname"`
 	Version   int       `dynamo:"version"` // For optimistic locking
