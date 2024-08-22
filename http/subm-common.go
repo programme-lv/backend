@@ -66,6 +66,7 @@ type EvalTestResults struct {
 	SubmExitCode      *int    `json:"subm_exit_code"`
 	SubmStdoutTrimmed *string `json:"subm_stdout_trimmed"`
 	SubmStderrTrimmed *string `json:"subm_stderr_trimmed"`
+	SubmExitSignal    *int    `json:"subm_exit_signal"`
 
 	CheckerCpuTimeMillis *int    `json:"checker_cpu_time_millis"`
 	CheckerMemKibiBytes  *int    `json:"checker_mem_kibi_bytes"`
@@ -131,6 +132,7 @@ func mapEvalTestResults(x *subm.EvalTestResults) *EvalTestResults {
 		CheckerExitCode:      x.CheckerExitCode,
 		CheckerStdoutTrimmed: x.CheckerStdoutTrimmed,
 		CheckerStderrTrimmed: x.CheckerStderrTrimmed,
+		SubmExitSignal:       x.SubmExitSignal,
 	}
 }
 

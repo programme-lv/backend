@@ -157,6 +157,7 @@ func (s *SubmissionSrvc) GetSubmission(ctx context.Context, submUuid string) (*F
 				CheckerExitCode:      evalTestRow.CheckerExitCode,
 				CheckerStdoutTrimmed: evalTestRow.CheckerStdout,
 				CheckerStderrTrimmed: evalTestRow.CheckerStderr,
+				SubmExitSignal:       evalTestRow.SubmExitSignal,
 			}
 
 			submMap[submUuid].EvalTestResults[evalUuid] = append(submMap[submUuid].EvalTestResults[evalUuid], newEntry)

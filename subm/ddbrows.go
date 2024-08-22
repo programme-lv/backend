@@ -171,7 +171,7 @@ type EvalTestRow struct {
 	SubmMemoryKibiBytes *int `dynamodbav:"subm_memory_kibi_bytes"`
 
 	SubmContextSwitchesForced *int64  `dynamodbav:"subm_context_switches_forced"`
-	SubmExitSignal            *int64  `dynamodbav:"subm_exit_signal"`
+	SubmExitSignal            *int    `dynamodbav:"subm_exit_signal"`
 	SubmIsolateStatus         *string `dynamodbav:"subm_isolate_status"`
 
 	Subtasks  []int `dynamodbav:"subtasks"`   // subtasks that the test is part of

@@ -47,6 +47,7 @@ type EvalTestResults struct {
 	SubmExitCode      *int
 	SubmStdoutTrimmed *string
 	SubmStderrTrimmed *string
+	SubmExitSignal    *int
 
 	CheckerCpuTimeMillis *int
 	CheckerMemKibiBytes  *int
