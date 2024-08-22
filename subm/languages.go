@@ -108,7 +108,7 @@ func main() {
 }`,
 			MonacoId:         "go",
 			CompiledFilename: strPtr("main"),
-			Enabled:          true,
+			Enabled:          false,
 		},
 		{
 			ID:            "java21",
@@ -124,7 +124,7 @@ func main() {
 }`,
 			MonacoId:         "java",
 			CompiledFilename: strPtr("Main.class"),
-			Enabled:          true,
+			Enabled:          false,
 		},
 		{
 			ID:            "cpp17",
