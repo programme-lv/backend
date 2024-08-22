@@ -150,7 +150,7 @@ func (s *SubmissionSrvc) GetSubmission(ctx context.Context, submUuid string) (*F
 				SubmWallTime:         evalTestRow.SubmWallTimeMillis,
 				SubmExitCode:         evalTestRow.SubmExitCode,
 				SubmStdoutTrimmed:    evalTestRow.SubmStdout,
-				SubmStderrTrimmed:    evalTestRow.CheckerStderr,
+				SubmStderrTrimmed:    evalTestRow.SubmStderr,
 				CheckerCpuTimeMillis: evalTestRow.CheckerCpuTimeMillis,
 				CheckerMemKibiBytes:  evalTestRow.CheckerMemoryKibiBytes,
 				CheckerWallTime:      evalTestRow.CheckerWallTimeMillis,
