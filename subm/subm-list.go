@@ -20,11 +20,11 @@ func (s *SubmissionSrvc) ListSubmissions(ctx context.Context) (res []*BriefSubmi
 		IndexName:              aws.String("gsi1_pk-gsi1_sk-index"),
 		KeyConditionExpression: aws.String("gsi1_pk = :pk"),
 		ExpressionAttributeValues: map[string]types.AttributeValue{
-			":pk": &types.AttributeValueMemberN{
-				Value: "1",
-			},
+			":pk": &types.AttributeValueMemberN{Value: "1"},
 		},
 		ScanIndexForward: aws.Bool(false),
+		Limit:            aws.Int32(200),
+		// limit page size
 	}
 
 	result, err := s.ddbClient.Query(context.TODO(), input)
