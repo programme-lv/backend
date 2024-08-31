@@ -23,7 +23,7 @@ func (s *SubmissionSrvc) ListSubmissions(ctx context.Context) (res []*BriefSubmi
 			":pk": &types.AttributeValueMemberN{Value: "1"},
 		},
 		ScanIndexForward: aws.Bool(false),
-		Limit:            aws.Int32(200),
+		Limit:            aws.Int32(200 * 10),
 		// limit page size
 	}
 
@@ -185,6 +185,11 @@ func (s *SubmissionSrvc) ListSubmissions(ctx context.Context) (res []*BriefSubmi
 	sort.Slice(res, func(i, j int) bool {
 		return res[i].CreatedAt > res[j].CreatedAt
 	})
+
+	// limit count to 30
+	if len(res) > 30 {
+		res = res[:30]
+	}
 
 	return res, nil
 }
