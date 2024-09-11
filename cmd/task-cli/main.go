@@ -9,6 +9,7 @@ import (
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
 
 func main() {
@@ -39,7 +40,7 @@ func main() {
 	fmt.Printf("Task directory path provided: %s\n", absPath)
 
 	// Start the Bubble Tea program
-	p := tea.NewProgram(initialModel())
+	p := tea.NewProgram(initialModel(absPath))
 	if _, err := p.Run(); err != nil {
 		log.Fatal(err)
 	}
@@ -64,9 +65,10 @@ type (
 type model struct {
 	textInput textinput.Model
 	err       error
+	dirPath   string
 }
 
-func initialModel() model {
+func initialModel(dirPath string) model {
 	ti := textinput.New()
 	ti.Placeholder = "Pikachu"
 	ti.Focus()
@@ -76,6 +78,7 @@ func initialModel() model {
 	return model{
 		textInput: ti,
 		err:       nil,
+		dirPath:   dirPath,
 	}
 }
 
