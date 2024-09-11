@@ -9,6 +9,7 @@ import (
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
 
 func main() {
@@ -65,6 +66,7 @@ type model struct {
 	textInput textinput.Model
 	err       error
 	dirPath   string
+	styledDirPath string
 }
 
 func initialModel(dirPath string) model {
@@ -74,10 +76,15 @@ func initialModel(dirPath string) model {
 	ti.CharLimit = 156
 	ti.Width = 20
 
+	styledDirPath := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#00FF00")). // Green color
+		Render("Task directory: " + dirPath)
+
 	return model{
 		textInput: ti,
 		err:       nil,
 		dirPath:   dirPath,
+		styledDirPath: styledDirPath,
 	}
 }
 
