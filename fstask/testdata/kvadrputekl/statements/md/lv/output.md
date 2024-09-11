@@ -1,0 +1,1 @@
+Izvaddatu vienīgajā rindā jābūt veselam skaitlim – mazākajam soļu skaitam, kas ļauj no sākuma pozīcijas nonākt līdz īpašās rūtiņas uzkopšanai, vai -1, ja derīgs maršruts neeksistē. Īpašā rūtiņa ir uzkopta tad, ja KP nonāk pozīcijā, kur tas noklāj īpašo rūtiņu. Ievērojiet, ka nekādi nav noteikts, kurai KP rūtiņai uzkopšanas brīdī jāatbilst īpašajai rūtiņai!

@@ -13,40 +13,31 @@ import (
 )
 
 func main() {
-	// Parse the dir flag
 	dir := flag.String("dir", "", "directory path")
 	flag.Parse()
 
-	// If no dir is provided, display an error and exit
 	if *dir == "" {
 		fmt.Println("Please provide a directory path using the -dir flag.")
 		os.Exit(1)
 	}
 
-	// Validate the provided directory path
 	if err := validateDirectory(*dir); err != nil {
 		fmt.Printf("Error: %v\n", err)
 		os.Exit(1)
 	}
 
-	// Get the absolute path of the directory
 	absPath, err := filepath.Abs(*dir)
 	if err != nil {
 		fmt.Printf("Error retrieving absolute path: %v\n", err)
 		os.Exit(1)
 	}
 
-	// Display the provided directory absolute path if valid
-	fmt.Printf("Task directory path provided: %s\n", absPath)
-
-	// Start the Bubble Tea program
 	p := tea.NewProgram(initialModel(absPath))
 	if _, err := p.Run(); err != nil {
 		log.Fatal(err)
 	}
 }
 
-// validateDirectory checks if the path exists and is a directory
 func validateDirectory(dir string) error {
 	info, err := os.Stat(dir)
 	if os.IsNotExist(err) {
@@ -66,7 +57,7 @@ type model struct {
 	textInput textinput.Model
 	err       error
 	dirPath   string
-	styledDirPath string
+	fullName  string
 }
 
 func initialModel(dirPath string) model {
@@ -76,15 +67,10 @@ func initialModel(dirPath string) model {
 	ti.CharLimit = 156
 	ti.Width = 20
 
-	styledDirPath := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#00FF00")). // Green color
-		Render("Task directory: " + dirPath)
-
 	return model{
 		textInput: ti,
 		err:       nil,
 		dirPath:   dirPath,
-		styledDirPath: styledDirPath,
 	}
 }
 
@@ -102,7 +88,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		}
 
-	// Handle errors
 	case errMsg:
 		m.err = msg
 		return m, nil
@@ -113,10 +98,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
+	greenDirPath := lipgloss.NewStyle().Foreground(lipgloss.Color("#0000ff")).Render(m.dirPath)
+	return fmt.Sprintf(`
+	Directory: %s
+	Full name: %s
 
-	return fmt.Sprintf(
-		"What’s your favorite Pokémon?\n\n%s\n\n%s",
-		m.textInput.View(),
-		"(esc to quit)",
-	) + "\n"
+	`,
+		greenDirPath, m.fullName)
 }
