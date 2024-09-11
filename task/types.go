@@ -1,24 +1,9 @@
 package task
 
-type TaskSubmEvalData struct {
-	PublishedTaskID      string
-	TaskFullName         string
-	MemoryLimitMegabytes int
-	CPUTimeLimitSeconds  float64
-	Tests                []*TaskEvalTestInformation
-	TestlibCheckerCode   string
-	SubtaskScores        []*TaskEvalSubtaskScore
-	TestGroupInformation []*TaskEvalTestGroupInformation
-}
-
 type Example struct {
 	Input  string
 	Output string
 	MdNote *string
-}
-
-type GetTaskPayload struct {
-	TaskID string
 }
 
 type GetTaskSubmEvalDataPayload struct {
@@ -62,6 +47,17 @@ type TaskEvalTestGroupInformation struct {
 	TestGroupID int
 	Score       int
 	Subtask     int
+}
+
+type TaskSubmEvalData struct {
+	PublishedTaskID      string
+	TaskFullName         string
+	MemoryLimitMegabytes int
+	CPUTimeLimitSeconds  float64
+	Tests                []*TaskEvalTestInformation
+	TestlibCheckerCode   string
+	SubtaskScores        []*TaskEvalSubtaskScore
+	TestGroupInformation []*TaskEvalTestGroupInformation
 }
 
 type TaskEvalTestInformation struct {

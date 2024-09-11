@@ -521,13 +521,8 @@ func (s *SubmissionSrvc) CreateSubmission(ctx context.Context, p *CreateSubmissi
 		return nil, newErrUnauthorizedUsernameMismatch()
 	}
 
-	taskEvalData, err := s.taskSrvc.GetTaskSubmEvalData(ctx, &task.GetTaskSubmEvalDataPayload{
-		TaskID: p.TaskCodeID,
-	})
+	taskEvalData, err := s.taskSrvc.GetTaskSubmEvalData(ctx, p.TaskCodeID)
 	if err != nil {
-		if e, ok := err.(*task.Error); ok && e.ErrorCode() == task.ErrTaskNotFoundCode {
-			return nil, newErrTaskNotFound()
-		}
 		return nil, fmt.Errorf("error getting task: %w", err)
 	}
 

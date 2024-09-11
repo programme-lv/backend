@@ -77,7 +77,7 @@ func NewSubmissions() *SubmissionSrvc {
 		ddbClient:              dynamodbClient,
 		submTableName:          submTableName,
 		userSrvc:               user.NewUsers(),
-		taskSrvc:               task.NewTasks(),
+		taskSrvc:               task.NewTaskSrvc(),
 		sqsClient:              sqsClient,
 		submSqsUrl:             submQueueUrl,
 		createdSubmChan:        make(chan *BriefSubmission, 1000),

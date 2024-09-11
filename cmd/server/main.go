@@ -26,7 +26,7 @@ func main() {
 
 	submSrvc := subm.NewSubmissions()
 	userSrvc := user.NewUsers()
-	taskSrvc := task.NewTasks()
+	taskSrvc := task.NewTaskSrvc()
 	httpServer := http.NewHttpServer(submSrvc, userSrvc, taskSrvc,
 		[]byte(jwtKey))
 

@@ -52,20 +52,4 @@ func (ddb *DynamoDbTaskTable) Get(ctx context.Context, id string) (*TaskRow, err
 }
 
 func (ddb *DynamoDbTaskTable) List(ctx context.Context) ([]*TaskRow, error) {
-	var users []*TaskRow
-	err := ddb.taskTable.Scan().All(ctx, &users)
-	if err != nil {
-		return nil, err
-	}
-
-	return users, nil
-}
-
-// Save saves a user to the DynamoDB table with optimistic locking.
-func (ddb *DynamoDbTaskTable) Save(ctx context.Context, user *TaskRow) error {
-	// Increment the version number for optimistic locking
-	user.Version++
-
-	put := ddb.taskTable.Put(user).If("attribute_not_exists(version) OR version = ?", user.Version-1)
-	return put.Run(ctx)
 }
