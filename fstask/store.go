@@ -53,11 +53,11 @@ func (task *Task) encodeProblemTOML() ([]byte, error) {
 
 	t := ProblemTOML{
 		Specification: proglvFSTaskFormatSpecVersOfScript,
-		TaskName:      task.TaskFullName,
+		TaskName:      task.FullName,
 		Metadata: PTomlMetadata{
 			ProblemTags:        task.ProblemTags,
 			DifficultyFrom1To5: task.DifficultyOneToFive,
-			TaskAuthors:        task.ProblemAuthors,
+			TaskAuthors:        task.TaskAuthors,
 			OriginOlympiad:     task.OriginOlympiad,
 			OriginNotes:        task.OriginNotes,
 			OriginInstitution:  task.OriginInstitution,
@@ -192,7 +192,7 @@ func (task *Task) storeMdStatements(mdStatementDir string) error {
 
 	for _, v := range task.mdStatements {
 		// create language directory
-		dirPath := filepath.Join(mdStatementDir, *v.Language)
+		dirPath := filepath.Join(mdStatementDir, v.Language)
 		err = os.MkdirAll(dirPath, 0755)
 		if err != nil {
 			log.Printf("Error creating Markdown statement directory: %v\n", err)

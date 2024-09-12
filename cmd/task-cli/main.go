@@ -10,6 +10,7 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/programme-lv/backend/fstask"
 )
 
 func main() {
@@ -32,7 +33,12 @@ func main() {
 		os.Exit(1)
 	}
 
-	p := tea.NewProgram(initialModel(absPath))
+	task, err := fstask.Read(absPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	p := tea.NewProgram(initialModel(absPath, task))
 	if _, err := p.Run(); err != nil {
 		log.Fatal(err)
 	}
@@ -54,23 +60,66 @@ type (
 )
 
 type model struct {
-	textInput textinput.Model
-	err       error
-	dirPath   string
-	fullName  string
+	err             error
+	dirPath         string
+	task            *fstask.Task
+	testTotalCount  int
+	testTotalSize   int
+	testGroupPoints []int
+	totalScore      int
+	pdfSttmntLangs  []string
+	mdSttmntLangs   []string
 }
 
-func initialModel(dirPath string) model {
-	ti := textinput.New()
-	ti.Placeholder = "Pikachu"
-	ti.Focus()
-	ti.CharLimit = 156
-	ti.Width = 20
+func initialModel(dirPath string, task *fstask.Task) model {
+	tests := task.GetTestsSortedByID()
+	testTotalCount := 0
+	testTotalSize := 0
+	for _, test := range tests {
+		testTotalCount++
+		testTotalSize += len(test.Answer)
+		testTotalSize += len(test.Input)
+	}
+
+	groups := task.GetTestGroupIDs()
+	testGroupPoints := make([]int, len(groups))
+	for _, groupID := range groups {
+		info := task.GetInfoOnTestGroup(groupID)
+		testGroupPoints[groupID-1] = info.Points
+	}
+
+	totalScore := 0
+	if len(groups) == 0 {
+		totalScore = len(tests)
+	} else {
+		totalScore = 0
+		for _, groupID := range groups {
+			totalScore += testGroupPoints[groupID-1]
+		}
+	}
+
+	pdfSttments := task.GetAllPDFStatements()
+	pdfSttmntLangs := make([]string, len(pdfSttments))
+	for i, pdfSttmnt := range pdfSttments {
+		pdfSttmntLangs[i] = pdfSttmnt.Language
+	}
+
+	mdSttments := task.GetMarkdownStatements()
+	mdSttmntLangs := make([]string, len(mdSttments))
+	for i, mdSttmnt := range mdSttments {
+		mdSttmntLangs[i] = mdSttmnt.Language
+	}
 
 	return model{
-		textInput: ti,
-		err:       nil,
-		dirPath:   dirPath,
+		err:             nil,
+		dirPath:         dirPath,
+		task:            task,
+		testTotalCount:  testTotalCount,
+		testTotalSize:   testTotalSize,
+		testGroupPoints: testGroupPoints,
+		totalScore:      totalScore,
+		pdfSttmntLangs:  pdfSttmntLangs,
+		mdSttmntLangs:   mdSttmntLangs,
 	}
 }
 
@@ -84,7 +133,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.Type {
-		case tea.KeyEnter, tea.KeyCtrlC, tea.KeyEsc:
+		case tea.KeyCtrlC:
 			return m, tea.Quit
 		}
 
@@ -93,16 +142,60 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 
-	m.textInput, cmd = m.textInput.Update(msg)
 	return m, cmd
 }
 
 func (m model) View() string {
-	greenDirPath := lipgloss.NewStyle().Foreground(lipgloss.Color("#0000ff")).Render(m.dirPath)
-	return fmt.Sprintf(`
-	Directory: %s
-	Full name: %s
+	difficultyMap := map[int]string{
+		1: "very easy",
+		2: "easy",
+		3: "medium",
+		4: "hard",
+		5: "very hard",
+	}
 
-	`,
-		greenDirPath, m.fullName)
+	blueText := lipgloss.NewStyle().Foreground(lipgloss.Color("#0000ff"))
+	greenText := lipgloss.NewStyle().Foreground(lipgloss.Color("#00ff00"))
+
+	illustrationImgPath := ""
+	if m.task.GetTaskIllustrationImage() != nil {
+		illustrationImgPath = m.task.GetTaskIllustrationImage().RelativePath
+	}
+	return fmt.Sprintf(`Directory: %s
+Task preview:
+	Full name: %s
+	Cpu time limit: %s seconds
+	Memory limit: %s MB
+	Difficulty: %s (%s)
+	Origin notes: %s
+	Test count: %s (total size: %s MB)
+	Test group count: %s (points: %s)
+	Total score: %s points
+	Visible input subtasks: %s
+	Pdf statement langs: %s
+	Markdown statement langs: %s
+	Has illustration img: %s (%s)
+	Example count: %s
+
+Press Ctrl+C to cancel & exit
+`,
+		blueText.Render(m.dirPath),
+		greenText.Render(m.task.FullName),
+		greenText.Render(fmt.Sprintf("%.3f", m.task.CpuTimeLimInSeconds)),
+		greenText.Render(fmt.Sprintf("%d", m.task.MemoryLimInMegabytes)),
+		greenText.Render(fmt.Sprintf("%d", m.task.DifficultyOneToFive)),
+		difficultyMap[m.task.DifficultyOneToFive],
+		greenText.Render(fmt.Sprintf("%v", m.task.OriginNotes)),
+		greenText.Render(fmt.Sprintf("%d", m.testTotalCount)),
+		greenText.Render(fmt.Sprintf("%d", m.testTotalSize/1024/1024)),
+		greenText.Render(fmt.Sprintf("%d", len(m.task.GetTestGroupIDs()))),
+		greenText.Render(fmt.Sprintf("%v", m.testGroupPoints)),
+		greenText.Render(fmt.Sprintf("%d", m.totalScore)),
+		greenText.Render(fmt.Sprintf("%v", m.task.GetVisibleInputSubtasks())),
+		greenText.Render(fmt.Sprintf("%v", m.pdfSttmntLangs)),
+		greenText.Render(fmt.Sprintf("%v", m.mdSttmntLangs)),
+		greenText.Render(fmt.Sprintf("%v", m.task.GetTaskIllustrationImage() != nil)),
+		greenText.Render(fmt.Sprintf("%v", illustrationImgPath)),
+		greenText.Render(fmt.Sprintf("%v", len(m.task.GetExamples()))),
+	)
 }

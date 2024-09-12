@@ -8,7 +8,7 @@ import (
 )
 
 type MarkdownStatement struct {
-	Language *string
+	Language string
 	Story    string
 	Input    string
 	Output   string
@@ -56,7 +56,7 @@ func (task *Task) readMdSttmentsFromTaskDir(dir string) error {
 		}
 
 		res2 := mDStatement{
-			Language: nil,
+			Language: "lv",
 			Story:    "",
 			Input:    "",
 			Output:   "",
@@ -64,7 +64,7 @@ func (task *Task) readMdSttmentsFromTaskDir(dir string) error {
 			Scoring:  nil, // string pointer
 		}
 		langStr := lang.Name()
-		res2.Language = &langStr
+		res2.Language = langStr
 		for _, f := range files {
 			if !strings.HasSuffix(f.Name(), ".md") {
 				continue

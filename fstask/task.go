@@ -5,10 +5,10 @@ type Task struct {
 
 	// specificationVersion string
 	// srcDirPath           string
-	ProblemTags    []string
-	ProblemAuthors []string
+	ProblemTags []string
+	TaskAuthors []string
 
-	TaskFullName         string
+	FullName             string
 	OriginOlympiad       string
 	DifficultyOneToFive  int
 	MemoryLimInMegabytes int
@@ -68,7 +68,7 @@ type asset struct {
 }
 
 type mDStatement struct {
-	Language *string
+	Language string
 	Story    string
 	Input    string
 	Output   string
@@ -100,8 +100,8 @@ func NewTask(taskName string) (*Task, error) {
 	t := Task{
 		problemTomlContent:   []byte{},
 		ProblemTags:          []string{},
-		ProblemAuthors:       []string{},
-		TaskFullName:         taskName,
+		TaskAuthors:          []string{},
+		FullName:             taskName,
 		OriginOlympiad:       "",
 		DifficultyOneToFive:  0,
 		MemoryLimInMegabytes: 256,

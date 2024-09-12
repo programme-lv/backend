@@ -121,11 +121,11 @@ func (t *Task) AddExample(input []byte, output []byte, mdNote []byte) {
 }
 
 func (t *Task) GetTaskName() string {
-	return t.TaskFullName
+	return t.FullName
 }
 
 func (t *Task) SetTaskName(name string) {
-	t.TaskFullName = name
+	t.FullName = name
 }
 
 type TestGroupInfo struct {

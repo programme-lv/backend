@@ -18,10 +18,11 @@ func (task *Task) readMetadataFromToml(bytes []byte) error {
 	}
 
 	type pTomlMetadata struct {
-		ProblemTags         []string `toml:"problem_tags"`
-		DifficultyOneToFive int      `toml:"difficulty_one_to_five"`
-		ProblemAuthors      []string `toml:"problem_authors"`
-		OriginOlympiad      string   `toml:"origin_olympiad"`
+		ProblemTags         []string          `toml:"problem_tags"`
+		DifficultyOneToFive int               `toml:"difficulty_1_to_5"`
+		TaskAuthors         []string          `toml:"task_authors"`
+		OriginOlympiad      string            `toml:"origin_olympiad"`
+		OriginNotes         map[string]string `toml:"origin_notes,omitempty"`
 	}
 
 	tomlStruct := struct {
@@ -35,8 +36,37 @@ func (task *Task) readMetadataFromToml(bytes []byte) error {
 
 	task.ProblemTags = tomlStruct.Metadata.ProblemTags
 	task.DifficultyOneToFive = tomlStruct.Metadata.DifficultyOneToFive
-	task.ProblemAuthors = tomlStruct.Metadata.ProblemAuthors
+	task.TaskAuthors = tomlStruct.Metadata.TaskAuthors
 	task.OriginOlympiad = tomlStruct.Metadata.OriginOlympiad
+	task.OriginNotes = tomlStruct.Metadata.OriginNotes
 
 	return nil
 }
+
+/*
+
+	t.OriginNotes, err = readOriginNotes(problemTomlContent)
+	if err != nil {
+		log.Printf("Error reading origin notes: %v\n", err)
+	}
+*/
+
+/*
+
+func readOriginNotes(pToml []byte) (map[string]string, error) {
+	type Metadata struct {
+		OriginNotes map[string]string `toml:"origin_notes,omitempty"`
+	}
+	metadata := struct {
+		Metadata Metadata `toml:"metadata"`
+	}{}
+
+	err := toml.Unmarshal(pToml, &metadata)
+	if err != nil {
+		log.Printf("Failed to unmarshal the origin notes: %v\n", err)
+		return nil, fmt.Errorf("failed to unmarshal the origin notes: %w", err)
+	}
+
+	return metadata.Metadata.OriginNotes, nil
+}
+*/
