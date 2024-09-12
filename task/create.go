@@ -5,11 +5,11 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"maps"
+	"mime"
 
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
-	"github.com/gabriel-vasile/mimetype"
 )
 
 type CreatePublicTaskInput struct {
@@ -115,12 +115,19 @@ func (ts *TaskService) UploadStatementPdf(body []byte) (sha2 string, err error) 
 	return shaHex, err
 }
 
-func (ts *TaskService) UploadIllustrationImg(mimeType mimetype.MIME, body []byte) (err error) {
+func (ts *TaskService) UploadIllustrationImg(mimeType string, body []byte) (s3key string, err error) {
 	sha2 := ts.Sha2Hex(body)
-	ext := mimeType.Extension()
+	exts, err := mime.ExtensionsByType(mimeType)
+	if err != nil {
+		return "", fmt.Errorf("failed to get file extension: %w", err)
+	}
+	if len(exts) == 0 {
+		return "", fmt.Errorf("file extennsion not found")
+	}
+	ext := exts[0]
 	s3Key := fmt.Sprintf("%s/%s%s", "task-illustrations", sha2, ext)
-	err = ts.s3PublicBucket.Upload(body, s3Key, mimeType.String())
-	return err
+	err = ts.s3PublicBucket.Upload(body, s3Key, mimeType)
+	return s3Key, err
 }
 
 func (ts *TaskService) Sha2Hex(body []byte) (sha2 string) {

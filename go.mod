@@ -23,9 +23,11 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/guregu/dynamo/v2 v2.1.1
 	github.com/joho/godotenv v1.5.1
+	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
 	github.com/pelletier/go-toml/v2 v2.2.3
 	github.com/programme-lv/fs-task-format-parser v0.0.0-20240731133341-92e33000f5b9
 	github.com/stretchr/testify v1.9.0
+	github.com/wailsapp/mimetype v1.4.1
 	goa.design/clue v1.0.6
 	golang.org/x/crypto v0.26.0
 	golang.org/x/exp v0.0.0-20240808152545-0cdaa3abc0fa
