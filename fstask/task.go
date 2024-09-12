@@ -5,15 +5,15 @@ type Task struct {
 
 	// specificationVersion string
 	// srcDirPath           string
-	problemTags    []string
-	problemAuthors []string
+	ProblemTags    []string
+	ProblemAuthors []string
 
-	taskName            string
-	originOlympiad      string
-	difficultyOneToFive int
-	memoryMegabytes     int
-	cpuTimeSeconds      float64
-	examples            []example
+	TaskFullName         string
+	OriginOlympiad       string
+	DifficultyOneToFive  int
+	MemoryLimInMegabytes int
+	CpuTimeLimInSeconds  float64
+	examples             []example
 	// exampleFilenameToID  map[string]int
 	visibleInputSubtasks []int
 
@@ -99,13 +99,13 @@ type example struct {
 func NewTask(taskName string) (*Task, error) {
 	t := Task{
 		problemTomlContent:   []byte{},
-		problemTags:          []string{},
-		problemAuthors:       []string{},
-		taskName:             taskName,
-		originOlympiad:       "",
-		difficultyOneToFive:  0,
-		memoryMegabytes:      256,
-		cpuTimeSeconds:       1.0,
+		ProblemTags:          []string{},
+		ProblemAuthors:       []string{},
+		TaskFullName:         taskName,
+		OriginOlympiad:       "",
+		DifficultyOneToFive:  0,
+		MemoryLimInMegabytes: 256,
+		CpuTimeLimInSeconds:  1.0,
 		examples:             []example{},
 		visibleInputSubtasks: []int{},
 		mdStatements:         []mDStatement{},

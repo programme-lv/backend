@@ -6,23 +6,7 @@ import (
 	"sort"
 )
 
-func (t *Task) GetCPUTimeLimitInSeconds() float64 {
-	return t.cpuTimeSeconds
-}
-
-func (t *Task) SetCPUTimeLimitInSeconds(seconds float64) {
-	t.cpuTimeSeconds = seconds
-}
-
-func (t *Task) GetMemoryLimitInMegabytes() int {
-	return t.memoryMegabytes
-}
-
-func (t *Task) SetMemoryLimitInMegabytes(megabytes int) {
-	t.memoryMegabytes = megabytes
-}
-
-func (t *Task) SwapTestsWithIDs(id1 int, id2 int) {
+func (t *Task) SwapTestOrder(id1 int, id2 int) {
 	id1Filename, id1HasFilename := t.testIDToFilename[id1]
 	id2Filename, id2HasFilename := t.testIDToFilename[id2]
 
@@ -33,10 +17,6 @@ func (t *Task) SwapTestsWithIDs(id1 int, id2 int) {
 			t.tests[i].ID = id1
 		}
 	}
-	// testIDToFilename is affected,
-	// testFilenameToID is affected,
-	// testIDoverwrite is not affected
-	// tGroupTestIDs is affected
 
 	delete(t.testFilenameToID, id1Filename)
 	delete(t.testIDToFilename, id1)
@@ -141,43 +121,11 @@ func (t *Task) AddExample(input []byte, output []byte, mdNote []byte) {
 }
 
 func (t *Task) GetTaskName() string {
-	return t.taskName
+	return t.TaskFullName
 }
 
 func (t *Task) SetTaskName(name string) {
-	t.taskName = name
-}
-
-func (t *Task) GetProblemTags() []string {
-	return t.problemTags
-}
-
-func (t *Task) SetProblemTags(tags []string) {
-	t.problemTags = tags
-}
-
-func (t *Task) GetTaskAuthors() []string {
-	return t.problemAuthors
-}
-
-func (t *Task) SetTaskAuthors(authors []string) {
-	t.problemAuthors = authors
-}
-
-func (t *Task) GetOriginOlympiad() string {
-	return t.originOlympiad
-}
-
-func (t *Task) SetOriginOlympiad(origin string) {
-	t.originOlympiad = origin
-}
-
-func (t *Task) GetDifficultyOneToFive() int {
-	return t.difficultyOneToFive
-}
-
-func (t *Task) SetDifficultyOneToFive(difficulty int) {
-	t.difficultyOneToFive = difficulty
+	t.TaskFullName = name
 }
 
 type TestGroupInfo struct {
@@ -311,31 +259,6 @@ func (t *Task) AddVisibleInputSubtask(subtask int) error {
 
 func (t *Task) GetVisibleInputSubtasks() []int {
 	return t.visibleInputSubtasks
-}
-
-type MarkdownStatement struct {
-	Language *string
-	Story    string
-	Input    string
-	Output   string
-	Notes    *string
-	Scoring  *string
-}
-
-func (t *Task) GetMarkdownStatements() []MarkdownStatement {
-	markdownStatements := make([]MarkdownStatement, 0, len(t.mdStatements))
-	for _, statement := range t.mdStatements {
-		markdownStatements = append(markdownStatements, MarkdownStatement(statement))
-	}
-
-	return markdownStatements
-}
-
-func (t *Task) SetMarkdownStatements(statements []MarkdownStatement) {
-	t.mdStatements = make([]mDStatement, 0, len(statements))
-	for _, statement := range statements {
-		t.mdStatements = append(t.mdStatements, mDStatement(statement))
-	}
 }
 
 type Asset struct {

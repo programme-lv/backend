@@ -4,12 +4,27 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+
+	"github.com/pelletier/go-toml/v2"
 )
 
 type SemVer struct {
 	major int
 	minor int
 	patch int
+}
+
+func getSemVersFromToml(tomlBytes []byte) (SemVer, error) {
+	var specVersStruct struct {
+		Specification string `toml:"specification"`
+	}
+
+	err := toml.Unmarshal(tomlBytes, &specVersStruct)
+	if err != nil {
+		return SemVer{}, fmt.Errorf("failed to unmarshal the specification version: %w", err)
+	}
+
+	return semanticVersionFromStr(specVersStruct.Specification)
 }
 
 func (sv *SemVer) GreaterOrEqThan(other SemVer) bool {
@@ -42,7 +57,7 @@ func (sv *SemVer) String() string {
 	return fmt.Sprintf("v%d.%d.%d", sv.major, sv.minor, sv.patch)
 }
 
-func FromStr(s string) (SemVer, error) {
+func semanticVersionFromStr(s string) (SemVer, error) {
 	var sv SemVer
 	if s[0] == 'v' {
 		_, err := fmt.Sscanf(s, "v%d.%d.%d", &sv.major, &sv.minor, &sv.patch)

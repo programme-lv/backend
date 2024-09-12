@@ -2,23 +2,19 @@ package fstask
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/pelletier/go-toml/v2"
 )
 
-func init() {
-	log.SetFlags(log.LstdFlags | log.Lshortfile)
-}
+func (task *Task) readConstraintsFromToml(bytes []byte) error {
+	vers, err := getSemVersFromToml(bytes)
+	if err != nil {
+		return fmt.Errorf("failed to get the specification version: %w", err)
+	}
 
-type constraints struct {
-	CPUTimeLimitInSeconds  float64
-	MemoryLimitInMegabytes int
-}
-
-func readConstraintsFromToml(version SemVer, tomlContent string) (*constraints, error) {
-	if version.LessThan(SemVer{major: 2}) {
-		return nil, fmt.Errorf("unsupported specification version: %s", version)
+	if vers.LessThan(SemVer{major: 2}) {
+		return fmt.Errorf("unsupported specification version: %s",
+			vers.String())
 	}
 
 	type pTomlConstraints struct {
@@ -30,13 +26,13 @@ func readConstraintsFromToml(version SemVer, tomlContent string) (*constraints, 
 		Constraints pTomlConstraints `toml:"constraints"`
 	}{}
 
-	err := toml.Unmarshal([]byte(tomlContent), &tomlStruct)
+	err = toml.Unmarshal(bytes, &tomlStruct)
 	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal the constraints: %w", err)
+		return fmt.Errorf("failed to unmarshal the constraints: %w", err)
 	}
 
-	return &constraints{
-		CPUTimeLimitInSeconds:  tomlStruct.Constraints.CPUTimeLimitInSeconds,
-		MemoryLimitInMegabytes: tomlStruct.Constraints.MemoryLimitInMegabytes,
-	}, nil
+	task.CpuTimeLimInSeconds = tomlStruct.Constraints.CPUTimeLimitInSeconds
+	task.MemoryLimInMegabytes = tomlStruct.Constraints.MemoryLimitInMegabytes
+
+	return nil
 }

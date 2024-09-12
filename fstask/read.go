@@ -5,7 +5,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/pelletier/go-toml/v2"
 )
@@ -15,17 +14,15 @@ func init() {
 }
 
 func Read(taskRootDirPath string) (*Task, error) {
-	log.Printf("Starting to read directory: %s\n", taskRootDirPath)
-
 	t := Task{
 		problemTomlContent:   []byte{},
-		problemTags:          []string{},
-		problemAuthors:       []string{},
-		taskName:             "",
-		originOlympiad:       "",
-		difficultyOneToFive:  0,
-		memoryMegabytes:      0,
-		cpuTimeSeconds:       0,
+		ProblemTags:          []string{},
+		ProblemAuthors:       []string{},
+		TaskFullName:         "",
+		OriginOlympiad:       "",
+		DifficultyOneToFive:  0,
+		MemoryLimInMegabytes: 0,
+		CpuTimeLimInSeconds:  0,
 		examples:             []example{},
 		visibleInputSubtasks: []int{},
 		mdStatements:         []mDStatement{},
@@ -93,46 +90,20 @@ func Read(taskRootDirPath string) (*Task, error) {
 		log.Printf("Warning: outdated specification version (too old): %s\n", specVers)
 	}
 
-	t.taskName, err = readTaskName(specVers, string(problemTomlContent))
+	t.TaskFullName, err = readTaskName(specVers, string(problemTomlContent))
 	if err != nil {
 		log.Printf("Error reading task name: %v\n", err)
 		return nil, fmt.Errorf("error reading task name: %w", err)
 	}
 
-	t.cpuTimeSeconds, err = readCPUTimeLimitInSeconds(specVers, string(problemTomlContent))
+	err = t.readConstraintsFromToml(problemTomlContent)
 	if err != nil {
-		log.Printf("Error reading CPU time limit: %v\n", err)
-		return nil, fmt.Errorf("error reading cpu time limit: %w", err)
+		return nil, fmt.Errorf("error reading constraints: %w", err)
 	}
 
-	t.memoryMegabytes, err = readMemoryLimitInMegabytes(specVers, string(problemTomlContent))
+	err = t.readMetadataFromToml(problemTomlContent)
 	if err != nil {
-		log.Printf("Error reading memory limit: %v\n", err)
-		return nil, fmt.Errorf("error reading memory limit: %w", err)
-	}
-
-	t.problemTags, err = readProblemTags(specVers, string(problemTomlContent))
-	if err != nil {
-		log.Printf("Error reading problem tags: %v\n", err)
-		return nil, fmt.Errorf("error reading problem tags: %w", err)
-	}
-
-	t.problemAuthors, err = readProblemAuthors(specVers, string(problemTomlContent))
-	if err != nil {
-		log.Printf("Error reading problem authors: %v\n", err)
-		return nil, fmt.Errorf("error reading problem authors: %w", err)
-	}
-
-	t.originOlympiad, err = readOriginOlympiad(specVers, string(problemTomlContent))
-	if err != nil {
-		log.Printf("Error reading origin olympiad: %v\n", err)
-		return nil, fmt.Errorf("error reading origin olympiad: %w", err)
-	}
-
-	t.difficultyOneToFive, err = readDifficultyOneToFive(specVers, string(problemTomlContent))
-	if err != nil {
-		log.Printf("Error reading difficulty: %v\n", err)
-		return nil, fmt.Errorf("error reading difficulty: %w", err)
+		return nil, fmt.Errorf("error reading metadata: %w", err)
 	}
 
 	log.Println("Reading test filenames from the tests directory")
@@ -256,10 +227,9 @@ func Read(taskRootDirPath string) (*Task, error) {
 		log.Printf("Error reading PDF statements: %v\n", err)
 	}
 
-	log.Println("Reading MD statements")
-	t.mdStatements, err = readMDStatements(specVers, taskRootDirPath)
+	err = t.readMdSttmentsFromTaskDir(taskRootDirPath)
 	if err != nil {
-		log.Printf("Error reading MD statements: %v\n", err)
+		log.Printf("Error reading MD statements from root dir: %v\n", err)
 	}
 
 	// read task illustration
@@ -367,107 +337,6 @@ func readIllstrImgFnameFromPToml(pToml []byte) (string, error) {
 
 	illustrationPath = tomlStruct.IllstrImgFname
 	return illustrationPath, nil
-}
-
-func readMDStatements(_ string, rootDirPath string) ([]mDStatement, error) {
-	mdDirPath := filepath.Join(rootDirPath, "statements", "md")
-
-	res := make([]mDStatement, 0)
-	if _, err := os.Stat(mdDirPath); os.IsNotExist(err) {
-		log.Println("MD directory does not exist")
-		return res, nil
-		// return res, fmt.Errorf("md directory does not exist: %s", mdDirPath)
-	}
-
-	// statements -> md -> [language] -> {story.md,input.md,output.md}
-	langs, err := os.ReadDir(mdDirPath)
-	if err != nil {
-		return res, fmt.Errorf("error reading md directory: %w", err)
-	}
-
-	for _, lang := range langs {
-		if !lang.IsDir() {
-			continue
-		}
-
-		files, err := os.ReadDir(filepath.Join(mdDirPath, lang.Name()))
-		if err != nil {
-			return res, fmt.Errorf("error reading md directory: %w", err)
-		}
-
-		res2 := mDStatement{
-			Language: nil,
-			Story:    "",
-			Input:    "",
-			Output:   "",
-			Notes:    nil, // string pointer
-			Scoring:  nil, // string pointer
-		}
-		langStr := lang.Name()
-		res2.Language = &langStr
-		for _, f := range files {
-			if !strings.HasSuffix(f.Name(), ".md") {
-				continue
-			}
-
-			content, err := os.ReadFile(filepath.Join(mdDirPath, lang.Name(), f.Name()))
-			if err != nil {
-				return nil, fmt.Errorf("error reading md file: %w", err)
-			}
-
-			switch f.Name() {
-			case "story.md":
-				res2.Story = string(content)
-			case "input.md":
-				res2.Input = string(content)
-			case "output.md":
-				res2.Output = string(content)
-			case "notes.md":
-				res2.Notes = &([]string{string(content)}[0])
-			case "scoring.md":
-				res2.Scoring = &([]string{string(content)}[0])
-			}
-		}
-
-		if res2.Story == "" || res2.Input == "" || res2.Output == "" {
-			return nil, fmt.Errorf("invalid MD statement: %+v", res2)
-		}
-
-		res = append(res, res2)
-	}
-
-	return res, nil
-}
-
-func readPDFStatements(_ string, rootDirPath string) (map[string][]byte, error) {
-	pdfDirPath := filepath.Join(rootDirPath, "statements", "pdf")
-
-	res := make(map[string][]byte)
-	if _, err := os.Stat(pdfDirPath); os.IsNotExist(err) {
-		log.Println("PDF directory does not exist")
-		return res, nil
-		// return res, fmt.Errorf("pdf directory does not exist: %s", pdfDirPath)
-	}
-
-	files, err := os.ReadDir(pdfDirPath)
-	if err != nil {
-		return res, fmt.Errorf("error reading pdf directory: %w", err)
-	}
-	/* lv.pdf */
-	for _, f := range files {
-		if !strings.HasSuffix(f.Name(), ".pdf") {
-			log.Fatalf("Unsupported PDF file: %s\n", f.Name())
-		}
-
-		content, err := os.ReadFile(filepath.Join(pdfDirPath, f.Name()))
-		if err != nil {
-			return nil, fmt.Errorf("error reading pdf file: %w", err)
-		}
-
-		res[f.Name()[0:len(f.Name())-4]] = content
-	}
-
-	return res, nil
 }
 
 func readTaskName(specVers string, tomlContent string) (string, error) {
