@@ -4,7 +4,9 @@ import (
 	"context"
 	"crypto/sha256"
 	"fmt"
+	"maps"
 
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/gabriel-vasile/mimetype"
@@ -78,7 +80,7 @@ func (row ddbDetailsRow) GetKey() map[string]types.AttributeValue {
 }
 
 func (ts *TaskService) CreateTask(in *CreatePublicTaskInput) (err error) {
-	row := ddbDetailsRow{
+	detailsRow := ddbDetailsRow{
 		TaskCode:    in.TaskCode,
 		FullName:    in.FullName,
 		MemMbytes:   in.MemMBytes,
@@ -87,12 +89,20 @@ func (ts *TaskService) CreateTask(in *CreatePublicTaskInput) (err error) {
 		OriginOlymp: in.OriginOlymp,
 		IllustrKey:  in.IllustrKey,
 	}
+
+	item, err := attributevalue.MarshalMap(detailsRow)
+	if err != nil {
+		return fmt.Errorf("failed to marshal ddb row: %w", err)
+	}
+
+	maps.Copy(item, detailsRow.GetKey())
+
 	_, err = ts.ddbClient.PutItem(context.TODO(), &dynamodb.PutItemInput{
 		TableName: &ts.taskTableName,
-		Item:      row.GetKey(),
+		Item:      item,
 	})
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to put task details: %w", err)
 	}
 
 	return nil
