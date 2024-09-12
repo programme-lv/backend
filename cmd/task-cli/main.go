@@ -69,6 +69,8 @@ type model struct {
 	totalScore      int
 	pdfSttmntLangs  []string
 	mdSttmntLangs   []string
+	shortCodeInput  textinput.Model
+	inputingTaskId  bool
 }
 
 func initialModel(dirPath string, task *fstask.Task) model {
@@ -110,6 +112,12 @@ func initialModel(dirPath string, task *fstask.Task) model {
 		mdSttmntLangs[i] = mdSttmnt.Language
 	}
 
+	ti := textinput.New()
+	ti.SetValue(filepath.Base(dirPath))
+	ti.Focus()
+	ti.CharLimit = 156
+	ti.Width = 20
+
 	return model{
 		err:             nil,
 		dirPath:         dirPath,
@@ -120,6 +128,8 @@ func initialModel(dirPath string, task *fstask.Task) model {
 		totalScore:      totalScore,
 		pdfSttmntLangs:  pdfSttmntLangs,
 		mdSttmntLangs:   mdSttmntLangs,
+		shortCodeInput:  ti,
+		inputingTaskId:  true,
 	}
 }
 
@@ -135,6 +145,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.Type {
 		case tea.KeyCtrlC:
 			return m, tea.Quit
+		case tea.KeyEnter:
+			m.inputingTaskId = false
+			m.shortCodeInput.Blur()
+			m.shortCodeInput.CursorEnd()
+			return m, cmd
 		}
 
 	case errMsg:
@@ -142,6 +157,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 
+	if m.inputingTaskId {
+		m.shortCodeInput, cmd = m.shortCodeInput.Update(msg)
+	}
 	return m, cmd
 }
 
@@ -154,29 +172,29 @@ func (m model) View() string {
 		5: "very hard",
 	}
 
-	blueText := lipgloss.NewStyle().Foreground(lipgloss.Color("#0000ff"))
-	greenText := lipgloss.NewStyle().Foreground(lipgloss.Color("#00ff00"))
+	blueText := lipgloss.NewStyle().Foreground(lipgloss.Color("#3498db"))
+	greenText := lipgloss.NewStyle().Foreground(lipgloss.Color("#2ecc71"))
+	violetText := lipgloss.NewStyle().Foreground(lipgloss.Color("#e056fd"))
 
 	illustrationImgPath := ""
 	if m.task.GetTaskIllustrationImage() != nil {
 		illustrationImgPath = m.task.GetTaskIllustrationImage().RelativePath
 	}
-	return fmt.Sprintf(`Directory: %s
+	return fmt.Sprintf(`Select action:
+	[X] Upload task
+Directory: %s
 Task preview:
 	Full name: %s
-	Cpu time limit: %s seconds
-	Memory limit: %s MB
+	Cpu time limit: %s seconds | Memory limit: %s MB
 	Difficulty: %s (%s)
 	Origin notes: %s
-	Test count: %s (total size: %s MB)
+	Test count: %s (total size: %s MB) | Example count: %s
 	Test group count: %s (points: %s)
 	Total score: %s points
 	Visible input subtasks: %s
-	Pdf statement langs: %s
-	Markdown statement langs: %s
-	Has illustration img: %s (%s)
-	Example count: %s
-
+	Pdf statement langs: %s | Markdown statement langs: %s
+	Has illustration img: %s (assets/%s)
+Please enter task's short code (id) %s
 Press Ctrl+C to cancel & exit
 `,
 		blueText.Render(m.dirPath),
@@ -188,6 +206,7 @@ Press Ctrl+C to cancel & exit
 		greenText.Render(fmt.Sprintf("%v", m.task.OriginNotes)),
 		greenText.Render(fmt.Sprintf("%d", m.testTotalCount)),
 		greenText.Render(fmt.Sprintf("%d", m.testTotalSize/1024/1024)),
+		greenText.Render(fmt.Sprintf("%v", len(m.task.GetExamples()))),
 		greenText.Render(fmt.Sprintf("%d", len(m.task.GetTestGroupIDs()))),
 		greenText.Render(fmt.Sprintf("%v", m.testGroupPoints)),
 		greenText.Render(fmt.Sprintf("%d", m.totalScore)),
@@ -196,6 +215,6 @@ Press Ctrl+C to cancel & exit
 		greenText.Render(fmt.Sprintf("%v", m.mdSttmntLangs)),
 		greenText.Render(fmt.Sprintf("%v", m.task.GetTaskIllustrationImage() != nil)),
 		greenText.Render(fmt.Sprintf("%v", illustrationImgPath)),
-		greenText.Render(fmt.Sprintf("%v", len(m.task.GetExamples()))),
+		violetText.Render(m.shortCodeInput.View()),
 	)
 }
