@@ -96,8 +96,29 @@ func (row ddbVisInpStsRow) GetKey() map[string]types.AttributeValue {
 	}
 }
 
+func marshalDdbItem(item interface {
+	GetKey() map[string]types.AttributeValue
+}) map[string]types.AttributeValue {
+	marshalled, err := attributevalue.MarshalMap(item)
+	if err != nil {
+		panic(err)
+	}
+	maps.Copy(marshalled, item.GetKey())
+	return marshalled
+}
+
+func (ts *TaskService) putItem(item interface {
+	GetKey() map[string]types.AttributeValue
+}) error {
+	_, err := ts.ddbClient.PutItem(context.TODO(), &dynamodb.PutItemInput{
+		TableName: &ts.taskTableName,
+		Item:      marshalDdbItem(item),
+	})
+	return err
+}
+
 func (ts *TaskService) CreateTask(in *CreatePublicTaskInput) (err error) {
-	detailsRow := ddbDetailsRow{
+	err = ts.putItem(ddbDetailsRow{
 		TaskCode:    in.TaskCode,
 		FullName:    in.FullName,
 		MemMbytes:   in.MemMBytes,
@@ -105,17 +126,6 @@ func (ts *TaskService) CreateTask(in *CreatePublicTaskInput) (err error) {
 		Difficulty:  in.Difficulty,
 		OriginOlymp: in.OriginOlymp,
 		IllustrKey:  in.IllustrKey,
-	}
-
-	item, err := attributevalue.MarshalMap(detailsRow)
-	if err != nil {
-		return fmt.Errorf("failed to marshal ddb row: %w", err)
-	}
-	maps.Copy(item, detailsRow.GetKey())
-
-	_, err = ts.ddbClient.PutItem(context.TODO(), &dynamodb.PutItemInput{
-		TableName: &ts.taskTableName,
-		Item:      item,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to put task details: %w", err)
@@ -123,22 +133,11 @@ func (ts *TaskService) CreateTask(in *CreatePublicTaskInput) (err error) {
 
 	for _, visInpSt := range in.VisInpSts {
 		for _, input := range visInpSt.Inputs {
-			visInpStsRow := ddbVisInpStsRow{
+			err = ts.putItem(ddbVisInpStsRow{
 				TaskCode: in.TaskCode,
 				Subtask:  visInpSt.Subtask,
 				TestId:   input.TestId,
 				Input:    input.Input,
-			}
-
-			item, err := attributevalue.MarshalMap(visInpStsRow)
-			if err != nil {
-				return fmt.Errorf("failed to marshal ddb row: %w", err)
-			}
-			maps.Copy(item, visInpStsRow.GetKey())
-
-			_, err = ts.ddbClient.PutItem(context.TODO(), &dynamodb.PutItemInput{
-				TableName: &ts.taskTableName,
-				Item:      item,
 			})
 			if err != nil {
 				return fmt.Errorf("failed to put task vis inpt st: %w", err)
