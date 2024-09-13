@@ -4,25 +4,9 @@ import (
 	"context"
 	"crypto/sha256"
 	"fmt"
-	"log"
 	"mime"
-
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
-	"golang.org/x/exp/maps"
 )
 
-type VisInpSt struct {
-	Subtask int
-	Inputs  []TestWithOnlyInput
-}
-
-type TestWithOnlyInput struct {
-	TestId int
-	Input  string
-}
 type CreatePublicTaskInput struct {
 	TaskCode    string
 	FullName    string  // full name of the task
@@ -70,73 +54,21 @@ type CreatePublicTaskInput struct {
 	}
 }
 
-// ddbDetailsRow represents the details of a task.
-type ddbDetailsRow struct {
-	TaskCode    string  `dynamodbav:"task_code"`
-	FullName    string  `dynamodbav:"full_name"`
-	MemMbytes   int     `dynamodbav:"mem_mbytes"`
-	CpuSecs     float64 `dynamodbav:"cpu_secs"`
-	Difficulty  *int    `dynamodbav:"difficulty"`
-	OriginOlymp string  `dynamodbav:"origin_olymp"`
-	IllustrKey  *string `dynamodbav:"illustr_key"`
+type VisInpSt struct {
+	Subtask int
+	Inputs  []TestWithOnlyInput
 }
 
-func (row ddbDetailsRow) GetKey() map[string]types.AttributeValue {
-	if row.TaskCode == "" {
-		return nil
-	}
-	return map[string]types.AttributeValue{
-		"pk": &types.AttributeValueMemberS{Value: fmt.Sprintf("task#%s", row.TaskCode)},
-		"sk": &types.AttributeValueMemberS{Value: "details#"},
-	}
-}
-
-// ddbVisInpStsRow represents the visualization input status of a task.
-type ddbVisInpStsRow struct {
-	TaskCode string `dynamodbav:"task_code"`
-	Subtask  int    `dynamodbav:"subtask"`
-	TestId   int    `dynamodbav:"test_id"`
-	Input    string `dynamodbav:"input"`
-}
-
-func (row ddbVisInpStsRow) GetKey() map[string]types.AttributeValue {
-	if row.TaskCode == "" || row.Subtask == 0 || row.TestId == 0 {
-		return nil
-	}
-	return map[string]types.AttributeValue{
-		"pk": &types.AttributeValueMemberS{Value: fmt.Sprintf("task#%s", row.TaskCode)},
-		"sk": &types.AttributeValueMemberS{Value: fmt.Sprintf("vis_inp_sts#%d#%d", row.Subtask, row.TestId)},
-	}
-}
-
-// marshalDdbItem marshals the item and includes its key attributes.
-func marshalDdbItem(item interface {
-	GetKey() map[string]types.AttributeValue
-}) map[string]types.AttributeValue {
-	marshalled, err := attributevalue.MarshalMap(item)
-	if err != nil {
-		panic(err)
-	}
-	// Merge the key attributes into the marshalled map
-	maps.Copy(marshalled, item.GetKey())
-	return marshalled
-}
-
-// putItem inserts an item into the DynamoDB table.
-func (ts *TaskService) putItem(item interface {
-	GetKey() map[string]types.AttributeValue
-}) error {
-	_, err := ts.ddbClient.PutItem(context.TODO(), &dynamodb.PutItemInput{
-		TableName: &ts.taskTableName,
-		Item:      marshalDdbItem(item),
-	})
-	return err
+type TestWithOnlyInput struct {
+	TestId int
+	Input  string
 }
 
 // CreateTask creates a new task with its details and visualization input statuses.
 func (ts *TaskService) CreateTask(in *CreatePublicTaskInput) (err error) {
-	// TODO: if task already exists, return an error
-	err = ts.putItem(ddbDetailsRow{
+	rows := []ddbItemStruct{}
+
+	rows = append(rows, ddbDetailsRow{
 		TaskCode:    in.TaskCode,
 		FullName:    in.FullName,
 		MemMbytes:   in.MemMBytes,
@@ -145,139 +77,19 @@ func (ts *TaskService) CreateTask(in *CreatePublicTaskInput) (err error) {
 		OriginOlymp: in.OriginOlymp,
 		IllustrKey:  in.IllustrKey,
 	})
-	if err != nil {
-		return fmt.Errorf("failed to put task details: %w", err)
-	}
 
 	for _, visInpSt := range in.VisInpSts {
 		for _, input := range visInpSt.Inputs {
-			err = ts.putItem(ddbVisInpStsRow{
+			rows = append(rows, ddbVisInpStsRow{
 				TaskCode: in.TaskCode,
 				Subtask:  visInpSt.Subtask,
 				TestId:   input.TestId,
 				Input:    input.Input,
 			})
-			if err != nil {
-				return fmt.Errorf("failed to put task vis inpt st: %w", err)
-			}
 		}
 	}
 
-	return nil
-}
-
-// queryItemsByPartitionKey retrieves all items with the specified partition key.
-func (ts *TaskService) queryItemsByPartitionKey(ctx context.Context, pkValue string) ([]map[string]types.AttributeValue, error) {
-	queryInput := &dynamodb.QueryInput{
-		TableName:              &ts.taskTableName,
-		KeyConditionExpression: aws.String("#pk = :pkval"),
-		ExpressionAttributeNames: map[string]string{
-			"#pk": "pk",
-		},
-		ExpressionAttributeValues: map[string]types.AttributeValue{
-			":pkval": &types.AttributeValueMemberS{Value: pkValue},
-		},
-		ProjectionExpression: aws.String("pk, sk"),
-	}
-
-	var items []map[string]types.AttributeValue
-
-	paginator := dynamodb.NewQueryPaginator(ts.ddbClient, queryInput)
-	for paginator.HasMorePages() {
-		page, err := paginator.NextPage(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("failed to query items: %w", err)
-		}
-
-		items = append(items, page.Items...)
-	}
-
-	return items, nil
-}
-
-// deleteItemsBatch deletes a batch of items given their keys.
-func (ts *TaskService) deleteItemsBatch(ctx context.Context, keys []map[string]types.AttributeValue) error {
-	const batchSize = 25
-	for i := 0; i < len(keys); i += batchSize {
-		end := i + batchSize
-		if end > len(keys) {
-			end = len(keys)
-		}
-
-		batch := keys[i:end]
-
-		writeRequests := make([]types.WriteRequest, 0, len(batch))
-		for _, key := range batch {
-			writeRequests = append(writeRequests, types.WriteRequest{
-				DeleteRequest: &types.DeleteRequest{
-					Key: key,
-				},
-			})
-		}
-
-		batchWriteInput := &dynamodb.BatchWriteItemInput{
-			RequestItems: map[string][]types.WriteRequest{
-				ts.taskTableName: writeRequests,
-			},
-		}
-
-		_, err := ts.ddbClient.BatchWriteItem(ctx, batchWriteInput)
-		if err != nil {
-			return fmt.Errorf("failed to batch write items: %w", err)
-		}
-
-		log.Printf("Deleted items %d to %d.", i+1, end)
-	}
-
-	return nil
-}
-
-// DeleteTask deletes all items associated with the given taskCode.
-func (ts *TaskService) DeleteTask(taskCode string) error {
-	ctx := context.TODO()
-	pkValue := fmt.Sprintf("task#%s", taskCode)
-
-	// Query all items with the specified partition key
-	items, err := ts.queryItemsByPartitionKey(ctx, pkValue)
-	if err != nil {
-		return fmt.Errorf("failed to query items for deletion: %w", err)
-	}
-
-	if len(items) == 0 {
-		log.Println("No items found to delete.")
-		return nil
-	}
-
-	log.Printf("Found %d items to delete for taskCode: %s", len(items), taskCode)
-
-	// Extract keys from items
-	var keysToDelete []map[string]types.AttributeValue
-	for _, item := range items {
-		key, exists := item["pk"]
-		if !exists {
-			log.Println("Item missing 'pk', skipping")
-			continue
-		}
-		sk, exists := item["sk"]
-		if !exists {
-			log.Println("Item missing 'sk', skipping")
-			continue
-		}
-
-		keysToDelete = append(keysToDelete, map[string]types.AttributeValue{
-			"pk": key,
-			"sk": sk,
-		})
-	}
-
-	// Batch delete items
-	err = ts.deleteItemsBatch(ctx, keysToDelete)
-	if err != nil {
-		return fmt.Errorf("failed to delete items: %w", err)
-	}
-
-	log.Println("All matching items have been deleted.")
-	return nil
+	return ts.PutItems(context.TODO(), rows...)
 }
 
 func (ts *TaskService) UploadStatementPdf(body []byte) (sha2 string, err error) {
