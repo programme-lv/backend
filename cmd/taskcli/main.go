@@ -139,46 +139,47 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.phase = phaseCreatingTask
 		return m, func() tea.Msg {
-			tests := m.task.GetTestsSortedByID()
+			var err error
+			err = m.taskSrvc.DeleteTask(m.taskShortCodeIdInput.Value())
+			if err != nil {
+				return uploadIllstrImgResult{err: err}
+			}
 
-			visInpStIds := m.task.GetVisibleInputSubtasks()
-			visInpSts := make([]struct {
-				Subtask int
-				Inputs  []struct {
-					TestId int
-					Input  string
-				}
-			}, len(visInpStIds))
-			for i, stId := range visInpStIds {
-				visInpSts[i].Subtask = stId
-				visInpSts[i].Inputs = make([]struct {
-					TestId int
-					Input  string
-				}, 0)
+			getVisInpSts := func() []tasksrvc.VisInpSt {
+				tests := m.task.GetTestsSortedByID()
 
-				for _, tgroup := range m.task.GetTestGroups() {
-					if tgroup.Subtask != stId {
-						continue
-					}
-					for _, testId := range tgroup.TestIDs {
-						for j := 0; j < len(tests); j++ {
-							if tests[j].ID == testId {
-								visInpSts[i].Inputs = append(visInpSts[i].Inputs,
-									struct {
-										TestId int
-										Input  string
-									}{
-										TestId: testId,
-										Input:  string(tests[j].Input),
-									})
-								break
+				visInpStIds := m.task.GetVisibleInputSubtasks()
+				visInpSts := make([]tasksrvc.VisInpSt, len(visInpStIds))
+				for i, stId := range visInpStIds {
+					visInpSts[i].Subtask = stId
+					visInpSts[i].Inputs = make([]tasksrvc.TestWithOnlyInput, 0)
+
+					for _, tgroup := range m.task.GetTestGroups() {
+						if tgroup.Subtask != stId {
+							continue
+						}
+						for _, testId := range tgroup.TestIDs {
+							for j := 0; j < len(tests); j++ {
+								if tests[j].ID == testId {
+									visInpSts[i].Inputs = append(visInpSts[i].Inputs,
+										struct {
+											TestId int
+											Input  string
+										}{
+											TestId: testId,
+											Input:  string(tests[j].Input),
+										})
+									break
+								}
 							}
 						}
 					}
 				}
+
+				return visInpSts
 			}
 
-			err := m.taskSrvc.CreateTask(&tasksrvc.CreatePublicTaskInput{
+			err = m.taskSrvc.CreateTask(&tasksrvc.CreatePublicTaskInput{
 				TaskCode:    m.taskShortCodeIdInput.Value(),
 				FullName:    m.task.FullName,
 				MemMBytes:   m.task.MemoryLimInMegabytes,
@@ -186,7 +187,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				Difficulty:  &m.task.DifficultyOneToFive,
 				OriginOlymp: m.task.OriginOlympiad,
 				IllustrKey:  m.illstrS3Key,
-				VisInpSts:   visInpSts,
+				VisInpSts:   getVisInpSts(),
 				TestGroups: []struct {
 					GroupID int
 					Points  int
