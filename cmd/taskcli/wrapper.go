@@ -4,147 +4,176 @@ import (
 	"fmt"
 
 	"github.com/programme-lv/backend/fstask"
+	"github.com/programme-lv/backend/tasksrvc"
 )
 
-type taskWrapper struct {
-	task            *fstask.Task
-	pdfSttmntLangs  []string
-	mdSttmntLangs   []string
-	totalScore      *int
-	testCount       *int
-	testGroupPoints []int
-	testTotalSize   *int
+// TaskWrapper provides convenient methods to access task-related data.
+type TaskWrapper struct {
+	Task            *fstask.Task
+	PdfSttmntLangs  []string
+	MdSttmntLangs   []string
+	TotalScore      *int
+	TestCount       *int
+	TestGroupPoints []int
+	TestTotalSize   *int
 }
 
-func newTaskWrapper(t *fstask.Task) *taskWrapper {
-	return &taskWrapper{
-		task: t,
+// NewTaskWrapper initializes a new TaskWrapper.
+func NewTaskWrapper(task *fstask.Task) *TaskWrapper {
+	return &TaskWrapper{
+		Task: task,
 	}
 }
 
-func (t *taskWrapper) GetTestTotalSize() int {
-	if t.testTotalSize == nil {
-		totalSize := 0
-		for _, test := range t.task.GetTestsSortedByID() {
-			totalSize += len(test.Input)
-			totalSize += len(test.Answer)
-		}
-		t.testTotalSize = &totalSize
-		return totalSize
-	} else {
-		return *t.testTotalSize
+// GetTestTotalSize calculates the total size of all tests.
+func (tw *TaskWrapper) GetTestTotalSize() int {
+	if tw.TestTotalSize != nil {
+		return *tw.TestTotalSize
 	}
+
+	totalSize := 0
+	for _, test := range tw.Task.GetTestsSortedByID() {
+		totalSize += len(test.Input) + len(test.Answer)
+	}
+	tw.TestTotalSize = &totalSize
+	return totalSize
 }
 
-func (t *taskWrapper) GetTestGroupPoints() []int {
-	if t.testGroupPoints == nil {
-		groups := t.task.GetTestGroupIDs()
-		t.testGroupPoints = make([]int, len(groups))
-		for i, groupID := range groups {
-			t.testGroupPoints[i] = t.task.GetInfoOnTestGroup(groupID).Points
-		}
-		return t.testGroupPoints
-	} else {
-		return t.testGroupPoints
+// GetTestGroupPoints retrieves the points for each test group.
+func (tw *TaskWrapper) GetTestGroupPoints() []int {
+	if tw.TestGroupPoints != nil {
+		return tw.TestGroupPoints
 	}
+
+	groups := tw.Task.GetTestGroupIDs()
+	tw.TestGroupPoints = make([]int, len(groups))
+	for i, groupID := range groups {
+		tw.TestGroupPoints[i] = tw.Task.GetInfoOnTestGroup(groupID).Points
+	}
+	return tw.TestGroupPoints
 }
 
-func (t *taskWrapper) GetTestGroupPointsRLE() []string {
-	t.GetTestGroupPoints()
+// GetTestGroupPointsRLE returns the run-length encoded points of test groups.
+func (tw *TaskWrapper) GetTestGroupPointsRLE() []string {
+	points := tw.GetTestGroupPoints()
+	if len(points) == 0 {
+		return nil
+	}
+
 	type rleElement struct {
 		count int
 		ele   int
 	}
-	rle := make([]rleElement, 0)
-	rle = append(rle, rleElement{
-		count: 1,
-		ele:   t.testGroupPoints[0],
-	})
-	for i := 1; i < len(t.testGroupPoints); i++ {
-		if t.testGroupPoints[i] == t.testGroupPoints[i-1] {
+
+	var rle []rleElement
+	rle = append(rle, rleElement{count: 1, ele: points[0]})
+
+	for i := 1; i < len(points); i++ {
+		if points[i] == points[i-1] {
 			rle[len(rle)-1].count++
 		} else {
-			rle = append(rle, rleElement{
-				count: 1,
-				ele:   t.testGroupPoints[i],
-			})
+			rle = append(rle, rleElement{count: 1, ele: points[i]})
 		}
 	}
+
 	res := make([]string, len(rle))
-	for i, rleElement := range rle {
-		res[i] = fmt.Sprintf("%d*%d", rleElement.count, rleElement.ele)
+	for i, elem := range rle {
+		res[i] = fmt.Sprintf("%d*%d", elem.count, elem.ele)
 	}
 	return res
 }
 
-func (t *taskWrapper) GetPdfStatementLangs() []string {
-	if t.pdfSttmntLangs == nil {
-		pdfSttments := t.task.GetAllPDFStatements()
-		t.pdfSttmntLangs = make([]string, len(pdfSttments))
-		for i, pdfSttmnt := range pdfSttments {
-			t.pdfSttmntLangs[i] = pdfSttmnt.Language
-		}
-		return t.pdfSttmntLangs
-	} else {
-		return t.pdfSttmntLangs
+// GetPdfStatementLangs retrieves all PDF statement languages.
+func (tw *TaskWrapper) GetPdfStatementLangs() []string {
+	if tw.PdfSttmntLangs != nil {
+		return tw.PdfSttmntLangs
 	}
+
+	pdfStmts := tw.Task.GetAllPDFStatements()
+	tw.PdfSttmntLangs = make([]string, len(pdfStmts))
+	for i, stmt := range pdfStmts {
+		tw.PdfSttmntLangs[i] = stmt.Language
+	}
+	return tw.PdfSttmntLangs
 }
 
-func (t *taskWrapper) GetMdStatementLangs() []string {
-	if t.mdSttmntLangs == nil {
-		mdSttments := t.task.GetMarkdownStatements()
-		t.mdSttmntLangs = make([]string, len(mdSttments))
-		for i, mdSttmnt := range mdSttments {
-			t.mdSttmntLangs[i] = mdSttmnt.Language
-		}
-		return t.mdSttmntLangs
-	} else {
-		return t.mdSttmntLangs
+// GetMdStatementLangs retrieves all Markdown statement languages.
+func (tw *TaskWrapper) GetMdStatementLangs() []string {
+	if tw.MdSttmntLangs != nil {
+		return tw.MdSttmntLangs
 	}
+
+	mdStmts := tw.Task.GetMarkdownStatements()
+	tw.MdSttmntLangs = make([]string, len(mdStmts))
+	for i, stmt := range mdStmts {
+		tw.MdSttmntLangs[i] = stmt.Language
+	}
+	return tw.MdSttmntLangs
 }
 
-func (t *taskWrapper) GetTestTotalCount() int {
-	if t.testCount != nil {
-		return *t.testCount
+// GetTestTotalCount returns the total number of tests.
+func (tw *TaskWrapper) GetTestTotalCount() int {
+	if tw.TestCount != nil {
+		return *tw.TestCount
 	}
-	tests := t.task.GetTestsSortedByID()
-	res := len(tests)
-	t.testCount = &res
-	return res
+
+	count := len(tw.Task.GetTestsSortedByID())
+	tw.TestCount = &count
+	return count
 }
 
-func (t *taskWrapper) GetTotalScore() int {
-	if t.totalScore != nil {
-		return *t.totalScore
+// GetTotalScore calculates the total score for the task.
+func (tw *TaskWrapper) GetTotalScore() int {
+	if tw.TotalScore != nil {
+		return *tw.TotalScore
 	}
 
-	tests := t.task.GetTestsSortedByID()
-	testTotalCount := 0
-	testTotalSize := 0
-	for _, test := range tests {
-		testTotalCount++
-		testTotalSize += len(test.Answer)
-		testTotalSize += len(test.Input)
-	}
+	tests := tw.Task.GetTestsSortedByID()
+	groups := tw.Task.GetTestGroupIDs()
 
-	groups := t.task.GetTestGroupIDs()
-	testGroupPoints := make([]int, len(groups))
-	for _, groupID := range groups {
-		info := t.task.GetInfoOnTestGroup(groupID)
-		testGroupPoints[groupID-1] = info.Points
-	}
-
-	totalScore := 0
 	if len(groups) == 0 {
-		totalScore = len(tests)
-	} else {
-		totalScore = 0
-		for _, groupID := range groups {
-			totalScore += testGroupPoints[groupID-1]
+		score := len(tests)
+		tw.TotalScore = &score
+		return score
+	}
+
+	groupPoints := tw.GetTestGroupPoints()
+	score := 0
+	for _, points := range groupPoints {
+		score += points
+	}
+
+	tw.TotalScore = &score
+	return score
+}
+
+// GetVisibleInputSubtasks retrieves visible input subtasks.
+func (tw *TaskWrapper) GetVisibleInputSubtasks() []tasksrvc.VisInpSt {
+	tests := tw.Task.GetTestsSortedByID()
+	visibleSubtasks := tw.Task.GetVisibleInputSubtasks()
+	visInpSts := make([]tasksrvc.VisInpSt, len(visibleSubtasks))
+
+	for i, stID := range visibleSubtasks {
+		visInpSts[i].Subtask = stID
+		visInpSts[i].Inputs = []tasksrvc.TestWithOnlyInput{}
+
+		for _, tGroup := range tw.Task.GetTestGroups() {
+			if tGroup.Subtask != stID {
+				continue
+			}
+			for _, testID := range tGroup.TestIDs {
+				for _, test := range tests {
+					if test.ID == testID {
+						visInpSts[i].Inputs = append(visInpSts[i].Inputs, tasksrvc.TestWithOnlyInput{
+							TestID: testID,
+							Input:  string(test.Input),
+						})
+						break
+					}
+				}
+			}
 		}
 	}
 
-	t.totalScore = &totalScore
-
-	return totalScore
+	return visInpSts
 }

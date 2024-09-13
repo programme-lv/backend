@@ -7,63 +7,6 @@ import (
 	"mime"
 )
 
-type CreatePublicTaskInput struct {
-	TaskCode    string
-	FullName    string  // full name of the task
-	MemMBytes   int     // max memory usage during execution in megabytes
-	CpuSecs     float64 // max execution cpu time in seconds
-	Difficulty  *int    // integer from 1 to 5. 1 - very easy, 5 - very hard
-	OriginOlymp string  // name of the olympiad where the task was used
-	IllustrKey  *string // s3 key for bucket "proglv-public"
-	VisInpSts   []VisInpSt
-	TestGroups  []struct {
-		GroupID int
-		Points  int
-		Public  bool
-		Subtask int
-		TestIDs []int
-	}
-	TestChsums []struct {
-		TestID  int
-		InSha2  string
-		AnsSha2 string
-	}
-	PdfSttments []struct {
-		LangIso639 string
-		PdfSha2    string
-	}
-	MdSttments []struct {
-		LangIso639 string
-		Story      string
-		Input      string
-		Output     string
-		Score      string
-	}
-	ImgUuidMap []struct {
-		Uuid  string
-		S3Key string
-	}
-	Examples []struct {
-		ExampleID int
-		Input     string
-		Output    string
-	}
-	OriginNotes []struct {
-		LangIso639 string
-		OgInfo     string
-	}
-}
-
-type VisInpSt struct {
-	Subtask int
-	Inputs  []TestWithOnlyInput
-}
-
-type TestWithOnlyInput struct {
-	TestId int
-	Input  string
-}
-
 // CreateTask creates a new task with its details and visualization input statuses.
 func (ts *TaskService) CreateTask(in *CreatePublicTaskInput) (err error) {
 	rows := []ddbItemStruct{}
@@ -83,7 +26,7 @@ func (ts *TaskService) CreateTask(in *CreatePublicTaskInput) (err error) {
 			rows = append(rows, ddbVisInpStsRow{
 				TaskCode: in.TaskCode,
 				Subtask:  visInpSt.Subtask,
-				TestId:   input.TestId,
+				TestId:   input.TestID,
 				Input:    input.Input,
 			})
 		}
