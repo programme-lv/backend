@@ -14,7 +14,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/programme-lv/backend/auth"
 	"github.com/programme-lv/backend/srvcerr"
-	"github.com/programme-lv/backend/task"
+	"github.com/programme-lv/backend/tasksrvc"
 	"github.com/programme-lv/backend/user"
 	"goa.design/clue/log"
 )
@@ -22,7 +22,7 @@ import (
 func (s *SubmissionSrvc) createSubmissionWithValidatedInput(
 	subm *string,
 	user *user.User,
-	task *task.TaskSubmEvalData,
+	task *tasksrvc.TaskSubmEvalData,
 	lang *ProgrammingLang,
 ) (*BriefSubmission, error) {
 
@@ -476,7 +476,7 @@ func (s *SubmissionSrvc) createSubmissionWithValidatedInput(
 	return res, nil
 }
 
-func determineScoringMethod(task *task.TaskSubmEvalData) string {
+func determineScoringMethod(task *tasksrvc.TaskSubmEvalData) string {
 	if len(task.SubtaskScores) > 0 {
 		return "subtask"
 	}

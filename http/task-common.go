@@ -1,6 +1,6 @@
 package http
 
-import "github.com/programme-lv/backend/task"
+import "github.com/programme-lv/backend/tasksrvc"
 
 type Example struct {
 	Input  string  `json:"input"`
@@ -36,7 +36,7 @@ type Task struct {
 	VisibleInputSubtasks   []StInputs        `json:"visible_input_subtasks"`
 }
 
-func mapStInputs(stInputs []*task.StInputs) []StInputs {
+func mapStInputs(stInputs []*tasksrvc.StInputs) []StInputs {
 	response := make([]StInputs, len(stInputs))
 	for i, st := range stInputs {
 		response[i] = StInputs{
@@ -46,7 +46,7 @@ func mapStInputs(stInputs []*task.StInputs) []StInputs {
 	}
 	return response
 }
-func mapTaskMdStatement(md *task.MarkdownStatement) MdStatement {
+func mapTaskMdStatement(md *tasksrvc.MarkdownStatement) MdStatement {
 	return MdStatement{
 		Story:   md.Story,
 		Input:   md.Input,
@@ -56,7 +56,7 @@ func mapTaskMdStatement(md *task.MarkdownStatement) MdStatement {
 	}
 }
 
-func mapTaskExamples(examples []*task.Example) []Example {
+func mapTaskExamples(examples []*tasksrvc.Example) []Example {
 	response := make([]Example, len(examples))
 	for i, e := range examples {
 		response[i] = Example{
@@ -68,7 +68,7 @@ func mapTaskExamples(examples []*task.Example) []Example {
 	return response
 }
 
-func mapTaskResponse(task *task.Task) *Task {
+func mapTaskResponse(task *tasksrvc.Task) *Task {
 	response := &Task{
 		PublishedTaskID:        task.PublishedTaskID,
 		TaskFullName:           task.TaskFullName,
@@ -86,7 +86,7 @@ func mapTaskResponse(task *task.Task) *Task {
 	return response
 }
 
-func mapTasksResponse(tasks []*task.Task) []*Task {
+func mapTasksResponse(tasks []*tasksrvc.Task) []*Task {
 	response := make([]*Task, len(tasks))
 	for i, task := range tasks {
 		response[i] = mapTaskResponse(task)

@@ -1,6 +1,10 @@
 package main
 
-import "github.com/programme-lv/backend/fstask"
+import (
+	"fmt"
+
+	"github.com/programme-lv/backend/fstask"
+)
 
 type taskWrapper struct {
 	task            *fstask.Task
@@ -43,6 +47,34 @@ func (t *taskWrapper) GetTestGroupPoints() []int {
 	} else {
 		return t.testGroupPoints
 	}
+}
+
+func (t *taskWrapper) GetTestGroupPointsRLE() []string {
+	t.GetTestGroupPoints()
+	type rleElement struct {
+		count int
+		ele   int
+	}
+	rle := make([]rleElement, 0)
+	rle = append(rle, rleElement{
+		count: 1,
+		ele:   t.testGroupPoints[0],
+	})
+	for i := 1; i < len(t.testGroupPoints); i++ {
+		if t.testGroupPoints[i] == t.testGroupPoints[i-1] {
+			rle[len(rle)-1].count++
+		} else {
+			rle = append(rle, rleElement{
+				count: 1,
+				ele:   t.testGroupPoints[i],
+			})
+		}
+	}
+	res := make([]string, len(rle))
+	for i, rleElement := range rle {
+		res[i] = fmt.Sprintf("%d*%d", rleElement.count, rleElement.ele)
+	}
+	return res
 }
 
 func (t *taskWrapper) GetPdfStatementLangs() []string {

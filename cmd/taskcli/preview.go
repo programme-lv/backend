@@ -4,12 +4,10 @@ import (
 	"fmt"
 
 	"github.com/charmbracelet/lipgloss"
-	"github.com/programme-lv/backend/fstask"
 )
 
-func renderTaskPreview(task *fstask.Task) string {
-	wrapper := newTaskWrapper(task)
-
+func renderTaskPreview(wrapper *taskWrapper) string {
+	task := wrapper.task
 	difficultyMap := map[int]string{
 		1: "very easy",
 		2: "easy",
@@ -31,9 +29,10 @@ func renderTaskPreview(task *fstask.Task) string {
 	Full name: %s
 	Cpu time limit: %s seconds | Memory limit: %s MB
 	Difficulty: %s (%s)
-	Origin notes: %s
+	Origin olympiad: %s
+	Origin notes lv: %s
 	Test count: %s (total size: %s MB) | Example count: %s
-	Test group count: %s (points: %s)
+	Test group count: %s (points r.l.e.: %s)
 	Total score: %s points
 	Visible input subtasks: %s
 	Pdf statement langs: %s | Markdown statement langs: %s
@@ -43,12 +42,13 @@ func renderTaskPreview(task *fstask.Task) string {
 		g("%d", task.MemoryLimInMegabytes),
 		g("%d", task.DifficultyOneToFive),
 		difficultyMap[task.DifficultyOneToFive],
-		g("%v", task.OriginNotes),
+		g("%v", task.OriginOlympiad),
+		g("%v", task.OriginNotes["lv"]),
 		g("%d", wrapper.GetTestTotalCount()),
 		g("%d", wrapper.GetTestTotalSize()/1024/1024),
 		g("%v", len(task.GetExamples())),
 		g("%d", len(task.GetTestGroupIDs())),
-		g("%v", wrapper.GetTestGroupPoints()),
+		g("%v", wrapper.GetTestGroupPointsRLE()),
 		g("%d", wrapper.GetTotalScore()),
 		g("%v", task.GetVisibleInputSubtasks()),
 		g("%v", wrapper.GetPdfStatementLangs()),

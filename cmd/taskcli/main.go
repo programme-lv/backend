@@ -13,7 +13,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/joho/godotenv"
 	"github.com/programme-lv/backend/fstask"
-	"github.com/programme-lv/backend/task"
+	"github.com/programme-lv/backend/tasksrvc"
 )
 
 func main() {
@@ -78,8 +78,10 @@ type model struct {
 	err     error
 	dirPath string
 
-	task     *fstask.Task
-	taskSrvc *task.TaskService
+	task    *fstask.Task
+	wrapper *taskWrapper
+
+	taskSrvc *tasksrvc.TaskService
 
 	taskShortCodeIdInput textinput.Model
 	illstrImgUplSpinner  spinner.Model
@@ -105,8 +107,9 @@ func initialModel(dirPath string, fstask *fstask.Task) model {
 		task:                 fstask,
 		taskShortCodeIdInput: taskIdInput,
 		illstrImgUplSpinner:  illstrSpin,
-		taskSrvc:             task.NewTaskSrvc(),
+		taskSrvc:             tasksrvc.NewTaskSrvc(),
 		illstrS3Key:          nil,
+		wrapper:              newTaskWrapper(fstask),
 	}
 }
 
@@ -127,10 +130,55 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case uploadIllstrImgResult:
+		log.Print("uploadIllstrImgResult")
 		// TODO: check for error
+		if msg.err != nil {
+			m.err = msg.err
+			log.Println("Error uploading illustration image: ", msg.err)
+			return m, tea.Quit
+		}
 		m.phase = phaseCreatingTask
 		return m, func() tea.Msg {
-			err := m.taskSrvc.CreateTask(&task.CreatePublicTaskInput{
+			tests := m.task.GetTestsSortedByID()
+
+			visInpStIds := m.task.GetVisibleInputSubtasks()
+			visInpSts := make([]struct {
+				Subtask int
+				Inputs  []struct {
+					TestId int
+					Input  string
+				}
+			}, len(visInpStIds))
+			for i, stId := range visInpStIds {
+				visInpSts[i].Subtask = stId
+				visInpSts[i].Inputs = make([]struct {
+					TestId int
+					Input  string
+				}, 0)
+
+				for _, tgroup := range m.task.GetTestGroups() {
+					if tgroup.Subtask != stId {
+						continue
+					}
+					for _, testId := range tgroup.TestIDs {
+						for j := 0; j < len(tests); j++ {
+							if tests[j].ID == testId {
+								visInpSts[i].Inputs = append(visInpSts[i].Inputs,
+									struct {
+										TestId int
+										Input  string
+									}{
+										TestId: testId,
+										Input:  string(tests[j].Input),
+									})
+								break
+							}
+						}
+					}
+				}
+			}
+
+			err := m.taskSrvc.CreateTask(&tasksrvc.CreatePublicTaskInput{
 				TaskCode:    m.taskShortCodeIdInput.Value(),
 				FullName:    m.task.FullName,
 				MemMBytes:   m.task.MemoryLimInMegabytes,
@@ -138,10 +186,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				Difficulty:  &m.task.DifficultyOneToFive,
 				OriginOlymp: m.task.OriginOlympiad,
 				IllustrKey:  m.illstrS3Key,
-				VisInpSts: []struct {
-					Subtask int
-					Inputs  []string
-				}{},
+				VisInpSts:   visInpSts,
 				TestGroups: []struct {
 					GroupID int
 					Points  int
@@ -184,6 +229,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	case createTaskResult:
 		// TODO: check for error
+		if msg.err != nil {
+			m.err = msg.err
+			log.Println("Error creating task: ", msg.err)
+			return m, tea.Quit
+		}
 		m.phase = phaseFinished
 		return m, tea.Quit
 	case tea.KeyMsg:
@@ -200,19 +250,21 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case tea.KeyRunes:
 			switch msg.Runes[0] {
 			case 'y', 'Y':
-				m.phase = phaseUploadingIllustrationImg
-				return m, tea.Batch(m.illstrImgUplSpinner.Tick, func() tea.Msg {
-					illstrImg := m.task.GetTaskIllustrationImage()
-					if illstrImg != nil {
-						s3key, err := uploadIllustrationImage(illstrImg, m.taskSrvc)
-						if err != nil {
-							return uploadIllstrImgResult{err: err}
+				if m.phase == phaseConfirmUpload {
+					m.phase = phaseUploadingIllustrationImg
+					return m, tea.Batch(m.illstrImgUplSpinner.Tick, func() tea.Msg {
+						illstrImg := m.task.GetTaskIllustrationImage()
+						if illstrImg != nil {
+							s3key, err := uploadIllustrationImage(illstrImg, m.taskSrvc)
+							if err != nil {
+								return uploadIllstrImgResult{err: err}
+							}
+							m.illstrS3Key = &s3key
 						}
-						m.illstrS3Key = &s3key
-					}
-					return uploadIllstrImgResult{err: nil}
+						return uploadIllstrImgResult{err: nil}
 
-				})
+					})
+				}
 			case 'n', 'N':
 				return m, tea.Quit
 			}
@@ -237,6 +289,11 @@ func (m model) View() string {
 		return violetText.Render(fmt.Sprintf(format, a...))
 	}
 
+	r := func(format string, a ...any) string {
+		redText := lipgloss.NewStyle().Foreground(lipgloss.Color("#e74c3c")).Width(140)
+		return redText.Render(fmt.Sprintf(format, a...))
+	}
+
 	res := fmt.Sprintf(`Select action:
 	[X] Upload task
 Directory: %s
@@ -244,7 +301,7 @@ Task preview: %s
 Please enter task's short code (id) %s
 `,
 		b(m.dirPath),
-		renderTaskPreview(m.task),
+		renderTaskPreview(m.wrapper),
 		v(m.taskShortCodeIdInput.View()),
 	)
 
@@ -256,7 +313,7 @@ Please enter task's short code (id) %s
 		res += "Upload progress:"
 	}
 
-	checkMark := lipgloss.NewStyle().Foreground(lipgloss.Color("42")).SetString("✓")
+	checkMark := lipgloss.NewStyle().Foreground(lipgloss.Color("#2ecc71")).SetString("✓")
 
 	if m.phase == phaseUploadingIllustrationImg {
 		res += "\n"
@@ -283,6 +340,10 @@ Please enter task's short code (id) %s
 		res += fmt.Sprintf("Task %s created!", b(m.taskShortCodeIdInput.Value()))
 	}
 
+	if m.err != nil {
+		res += "\n"
+		res += r(m.err.Error())
+	}
 	res += "\n"
 	return res
 }

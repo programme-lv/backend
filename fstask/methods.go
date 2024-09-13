@@ -128,7 +128,7 @@ func (t *Task) SetTaskName(name string) {
 	t.FullName = name
 }
 
-type TestGroupInfo struct {
+type TestGroup struct {
 	GroupID int
 	Points  int
 	Public  bool
@@ -136,8 +136,8 @@ type TestGroupInfo struct {
 	Subtask int
 }
 
-func (t *Task) GetInfoOnTestGroup(id int) TestGroupInfo {
-	return TestGroupInfo{
+func (t *Task) GetInfoOnTestGroup(id int) TestGroup {
+	return TestGroup{
 		GroupID: id,
 		Points:  t.tGroupPoints[id],
 		Public:  t.isTGroupPublic[id],
@@ -148,6 +148,14 @@ func (t *Task) GetInfoOnTestGroup(id int) TestGroupInfo {
 
 func (t *Task) GetTestGroupIDs() []int {
 	return t.testGroupIDs
+}
+
+func (t *Task) GetTestGroups() []TestGroup {
+	res := make([]TestGroup, 0, len(t.testGroupIDs))
+	for _, id := range t.testGroupIDs {
+		res = append(res, t.GetInfoOnTestGroup(id))
+	}
+	return res
 }
 
 func (t *Task) GetTestFilenameFromID(testID int) string {

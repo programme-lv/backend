@@ -1,4 +1,4 @@
-package task
+package tasksrvc
 
 type Example struct {
 	Input  string

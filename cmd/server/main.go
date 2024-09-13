@@ -8,7 +8,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/programme-lv/backend/http"
 	"github.com/programme-lv/backend/subm"
-	"github.com/programme-lv/backend/task"
+	"github.com/programme-lv/backend/tasksrvc"
 	"github.com/programme-lv/backend/user"
 )
 
@@ -26,7 +26,7 @@ func main() {
 
 	submSrvc := subm.NewSubmissions()
 	userSrvc := user.NewUsers()
-	taskSrvc := task.NewTaskSrvc()
+	taskSrvc := tasksrvc.NewTaskSrvc()
 	httpServer := http.NewHttpServer(submSrvc, userSrvc, taskSrvc,
 		[]byte(jwtKey))
 

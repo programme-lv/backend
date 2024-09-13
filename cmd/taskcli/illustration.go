@@ -12,11 +12,11 @@ import (
 
 	"github.com/nfnt/resize"
 	"github.com/programme-lv/backend/fstask"
-	"github.com/programme-lv/backend/task"
+	"github.com/programme-lv/backend/tasksrvc"
 	"github.com/wailsapp/mimetype"
 )
 
-func uploadIllustrationImage(image *fstask.Asset, taskSrvc *task.TaskService) (s3key string, err error) {
+func uploadIllustrationImage(image *fstask.Asset, taskSrvc *tasksrvc.TaskService) (s3key string, err error) {
 	// Compress the image before uploading
 	compressedIllustrationImg, err := compressImage(image.Content, 600)
 	if err != nil {

@@ -14,7 +14,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
-	"github.com/programme-lv/backend/task"
+	"github.com/programme-lv/backend/tasksrvc"
 	"github.com/programme-lv/backend/user"
 )
 
@@ -24,7 +24,7 @@ type SubmissionSrvc struct {
 	ddbClient      *dynamodb.Client
 	submTableName  string
 	userSrvc       *user.UserService
-	taskSrvc       *task.TaskService
+	taskSrvc       *tasksrvc.TaskService
 	sqsClient      *sqs.Client
 	submSqsUrl     string
 	responseSqsUrl string
@@ -77,7 +77,7 @@ func NewSubmissions() *SubmissionSrvc {
 		ddbClient:              dynamodbClient,
 		submTableName:          submTableName,
 		userSrvc:               user.NewUsers(),
-		taskSrvc:               task.NewTaskSrvc(),
+		taskSrvc:               tasksrvc.NewTaskSrvc(),
 		sqsClient:              sqsClient,
 		submSqsUrl:             submQueueUrl,
 		createdSubmChan:        make(chan *BriefSubmission, 1000),
