@@ -57,7 +57,7 @@ func (tw *TaskWrapper) GetTestGroupPoints() []int {
 func (tw *TaskWrapper) GetTestGroupPointsRLE() []string {
 	points := tw.GetTestGroupPoints()
 	if len(points) == 0 {
-		return nil
+		return []string{}
 	}
 
 	type rleElement struct {
