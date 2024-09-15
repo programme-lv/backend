@@ -292,6 +292,20 @@ func (u uploadModel) uploadTask() tea.Cmd {
 			}
 		}
 
+		// **Upload tests**
+		tests := task.GetTestsSortedByID()
+		for _, test := range tests {
+			err := taskSrvc.UploadTest(test.Input)
+			if err != nil {
+				return uploadResultMsg{err: fmt.Errorf("failed to upload test input: %w", err)}
+			}
+
+			err = taskSrvc.UploadTest(test.Answer)
+			if err != nil {
+				return uploadResultMsg{err: fmt.Errorf("failed to upload test answer: %w", err)}
+			}
+		}
+
 		// Build the input for creating a task
 		putTaskInput := buildPutTaskInput(taskId, task, illstrS3ObjKey, mdSttmntsWithMappedImgs, imgUuidToS3KeyMap)
 		err = taskSrvc.PutTask(putTaskInput)

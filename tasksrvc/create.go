@@ -5,6 +5,8 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"mime"
+
+	"github.com/klauspost/compress/zstd"
 )
 
 // PutTask creates a new task with its details and visualization input statuses.
@@ -154,6 +156,48 @@ func (ts *TaskService) UploadMarkdownImage(mimeType string, body []byte) (s3key 
 	s3Key := fmt.Sprintf("%s/%s%s", "task-md-images", sha2, ext)
 	err = ts.s3PublicBucket.Upload(body, s3Key, mimeType)
 	return s3Key, err
+}
+
+// UploadTest uploads a test input or output to S3 after compressing it with Zstandard.
+// The S3 key is the SHA256 hash of the content with a .zst extension.
+func (ts *TaskService) UploadTest(body []byte) error {
+	shaHex := ts.Sha2Hex(body)
+	s3Key := fmt.Sprintf("%s.zst", shaHex)
+	mediaType := "application/zstd"
+
+	exists, err := ts.s3TestfileBucket.Exists(s3Key)
+	if err != nil {
+		return fmt.Errorf("failed to check if object exists in S3: %w", err)
+	}
+
+	if exists {
+		return nil
+	}
+
+	zstdCompressed, err := compressWithZstd(body)
+	if err != nil {
+		return fmt.Errorf("failed to compress data: %w", err)
+	}
+
+	err = ts.s3TestfileBucket.Upload(zstdCompressed, s3Key, mediaType)
+	if err != nil {
+		return fmt.Errorf("failed to upload to S3: %w", err)
+	}
+
+	return nil
+}
+
+// compressWithZstd compresses the given data using Zstandard compression.
+// It returns the compressed data or an error if the compression fails.
+func compressWithZstd(data []byte) ([]byte, error) {
+	encoder, err := zstd.NewWriter(nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create Zstd encoder: %w", err)
+	}
+	defer encoder.Close()
+
+	compressed := encoder.EncodeAll(data, make([]byte, 0, len(data)))
+	return compressed, nil
 }
 
 func (ts *TaskService) Sha2Hex(body []byte) (sha2 string) {

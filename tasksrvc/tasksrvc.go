@@ -14,9 +14,10 @@ import (
 // tasks service example implementation.
 // The example methods log the requests and return zero values.
 type TaskService struct {
-	ddbClient      *dynamodb.Client
-	taskTableName  string
-	s3PublicBucket *s3Bucket
+	ddbClient        *dynamodb.Client
+	taskTableName    string
+	s3PublicBucket   *s3Bucket
+	s3TestfileBucket *s3Bucket
 }
 
 func NewTaskSrvc() *TaskService {
@@ -36,8 +37,9 @@ func NewTaskSrvc() *TaskService {
 	}
 
 	return &TaskService{
-		ddbClient:      dynamodbClient,
-		taskTableName:  "proglv_tasks_v2",
-		s3PublicBucket: NewS3BucketUploader("eu-central-1", "proglv-public"),
+		ddbClient:        dynamodbClient,
+		taskTableName:    "proglv_tasks_v2",
+		s3PublicBucket:   NewS3BucketUploader("eu-central-1", "proglv-public"),
+		s3TestfileBucket: NewS3BucketUploader("eu-central-1", "proglv-tests"),
 	}
 }

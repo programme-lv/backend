@@ -22,6 +22,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/guregu/dynamo/v2 v2.1.1
 	github.com/joho/godotenv v1.5.1
+	github.com/klauspost/compress v1.17.9
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
 	github.com/pelletier/go-toml/v2 v2.2.3
 	github.com/programme-lv/fs-task-format-parser v0.0.0-20240731133341-92e33000f5b9
@@ -57,7 +58,6 @@ require (
 	github.com/charmbracelet/x/ansi v0.2.3 // indirect
 	github.com/charmbracelet/x/term v0.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/erikgeiser/coninput v0.0.0-20211004153227-1c3628e74d0f // indirect
 	github.com/go-logfmt/logfmt v0.6.0 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
