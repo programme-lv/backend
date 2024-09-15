@@ -54,12 +54,20 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case stateUpload:
 		var cmd tea.Cmd
 		m.uploadModel, cmd = m.uploadModel.Update(msg)
-		if m.uploadModel.finished {
-			// After upload is done, return to menu
-			m.state = stateMenu
-			return m, nil
-		}
 		return m, cmd
+	case stateDelete, stateTransform:
+		// Handle input in delete and transform states
+		switch msg := msg.(type) {
+		case tea.KeyMsg:
+			switch msg.String() {
+			case "ctrl+c", "q":
+				return m, tea.Quit
+			case "b":
+				// Go back to main menu
+				m.state = stateMenu
+				return m, nil
+			}
+		}
 	}
 	return m, nil
 }
@@ -75,6 +83,10 @@ func (m model) View() string {
 		return s
 	case stateUpload:
 		return m.uploadModel.View()
+	case stateDelete, stateTransform:
+		s := "Functionality not implemented yet.\n"
+		s += "Press 'b' to return to the main menu or 'q' to quit.\n"
+		return s
 	default:
 		return "Functionality not implemented yet.\n"
 	}

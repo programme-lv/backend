@@ -20,23 +20,31 @@ const (
 )
 
 type uploadModel struct {
-	state    uploadState
-	spinner  spinner.Model
-	preview  TaskPreview
-	dir      string
-	success  bool
-	finished bool
+	state      uploadState
+	uplSpinner spinner.Model
+	previewObj TaskPreview
+	taskDir    string
+	success    bool
+	finished   bool
+	err        error
 }
 
 func newUploadModel(dir string) uploadModel {
+	res := uploadModel{}
+	res.taskDir = dir
+
 	s := spinner.New()
 	s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("63"))
-	return uploadModel{
-		state:   uploadStatePreview,
-		spinner: s,
-		preview: getMockPreview(dir),
-		dir:     dir,
+	res.uplSpinner = s
+
+	preview, err := getPreview(dir)
+	res.previewObj = preview
+	if err != nil {
+		res.err = err
+		return res
 	}
+
+	return res
 }
 
 func (u uploadModel) Init() tea.Cmd {
@@ -51,15 +59,17 @@ func (u uploadModel) Update(msg tea.Msg) (uploadModel, tea.Cmd) {
 			switch msg.String() {
 			case "y", "Y":
 				u.state = uploadStateUploading
-				return u, tea.Batch(u.spinner.Tick, u.uploadTask())
-			case "n", "N", "q", "ctrl+c":
+				return u, tea.Batch(u.uplSpinner.Tick, u.uploadTask())
+			case "n", "N", "q":
 				u.finished = true
+				return u, tea.Quit
+			case "ctrl+c":
 				return u, tea.Quit
 			}
 		}
 	case uploadStateUploading:
 		var cmd tea.Cmd
-		u.spinner, cmd = u.spinner.Update(msg)
+		u.uplSpinner, cmd = u.uplSpinner.Update(msg)
 		switch msg := msg.(type) {
 		case tea.KeyMsg:
 			if msg.String() == "ctrl+c" {
@@ -77,21 +87,22 @@ func (u uploadModel) Update(msg tea.Msg) (uploadModel, tea.Cmd) {
 		switch msg.(type) {
 		case tea.KeyMsg:
 			u.finished = true
-			return u, nil
+			return u, tea.Quit
 		}
 	}
 	return u, nil
 }
 
 func (u uploadModel) View() string {
-	s := "Task Preview:\n"
-	s += u.preview.View()
+	s := "Selected action: Upload\n\n"
+	s += "Task Preview:\n"
+	s += u.previewObj.View()
 
 	switch u.state {
 	case uploadStatePreview:
-		s += "\nProceed with upload? (y/n)\n"
+		s += "\n\nProceed with upload? (y/n)\n"
 	case uploadStateUploading:
-		s += fmt.Sprintf("\n\n%s Uploading...\n\n", u.spinner.View())
+		s += fmt.Sprintf("\n\n%s Uploading...\n\n", u.uplSpinner.View())
 	case uploadStateDone:
 		if u.success {
 			s += "\n\nUpload successful! Press any key to continue...\n"
