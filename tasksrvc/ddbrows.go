@@ -47,7 +47,7 @@ func (row ddbVisInpStsRow) GetKey() map[string]types.AttributeValue {
 	}
 	return map[string]types.AttributeValue{
 		"pk": &types.AttributeValueMemberS{Value: fmt.Sprintf("task#%s", row.TaskCode)},
-		"sk": &types.AttributeValueMemberS{Value: fmt.Sprintf("vis_inp_sts#%d#%d", row.Subtask, row.TestId)},
+		"sk": &types.AttributeValueMemberS{Value: fmt.Sprintf("vis_inp_sts#%02d#%03d", row.Subtask, row.TestId)},
 	}
 }
 
@@ -66,7 +66,112 @@ func (row ddbTestGroupsRow) GetKey() map[string]types.AttributeValue {
 	}
 	return map[string]types.AttributeValue{
 		"pk": &types.AttributeValueMemberS{Value: fmt.Sprintf("task#%s", row.TaskCode)},
-		"sk": &types.AttributeValueMemberS{Value: fmt.Sprintf("test_groups#%d", row.GroupId)},
+		"sk": &types.AttributeValueMemberS{Value: fmt.Sprintf("test_groups#%02d", row.GroupId)},
+	}
+}
+
+type ddbTestChsumsRow struct {
+	TaskCode string `dynamodbav:"task_code"`
+	TestId   int    `dynamodbav:"test_id"`
+	InSha2   string `dynamodbav:"in_sha2"`
+	AnsSha2  string `dynamodbav:"ans_sha2"`
+}
+
+func (row ddbTestChsumsRow) GetKey() map[string]types.AttributeValue {
+	if row.TaskCode == "" || row.TestId == 0 {
+		return nil
+	}
+	return map[string]types.AttributeValue{
+		"pk": &types.AttributeValueMemberS{Value: fmt.Sprintf("task#%s", row.TaskCode)},
+		"sk": &types.AttributeValueMemberS{Value: fmt.Sprintf("test_chsums#%03d", row.TestId)},
+	}
+}
+
+type ddbPdfSttmentsRow struct {
+	TaskCode string `dynamodbav:"task_code"`
+	LangIso  string `dynamodbav:"lang_iso639"`
+	PdfSha2  string `dynamodbav:"pdf_sha2"`
+}
+
+func (row ddbPdfSttmentsRow) GetKey() map[string]types.AttributeValue {
+	if row.TaskCode == "" || row.LangIso == "" {
+		return nil
+	}
+	return map[string]types.AttributeValue{
+		"pk": &types.AttributeValueMemberS{Value: fmt.Sprintf("task#%s", row.TaskCode)},
+		"sk": &types.AttributeValueMemberS{Value: fmt.Sprintf("pdf_sttments#%s", row.LangIso)},
+	}
+}
+
+type ddbMdSttmentsRow struct {
+	TaskCode string  `dynamodbav:"task_code"`
+	LangIso  string  `dynamodbav:"lang_iso639"`
+	Story    string  `dynamodbav:"story"`
+	Input    string  `dynamodbav:"input"`
+	Output   string  `dynamodbav:"output"`
+	Scoring  *string `dynamodbav:"scoring"`
+	Notes    *string `dynamodbav:"notes"`
+}
+
+func (row ddbMdSttmentsRow) GetKey() map[string]types.AttributeValue {
+	if row.TaskCode == "" || row.LangIso == "" {
+		return nil
+	}
+
+	return map[string]types.AttributeValue{
+		"pk": &types.AttributeValueMemberS{Value: fmt.Sprintf("task#%s", row.TaskCode)},
+		"sk": &types.AttributeValueMemberS{Value: fmt.Sprintf("md_sttments#%s", row.LangIso)},
+	}
+}
+
+type ddbImgUuidMapRow struct {
+	TaskCode string `dynamodbav:"task_code"`
+	Uuid     string `dynamodbav:"uuid"`
+	S3Key    string `dynamodbav:"s3_key"`
+}
+
+func (row ddbImgUuidMapRow) GetKey() map[string]types.AttributeValue {
+	if row.TaskCode == "" || row.Uuid == "" {
+		return nil
+	}
+
+	return map[string]types.AttributeValue{
+		"pk": &types.AttributeValueMemberS{Value: fmt.Sprintf("task#%s", row.TaskCode)},
+		"sk": &types.AttributeValueMemberS{Value: fmt.Sprintf("img_uuid_map#%s", row.Uuid)},
+	}
+}
+
+type ddbExamplesRow struct {
+	TaskCode  string `dynamodbav:"task_code"`
+	ExampleId int    `dynamodbav:"example_id"`
+	Input     string `dynamodbav:"input"`
+	Output    string `dynamodbav:"output"`
+	MdNote    string `dynamodbav:"md_note"`
+}
+
+func (row ddbExamplesRow) GetKey() map[string]types.AttributeValue {
+	if row.TaskCode == "" || row.ExampleId == 0 {
+		return nil
+	}
+	return map[string]types.AttributeValue{
+		"pk": &types.AttributeValueMemberS{Value: fmt.Sprintf("task#%s", row.TaskCode)},
+		"sk": &types.AttributeValueMemberS{Value: fmt.Sprintf("examples#%03d", row.ExampleId)},
+	}
+}
+
+type ddbOriginNotesRow struct {
+	TaskCode string `dynamodbav:"task_code"`
+	LangIso  string `dynamodbav:"lang_iso639"`
+	OgInfo   string `dynamodbav:"og_info"`
+}
+
+func (row ddbOriginNotesRow) GetKey() map[string]types.AttributeValue {
+	if row.TaskCode == "" || row.LangIso == "" {
+		return nil
+	}
+	return map[string]types.AttributeValue{
+		"pk": &types.AttributeValueMemberS{Value: fmt.Sprintf("task#%s", row.TaskCode)},
+		"sk": &types.AttributeValueMemberS{Value: fmt.Sprintf("origin_notes#%s", row.LangIso)},
 	}
 }
 

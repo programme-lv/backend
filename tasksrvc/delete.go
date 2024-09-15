@@ -3,7 +3,6 @@ package tasksrvc
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
@@ -48,7 +47,6 @@ func (ts *TaskService) DeleteTask(taskCode string) error {
 		return fmt.Errorf("failed to delete items: %w", err)
 	}
 
-	log.Println("All matching items have been deleted.")
 	return nil
 }
 

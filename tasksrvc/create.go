@@ -9,9 +9,15 @@ import (
 
 // PutTask creates a new task with its details and visualization input statuses.
 func (ts *TaskService) PutTask(in *PutPublicTaskInput) (err error) {
-	rows := []ddbItemStruct{}
+	err = ts.DeleteTask(in.TaskCode)
+	if err != nil {
+		return fmt.Errorf("failed to delete task: %w", err)
+	}
 
-	rows = append(rows, ddbDetailsRow{
+	rows := []ddbItemStruct{}
+	put := func(row ddbItemStruct) { rows = append(rows, row) }
+
+	put(ddbDetailsRow{
 		TaskCode:    in.TaskCode,
 		FullName:    in.FullName,
 		MemMbytes:   in.MemMBytes,
@@ -23,7 +29,7 @@ func (ts *TaskService) PutTask(in *PutPublicTaskInput) (err error) {
 
 	for _, visInpSt := range in.VisInpSts {
 		for _, input := range visInpSt.Inputs {
-			rows = append(rows, ddbVisInpStsRow{
+			put(ddbVisInpStsRow{
 				TaskCode: in.TaskCode,
 				Subtask:  visInpSt.Subtask,
 				TestId:   input.TestID,
@@ -33,13 +39,68 @@ func (ts *TaskService) PutTask(in *PutPublicTaskInput) (err error) {
 	}
 
 	for _, group := range in.TestGroups {
-		rows = append(rows, ddbTestGroupsRow{
+		put(ddbTestGroupsRow{
 			TaskCode: in.TaskCode,
 			GroupId:  group.GroupID,
 			Points:   group.Points,
 			Public:   group.Public,
 			Subtask:  group.Subtask,
 			TestIds:  group.TestIDs,
+		})
+	}
+
+	for _, test := range in.TestChsums {
+		put(ddbTestChsumsRow{
+			TaskCode: in.TaskCode,
+			TestId:   test.TestID,
+			InSha2:   test.InSHA2,
+			AnsSha2:  test.AnsSHA2,
+		})
+	}
+
+	for _, pdfSttmnt := range in.PdfSttments {
+		put(ddbPdfSttmentsRow{
+			TaskCode: in.TaskCode,
+			LangIso:  pdfSttmnt.LangISO639,
+			PdfSha2:  pdfSttmnt.PdfSHA2,
+		})
+	}
+
+	for _, mdSttmnt := range in.MdSttments {
+		put(ddbMdSttmentsRow{
+			TaskCode: in.TaskCode,
+			LangIso:  mdSttmnt.LangISO639,
+			Story:    mdSttmnt.Story,
+			Input:    mdSttmnt.Input,
+			Output:   mdSttmnt.Output,
+			Scoring:  mdSttmnt.Scoring,
+			Notes:    mdSttmnt.Notes,
+		})
+	}
+
+	for _, img := range in.ImgUuidMap {
+		put(ddbImgUuidMapRow{
+			TaskCode: in.TaskCode,
+			Uuid:     img.UUID,
+			S3Key:    img.S3Key,
+		})
+	}
+
+	for _, example := range in.Examples {
+		put(ddbExamplesRow{
+			TaskCode:  in.TaskCode,
+			ExampleId: example.ExampleID,
+			Input:     example.Input,
+			Output:    example.Output,
+			MdNote:    example.MdNote,
+		})
+	}
+
+	for _, origNote := range in.OriginNotes {
+		put(ddbOriginNotesRow{
+			TaskCode: in.TaskCode,
+			LangIso:  origNote.LangISO639,
+			OgInfo:   origNote.OgInfo,
 		})
 	}
 
