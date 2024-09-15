@@ -113,8 +113,6 @@ func (ts *TaskService) PutItems(ctx context.Context, items ...ddbItemStruct) err
 		if err != nil {
 			return fmt.Errorf("failed to batch write items: %w", err)
 		}
-
-		log.Printf("Successfully put items %d to %d.", i+1, end)
 	}
 
 	return nil
