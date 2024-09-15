@@ -51,6 +51,25 @@ func (row ddbVisInpStsRow) GetKey() map[string]types.AttributeValue {
 	}
 }
 
+type ddbTestGroupsRow struct {
+	TaskCode string `dynamodbav:"task_code"`
+	GroupId  int    `dynamodbav:"group_id"`
+	Points   int    `dynamodbav:"points"`
+	Public   bool   `dynamodbav:"public"`
+	Subtask  int    `dynamodbav:"subtask"`
+	TestIds  []int  `dynamodbav:"test_ids"`
+}
+
+func (row ddbTestGroupsRow) GetKey() map[string]types.AttributeValue {
+	if row.TaskCode == "" || row.GroupId == 0 {
+		return nil
+	}
+	return map[string]types.AttributeValue{
+		"pk": &types.AttributeValueMemberS{Value: fmt.Sprintf("task#%s", row.TaskCode)},
+		"sk": &types.AttributeValueMemberS{Value: fmt.Sprintf("test_groups#%d", row.GroupId)},
+	}
+}
+
 type ddbItemStruct interface {
 	GetKey() map[string]types.AttributeValue
 }

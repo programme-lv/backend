@@ -325,7 +325,7 @@ func renderTaskPreview(wrapper *TaskWrapper) string {
 	addLine("Example Count", fmt.Sprintf("%d", len(task.GetExamples())))
 	addLine("Test Group Count", fmt.Sprintf("%d (Points RLE: %v)", len(task.GetTestGroupIDs()), wrapper.GetTestGroupPointsRLE()))
 	addLine("Total Score", fmt.Sprintf("%d points", wrapper.GetTotalScore()))
-	addLine("Visible Input Subtasks", fmt.Sprintf("%v", task.GetVisibleInputSubtasks()))
+	addLine("Visible Input Subtasks", fmt.Sprintf("%v", task.GetVisibleInputSubtaskIds()))
 	addLine("PDF Statement Languages", fmt.Sprintf("%v", wrapper.GetPdfStatementLangs()))
 	addLine("Markdown Statement Languages", fmt.Sprintf("%v", wrapper.GetMdStatementLangs()))
 	addLine("Has Illustration Image", fmt.Sprintf("%t", task.GetTaskIllustrationImage() != nil))

@@ -32,18 +32,35 @@ func (ts *TaskService) PutTask(in *PutPublicTaskInput) (err error) {
 		}
 	}
 
+	for _, group := range in.TestGroups {
+		rows = append(rows, ddbTestGroupsRow{
+			TaskCode: in.TaskCode,
+			GroupId:  group.GroupID,
+			Points:   group.Points,
+			Public:   group.Public,
+			Subtask:  group.Subtask,
+			TestIds:  group.TestIDs,
+		})
+	}
+
 	return ts.PutItems(context.TODO(), rows...)
 }
 
-func (ts *TaskService) UploadStatementPdf(body []byte) (sha2 string, err error) {
+// UploadStatementPdf uploads a PDF statement with the given content to S3.
+// It returns the S3 key or an error if the process fails.
+//
+// S3 key format: "task-pdf-statements/<sha2>.pdf"
+func (ts *TaskService) UploadStatementPdf(body []byte) (string, error) {
 	shaHex := ts.Sha2Hex(body)
 	s3Key := fmt.Sprintf("%s/%s.pdf", "task-pdf-statements", shaHex)
-	err = ts.s3PublicBucket.Upload(body, s3Key, "application/pdf")
-	return shaHex, err
+	err := ts.s3PublicBucket.Upload(body, s3Key, "application/pdf")
+	return s3Key, err
 }
 
-// UploadIllustrationImg uploads an illustration image with the given MIME type
-// and content to S3. It returns the S3 key or an error if the process fails.
+// UploadIllustrationImg uploads an image with the given content and MIME type to S3.
+// It returns the S3 key or an error if the process fails.
+//
+// S3 key format: "task-illustrations/<sha2>.<ext>"
 func (ts *TaskService) UploadIllustrationImg(mimeType string, body []byte) (s3key string, err error) {
 	sha2 := ts.Sha2Hex(body)
 	exts, err := mime.ExtensionsByType(mimeType)
@@ -55,6 +72,25 @@ func (ts *TaskService) UploadIllustrationImg(mimeType string, body []byte) (s3ke
 	}
 	ext := exts[0]
 	s3Key := fmt.Sprintf("%s/%s%s", "task-illustrations", sha2, ext)
+	err = ts.s3PublicBucket.Upload(body, s3Key, mimeType)
+	return s3Key, err
+}
+
+// UploadMarkdownImage uploads an image with the given MIME type and content
+// to S3. It returns the S3 key or an error if the process fails.
+//
+// S3 key format: "task-md-images/<sha2>.<extension>"
+func (ts *TaskService) UploadMarkdownImage(mimeType string, body []byte) (s3key string, err error) {
+	sha2 := ts.Sha2Hex(body)
+	exts, err := mime.ExtensionsByType(mimeType)
+	if err != nil {
+		return "", fmt.Errorf("failed to get file extension: %w", err)
+	}
+	if len(exts) == 0 {
+		return "", fmt.Errorf("file extennsion not found")
+	}
+	ext := exts[0]
+	s3Key := fmt.Sprintf("%s/%s%s", "task-md-images", sha2, ext)
 	err = ts.s3PublicBucket.Upload(body, s3Key, mimeType)
 	return s3Key, err
 }

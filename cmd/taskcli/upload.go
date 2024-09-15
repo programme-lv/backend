@@ -2,10 +2,12 @@ package main
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"fmt"
 	"image"
 	"image/jpeg"
 	"image/png"
+	"log"
 	"mime"
 	"path/filepath"
 	"strings"
@@ -18,14 +20,14 @@ import (
 	"github.com/programme-lv/backend/fstask"
 	"github.com/programme-lv/backend/tasksrvc"
 	"github.com/wailsapp/mimetype"
+	"golang.org/x/exp/maps"
 )
 
 // Define upload states
 type uploadState int
 
 const (
-	uploadStatePreview uploadState = iota
-	uploadStateEnterID
+	uploadStateEnterID uploadState = iota
 	uploadStateConfirm
 	uploadStateUploading
 	uploadStateDone
@@ -79,7 +81,7 @@ func newUploadModel(dir string) uploadModel {
 	res.taskIDInput = ti
 
 	// Set initial state to Preview
-	res.state = uploadStatePreview
+	res.state = uploadStateEnterID
 
 	return res
 }
@@ -93,20 +95,6 @@ func (u uploadModel) Init() tea.Cmd {
 // Update function to handle messages and state transitions
 func (u uploadModel) Update(msg tea.Msg) (uploadModel, tea.Cmd) {
 	switch u.state {
-	case uploadStatePreview:
-		switch msg := msg.(type) {
-		case tea.KeyMsg:
-			switch msg.String() {
-			case "ctrl+c", "q":
-				return u, tea.Quit
-			default:
-				// Transition to Enter ID state on any key press
-				u.state = uploadStateEnterID
-				u.taskIDInput.Focus()
-				return u, textinput.Blink
-			}
-		}
-
 	case uploadStateEnterID:
 		// Update the text input model
 		var tiCmd tea.Cmd
@@ -190,8 +178,6 @@ func (u uploadModel) View() string {
 
 	valueStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#9b59b6"))
 	switch u.state {
-	case uploadStatePreview:
-		s += "\n\nPress any key to enter Task ID..."
 	case uploadStateEnterID:
 		s += fmt.Sprintf("\n\nEnter Task ID: %s\n", u.taskIDInput.View())
 	case uploadStateConfirm:
@@ -234,8 +220,80 @@ func (u uploadModel) uploadTask() tea.Cmd {
 			illstrS3ObjKey = &s3Key
 		}
 
+		// Process markdown statements
+		mdImgUuidMap := make(map[string]string) // uuid -> original image url
+		mdSttmntsWithMappedImgs := make([]tasksrvc.MarkdownStatement, len(task.GetMarkdownStatements()))
+		for i, sttmnt := range task.GetMarkdownStatements() {
+			story, storyImgUuidMap := mapMarkdownImageURLs(sttmnt.Story)
+			maps.Copy(mdImgUuidMap, storyImgUuidMap)
+
+			input, inputImgUuidMap := mapMarkdownImageURLs(sttmnt.Input)
+			maps.Copy(mdImgUuidMap, inputImgUuidMap)
+
+			output, outputImgUuidMap := mapMarkdownImageURLs(sttmnt.Output)
+			maps.Copy(mdImgUuidMap, outputImgUuidMap)
+
+			res := tasksrvc.MarkdownStatement{
+				LangISO639: sttmnt.Language,
+				Story:      story,
+				Input:      input,
+				Output:     output,
+				Notes:      nil,
+				Scoring:    nil,
+			}
+
+			if sttmnt.Notes != nil {
+				notesStr := *sttmnt.Notes
+				notes, notesImgUuidMap := mapMarkdownImageURLs(notesStr)
+				maps.Copy(mdImgUuidMap, notesImgUuidMap)
+
+				res.Notes = &notes
+			}
+
+			if sttmnt.Scoring != nil {
+				scoringStr := *sttmnt.Scoring
+				scoring, scoringImgUuidMap := mapMarkdownImageURLs(scoringStr)
+				maps.Copy(mdImgUuidMap, scoringImgUuidMap)
+
+				res.Scoring = &scoring
+			}
+
+			mdSttmntsWithMappedImgs[i] = res
+		}
+
+		// Upload markdown images
+		imgUuidToS3KeyMap := make(map[string]string)
+		assets := task.GetAssets()
+		for k, v := range mdImgUuidMap {
+			// k - uuid, v - original image url
+			found := false
+			for _, asset := range assets {
+				if asset.RelativePath == v {
+					found = true
+					extMediaType := mime.TypeByExtension(filepath.Ext(asset.RelativePath))
+					s3Key, err := taskSrvc.UploadMarkdownImage(extMediaType, asset.Content)
+					if err != nil {
+						return uploadResultMsg{err: fmt.Errorf("failed to upload markdown image: %w", err)}
+					}
+
+					imgUuidToS3KeyMap[k] = s3Key
+				}
+			}
+			if !found {
+				log.Fatalf("Failed to find asset corresponding to URL: %s", v)
+			}
+		}
+
+		// Upload PDF statements
+		for _, pdf := range task.GetPdfStatements() {
+			_, err = taskSrvc.UploadStatementPdf(pdf.Content)
+			if err != nil {
+				return uploadResultMsg{err: fmt.Errorf("failed to upload pdf statement: %w", err)}
+			}
+		}
+
 		// Build the input for creating a task
-		putTaskInput := buildPutTaskInput(taskId, task, illstrS3ObjKey)
+		putTaskInput := buildPutTaskInput(taskId, task, illstrS3ObjKey, mdSttmntsWithMappedImgs, imgUuidToS3KeyMap)
 		err = taskSrvc.PutTask(putTaskInput)
 
 		if err != nil {
@@ -247,14 +305,104 @@ func (u uploadModel) uploadTask() tea.Cmd {
 }
 
 // Build the input for creating a public task, including the Task ID
-func buildPutTaskInput(taskId string, task *fstask.Task, illstrS3Key *string) *tasksrvc.PutPublicTaskInput {
-	visInpStasks := make([]tasksrvc.VisInpSt, len(task.GetVisibleInputSubtasks()))
-	// for i, st := range task.GetVisibleInputSubtasks() {
-	// 	visInpStasks[i] = tasksrvc.VisInpSt{
-	// 		Subtask: st,
-	// 		Inputs:  st.Inputs, // Assuming this is correctly populated
-	// 	}
-	// }
+func buildPutTaskInput(
+	taskId string,
+	task *fstask.Task,
+	illstrS3Key *string,
+	mdSttmnts []tasksrvc.MarkdownStatement,
+	imgUuidToS3KeyMap map[string]string,
+) *tasksrvc.PutPublicTaskInput {
+	visInpStasks := make([]tasksrvc.VisInpSt, len(task.GetVisibleInputSubtaskIds()))
+	for i, stId := range task.GetVisibleInputSubtaskIds() {
+		visInpStasks[i] = tasksrvc.VisInpSt{
+			Subtask: stId,
+			Inputs:  []tasksrvc.TestWithOnlyInput{},
+		}
+		for _, test := range task.GetTestsSortedByID() {
+			for _, tGroup := range task.GetTestGroups() {
+				if tGroup.Subtask == stId {
+					testInTGroup := false
+					for _, testID := range tGroup.TestIDs {
+						if test.ID == testID {
+							testInTGroup = true
+							break
+						}
+					}
+					if !testInTGroup {
+						continue
+					}
+					alreadyAdded := false
+					for _, addedInput := range visInpStasks[i].Inputs {
+						if addedInput.TestID == test.ID {
+							alreadyAdded = true
+							break
+						}
+					}
+					if alreadyAdded {
+						continue
+					}
+					visInpStasks[i].Inputs = append(visInpStasks[i].Inputs, tasksrvc.TestWithOnlyInput{
+						TestID: test.ID,
+						Input:  string(test.Input),
+					})
+				}
+			}
+		}
+	}
+
+	testGroups := make([]tasksrvc.TestGroup, len(task.GetTestGroupIDs()))
+	for i, tGroup := range task.GetTestGroups() {
+		testGroups[i] = tasksrvc.TestGroup{
+			GroupID: tGroup.GroupID,
+			Points:  tGroup.Points,
+			Public:  tGroup.Public,
+			Subtask: tGroup.Subtask,
+			TestIDs: tGroup.TestIDs,
+		}
+	}
+
+	testChsums := make([]tasksrvc.TestChecksum, len(task.GetTestsSortedByID()))
+	for i, test := range task.GetTestsSortedByID() {
+		testChsums[i] = tasksrvc.TestChecksum{
+			TestID:  test.ID,
+			InSHA2:  sha2Hex(test.Input),
+			AnsSHA2: sha2Hex(test.Answer),
+		}
+	}
+
+	pdfSttmnts := make([]tasksrvc.PdfStatement, len(task.GetPdfStatements()))
+	for i, pdfSttmnt := range task.GetPdfStatements() {
+		pdfSttmnts[i] = tasksrvc.PdfStatement{
+			LangISO639: pdfSttmnt.Language,
+			PdfSHA2:    sha2Hex(pdfSttmnt.Content),
+		}
+	}
+
+	imgUuidToS3MapSlice := make([]tasksrvc.ImageUUIDMap, 0)
+	for k, v := range imgUuidToS3KeyMap {
+		imgUuidToS3MapSlice = append(imgUuidToS3MapSlice, tasksrvc.ImageUUIDMap{
+			UUID:  k,
+			S3Key: v,
+		})
+	}
+
+	examples := make([]tasksrvc.Example, 0)
+	for i, example := range task.GetExamples() {
+		examples = append(examples, tasksrvc.Example{
+			ExampleID: i + 1,
+			Input:     string(example.Input),
+			Output:    string(example.Output),
+			MdNote:    string(example.MdNote),
+		})
+	}
+
+	originNotes := make([]tasksrvc.OriginNote, 0)
+	for lang, note := range task.GetOriginNotes() {
+		originNotes = append(originNotes, tasksrvc.OriginNote{
+			LangISO639: lang,
+			OgInfo:     note,
+		})
+	}
 
 	return &tasksrvc.PutPublicTaskInput{
 		TaskCode:    taskId, // Assign the entered Task ID
@@ -265,15 +413,20 @@ func buildPutTaskInput(taskId string, task *fstask.Task, illstrS3Key *string) *t
 		OriginOlymp: task.OriginOlympiad,
 		IllustrKey:  illstrS3Key,
 		VisInpSts:   visInpStasks,
-		// Initialize other fields as empty slices
-		TestGroups:  []tasksrvc.TestGroup{},
-		TestChsums:  []tasksrvc.TestChecksum{},
-		PdfSttments: []tasksrvc.PdfStatement{},
-		MdSttments:  []tasksrvc.MarkdownStatement{},
-		ImgUuidMap:  []tasksrvc.ImageUUIDMap{},
-		Examples:    []tasksrvc.Example{},
-		OriginNotes: []tasksrvc.OriginNote{},
+		TestGroups:  testGroups,
+		TestChsums:  testChsums,
+		PdfSttments: pdfSttmnts,
+		MdSttments:  mdSttmnts,
+		ImgUuidMap:  imgUuidToS3MapSlice,
+		Examples:    examples,
+		OriginNotes: originNotes,
 	}
+}
+
+func sha2Hex(body []byte) (sha2 string) {
+	hash := sha256.Sum256(body)
+	sha2 = fmt.Sprintf("%x", hash[:])
+	return
 }
 
 // uploadIllustrationImage uploads the illustration image to S3 and returns the S3 key.

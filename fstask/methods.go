@@ -220,16 +220,16 @@ func (t *Task) GetPDFStatement(lang string) ([]byte, error) {
 }
 
 type PDFStatement struct {
-	Language  string
-	Statement []byte
+	Language string
+	Content  []byte
 }
 
-func (t *Task) GetAllPDFStatements() []PDFStatement {
+func (t *Task) GetPdfStatements() []PDFStatement {
 	pdfStatements := make([]PDFStatement, 0, len(t.pdfStatements))
 	for lang, statement := range t.pdfStatements {
 		pdfStatements = append(pdfStatements, PDFStatement{
-			Language:  lang,
-			Statement: statement,
+			Language: lang,
+			Content:  statement,
 		})
 	}
 
@@ -265,7 +265,7 @@ func (t *Task) AddVisibleInputSubtask(subtask int) error {
 	return nil
 }
 
-func (t *Task) GetVisibleInputSubtasks() []int {
+func (t *Task) GetVisibleInputSubtaskIds() []int {
 	return t.visibleInputSubtasks
 }
 

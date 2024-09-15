@@ -4,7 +4,7 @@ type Example struct {
 	ExampleID int
 	Input     string
 	Output    string
-	MdNote    *string
+	MdNote    string
 }
 
 type GetTaskSubmEvalDataPayload struct {

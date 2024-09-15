@@ -89,7 +89,7 @@ func (tw *TaskWrapper) GetPdfStatementLangs() []string {
 		return tw.PdfSttmntLangs
 	}
 
-	pdfStmts := tw.Task.GetAllPDFStatements()
+	pdfStmts := tw.Task.GetPdfStatements()
 	tw.PdfSttmntLangs = make([]string, len(pdfStmts))
 	for i, stmt := range pdfStmts {
 		tw.PdfSttmntLangs[i] = stmt.Language
@@ -150,7 +150,7 @@ func (tw *TaskWrapper) GetTotalScore() int {
 // GetVisibleInputSubtasks retrieves visible input subtasks.
 func (tw *TaskWrapper) GetVisibleInputSubtasks() []tasksrvc.VisInpSt {
 	tests := tw.Task.GetTestsSortedByID()
-	visibleSubtasks := tw.Task.GetVisibleInputSubtasks()
+	visibleSubtasks := tw.Task.GetVisibleInputSubtaskIds()
 	visInpSts := make([]tasksrvc.VisInpSt, len(visibleSubtasks))
 
 	for i, stID := range visibleSubtasks {

@@ -116,12 +116,12 @@ func getPreview(dir string) (TaskPreview, error) {
 	res.TGrPointsRunLenEnc = "[" + strings.Join(parts, " ") + "]"
 
 	// 2. Populate VisInpStasks (Visible Input Subtasks)
-	visibleSubtasks := task.GetVisibleInputSubtasks()
+	visibleSubtasks := task.GetVisibleInputSubtaskIds()
 	res.VisInpStasks = make([]int, len(visibleSubtasks))
 	copy(res.VisInpStasks, visibleSubtasks)
 
 	// 3. Populate PdfSttmntLangs (PDF Statement Languages)
-	pdfStmts := task.GetAllPDFStatements()
+	pdfStmts := task.GetPdfStatements()
 	res.PdfSttmntLangs = make([]string, len(pdfStmts))
 	for i, stmt := range pdfStmts {
 		res.PdfSttmntLangs[i] = stmt.Language
