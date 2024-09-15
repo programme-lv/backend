@@ -65,8 +65,10 @@ func newUploadModel(dir string) uploadModel {
 	// Initialize text input for Task ID
 	ti := textinput.New()
 	ti.SetValue(filepath.Base(dir))
-	ti.CharLimit = 32
-	ti.Width = 30
+	ti.CharLimit = 26
+	ti.Width = 26
+	ti.Prompt = ""
+	ti.TextStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#9b59b6")).Background(lipgloss.Color("#ffffff"))
 	ti.Focus() // Set focus to the input field when entering this state
 	res.taskIDInput = ti
 
@@ -76,9 +78,9 @@ func newUploadModel(dir string) uploadModel {
 	return res
 }
 
-// Initialize the model (no initial command)
+// Initialize the model with appropriate commands
 func (u uploadModel) Init() tea.Cmd {
-	return nil
+	return u.uplSpinner.Tick
 }
 
 // Update function to handle messages and state transitions
@@ -96,12 +98,16 @@ func (u uploadModel) Update(msg tea.Msg) (uploadModel, tea.Cmd) {
 			default:
 				// Transition to Enter ID state on any key press
 				u.state = uploadStateEnterID
-				return u, nil
+				u.taskIDInput.Focus()
+				return u, textinput.Blink
 			}
 		}
 
 	case uploadStateEnterID:
 		// Update the text input model
+		var tiCmd tea.Cmd
+		u.taskIDInput, tiCmd = u.taskIDInput.Update(msg)
+
 		switch msg := msg.(type) {
 		case tea.KeyMsg:
 			switch msg.Type {
@@ -116,6 +122,7 @@ func (u uploadModel) Update(msg tea.Msg) (uploadModel, tea.Cmd) {
 				}
 				// Transition to Confirm state
 				u.state = uploadStateConfirm
+				u.taskIDInput.Blur()
 				return u, nil
 			case tea.KeyEsc:
 				// Exit on Esc
@@ -123,6 +130,7 @@ func (u uploadModel) Update(msg tea.Msg) (uploadModel, tea.Cmd) {
 				return u, tea.Quit
 			}
 		}
+		return u, tiCmd
 
 	case uploadStateConfirm:
 		switch msg := msg.(type) {
@@ -170,8 +178,13 @@ func (u uploadModel) Update(msg tea.Msg) (uploadModel, tea.Cmd) {
 		}
 	}
 
-	u.taskIDInput, cmd = u.taskIDInput.Update(msg)
-	return u, cmd
+	// If in uploadStateEnterID, handle text input updates
+	if u.state == uploadStateEnterID {
+		u.taskIDInput, cmd = u.taskIDInput.Update(msg)
+		return u, cmd
+	}
+
+	return u, nil
 }
 
 // View function to render the UI based on the current state
@@ -185,7 +198,7 @@ func (u uploadModel) View() string {
 	case uploadStatePreview:
 		s += "\n\nPress any key to enter Task ID..."
 	case uploadStateEnterID:
-		s += fmt.Sprintf("\n\nEnter Task ID: %s\n", u.taskIDInput.Value())
+		s += fmt.Sprintf("\n\nEnter Task ID: %s\n", u.taskIDInput.View())
 	case uploadStateConfirm:
 		s += fmt.Sprintf("\n\nProceed with uploading task %s? (y/n)\n", valueStyle.Render(u.taskIDInput.Value()))
 	case uploadStateUploading:
