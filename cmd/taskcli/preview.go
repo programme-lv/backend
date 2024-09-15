@@ -1,4 +1,3 @@
-// preview.go
 package main
 
 import (
@@ -30,33 +29,6 @@ type TaskPreview struct {
 	MdSttmntLangs      []string
 	HasIllstrImg       string
 	IllstrImgRelPath   string
-}
-
-func getMockPreview(dir string) (TaskPreview, error) {
-	_ = dir
-	// Here, you would read from the directory using fstask.Read(dir)
-	// For now, we return mock data
-	return TaskPreview{
-		TaskDirectory:      "/home/kp/Programming/_PROGLV/task-workspace/proglv/kvadrputekl",
-		FullName:           "Kvadrātveida putekļsūcējs",
-		Difficulty:         3,
-		DiffTranslation:    "vidējs",
-		CpuTimeLim:         2,
-		MemoryLim:          256,
-		OriginOlymp:        "LIO",
-		OlympTranslation:   "Latvijas informātikas olimpiāde",
-		OriginNotes:        "Uzdevums tika izmantots Latvijas 37. informātikas olimpiādē. Uzdevums tika izmantots Latvijas 37. informātikas olimpiādē",
-		TestCount:          98,
-		TestTotalSize:      88,
-		ExampleCount:       3,
-		TestGroupCount:     7,
-		TGrPointsRunLenEnc: "[3x3 4x2 3x7]",
-		VisInpStasks:       []int{1},
-		PdfSttmntLangs:     []string{"lv"},
-		MdSttmntLangs:      []string{"lv"},
-		HasIllstrImg:       "Yes",
-		IllstrImgRelPath:   "illustration.png",
-	}, nil
 }
 
 func getPreview(dir string) (TaskPreview, error) {
@@ -91,6 +63,7 @@ func getPreview(dir string) (TaskPreview, error) {
 
 	olympiadTranslations := map[string]string{
 		"LIO": "Latvijas informātikas olimpiāde",
+		// Add more translations as needed
 	}
 	res.OlympTranslation = olympiadTranslations[res.OriginOlymp]
 
@@ -104,22 +77,77 @@ func getPreview(dir string) (TaskPreview, error) {
 	for _, test := range tests {
 		testTotalSize += len(test.Input) + len(test.Answer)
 	}
-	res.TestTotalSize = float64(testTotalSize) / (1024.0 * 1024.0)
+	res.TestTotalSize = float64(testTotalSize) / (1024.0 * 1024.0) // Convert bytes to megabytes
 
-	exapmles := task.GetExamples()
+	examples := task.GetExamples()
 
-	res.ExampleCount = len(exapmles)
+	res.ExampleCount = len(examples)
 
 	testgroups := task.GetTestGroups()
 	res.TestGroupCount = len(testgroups)
 
-	// TODO help me finish here
+	// 1. Populate TGrPointsRunLenEnc (Run-Length Encoding of Test Group Points)
+	type rleElement struct {
+		count int
+		ele   int
+	}
+
+	testGroupPoints := make([]int, len(testgroups))
+	for i, group := range testgroups {
+		testGroupPoints[i] = group.Points
+	}
+
+	var rle []rleElement
+	if len(testGroupPoints) > 0 {
+		rle = append(rle, rleElement{count: 1, ele: testGroupPoints[0]})
+		for i := 1; i < len(testGroupPoints); i++ {
+			if testGroupPoints[i] == rle[len(rle)-1].ele {
+				rle[len(rle)-1].count++
+			} else {
+				rle = append(rle, rleElement{count: 1, ele: testGroupPoints[i]})
+			}
+		}
+	}
+
+	parts := make([]string, len(rle))
+	for i, elem := range rle {
+		parts[i] = fmt.Sprintf("%dx%d", elem.count, elem.ele)
+	}
+	res.TGrPointsRunLenEnc = "[" + strings.Join(parts, " ") + "]"
+
+	// 2. Populate VisInpStasks (Visible Input Subtasks)
+	visibleSubtasks := task.GetVisibleInputSubtasks()
+	res.VisInpStasks = make([]int, len(visibleSubtasks))
+	copy(res.VisInpStasks, visibleSubtasks)
+
+	// 3. Populate PdfSttmntLangs (PDF Statement Languages)
+	pdfStmts := task.GetAllPDFStatements()
+	res.PdfSttmntLangs = make([]string, len(pdfStmts))
+	for i, stmt := range pdfStmts {
+		res.PdfSttmntLangs[i] = stmt.Language
+	}
+
+	// 4. Populate MdSttmntLangs (Markdown Statement Languages)
+	mdStmts := task.GetMarkdownStatements()
+	res.MdSttmntLangs = make([]string, len(mdStmts))
+	for i, stmt := range mdStmts {
+		res.MdSttmntLangs[i] = stmt.Language
+	}
+
+	// 5. Check for Illustration Image
+	res.IllstrImgRelPath = task.GetTaskIllustrationImage().RelativePath
+
+	if res.IllstrImgRelPath != "" {
+		res.HasIllstrImg = "Yes"
+	} else {
+		res.HasIllstrImg = "No"
+	}
 
 	return res, nil
 }
-
 func (p TaskPreview) View() string {
 	labelStyle := lipgloss.NewStyle()
+	// valueStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#3498db"))
 	valueStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#3498db"))
 
 	lines := []string{
@@ -146,9 +174,8 @@ func (p TaskPreview) View() string {
 			labelStyle.Render("Pdf statement langs:"), valueStyle.Render(fmt.Sprintf("%v", p.PdfSttmntLangs)),
 			labelStyle.Render("Markdown statement langs:"), valueStyle.Render(fmt.Sprintf("%v", p.MdSttmntLangs))),
 		fmt.Sprintf("%s %s (assets/%s)",
-			labelStyle.Render("Illustration image:"), valueStyle.Render(p.HasIllstrImg), p.IllstrImgRelPath),
+			labelStyle.Render("Illustration image:"), valueStyle.Render(p.HasIllstrImg), valueStyle.Render(p.IllstrImgRelPath)),
 	}
-
 	for i := range len(lines) {
 		lines[i] = lipgloss.NewStyle().Render(fmt.Sprintf("\t%s", lines[i]))
 	}

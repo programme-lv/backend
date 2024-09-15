@@ -34,7 +34,8 @@ func newUploadModel(dir string) uploadModel {
 	res.taskDir = dir
 
 	s := spinner.New()
-	s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("63"))
+	s.Spinner = spinner.Dot
+	s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("#3498db"))
 	res.uplSpinner = s
 
 	preview, err := getPreview(dir)
@@ -102,7 +103,7 @@ func (u uploadModel) View() string {
 	case uploadStatePreview:
 		s += "\n\nProceed with upload? (y/n)\n"
 	case uploadStateUploading:
-		s += fmt.Sprintf("\n\n%s Uploading...\n\n", u.uplSpinner.View())
+		s += fmt.Sprintf("\n\n%s Uploading...\n", u.uplSpinner.View())
 	case uploadStateDone:
 		if u.success {
 			s += "\n\nUpload successful! Press any key to continue...\n"
