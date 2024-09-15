@@ -177,7 +177,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.Phase = PhaseCreatingTask
 		return m, func() tea.Msg {
 			createTaskInput := buildCreateTaskInput(m)
-			err := m.TaskService.CreateTask(createTaskInput)
+			err := m.TaskService.PutTask(createTaskInput)
 			return CreateTaskResult{Err: err}
 		}
 
@@ -226,8 +226,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 // buildCreateTaskInput constructs the input for creating a task.
-func buildCreateTaskInput(m Model) *tasksrvc.CreatePublicTaskInput {
-	return &tasksrvc.CreatePublicTaskInput{
+func buildCreateTaskInput(m Model) *tasksrvc.PutPublicTaskInput {
+	return &tasksrvc.PutPublicTaskInput{
 		TaskCode:    m.TaskShortCodeIDInput.Value(),
 		FullName:    m.Task.FullName,
 		MemMBytes:   m.Task.MemoryLimInMegabytes,

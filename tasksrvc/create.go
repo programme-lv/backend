@@ -7,8 +7,8 @@ import (
 	"mime"
 )
 
-// CreateTask creates a new task with its details and visualization input statuses.
-func (ts *TaskService) CreateTask(in *CreatePublicTaskInput) (err error) {
+// PutTask creates a new task with its details and visualization input statuses.
+func (ts *TaskService) PutTask(in *PutPublicTaskInput) (err error) {
 	rows := []ddbItemStruct{}
 
 	rows = append(rows, ddbDetailsRow{
@@ -42,6 +42,8 @@ func (ts *TaskService) UploadStatementPdf(body []byte) (sha2 string, err error) 
 	return shaHex, err
 }
 
+// UploadIllustrationImg uploads an illustration image with the given MIME type
+// and content to S3. It returns the S3 key or an error if the process fails.
 func (ts *TaskService) UploadIllustrationImg(mimeType string, body []byte) (s3key string, err error) {
 	sha2 := ts.Sha2Hex(body)
 	exts, err := mime.ExtensionsByType(mimeType)

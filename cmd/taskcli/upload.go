@@ -1,7 +1,12 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
+	"image"
+	"image/jpeg"
+	"image/png"
+	"mime"
 	"path/filepath"
 	"strings"
 
@@ -9,8 +14,10 @@ import (
 	"github.com/charmbracelet/bubbles/textinput" // Import textinput
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/nfnt/resize"
 	"github.com/programme-lv/backend/fstask"
 	"github.com/programme-lv/backend/tasksrvc"
+	"github.com/wailsapp/mimetype"
 )
 
 // Define upload states
@@ -31,7 +38,6 @@ type uploadModel struct {
 	previewObj  TaskPreview
 	taskDir     string
 	success     bool
-	finished    bool
 	err         error
 	taskIDInput textinput.Model // Add text input field
 }
@@ -68,7 +74,7 @@ func newUploadModel(dir string) uploadModel {
 	ti.CharLimit = 26
 	ti.Width = 26
 	ti.Prompt = ""
-	ti.TextStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#9b59b6")).Background(lipgloss.Color("#ffffff"))
+	ti.TextStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#9b59b6"))
 	ti.Focus() // Set focus to the input field when entering this state
 	res.taskIDInput = ti
 
@@ -80,20 +86,18 @@ func newUploadModel(dir string) uploadModel {
 
 // Initialize the model with appropriate commands
 func (u uploadModel) Init() tea.Cmd {
-	return u.uplSpinner.Tick
+	// Do not start the spinner here
+	return nil
 }
 
 // Update function to handle messages and state transitions
 func (u uploadModel) Update(msg tea.Msg) (uploadModel, tea.Cmd) {
-	var cmd tea.Cmd
-
 	switch u.state {
 	case uploadStatePreview:
 		switch msg := msg.(type) {
 		case tea.KeyMsg:
 			switch msg.String() {
 			case "ctrl+c", "q":
-				u.finished = true
 				return u, tea.Quit
 			default:
 				// Transition to Enter ID state on any key press
@@ -125,8 +129,6 @@ func (u uploadModel) Update(msg tea.Msg) (uploadModel, tea.Cmd) {
 				u.taskIDInput.Blur()
 				return u, nil
 			case tea.KeyEsc:
-				// Exit on Esc
-				u.finished = true
 				return u, tea.Quit
 			}
 		}
@@ -141,23 +143,16 @@ func (u uploadModel) Update(msg tea.Msg) (uploadModel, tea.Cmd) {
 				u.state = uploadStateUploading
 				return u, tea.Batch(u.uplSpinner.Tick, u.uploadTask())
 			case "n", "N", "q":
-				// Cancel upload
-				u.finished = true
 				return u, tea.Quit
 			case "ctrl+c":
-				// Quit on Ctrl+C
-				u.finished = true
 				return u, tea.Quit
 			}
 		}
 
 	case uploadStateUploading:
-		// Update the spinner
-		u.uplSpinner, cmd = u.uplSpinner.Update(msg)
 		switch msg := msg.(type) {
 		case tea.KeyMsg:
 			if msg.String() == "ctrl+c" {
-				u.finished = true
 				return u, tea.Quit
 			}
 		case uploadResultMsg:
@@ -165,26 +160,26 @@ func (u uploadModel) Update(msg tea.Msg) (uploadModel, tea.Cmd) {
 			u.err = msg.err
 			u.success = msg.err == nil
 			u.state = uploadStateDone
-			return u, nil
+			return u, nil // Stop spinner by not returning any spinner commands
 		}
-		return u, cmd
 
 	case uploadStateDone:
-		switch msg.(type) {
+		switch msg := msg.(type) {
 		case tea.KeyMsg:
-			// Exit after completion
-			u.finished = true
-			return u, tea.Quit
+			switch msg.Type {
+			case tea.KeyEnter:
+				return u, tea.Quit
+			}
 		}
 	}
 
-	// If in uploadStateEnterID, handle text input updates
-	if u.state == uploadStateEnterID {
-		u.taskIDInput, cmd = u.taskIDInput.Update(msg)
-		return u, cmd
-	}
+	var inputCmd tea.Cmd
+	u.taskIDInput, inputCmd = u.taskIDInput.Update(msg)
 
-	return u, nil
+	var spinnerCmd tea.Cmd
+	u.uplSpinner, spinnerCmd = u.uplSpinner.Update(msg)
+
+	return u, tea.Batch(inputCmd, spinnerCmd)
 }
 
 // View function to render the UI based on the current state
@@ -205,9 +200,9 @@ func (u uploadModel) View() string {
 		s += fmt.Sprintf("\n\n%s Uploading...\n", u.uplSpinner.View())
 	case uploadStateDone:
 		if u.success {
-			s += "\n\nUpload successful! Press any key to continue...\n"
+			s += "\n\nUpload successful! Press enter to continue...\n"
 		} else {
-			s += "\n\nUpload failed! Error message: " + u.err.Error() + "\nPress any key to continue...\n"
+			s += "\n\nUpload failed! Error message: " + u.err.Error() + "\nPress enter to continue...\n"
 		}
 	}
 	return s
@@ -226,13 +221,22 @@ func (u uploadModel) uploadTask() tea.Cmd {
 		if err != nil {
 			return uploadResultMsg{err: fmt.Errorf("failed to read task: %w", err)}
 		}
-
 		// Retrieve the entered Task ID
-		taskID := strings.TrimSpace(u.taskIDInput.Value())
+		taskId := strings.TrimSpace(u.taskIDInput.Value())
+
+		var illstrS3ObjKey *string = nil
+		illstrImg := task.GetTaskIllustrationImage()
+		if illstrImg != nil {
+			s3Key, err := uploadIllustrationImage(illstrImg, taskSrvc)
+			if err != nil {
+				return uploadResultMsg{err: fmt.Errorf("failed to upload illustration image: %w", err)}
+			}
+			illstrS3ObjKey = &s3Key
+		}
 
 		// Build the input for creating a task
-		createTaskInput := buildCreateTaskInput(taskID, task, nil)
-		err = taskSrvc.CreateTask(createTaskInput)
+		putTaskInput := buildPutTaskInput(taskId, task, illstrS3ObjKey)
+		err = taskSrvc.PutTask(putTaskInput)
 
 		if err != nil {
 			return uploadResultMsg{err: fmt.Errorf("failed to create task: %w", err)}
@@ -243,7 +247,7 @@ func (u uploadModel) uploadTask() tea.Cmd {
 }
 
 // Build the input for creating a public task, including the Task ID
-func buildCreateTaskInput(taskId string, task *fstask.Task, illstrS3Key *string) *tasksrvc.CreatePublicTaskInput {
+func buildPutTaskInput(taskId string, task *fstask.Task, illstrS3Key *string) *tasksrvc.PutPublicTaskInput {
 	visInpStasks := make([]tasksrvc.VisInpSt, len(task.GetVisibleInputSubtasks()))
 	// for i, st := range task.GetVisibleInputSubtasks() {
 	// 	visInpStasks[i] = tasksrvc.VisInpSt{
@@ -252,7 +256,7 @@ func buildCreateTaskInput(taskId string, task *fstask.Task, illstrS3Key *string)
 	// 	}
 	// }
 
-	return &tasksrvc.CreatePublicTaskInput{
+	return &tasksrvc.PutPublicTaskInput{
 		TaskCode:    taskId, // Assign the entered Task ID
 		FullName:    task.FullName,
 		MemMBytes:   task.MemoryLimInMegabytes,
@@ -270,4 +274,76 @@ func buildCreateTaskInput(taskId string, task *fstask.Task, illstrS3Key *string)
 		Examples:    []tasksrvc.Example{},
 		OriginNotes: []tasksrvc.OriginNote{},
 	}
+}
+
+// uploadIllustrationImage uploads the illustration image to S3 and returns the S3 key.
+//
+// It takes a fstask.Asset and a tasksrvc.TaskService as arguments. The fstask.Asset
+// must contain the image data and file extension. The tasksrvc.TaskService is used to
+// upload the image to S3.
+//
+// The function returns the S3 key for the uploaded image and an error if something
+// goes wrong.
+func uploadIllustrationImage(asset *fstask.Asset, taskService *tasksrvc.TaskService) (string, error) {
+	compressedImage, err := compressImage(asset.Content, 600)
+	if err != nil {
+		return "", fmt.Errorf("failed to compress image: %w", err)
+	}
+
+	mType := mime.TypeByExtension(filepath.Ext(asset.RelativePath))
+	if mType == "" {
+		detectedType := mimetype.Detect(compressedImage)
+		if detectedType == nil {
+			return "", fmt.Errorf("failed to detect file type")
+		}
+		mType = detectedType.String()
+	}
+
+	s3Key, err := taskService.UploadIllustrationImg(mType, compressedImage)
+	if err != nil {
+		return "", fmt.Errorf("failed to upload illustration to S3: %w", err)
+	}
+
+	return s3Key, nil
+}
+
+// compressImage resizes and compresses the image to the specified maximum width.
+// It returns the compressed image bytes or an error if the process fails.
+func compressImage(imgContent []byte, maxWidth uint) ([]byte, error) {
+	mType := mimetype.Detect(imgContent)
+	if mType == nil {
+		return nil, fmt.Errorf("unknown image type")
+	}
+
+	var img image.Image
+	var err error
+
+	switch mType.String() {
+	case "image/jpeg":
+		img, err = jpeg.Decode(bytes.NewReader(imgContent))
+	case "image/png":
+		img, err = png.Decode(bytes.NewReader(imgContent))
+	default:
+		return nil, fmt.Errorf("unsupported image format: %s", mType.String())
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode image: %w", err)
+	}
+
+	// Resize the image while maintaining aspect ratio
+	width := uint(img.Bounds().Dx())
+	if width > maxWidth {
+		width = maxWidth
+	}
+	resizedImg := resize.Resize(width, 0, img, resize.Lanczos3)
+
+	var compressedImg bytes.Buffer
+	// Encode the resized image to JPEG format with quality 85
+	err = jpeg.Encode(&compressedImg, resizedImg, &jpeg.Options{Quality: 85})
+	if err != nil {
+		return nil, fmt.Errorf("failed to encode image to JPEG: %w", err)
+	}
+
+	return compressedImg.Bytes(), nil
 }

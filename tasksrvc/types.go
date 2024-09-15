@@ -117,8 +117,8 @@ type OriginNote struct {
 	OgInfo     string
 }
 
-// CreatePublicTaskInput encapsulates all data required to create a public task.
-type CreatePublicTaskInput struct {
+// PutPublicTaskInput encapsulates all data required to create a public task.
+type PutPublicTaskInput struct {
 	TaskCode    string
 	FullName    string  // Full name of the task
 	MemMBytes   int     // Max memory usage during execution in megabytes
