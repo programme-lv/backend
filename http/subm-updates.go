@@ -155,9 +155,6 @@ type submUpdateListener struct {
 func (l *submUpdateListener) Send(update *subm.SubmissionListUpdate) error {
 	l.mutex.Lock()
 	defer l.mutex.Unlock()
-	if l == nil {
-		return fmt.Errorf("nil update listener")
-	}
 	if l.closed {
 		return fmt.Errorf("update listener is closed")
 	}
@@ -171,9 +168,6 @@ func (l *submUpdateListener) Send(update *subm.SubmissionListUpdate) error {
 func (l *submUpdateListener) Close() error {
 	l.mutex.Lock()
 	defer l.mutex.Unlock()
-	if l == nil {
-		return fmt.Errorf("nil update listener")
-	}
 	l.closed = true
 	close(l.updateChan)
 	return nil

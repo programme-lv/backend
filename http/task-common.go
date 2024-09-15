@@ -3,9 +3,9 @@ package http
 import "github.com/programme-lv/backend/tasksrvc"
 
 type Example struct {
-	Input  string  `json:"input"`
-	Output string  `json:"output"`
-	MdNote *string `json:"md_note,omitempty"`
+	Input  string `json:"input"`
+	Output string `json:"output"`
+	MdNote string `json:"md_note,omitempty"`
 }
 
 type MdStatement struct {
