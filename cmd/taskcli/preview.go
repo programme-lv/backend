@@ -135,7 +135,9 @@ func getPreview(dir string) (TaskPreview, error) {
 	}
 
 	// 5. Check for Illustration Image
-	res.IllstrImgRelPath = task.GetTaskIllustrationImage().RelativePath
+	if task.GetTaskIllustrationImage() != nil {
+		res.IllstrImgRelPath = task.GetTaskIllustrationImage().RelativePath
+	}
 
 	if res.IllstrImgRelPath != "" {
 		res.HasIllstrImg = "Yes"
