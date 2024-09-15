@@ -392,9 +392,9 @@ func buildPutTaskInput(
 		}
 	}
 
-	imgUuidToS3MapSlice := make([]tasksrvc.ImageUUIDMap, 0)
+	imgUuidToS3MapSlice := make([]tasksrvc.ImgUuidS3Pair, 0)
 	for k, v := range imgUuidToS3KeyMap {
-		imgUuidToS3MapSlice = append(imgUuidToS3MapSlice, tasksrvc.ImageUUIDMap{
+		imgUuidToS3MapSlice = append(imgUuidToS3MapSlice, tasksrvc.ImgUuidS3Pair{
 			UUID:  k,
 			S3Key: v,
 		})

@@ -22,7 +22,7 @@ import (
 func (s *SubmissionSrvc) createSubmissionWithValidatedInput(
 	subm *string,
 	user *user.User,
-	task *tasksrvc.TaskSubmEvalData,
+	task *tasksrvc.Task,
 	lang *ProgrammingLang,
 ) (*BriefSubmission, error) {
 
@@ -80,7 +80,7 @@ func (s *SubmissionSrvc) createSubmissionWithValidatedInput(
 		// PUT EVALUATION, SUBMISSION SCORING SUBTASK ROWS
 		evalScoringSubtaskRows := make([]*EvalScoringSubtaskRow, 0)
 		submScoringSubtaskRows := make([]*SubmScoringSubtaskRow, 0)
-		for _, subtask := range task.SubtaskScores {
+		for _, subtask := range task.Subtasks {
 			stTestCount := 0
 			for _, test := range task.Tests {
 				for _, testSt := range test.Subtasks {
@@ -160,18 +160,18 @@ func (s *SubmissionSrvc) createSubmissionWithValidatedInput(
 		// PUT EVALUATION, SUBMISSION SCORING TESTGROUP ROWS
 		evalScoringTestgroupRows := make([]*EvalScoringTestgroupRow, 0)
 		submScoringTestgroupRows := make([]*SubmScoringTestgroupRow, 0)
-		for _, testGroup := range task.TestGroupInformation {
+		for _, testGroup := range task.TestGroups {
 			tgTests := 0
 			for _, test := range task.Tests {
-				if test.TestGroup != nil && *test.TestGroup == testGroup.TestGroupID {
+				if test.TestGroup != nil && *test.TestGroup == testGroup.GroupID {
 					tgTests++
 				}
 			}
 			evalRow := &EvalScoringTestgroupRow{
 				SubmUuid:         submUuid.String(),
-				SortKey:          fmt.Sprintf("eval#%s#scoring#testgroup#%02d", evalUuid.String(), testGroup.TestGroupID),
+				SortKey:          fmt.Sprintf("eval#%s#scoring#testgroup#%02d", evalUuid.String(), testGroup.GroupID),
 				StatementSubtask: testGroup.Subtask,
-				TestgroupScore:   testGroup.Score,
+				TestgroupScore:   testGroup.Points,
 				AcceptedTests:    0,
 				WrongTests:       0,
 				UntestedTests:    tgTests,
@@ -181,16 +181,16 @@ func (s *SubmissionSrvc) createSubmissionWithValidatedInput(
 
 			submRow := &SubmScoringTestgroupRow{
 				SubmUuid:         submUuid.String(),
-				SortKey:          fmt.Sprintf("subm#scoring#testgroup#%02d", testGroup.TestGroupID),
+				SortKey:          fmt.Sprintf("subm#scoring#testgroup#%02d", testGroup.GroupID),
 				StatementSubtask: testGroup.Subtask,
-				TestgroupScore:   testGroup.Score,
+				TestgroupScore:   testGroup.Points,
 				AcceptedTests:    0,
 				WrongTests:       0,
 				CurrentEvalUuid:  evalUuid.String(),
 				Version:          1,
 				UntestedTests:    tgTests,
 				Gsi1Pk:           1,
-				Gsi1SortKey:      fmt.Sprintf("%s#%s#scoring#testgroup#%02d", createdAt.Format(time.RFC3339), submUuid.String(), testGroup.TestGroupID),
+				Gsi1SortKey:      fmt.Sprintf("%s#%s#scoring#testgroup#%02d", createdAt.Format(time.RFC3339), submUuid.String(), testGroup.GroupID),
 			}
 
 			submScoringTestgroupRows = append(submScoringTestgroupRows, submRow)
@@ -406,16 +406,16 @@ func (s *SubmissionSrvc) createSubmissionWithValidatedInput(
 	var evalScoringTestgroups []*TestGroupResult = nil
 	if scoringMethod == "testgroup" {
 		evalScoringTestgroups = make([]*TestGroupResult, 0)
-		for _, testGroup := range task.TestGroupInformation {
+		for _, testGroup := range task.TestGroups {
 			tgTests := 0
 			for _, test := range task.Tests {
-				if test.TestGroup != nil && *test.TestGroup == testGroup.TestGroupID {
+				if test.TestGroup != nil && *test.TestGroup == testGroup.GroupID {
 					tgTests++
 				}
 			}
 			evalScoringTestgroups = append(evalScoringTestgroups, &TestGroupResult{
-				TestGroupID:      testGroup.TestGroupID,
-				TestGroupScore:   testGroup.Score,
+				TestGroupID:      testGroup.GroupID,
+				TestGroupScore:   testGroup.Points,
 				StatementSubtask: testGroup.Subtask,
 				AcceptedTests:    0,
 				WrongTests:       0,
@@ -434,7 +434,7 @@ func (s *SubmissionSrvc) createSubmissionWithValidatedInput(
 	var evalScoringSubtasks []*SubtaskResult = nil
 	if scoringMethod == "subtask" {
 		evalScoringSubtasks = make([]*SubtaskResult, 0)
-		for _, subtask := range task.SubtaskScores {
+		for _, subtask := range task.Subtasks {
 			stTestCount := 0
 			for _, test := range task.Tests {
 				for _, testSt := range test.Subtasks {
@@ -476,11 +476,11 @@ func (s *SubmissionSrvc) createSubmissionWithValidatedInput(
 	return res, nil
 }
 
-func determineScoringMethod(task *tasksrvc.TaskSubmEvalData) string {
-	if len(task.SubtaskScores) > 0 {
+func determineScoringMethod(task *tasksrvc.Task) string {
+	if len(task.Subtasks) > 0 {
 		return "subtask"
 	}
-	if len(task.TestGroupInformation) > 0 {
+	if len(task.TestGroups) > 0 {
 		return "testgroup"
 	}
 	return "tests"
@@ -521,8 +521,11 @@ func (s *SubmissionSrvc) CreateSubmission(ctx context.Context, p *CreateSubmissi
 		return nil, newErrUnauthorizedUsernameMismatch()
 	}
 
-	taskEvalData, err := s.taskSrvc.GetTaskSubmEvalData(ctx, p.TaskCodeID)
+	task, err := s.taskSrvc.GetTask(ctx, p.TaskCodeID)
 	if err != nil {
+		if e, ok := err.(*srvcerr.Error); ok && e.ErrorCode() == tasksrvc.ErrCodeTaskNotFound {
+			return nil, newErrTaskNotFound()
+		}
 		return nil, fmt.Errorf("error getting task: %w", err)
 	}
 
@@ -538,5 +541,5 @@ func (s *SubmissionSrvc) CreateSubmission(ctx context.Context, p *CreateSubmissi
 		return nil, newErrInvalidProgLang()
 	}
 
-	return s.createSubmissionWithValidatedInput(&submContent.Value, userByUsername, taskEvalData, foundPLang)
+	return s.createSubmissionWithValidatedInput(&submContent.Value, userByUsername, task, foundPLang)
 }

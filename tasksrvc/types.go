@@ -32,17 +32,23 @@ type Task struct {
 	CPUTimeLimitSeconds    float64
 	OriginOlympiad         string
 	IllustrationImgURL     *string
-	DifficultyRating       int
+	DifficultyRating       *int
 	DefaultMdStatement     *MarkdownStatement
-	Examples               []*Example
+	Examples               []Example
 	DefaultPdfStatementURL *string
 	OriginNotes            map[string]string
-	VisibleInputSubtasks   []*StInputs
+	VisibleInputSubtasks   []StInputs
+
+	Tests              []Test
+	TestlibCheckerCode string
+	Subtasks           []Subtask
+	TestGroups         []TestGroup
 }
 
-type TaskEvalSubtaskScore struct {
+type Subtask struct {
 	SubtaskID int
 	Score     int
+	TestIDs   []int
 }
 
 type TaskEvalTestGroupInformation struct {
@@ -56,13 +62,12 @@ type TaskSubmEvalData struct {
 	TaskFullName         string
 	MemoryLimitMegabytes int
 	CPUTimeLimitSeconds  float64
-	Tests                []*TaskEvalTestInformation
+	Tests                []*Test
 	TestlibCheckerCode   string
-	SubtaskScores        []*TaskEvalSubtaskScore
-	TestGroupInformation []*TaskEvalTestGroupInformation
+	TestGroups           []*TestGroup
 }
 
-type TaskEvalTestInformation struct {
+type Test struct {
 	TestID          int
 	FullInputS3URI  string
 	InputSha256     string
@@ -105,8 +110,8 @@ type PdfStatement struct {
 	PdfSHA2    string
 }
 
-// ImageUUIDMap represents a mapping between image UUIDs and their S3 keys.
-type ImageUUIDMap struct {
+// ImgUuidS3Pair represents a mapping between image UUIDs and their S3 keys.
+type ImgUuidS3Pair struct {
 	UUID  string
 	S3Key string
 }
@@ -131,7 +136,7 @@ type PutPublicTaskInput struct {
 	TestChsums  []TestChecksum
 	PdfSttments []PdfStatement
 	MdSttments  []MarkdownStatement
-	ImgUuidMap  []ImageUUIDMap
+	ImgUuidMap  []ImgUuidS3Pair
 	Examples    []Example
 	OriginNotes []OriginNote
 }
