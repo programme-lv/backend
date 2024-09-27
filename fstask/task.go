@@ -60,15 +60,8 @@ type Task struct {
 
 	OriginNotes       map[string]string
 	OriginInstitution string
-}
 
-type mDStatement struct {
-	Language string
-	Story    string
-	Input    string
-	Output   string
-	Notes    *string
-	Scoring  *string
+	Solutions []Solution
 }
 
 // tests are executed in order of ID

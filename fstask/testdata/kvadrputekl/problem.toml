@@ -38,8 +38,8 @@ lv = "Uzdevums parādījās Latvijas 37. informātikas olimpiādes (2023./2024. 
 
 [[solutions]]
   filename = "kp_kp_tle.cpp"
-  score_lt = 50
-  author = "Krišjānis Petručeņā"
+  score_lte = 50
+  author = "Krišjānis Petručeņa"
 
 [[solutions]]
   filename = "kp_nv.cpp"

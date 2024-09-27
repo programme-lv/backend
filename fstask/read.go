@@ -203,6 +203,11 @@ func Read(taskRootDirPath string) (*Task, error) {
 		log.Printf("Error reading visible input subtasks: %v\n", err)
 	}
 
+	err = t.LoadSolutionsFromDir(taskDir)
+	if err != nil {
+		return nil, fmt.Errorf("error reading solutions: %w", err)
+	}
+
 	return t, nil
 }
 
