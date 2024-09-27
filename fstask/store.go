@@ -400,7 +400,7 @@ func (task *Task) storeExamples(examplesDirPath string) error {
 			return fmt.Errorf("error writing answer file: %w", err)
 		}
 
-		if e.MdNote != nil && len(e.MdNote) > 0 {
+		if len(e.MdNote) > 0 {
 			err = os.WriteFile(mdPath, e.MdNote, 0644)
 			if err != nil {
 				log.Printf("Error writing Markdown note file %s: %v\n", mdPath, err)
