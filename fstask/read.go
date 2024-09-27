@@ -177,9 +177,9 @@ func Read(taskRootDirPath string) (*Task, error) {
 		}
 	}
 
-	t.pdfStatements, err = readPDFStatements(specVers, taskRootDirPath)
+	err = t.LoadPDFStatementsFromDir(taskDir)
 	if err != nil {
-		log.Printf("Error reading PDF statements: %v\n", err)
+		return nil, fmt.Errorf("error reading PDF statements: %w", err)
 	}
 
 	err = t.LoadMarkdownStatementsFromDir(taskDir)

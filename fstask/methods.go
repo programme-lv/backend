@@ -211,39 +211,13 @@ func (t *Task) AddTestGroup(points int, public bool, testIDs []int, subtask int)
 }
 
 func (t *Task) GetPDFStatement(lang string) ([]byte, error) {
-	statement, ok := t.pdfStatements[lang]
-	if !ok {
-		return nil, fmt.Errorf("pdf statement for language %s not found", lang)
+	for _, statement := range t.pdfStatements {
+		if statement.Language == lang {
+			return statement.Content, nil
+		}
 	}
 
-	return statement, nil
-}
-
-type PDFStatement struct {
-	Language string
-	Content  []byte
-}
-
-func (t *Task) GetPdfStatements() []PDFStatement {
-	pdfStatements := make([]PDFStatement, 0, len(t.pdfStatements))
-	for lang, statement := range t.pdfStatements {
-		pdfStatements = append(pdfStatements, PDFStatement{
-			Language: lang,
-			Content:  statement,
-		})
-	}
-
-	return pdfStatements
-}
-
-func (t *Task) AddPDFStatement(lang string, statement []byte) error {
-	_, ok := t.pdfStatements[lang]
-	if ok {
-		return fmt.Errorf("pdf statement for language %s already exists", lang)
-	}
-
-	t.pdfStatements[lang] = statement
-	return nil
+	return nil, fmt.Errorf("pdf statement for language %s not found", lang)
 }
 
 func (t *Task) AddVisibleInputSubtask(subtask int) error {

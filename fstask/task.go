@@ -18,7 +18,7 @@ type Task struct {
 	visibleInputSubtasks []int
 
 	MarkdownStatements []MarkdownStatement
-	pdfStatements      map[string][]byte // map language to pdf
+	pdfStatements      []PDFStatement
 
 	/*
 		=== TESTS ===
@@ -109,7 +109,7 @@ func NewTask(taskName string) (*Task, error) {
 		examples:             []example{},
 		visibleInputSubtasks: []int{},
 		MarkdownStatements:   []MarkdownStatement{},
-		pdfStatements:        map[string][]byte{},
+		pdfStatements:        []PDFStatement{},
 		testFnamesSorted:     []string{},
 		testFilenameToID:     map[string]int{},
 		testIDOverwrite:      map[string]int{},
