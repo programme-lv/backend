@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
+	"time"
 
 	"github.com/spf13/cobra"
 )
@@ -61,5 +63,7 @@ func importLio2023Task(src string, dst string) error {
 	fmt.Println("Transforming LIO 2023 task with the following parameters:")
 	fmt.Printf("Source: %s\n", src)
 	fmt.Printf("Destination: %s\n", dst)
+	path := filepath.Join(dst, filepath.Base(src)+"-"+time.Now().Format("2006-01-02-15-04-05"))
+	os.Mkdir(path, 0755)
 	return nil
 }
