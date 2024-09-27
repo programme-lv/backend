@@ -17,8 +17,8 @@ type Task struct {
 	// exampleFilenameToID  map[string]int
 	visibleInputSubtasks []int
 
-	mdStatements  []mDStatement
-	pdfStatements map[string][]byte // map language to pdf
+	MarkdownStatements []MarkdownStatement
+	pdfStatements      map[string][]byte // map language to pdf
 
 	/*
 		=== TESTS ===
@@ -108,7 +108,7 @@ func NewTask(taskName string) (*Task, error) {
 		CpuTimeLimInSeconds:  1.0,
 		examples:             []example{},
 		visibleInputSubtasks: []int{},
-		mdStatements:         []mDStatement{},
+		MarkdownStatements:   []MarkdownStatement{},
 		pdfStatements:        map[string][]byte{},
 		testFnamesSorted:     []string{},
 		testFilenameToID:     map[string]int{},

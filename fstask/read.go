@@ -14,33 +14,9 @@ func init() {
 }
 
 func Read(taskRootDirPath string) (*Task, error) {
-	t := Task{
-		problemTomlContent:   []byte{},
-		ProblemTags:          []string{},
-		TaskAuthors:          []string{},
-		FullName:             "",
-		OriginOlympiad:       "",
-		DifficultyOneToFive:  0,
-		MemoryLimInMegabytes: 0,
-		CpuTimeLimInSeconds:  0,
-		examples:             []example{},
-		visibleInputSubtasks: []int{},
-		mdStatements:         []mDStatement{},
-		pdfStatements:        map[string][]byte{},
-		testFnamesSorted:     []string{},
-		testFilenameToID:     map[string]int{},
-		testIDOverwrite:      map[string]int{},
-		testIDToFilename:     map[int]string{},
-		tests:                []test{},
-		testGroupIDs:         []int{},
-		isTGroupPublic:       map[int]bool{},
-		tGroupPoints:         map[int]int{},
-		tGroupToStMap:        map[int]int{},
-		tGroupTestIDs:        map[int][]int{},
-		tGroupFnames:         map[int][]string{},
-		illstrImgFname:       "",
-		assets:               []asset{},
-		OriginNotes:          map[string]string{},
+	t, err := NewTask("")
+	if err != nil {
+		return nil, fmt.Errorf("error creating task: %w", err)
 	}
 
 	problemTomlPath := filepath.Join(taskRootDirPath, "problem.toml")
@@ -206,9 +182,9 @@ func Read(taskRootDirPath string) (*Task, error) {
 		log.Printf("Error reading PDF statements: %v\n", err)
 	}
 
-	err = t.readMdSttmentsFromTaskDir(taskRootDirPath)
+	err = t.LoadMarkdownStatementsFromDir(taskDir)
 	if err != nil {
-		log.Printf("Error reading MD statements from root dir: %v\n", err)
+		return nil, fmt.Errorf("error reading markdown statements: %w", err)
 	}
 
 	// read task illustration
@@ -227,7 +203,7 @@ func Read(taskRootDirPath string) (*Task, error) {
 		log.Printf("Error reading visible input subtasks: %v\n", err)
 	}
 
-	return &t, nil
+	return t, nil
 }
 
 func readVisibleInputSubtasks(_ string, pToml []byte) ([]int, error) {

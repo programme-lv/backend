@@ -190,7 +190,7 @@ func (task *Task) storeMdStatements(mdStatementDir string) error {
 	}
 	log.Println("Markdown statements directory created successfully")
 
-	for _, v := range task.mdStatements {
+	for _, v := range task.MarkdownStatements {
 		// create language directory
 		dirPath := filepath.Join(mdStatementDir, v.Language)
 		err = os.MkdirAll(dirPath, 0755)
