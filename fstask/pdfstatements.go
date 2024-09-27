@@ -7,14 +7,14 @@ import (
 	"strings"
 )
 
-type PDFStatement struct {
+type PdfStatement struct {
 	Language string
 	Content  []byte
 }
 
 // ReadPDFStatementsFromTaskDir reads PDF statements from the specified task directory.
 // It returns a slice of PDFStatement and an error, if any.
-func ReadPDFStatementsFromTaskDir(dir TaskDirInfo) ([]PDFStatement, error) {
+func ReadPDFStatementsFromTaskDir(dir TaskDirInfo) ([]PdfStatement, error) {
 	requiredSpec := SemVer{major: 2}
 	if dir.Spec.LessThan(requiredSpec) {
 		format := "specification version %s is not supported, required at least %s"
@@ -34,7 +34,7 @@ func ReadPDFStatementsFromTaskDir(dir TaskDirInfo) ([]PDFStatement, error) {
 		return nil, fmt.Errorf("error reading PDF directory '%s': %w", pdfDirPath, err)
 	}
 
-	var pdfStatements []PDFStatement
+	var pdfStatements []PdfStatement
 
 	for _, file := range files {
 		if !strings.HasSuffix(file.Name(), ".pdf") {
@@ -54,7 +54,7 @@ func ReadPDFStatementsFromTaskDir(dir TaskDirInfo) ([]PDFStatement, error) {
 			return nil, fmt.Errorf("invalid PDF filename (empty language identifier): %s", file.Name())
 		}
 
-		pdfStatements = append(pdfStatements, PDFStatement{
+		pdfStatements = append(pdfStatements, PdfStatement{
 			Language: lang,
 			Content:  content,
 		})
@@ -69,6 +69,6 @@ func (task *Task) LoadPDFStatementsFromDir(dir TaskDirInfo) error {
 	if err != nil {
 		return fmt.Errorf("failed to read PDF statements: %w", err)
 	}
-	task.pdfStatements = pdfStatements
+	task.PdfStatements = pdfStatements
 	return nil
 }

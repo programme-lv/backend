@@ -108,10 +108,8 @@ func ParseLio2024TaskDir(dirPath string) (*fstask.Task, error) {
 		return nil, fmt.Errorf("failed to read PDF file: %w", err)
 	}
 
-	err = task.AddPDFStatement("lv", pdfBytes)
-	if err != nil {
-		return nil, fmt.Errorf("failed to add PDF statement: %w", err)
-	}
+	task.PdfStatements = append(task.PdfStatements,
+		fstask.PdfStatement{Language: "lv", Content: pdfBytes})
 
 	task.AddVisibleInputSubtask(1)
 	task.OriginOlympiad = "LIO"

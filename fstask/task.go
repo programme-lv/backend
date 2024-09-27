@@ -18,7 +18,7 @@ type Task struct {
 	visibleInputSubtasks []int
 
 	MarkdownStatements []MarkdownStatement
-	pdfStatements      []PDFStatement
+	PdfStatements      []PdfStatement
 
 	/*
 		=== TESTS ===
@@ -56,15 +56,10 @@ type Task struct {
 
 	illstrImgFname string
 
-	assets []asset
+	assets []Asset
 
 	OriginNotes       map[string]string
 	OriginInstitution string
-}
-
-type asset struct {
-	RelativePath string
-	Content      []byte
 }
 
 type mDStatement struct {
@@ -109,7 +104,7 @@ func NewTask(taskName string) (*Task, error) {
 		examples:             []example{},
 		visibleInputSubtasks: []int{},
 		MarkdownStatements:   []MarkdownStatement{},
-		pdfStatements:        []PDFStatement{},
+		PdfStatements:        []PdfStatement{},
 		testFnamesSorted:     []string{},
 		testFilenameToID:     map[string]int{},
 		testIDOverwrite:      map[string]int{},
@@ -122,7 +117,7 @@ func NewTask(taskName string) (*Task, error) {
 		tGroupTestIDs:        map[int][]int{},
 		tGroupFnames:         map[int][]string{},
 		illstrImgFname:       "",
-		assets:               []asset{},
+		assets:               []Asset{},
 		OriginNotes:          map[string]string{},
 		OriginInstitution:    "",
 	}

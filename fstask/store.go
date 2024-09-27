@@ -263,7 +263,7 @@ func (task *Task) storePDFStatements(pdfStatementsDir string) error {
 	}
 	log.Println("PDF statements directory created successfully")
 
-	for _, v := range task.pdfStatements {
+	for _, v := range task.PdfStatements {
 		fname := fmt.Sprintf("%s.pdf", v.Language)
 		fpath := filepath.Join(pdfStatementsDir, fname)
 		err = os.WriteFile(fpath, []byte(v.Content), 0644)

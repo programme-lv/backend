@@ -211,7 +211,7 @@ func (t *Task) AddTestGroup(points int, public bool, testIDs []int, subtask int)
 }
 
 func (t *Task) GetPDFStatement(lang string) ([]byte, error) {
-	for _, statement := range t.pdfStatements {
+	for _, statement := range t.PdfStatements {
 		if statement.Language == lang {
 			return statement.Content, nil
 		}
@@ -243,11 +243,6 @@ func (t *Task) GetVisibleInputSubtaskIds() []int {
 	return t.visibleInputSubtasks
 }
 
-type Asset struct {
-	RelativePath string // relative path from assets directory
-	Content      []byte
-}
-
 func (t *Task) GetTaskIllustrationImage() *Asset {
 	for _, asset := range t.assets {
 		if asset.RelativePath == t.illstrImgFname {
@@ -261,7 +256,7 @@ func (t *Task) GetTaskIllustrationImage() *Asset {
 	return nil
 }
 
-func (t *Task) GetAssets() []asset {
+func (t *Task) GetAssets() []Asset {
 	return t.assets
 }
 
