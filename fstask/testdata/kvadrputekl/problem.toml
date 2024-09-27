@@ -29,3 +29,20 @@ lv = "Uzdevums parādījās Latvijas 37. informātikas olimpiādes (2023./2024. 
   subtask = 2
   public = false 
   test_filenames = ['kp02a', 'kp02b', 'kp02c']
+
+[[solutions]]
+  filename = "kp_kp_ok.cpp"
+  score_eq = 100
+  author = "Krišjānis Petručeņa"
+  og_max_exec_time = 0.035
+
+[[solutions]]
+  filename = "kp_kp_tle.cpp"
+  score_lt = 50
+  author = "Krišjānis Petručeņā"
+
+[[solutions]]
+  filename = "kp_nv.cpp"
+  score_eq = 100
+  author = "Normunds Vilciņš"
+  og_max_exec_time = 0.137
