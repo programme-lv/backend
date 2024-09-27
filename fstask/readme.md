@@ -1,5 +1,18 @@
 ## version history
 
+### version "v2.5.0"
+
+- added solutions directory
+- added solutions information to problem.toml
+
+```toml
+[[solutions]]
+  filename = "kp_kp_ok.cpp"
+  score_eq = 100
+  author = "Krišjānis Petručeņa"
+  og_max_exec_time = 0.035
+```
+
 ### version "v2.4.0"
 
 - added assets directory

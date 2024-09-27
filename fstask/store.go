@@ -11,7 +11,7 @@ import (
 	"github.com/pelletier/go-toml/v2"
 )
 
-const proglvFSTaskFormatSpecVersOfScript = "v2.4.0"
+const proglvFSTaskFormatSpecVersOfScript = "2.5.0"
 
 type ProblemTOML struct {
 	Specification        string           `toml:"specification"`

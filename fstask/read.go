@@ -74,7 +74,7 @@ func Read(taskRootDirPath string) (*Task, error) {
 	}
 
 	if semVersCmpRes > 0 {
-		return nil, fmt.Errorf("unsupported specification version (too new): %s", specVers)
+		return nil, fmt.Errorf("unsupported specification version (too new): %s, expected at most %s", specVers, proglvFSTaskFormatSpecVersOfScript)
 	}
 
 	t.FullName, err = readTaskName(specVers, string(problemTomlContent))
@@ -82,12 +82,28 @@ func Read(taskRootDirPath string) (*Task, error) {
 		return nil, fmt.Errorf("error reading task name: %w", err)
 	}
 
-	err = t.readConstraintsFromToml(problemTomlContent)
+	spec, err := getSemVersFromToml(problemTomlContent)
+	if err != nil {
+		return nil, fmt.Errorf("error reading specification: %w", err)
+	}
+
+	absPath, err := filepath.Abs(taskRootDirPath)
+	if err != nil {
+		return nil, fmt.Errorf("error getting absolute path: %w", err)
+	}
+
+	taskDir := TaskDirInfo{
+		Path: absPath,
+		Spec: spec,
+		Info: problemTomlContent,
+	}
+
+	err = t.LoadConstraintsFromDir(taskDir)
 	if err != nil {
 		return nil, fmt.Errorf("error reading constraints: %w", err)
 	}
 
-	err = t.readMetadataFromToml(problemTomlContent)
+	err = t.LoadMetadataFromDir(taskDir)
 	if err != nil {
 		return nil, fmt.Errorf("error reading metadata: %w", err)
 	}

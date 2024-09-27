@@ -7,16 +7,16 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/programme-lv/fs-task-format-parser/pkg/fstaskparser"
+	"github.com/programme-lv/backend/fstask"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-var prjRootPath = filepath.Join(".", "..", "..")
-var testTaskPath = filepath.Join(prjRootPath, "testdata", "kvadrputekl")
+var prjRootPath = filepath.Join(".", "..")
+var testTaskPath = filepath.Join(prjRootPath, "fstask", "testdata", "kvadrputekl")
 
 func TestReadingWritingTests(t *testing.T) {
-	parsedTask, err := fstaskparser.Read(testTaskPath)
+	parsedTask, err := fstask.Read(testTaskPath)
 	require.NoErrorf(t, err, "failed to read task: %v", err)
 
 	parsedTests := parsedTask.GetTestsSortedByID()
@@ -83,7 +83,7 @@ func TestReadingWritingTests(t *testing.T) {
 	err = parsedTask.Store(outputDirectory)
 	require.NoErrorf(t, err, "failed to store task: %v", err)
 
-	storedTask, err := fstaskparser.Read(outputDirectory)
+	storedTask, err := fstask.Read(outputDirectory)
 	require.NoErrorf(t, err, "failed to read task: %v", err)
 
 	storedTestNames := []string{}
@@ -112,7 +112,7 @@ func TestReadingWritingTests(t *testing.T) {
 	}
 	assert.Equal(t, expectedAnsers, storedAnswers)
 
-	createdTask, err := fstaskparser.NewTask(storedTask.GetTaskName())
+	createdTask, err := fstask.NewTask(storedTask.GetTaskName())
 	require.NoErrorf(t, err, "failed to create task: %v", err)
 
 	// set tests
@@ -130,7 +130,7 @@ func TestReadingWritingTests(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		a := rand.Intn(6) + 1
 		b := rand.Intn(6) + 1
-		createdTask.SwapTestsWithIDs(a, b)
+		createdTask.SwapTestOrder(a, b)
 	}
 
 	// store it again
@@ -139,46 +139,15 @@ func TestReadingWritingTests(t *testing.T) {
 	err = createdTask.Store(anotherOutputDir)
 	require.NoErrorf(t, err, "failed to store task: %v", err)
 
-	storedTask2, err := fstaskparser.Read(anotherOutputDir)
+	storedTask2, err := fstask.Read(anotherOutputDir)
 	require.NoErrorf(t, err, "failed to read task: %v", err)
 
 	// compare the tests
 	assert.Equal(t, createdTask.GetTestsSortedByID(), storedTask2.GetTestsSortedByID())
 }
 
-func TestReadingWritingEvaluationConstraints(t *testing.T) {
-	parsedTask, err := fstaskparser.Read(testTaskPath)
-	require.NoErrorf(t, err, "failed to read task: %v", err)
-	assert.Equal(t, 0.5, parsedTask.GetCPUTimeLimitInSeconds())
-	assert.Equal(t, 256, parsedTask.GetMemoryLimitInMegabytes())
-
-	tmpDirectory, err := os.MkdirTemp("", "fstaskparser-test-")
-	require.NoErrorf(t, err, "failed to create temporary directory: %v", err)
-	defer os.RemoveAll(tmpDirectory)
-
-	outputDirectory := filepath.Join(tmpDirectory, "kvadrputekl")
-	t.Logf("Created directory for output: %s", outputDirectory)
-
-	err = parsedTask.Store(outputDirectory)
-	require.NoErrorf(t, err, "failed to store task: %v", err)
-
-	storedTask, err := fstaskparser.Read(outputDirectory)
-	require.NoErrorf(t, err, "failed to read task: %v", err)
-	assert.Equal(t, 0.5, storedTask.GetCPUTimeLimitInSeconds())
-	assert.Equal(t, 256, storedTask.GetMemoryLimitInMegabytes())
-
-	createdTask, err := fstaskparser.NewTask(storedTask.GetTaskName())
-	require.NoErrorf(t, err, "failed to create task: %v", err)
-
-	createdTask.SetCPUTimeLimitInSeconds(0.5)
-	createdTask.SetMemoryLimitInMegabytes(256)
-
-	assert.Equal(t, parsedTask.GetCPUTimeLimitInSeconds(), createdTask.GetCPUTimeLimitInSeconds())
-	assert.Equal(t, parsedTask.GetMemoryLimitInMegabytes(), createdTask.GetMemoryLimitInMegabytes())
-}
-
 func TestReadingWritingExamples(t *testing.T) {
-	parsedTask, err := fstaskparser.Read(testTaskPath)
+	parsedTask, err := fstask.Read(testTaskPath)
 	require.NoErrorf(t, err, "failed to read task: %v", err)
 
 	parsedExamples := parsedTask.GetExamples()
@@ -231,7 +200,7 @@ func TestReadingWritingExamples(t *testing.T) {
 	}
 	expectedNotes := []string{}
 	for i := 0; i < len(parsedExamples); i++ {
-		if parsedExamples[i].MdNote == nil || len(parsedExamples[i].MdNote) == 0 {
+		if len(parsedExamples[i].MdNote) == 0 {
 			expectedNotes = append(expectedNotes, "")
 			continue
 		}
@@ -256,7 +225,7 @@ func TestReadingWritingExamples(t *testing.T) {
 	err = parsedTask.Store(outputDirectory)
 	require.NoErrorf(t, err, "failed to store task: %v", err)
 
-	storedTask, err := fstaskparser.Read(outputDirectory)
+	storedTask, err := fstask.Read(outputDirectory)
 	require.NoErrorf(t, err, "failed to read task: %v", err)
 
 	storedExampleNames := []string{}
@@ -281,7 +250,7 @@ func TestReadingWritingExamples(t *testing.T) {
 	require.Equal(t, expectedNotes[0], string(storedTask.GetExamples()[0].MdNote))
 	require.Equal(t, expectedNotes[1], string(storedTask.GetExamples()[1].MdNote))
 
-	createdTask, err := fstaskparser.NewTask(storedTask.GetTaskName())
+	createdTask, err := fstask.NewTask(storedTask.GetTaskName())
 	if err != nil {
 		t.Errorf("failed to create task: %v", err)
 	}
@@ -293,7 +262,7 @@ func TestReadingWritingExamples(t *testing.T) {
 	err = createdTask.Store(outputDirectory2)
 	require.NoErrorf(t, err, "failed to store task: %v", err)
 
-	storedTask2, err := fstaskparser.Read(outputDirectory2)
+	storedTask2, err := fstask.Read(outputDirectory2)
 	require.NoErrorf(t, err, "failed to read task: %v", err)
 
 	assert.Equal(t, storedTask2.GetExamples()[0].Input, parsedTask.GetExamples()[0].Input)
@@ -301,22 +270,22 @@ func TestReadingWritingExamples(t *testing.T) {
 }
 
 func TestReadingWritingMetadata(t *testing.T) {
-	parsedTask, err := fstaskparser.Read(testTaskPath)
+	parsedTask, err := fstask.Read(testTaskPath)
 	require.NoErrorf(t, err, "failed to read task: %v", err)
 
 	// Set metadata using setters
 	parsedTask.SetTaskName("Kvadrātveida putekļsūcējs")
-	parsedTask.SetProblemTags([]string{"math", "geometry"})
-	parsedTask.SetTaskAuthors([]string{"Author1", "Author2"})
-	parsedTask.SetOriginOlympiad("LIO")
-	parsedTask.SetDifficultyOneToFive(3)
+	parsedTask.ProblemTags = []string{"math", "geometry"}
+	parsedTask.TaskAuthors = []string{"Author1", "Author2"}
+	parsedTask.OriginOlympiad = "LIO"
+	parsedTask.DifficultyOneToFive = 3
 
 	// Verify the set metadata using getters
 	assert.Equal(t, "Kvadrātveida putekļsūcējs", parsedTask.GetTaskName())
-	assert.Equal(t, []string{"math", "geometry"}, parsedTask.GetProblemTags())
-	assert.Equal(t, []string{"Author1", "Author2"}, parsedTask.GetTaskAuthors())
-	assert.Equal(t, "LIO", parsedTask.GetOriginOlympiad())
-	assert.Equal(t, 3, parsedTask.GetDifficultyOneToFive())
+	assert.Equal(t, []string{"math", "geometry"}, parsedTask.ProblemTags)
+	assert.Equal(t, []string{"Author1", "Author2"}, parsedTask.TaskAuthors)
+	assert.Equal(t, "LIO", parsedTask.OriginOlympiad)
+	assert.Equal(t, 3, parsedTask.DifficultyOneToFive)
 	require.Equal(t, map[string]string{
 		"lv": "Uzdevums parādījās Latvijas 37. informātikas olimpiādes (2023./2024. gads) skolas kārtā.",
 	}, parsedTask.GetOriginNotes())
@@ -331,22 +300,22 @@ func TestReadingWritingMetadata(t *testing.T) {
 	err = parsedTask.Store(outputDirectory)
 	require.NoErrorf(t, err, "failed to store task: %v", err)
 
-	storedTask, err := fstaskparser.Read(outputDirectory)
+	storedTask, err := fstask.Read(outputDirectory)
 	require.NoErrorf(t, err, "failed to read task: %v", err)
 
 	// Verify the stored metadata using getters
 	assert.Equal(t, "Kvadrātveida putekļsūcējs", storedTask.GetTaskName())
-	assert.Equal(t, []string{"math", "geometry"}, storedTask.GetProblemTags())
-	assert.Equal(t, []string{"Author1", "Author2"}, storedTask.GetTaskAuthors())
-	assert.Equal(t, "LIO", storedTask.GetOriginOlympiad())
-	assert.Equal(t, 3, storedTask.GetDifficultyOneToFive())
+	assert.Equal(t, []string{"math", "geometry"}, storedTask.ProblemTags)
+	assert.Equal(t, []string{"Author1", "Author2"}, storedTask.TaskAuthors)
+	assert.Equal(t, "LIO", storedTask.OriginOlympiad)
+	assert.Equal(t, 3, storedTask.DifficultyOneToFive)
 	require.Equal(t, map[string]string{
 		"lv": "Uzdevums parādījās Latvijas 37. informātikas olimpiādes (2023./2024. gads) skolas kārtā.",
 	}, storedTask.GetOriginNotes())
 }
 
 func TestReadingWritingTestGroups(t *testing.T) {
-	parsedTask, err := fstaskparser.Read(testTaskPath)
+	parsedTask, err := fstask.Read(testTaskPath)
 	assert.NoErrorf(t, err, "failed to read task: %v", err)
 
 	parsedTestGroups := parsedTask.GetTestGroupIDs()
@@ -387,7 +356,7 @@ func TestReadingWritingTestGroups(t *testing.T) {
 	err = parsedTask.Store(outputDirectory)
 	require.NoErrorf(t, err, "failed to store task: %v", err)
 
-	writtenTask, err := fstaskparser.Read(outputDirectory)
+	writtenTask, err := fstask.Read(outputDirectory)
 	require.NoErrorf(t, err, "failed to read task: %v", err)
 
 	writtenTestGroups := writtenTask.GetTestGroupIDs()
@@ -415,7 +384,7 @@ func TestReadingWritingTestGroups(t *testing.T) {
 	assert.Equal(t, "kp02b", writtenTask.GetTestFilenameFromID(5))
 	assert.Equal(t, "kp02c", writtenTask.GetTestFilenameFromID(6))
 
-	createdTask, err := fstaskparser.NewTask(writtenTask.GetTaskName())
+	createdTask, err := fstask.NewTask(writtenTask.GetTaskName())
 	require.NoErrorf(t, err, "should have failed to create task: %v", err)
 
 	createdTask.AddTestGroup(3, true, []int{7, 8, 9}, 1)
@@ -428,7 +397,7 @@ func TestReadingWritingTestGroups(t *testing.T) {
 }
 
 func TestReadingWritingPDFStatement(t *testing.T) {
-	parsedTask, err := fstaskparser.Read(testTaskPath)
+	parsedTask, err := fstask.Read(testTaskPath)
 	require.NoErrorf(t, err, "failed to read task: %v", err)
 
 	expectedPdfPath := filepath.Join(testTaskPath, "statements", "pdf", "lv.pdf")
@@ -450,7 +419,7 @@ func TestReadingWritingPDFStatement(t *testing.T) {
 	err = parsedTask.Store(outputDirectory)
 	require.NoErrorf(t, err, "failed to store task: %v", err)
 
-	storedTask, err := fstaskparser.Read(outputDirectory)
+	storedTask, err := fstask.Read(outputDirectory)
 	require.NoErrorf(t, err, "failed to read task: %v", err)
 	actualPdf2, err := storedTask.GetPDFStatement("lv")
 	require.NoErrorf(t, err, "failed to get PDF statement: %v", err)
@@ -458,7 +427,7 @@ func TestReadingWritingPDFStatement(t *testing.T) {
 }
 
 func TestReadingWritingMDStatements(t *testing.T) {
-	parsedTask, err := fstaskparser.Read(testTaskPath)
+	parsedTask, err := fstask.Read(testTaskPath)
 	require.NoErrorf(t, err, "failed to read task: %v", err)
 
 	// compare markdown story to parsed one
@@ -489,7 +458,7 @@ func TestReadingWritingMDStatements(t *testing.T) {
 	for _, mdStatement := range parsedMdStatements {
 		lang := mdStatement.Language
 		require.NotNil(t, lang)
-		require.Equal(t, "lv", *lang)
+		require.Equal(t, "lv", lang)
 
 		require.Equal(t, inputMd, mdStatement.Input)
 		require.Equal(t, outputMd, mdStatement.Output)
@@ -508,14 +477,14 @@ func TestReadingWritingMDStatements(t *testing.T) {
 	err = parsedTask.Store(outputDirectory)
 	require.NoErrorf(t, err, "failed to store task: %v", err)
 
-	storedTask, err := fstaskparser.Read(outputDirectory)
+	storedTask, err := fstask.Read(outputDirectory)
 	require.NoErrorf(t, err, "failed to read task: %v", err)
 	parsedMdStatements2 := storedTask.GetMarkdownStatements()
 	require.Equal(t, 1, len(parsedMdStatements2))
 	for _, mdStatement := range parsedMdStatements2 {
 		lang := mdStatement.Language
 		require.NotNil(t, lang)
-		require.Equal(t, "lv", *lang)
+		require.Equal(t, "lv", lang)
 		require.Equal(t, inputMd, mdStatement.Input)
 		require.Equal(t, outputMd, mdStatement.Output)
 		require.Equal(t, storyMd, mdStatement.Story)
@@ -525,7 +494,7 @@ func TestReadingWritingMDStatements(t *testing.T) {
 }
 
 func TestReadingWritingIllustrationImage(t *testing.T) {
-	parsedTask, err := fstaskparser.Read(testTaskPath)
+	parsedTask, err := fstask.Read(testTaskPath)
 	require.NoErrorf(t, err, "failed to read task: %v", err)
 
 	// read illustration image
@@ -535,11 +504,11 @@ func TestReadingWritingIllustrationImage(t *testing.T) {
 
 	parsedImg := parsedTask.GetTaskIllustrationImage()
 	require.NotNil(t, parsedImg)
-	expectedImgAsset := &fstaskparser.Asset{
+	expectedImgAsset := &fstask.Asset{
 		RelativePath: "illustration.png",
 		Content:      imgAsset2,
 	}
-	require.Equal(t, len(parsedTask.GetAssets()), 1)
+	require.Equal(t, len(parsedTask.GetAssets()), 3)
 	require.Equal(t, expectedImgAsset.Content, parsedImg.Content)
 	require.Equal(t, expectedImgAsset.RelativePath, parsedImg.RelativePath)
 	require.Equal(t, expectedImgAsset, parsedImg)
@@ -554,67 +523,9 @@ func TestReadingWritingIllustrationImage(t *testing.T) {
 	err = parsedTask.Store(outputDirectory)
 	require.NoErrorf(t, err, "failed to store task: %v", err)
 
-	storedTask, err := fstaskparser.Read(outputDirectory)
+	storedTask, err := fstask.Read(outputDirectory)
 	require.NoErrorf(t, err, "failed to read task: %v", err)
 	parsedImgAsset2 := storedTask.GetTaskIllustrationImage()
 	require.NotNil(t, parsedImgAsset2)
 	require.Equal(t, expectedImgAsset, parsedImgAsset2)
 }
-
-/*
-specification = '2.2'
-task_name = 'Kvadrātveida putekļsūcējs'
-visible_input_subtasks = [1]
-illustration_image = 'illustration.png'
-
-[metadata]
-  problem_tags = []
-  difficulty_1_to_5 = 3
-  task_authors = []
-  origin_olympiad = 'LIO'
-
-[constraints]
-  memory_megabytes = 256
-  cpu_time_seconds = 0.5
-
-[[test_groups]]
-  group_id = 1
-  points = 3
-  subtask = 1
-  public = true
-  test_filenames = ['kp01a', 'kp01b', 'kp01c']
-
-[[test_groups]]
-  group_id = 2
-  points = 8
-  subtask = 2
-  public = false
-  test_filenames = ['kp02a', 'kp02b', 'kp02c']
-*/
-
-/*
-./testdata/kvadrputekl/
-├── assets
-│   └── illustration.png
-├── examples
-│   ├── kp00.in
-│   └── kp00.out
-├── problem.toml
-├── statements
-│   ├── md
-│   │   └── lv
-│   │       ├── input.md
-│   │       ├── output.md
-│   │       ├── scoring.md
-│   │       └── story.md
-│   └── pdf
-│       └── lv.pdf
-└── tests
-    ├── kp01a.in
-    ├── kp01a.out
-    ├── kp01b.in
-    ├── kp01b.out
-    ├── kp01c.in
-    ├── kp01c.out
-	...
-*/

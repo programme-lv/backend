@@ -6,33 +6,45 @@ import (
 	"github.com/pelletier/go-toml/v2"
 )
 
-func (task *Task) readConstraintsFromToml(bytes []byte) error {
-	vers, err := getSemVersFromToml(bytes)
-	if err != nil {
-		return fmt.Errorf("failed to get the specification version: %w", err)
+type Constraints struct {
+	CPUTimeLimitInSeconds  float64
+	MemoryLimitInMegabytes int
+}
+
+func ReadConstraintsFromTaskDir(dir TaskDirInfo) (res Constraints, err error) {
+	requiredSpec := SemVer{major: 2}
+	if dir.Spec.LessThan(requiredSpec) {
+		format := "specification version %s is not supported, required at least %s"
+		err = fmt.Errorf(format, dir.Spec.String(), requiredSpec.String())
+		return
 	}
 
-	if vers.LessThan(SemVer{major: 2}) {
-		return fmt.Errorf("unsupported specification version: %s",
-			vers.String())
-	}
-
-	type pTomlConstraints struct {
-		CPUTimeLimitInSeconds  float64 `toml:"cpu_time_seconds"`
-		MemoryLimitInMegabytes int     `toml:"memory_megabytes"`
-	}
-
-	tomlStruct := struct {
-		Constraints pTomlConstraints `toml:"constraints"`
+	x := struct {
+		Constraints struct {
+			CPUTimeLimitInSeconds  float64 `toml:"cpu_time_seconds"`
+			MemoryLimitInMegabytes int     `toml:"memory_megabytes"`
+		} `toml:"constraints"`
 	}{}
 
-	err = toml.Unmarshal(bytes, &tomlStruct)
+	err = toml.Unmarshal(dir.Info, &x)
 	if err != nil {
-		return fmt.Errorf("failed to unmarshal the constraints: %w", err)
+		format := "failed to unmarshal the constraints: %w"
+		err = fmt.Errorf(format, err)
+		return
 	}
 
-	task.CpuTimeLimInSeconds = tomlStruct.Constraints.CPUTimeLimitInSeconds
-	task.MemoryLimInMegabytes = tomlStruct.Constraints.MemoryLimitInMegabytes
+	res.CPUTimeLimitInSeconds = x.Constraints.CPUTimeLimitInSeconds
+	res.MemoryLimitInMegabytes = x.Constraints.MemoryLimitInMegabytes
 
+	return
+}
+
+func (task *Task) LoadConstraintsFromDir(dir TaskDirInfo) error {
+	constraints, err := ReadConstraintsFromTaskDir(dir)
+	if err != nil {
+		return fmt.Errorf("failed to read constraints: %w", err)
+	}
+	task.CpuTimeLimInSeconds = constraints.CPUTimeLimitInSeconds
+	task.MemoryLimInMegabytes = constraints.MemoryLimitInMegabytes
 	return nil
 }

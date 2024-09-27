@@ -1,4 +1,4 @@
-specification = 'v2.4.0'
+specification = 'v2.5.0'
 task_name = 'Kvadrātveida putekļsūcējs'
 visible_input_subtasks = [1]
 illustration_image = 'illustration.png'
