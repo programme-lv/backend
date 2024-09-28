@@ -29,6 +29,15 @@ func TestParsingLio2023TaskWithBothACheckerAndAnInteractor(t *testing.T) {
 
 	require.NotNilf(t, task, "task is nil")
 
+	require.NotNilf(t, task.TestlibChecker, "task.TestlibChecker is nil")
+	require.NotNilf(t, task.TestlibInteractor, "task.TestlibInteractor is nil")
+
+	require.Len(t, task.Solutions, 13)
+	solutionFilenames := []string{}
+	for _, solution := range task.Solutions {
+		solutionFilenames = append(solutionFilenames, solution.Filename)
+	}
+	require.Contains(t, solutionFilenames, "iedalas_PP_OK.cpp")
 }
 
 func getTaskDirectory(t *testing.T, taskName string) (string, error) {
