@@ -222,8 +222,8 @@ func (u uploadModel) uploadTask() tea.Cmd {
 
 		// Process markdown statements
 		mdImgUuidMap := make(map[string]string) // uuid -> original image url
-		mdSttmntsWithMappedImgs := make([]tasksrvc.MarkdownStatement, len(task.GetMarkdownStatements()))
-		for i, sttmnt := range task.GetMarkdownStatements() {
+		mdSttmntsWithMappedImgs := make([]tasksrvc.MarkdownStatement, len(task.MarkdownStatements))
+		for i, sttmnt := range task.MarkdownStatements {
 			story, storyImgUuidMap := mapMarkdownImageURLs(sttmnt.Story)
 			maps.Copy(mdImgUuidMap, storyImgUuidMap)
 
@@ -285,7 +285,7 @@ func (u uploadModel) uploadTask() tea.Cmd {
 		}
 
 		// Upload PDF statements
-		for _, pdf := range task.GetPdfStatements() {
+		for _, pdf := range task.PdfStatements {
 			_, err = taskSrvc.UploadStatementPdf(pdf.Content)
 			if err != nil {
 				return uploadResultMsg{err: fmt.Errorf("failed to upload pdf statement: %w", err)}
@@ -384,8 +384,8 @@ func buildPutTaskInput(
 		}
 	}
 
-	pdfSttmnts := make([]tasksrvc.PdfStatement, len(task.GetPdfStatements()))
-	for i, pdfSttmnt := range task.GetPdfStatements() {
+	pdfSttmnts := make([]tasksrvc.PdfStatement, len(task.PdfStatements))
+	for i, pdfSttmnt := range task.PdfStatements {
 		pdfSttmnts[i] = tasksrvc.PdfStatement{
 			LangISO639: pdfSttmnt.Language,
 			PdfSHA2:    sha2Hex(pdfSttmnt.Content),

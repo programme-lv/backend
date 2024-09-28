@@ -68,7 +68,7 @@ func Read(taskRootDirPath string) (*Task, error) {
 		return nil, fmt.Errorf("error getting absolute path: %w", err)
 	}
 
-	taskDir := TaskDirInfo{
+	taskDir := TaskDir{
 		Path: absPath,
 		Spec: spec,
 		Info: problemTomlContent,

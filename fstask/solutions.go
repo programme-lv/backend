@@ -20,7 +20,7 @@ type Solution struct {
 	Content  []byte
 }
 
-func ReadSolutionsFromTaskDir(dir TaskDirInfo) (res []Solution, err error) {
+func ReadSolutionsFromTaskDir(dir TaskDir) (res []Solution, err error) {
 	requiredSpec := SemVer{major: 2, minor: 5}
 	if dir.Spec.LessThan(requiredSpec) {
 		format := "specification version %s is not supported, required at least %s"
@@ -88,7 +88,7 @@ func ReadSolutionsFromTaskDir(dir TaskDirInfo) (res []Solution, err error) {
 }
 
 // LoadSolutionsFromDir loads solutions into the task from the specified directory.
-func (task *Task) LoadSolutionsFromDir(dir TaskDirInfo) error {
+func (task *Task) LoadSolutionsFromDir(dir TaskDir) error {
 	solutions, err := ReadSolutionsFromTaskDir(dir)
 	if err != nil {
 		return fmt.Errorf("failed to read solutions: %w", err)

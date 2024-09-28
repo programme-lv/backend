@@ -62,6 +62,8 @@ type Task struct {
 	OriginInstitution string
 
 	Solutions []Solution
+
+	ArchiveFiles []ArchiveFile
 }
 
 // tests are executed in order of ID
@@ -113,6 +115,8 @@ func NewTask(taskName string) (*Task, error) {
 		assets:               []Asset{},
 		OriginNotes:          map[string]string{},
 		OriginInstitution:    "",
+		Solutions:            []Solution{},
+		ArchiveFiles:         []ArchiveFile{},
 	}
 
 	return &t, nil

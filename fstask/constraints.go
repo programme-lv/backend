@@ -11,7 +11,7 @@ type Constraints struct {
 	MemoryLimitInMegabytes int
 }
 
-func ReadConstraintsFromTaskDir(dir TaskDirInfo) (res Constraints, err error) {
+func (dir TaskDir) ReadConstraintsFromTaskDir() (res Constraints, err error) {
 	requiredSpec := SemVer{major: 2}
 	if dir.Spec.LessThan(requiredSpec) {
 		format := "specification version %s is not supported, required at least %s"
@@ -39,8 +39,8 @@ func ReadConstraintsFromTaskDir(dir TaskDirInfo) (res Constraints, err error) {
 	return
 }
 
-func (task *Task) LoadConstraintsFromDir(dir TaskDirInfo) error {
-	constraints, err := ReadConstraintsFromTaskDir(dir)
+func (task *Task) LoadConstraintsFromDir(dir TaskDir) error {
+	constraints, err := dir.ReadConstraintsFromTaskDir()
 	if err != nil {
 		return fmt.Errorf("failed to read constraints: %w", err)
 	}

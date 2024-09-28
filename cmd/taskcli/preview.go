@@ -121,14 +121,14 @@ func getPreview(dir string) (TaskPreview, error) {
 	copy(res.VisInpStasks, visibleSubtasks)
 
 	// 3. Populate PdfSttmntLangs (PDF Statement Languages)
-	pdfStmts := task.GetPdfStatements()
+	pdfStmts := task.PdfStatements
 	res.PdfSttmntLangs = make([]string, len(pdfStmts))
 	for i, stmt := range pdfStmts {
 		res.PdfSttmntLangs[i] = stmt.Language
 	}
 
 	// 4. Populate MdSttmntLangs (Markdown Statement Languages)
-	mdStmts := task.GetMarkdownStatements()
+	mdStmts := task.MarkdownStatements
 	res.MdSttmntLangs = make([]string, len(mdStmts))
 	for i, stmt := range mdStmts {
 		res.MdSttmntLangs[i] = stmt.Language

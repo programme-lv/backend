@@ -14,7 +14,7 @@ type PdfStatement struct {
 
 // ReadPDFStatementsFromTaskDir reads PDF statements from the specified task directory.
 // It returns a slice of PDFStatement and an error, if any.
-func ReadPDFStatementsFromTaskDir(dir TaskDirInfo) ([]PdfStatement, error) {
+func ReadPDFStatementsFromTaskDir(dir TaskDir) ([]PdfStatement, error) {
 	requiredSpec := SemVer{major: 2}
 	if dir.Spec.LessThan(requiredSpec) {
 		format := "specification version %s is not supported, required at least %s"
@@ -64,7 +64,7 @@ func ReadPDFStatementsFromTaskDir(dir TaskDirInfo) ([]PdfStatement, error) {
 }
 
 // LoadPDFStatementsFromDir loads PDF statements into the task from the specified directory.
-func (task *Task) LoadPDFStatementsFromDir(dir TaskDirInfo) error {
+func (task *Task) LoadPDFStatementsFromDir(dir TaskDir) error {
 	pdfStatements, err := ReadPDFStatementsFromTaskDir(dir)
 	if err != nil {
 		return fmt.Errorf("failed to read PDF statements: %w", err)

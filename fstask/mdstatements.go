@@ -16,7 +16,7 @@ type MarkdownStatement struct {
 	Scoring  *string
 }
 
-func ReadMarkdownStatementsFromTaskDir(dir TaskDirInfo) ([]MarkdownStatement, error) {
+func ReadMarkdownStatementsFromTaskDir(dir TaskDir) ([]MarkdownStatement, error) {
 	requiredSpec := SemVer{major: 2}
 	if dir.Spec.LessThan(requiredSpec) {
 		format := "specification version %s is not supported, required at least %s"
@@ -94,7 +94,7 @@ func ptr(s string) *string {
 	return &s
 }
 
-func (task *Task) LoadMarkdownStatementsFromDir(dir TaskDirInfo) error {
+func (task *Task) LoadMarkdownStatementsFromDir(dir TaskDir) error {
 	markdownStatements, err := ReadMarkdownStatementsFromTaskDir(dir)
 	if err != nil {
 		return fmt.Errorf("failed to read markdown statements: %w", err)

@@ -14,7 +14,7 @@ type Metadata struct {
 	OriginNotes         map[string]string
 }
 
-func ReadMetadataFromTaskDir(dir TaskDirInfo) (Metadata, error) {
+func ReadMetadataFromTaskDir(dir TaskDir) (Metadata, error) {
 	requiredSpec := SemVer{major: 2}
 	if dir.Spec.LessThan(requiredSpec) {
 		format := "specification version %s is not supported, required at least %s"
@@ -46,7 +46,7 @@ func ReadMetadataFromTaskDir(dir TaskDirInfo) (Metadata, error) {
 	}, nil
 }
 
-func (task *Task) LoadMetadataFromDir(dir TaskDirInfo) error {
+func (task *Task) LoadMetadataFromDir(dir TaskDir) error {
 	metadata, err := ReadMetadataFromTaskDir(dir)
 	if err != nil {
 		return fmt.Errorf("failed to read metadata: %w", err)
