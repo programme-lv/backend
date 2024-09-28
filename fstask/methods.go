@@ -44,7 +44,7 @@ func (t *Task) SwapTestOrder(id1 int, id2 int) {
 	}
 }
 
-func (t *Task) GetTestsSortedByID() []test {
+func (t *Task) GetTestsSortedByID() []Test {
 	sort.Slice(t.tests, func(i, j int) bool {
 		return t.tests[i].ID < t.tests[j].ID
 	})
@@ -71,7 +71,7 @@ func (t *Task) AddTest(input []byte, answer []byte) int {
 		}
 	}
 
-	t.tests = append(t.tests, test{
+	t.tests = append(t.tests, Test{
 		ID:     mex,
 		Input:  input,
 		Answer: answer,
@@ -89,6 +89,10 @@ func (t *Task) AssignFilenameToTest(filename string, testID int) {
 
 	t.testIDToFilename[testID] = filename
 	t.testFilenameToID[filename] = testID
+}
+
+func (t *Task) AssignFilenameToExample(filename string, exampleID int) {
+	t.examples[exampleID-1].Name = &filename
 }
 
 type Example struct {
@@ -111,13 +115,15 @@ func (t *Task) GetExamples() []Example {
 	return res
 }
 
-func (t *Task) AddExample(input []byte, output []byte, mdNote []byte) {
+// creates a new example and returns its ID
+func (t *Task) AddExample(input []byte, output []byte, mdNote []byte) int {
 	t.examples = append(t.examples, example{
 		Input:  input,
 		Output: output,
 		MdNote: mdNote,
 		Name:   nil,
 	})
+	return len(t.examples)
 }
 
 func (t *Task) GetTaskName() string {
@@ -158,7 +164,7 @@ func (t *Task) GetTestGroups() []TestGroup {
 	return res
 }
 
-func (t *Task) GetTestFilenameFromID(testID int) string {
+func (t *Task) GetTestFilename(testID int) string {
 	filename, ok := t.testIDToFilename[testID]
 	if !ok {
 		return ""

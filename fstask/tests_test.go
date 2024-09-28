@@ -21,7 +21,7 @@ func TestReadingWritingTests(t *testing.T) {
 
 	parsedTestNames := []string{}
 	for i := 0; i < 6; i++ {
-		filename := parsedTask.GetTestFilenameFromID(parsedTests[i].ID)
+		filename := parsedTask.GetTestFilename(parsedTests[i].ID)
 		parsedTestNames = append(parsedTestNames, filename)
 	}
 	expectedTestNames := []string{"kp01a", "kp01b", "kp01c", "kp02a", "kp02b", "kp02c"}
@@ -42,7 +42,7 @@ func TestReadingWritingTests(t *testing.T) {
 	testPath := filepath.Join(kvadrputeklPath, "tests")
 	expectedInputs := []string{}
 	for i := 0; i < 6; i++ {
-		filename := parsedTask.GetTestFilenameFromID(parsedTests[i].ID)
+		filename := parsedTask.GetTestFilename(parsedTests[i].ID)
 		inPath := filepath.Join(testPath, fmt.Sprintf("%s.in", filename))
 
 		in, err := os.ReadFile(inPath)
@@ -58,7 +58,7 @@ func TestReadingWritingTests(t *testing.T) {
 	}
 	expectedAnsers := []string{}
 	for i := 0; i < 6; i++ {
-		filename := parsedTask.GetTestFilenameFromID(parsedTests[i].ID)
+		filename := parsedTask.GetTestFilename(parsedTests[i].ID)
 		ansPath := filepath.Join(testPath, fmt.Sprintf("%s.out", filename))
 
 		ans, err := os.ReadFile(ansPath)
@@ -86,7 +86,7 @@ func TestReadingWritingTests(t *testing.T) {
 	storedTestNames := []string{}
 	tests := storedTask.GetTestsSortedByID()
 	for i := 0; i < 6; i++ {
-		filename := storedTask.GetTestFilenameFromID(tests[i].ID)
+		filename := storedTask.GetTestFilename(tests[i].ID)
 		storedTestNames = append(storedTestNames, filename)
 	}
 	assert.Equal(t, expectedTestNames, storedTestNames)
@@ -115,7 +115,7 @@ func TestReadingWritingTests(t *testing.T) {
 	// set tests
 	for i := 0; i < 6; i++ {
 		createdTask.AddTest(parsedTests[i].Input, parsedTests[i].Answer)
-		if filename := createdTask.GetTestFilenameFromID(parsedTests[i].ID); filename != "" {
+		if filename := createdTask.GetTestFilename(parsedTests[i].ID); filename != "" {
 			createdTask.AssignFilenameToTest(filename, parsedTests[i].ID)
 		}
 	}

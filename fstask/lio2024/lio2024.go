@@ -8,6 +8,7 @@ import (
 	"sort"
 
 	"github.com/programme-lv/backend/fstask"
+	"github.com/programme-lv/backend/fstask/lio"
 )
 
 func ParseLio2024TaskDir(dirPath string) (*fstask.Task, error) {
@@ -41,7 +42,7 @@ func ParseLio2024TaskDir(dirPath string) (*fstask.Task, error) {
 
 	testZipAbsolutePath := filepath.Join(dirPath, parsedYaml.TestZipPathRelToYaml)
 
-	tests, err := ReadLioTestsFromZip(testZipAbsolutePath)
+	tests, err := lio.ReadLioTestsFromZip(testZipAbsolutePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read tests from zip: %v", err)
 	}

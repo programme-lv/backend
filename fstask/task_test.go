@@ -54,9 +54,9 @@ func TestReadingWritingTestGroups(t *testing.T) {
 	assert.Equal(t, true, firstParsedTestGroup.Public)
 	assert.Equal(t, []int{1, 2, 3}, firstParsedTestGroup.TestIDs)
 
-	assert.Equal(t, "kp01a", parsedTask.GetTestFilenameFromID(1))
-	assert.Equal(t, "kp01b", parsedTask.GetTestFilenameFromID(2))
-	assert.Equal(t, "kp01c", parsedTask.GetTestFilenameFromID(3))
+	assert.Equal(t, "kp01a", parsedTask.GetTestFilename(1))
+	assert.Equal(t, "kp01b", parsedTask.GetTestFilename(2))
+	assert.Equal(t, "kp01c", parsedTask.GetTestFilename(3))
 
 	secondParsedTestGroup := parsedTask.GetInfoOnTestGroup(2)
 	assert.Equal(t, 2, secondParsedTestGroup.GroupID)
@@ -65,9 +65,9 @@ func TestReadingWritingTestGroups(t *testing.T) {
 	assert.Equal(t, false, secondParsedTestGroup.Public)
 	assert.Equal(t, []int{4, 5, 6}, secondParsedTestGroup.TestIDs)
 
-	assert.Equal(t, "kp02a", parsedTask.GetTestFilenameFromID(4))
-	assert.Equal(t, "kp02b", parsedTask.GetTestFilenameFromID(5))
-	assert.Equal(t, "kp02c", parsedTask.GetTestFilenameFromID(6))
+	assert.Equal(t, "kp02a", parsedTask.GetTestFilename(4))
+	assert.Equal(t, "kp02b", parsedTask.GetTestFilename(5))
+	assert.Equal(t, "kp02c", parsedTask.GetTestFilename(6))
 
 	tmpDirectory, err := os.MkdirTemp("", "fstaskparser-test-")
 	require.NoErrorf(t, err, "failed to create temporary directory: %v", err)
@@ -92,9 +92,9 @@ func TestReadingWritingTestGroups(t *testing.T) {
 	assert.Equal(t, true, firstWrittenTestGroup.Public)
 	assert.Equal(t, []int{1, 2, 3}, firstWrittenTestGroup.TestIDs)
 
-	assert.Equal(t, "kp01a", writtenTask.GetTestFilenameFromID(1))
-	assert.Equal(t, "kp01b", writtenTask.GetTestFilenameFromID(2))
-	assert.Equal(t, "kp01c", writtenTask.GetTestFilenameFromID(3))
+	assert.Equal(t, "kp01a", writtenTask.GetTestFilename(1))
+	assert.Equal(t, "kp01b", writtenTask.GetTestFilename(2))
+	assert.Equal(t, "kp01c", writtenTask.GetTestFilename(3))
 
 	secondWrittenTestGroup := writtenTask.GetInfoOnTestGroup(2)
 	assert.Equal(t, 2, secondWrittenTestGroup.GroupID)
@@ -103,9 +103,9 @@ func TestReadingWritingTestGroups(t *testing.T) {
 	assert.Equal(t, false, secondWrittenTestGroup.Public)
 	assert.Equal(t, []int{4, 5, 6}, secondWrittenTestGroup.TestIDs)
 
-	assert.Equal(t, "kp02a", writtenTask.GetTestFilenameFromID(4))
-	assert.Equal(t, "kp02b", writtenTask.GetTestFilenameFromID(5))
-	assert.Equal(t, "kp02c", writtenTask.GetTestFilenameFromID(6))
+	assert.Equal(t, "kp02a", writtenTask.GetTestFilename(4))
+	assert.Equal(t, "kp02b", writtenTask.GetTestFilename(5))
+	assert.Equal(t, "kp02c", writtenTask.GetTestFilename(6))
 
 	createdTask, err := fstask.NewTask(writtenTask.GetTaskName())
 	require.NoErrorf(t, err, "should have failed to create task: %v", err)

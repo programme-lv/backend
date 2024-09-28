@@ -15,7 +15,7 @@ func init() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 }
 
-func readTestsDir(srcDirPath string, fnameToID map[string]int) ([]test, error) {
+func readTestsDir(srcDirPath string, fnameToID map[string]int) ([]Test, error) {
 	dir := filepath.Join(srcDirPath, "tests")
 	entries, err := os.ReadDir(dir)
 	if err != nil {
@@ -25,7 +25,7 @@ func readTestsDir(srcDirPath string, fnameToID map[string]int) ([]test, error) {
 	sort.Slice(entries, func(i, j int) bool {
 		return entries[i].Name() < entries[j].Name()
 	})
-	tests := make([]test, 0, len(entries)/2)
+	tests := make([]Test, 0, len(entries)/2)
 
 	for i := 0; i < len(entries); i += 2 {
 		inPath := filepath.Join(dir, entries[i].Name())
@@ -62,7 +62,7 @@ func readTestsDir(srcDirPath string, fnameToID map[string]int) ([]test, error) {
 			return nil, fmt.Errorf("mapping from filename to id does not exist: %s", inFilenameBase)
 		}
 
-		tests = append(tests, test{
+		tests = append(tests, Test{
 			ID:     fnameToID[inFilenameBase],
 			Input:  input,
 			Answer: answer,

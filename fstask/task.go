@@ -34,7 +34,7 @@ type Task struct {
 	testFilenameToID map[string]int
 	testIDOverwrite  map[string]int // used only during reading directory
 	testIDToFilename map[int]string
-	tests            []test
+	tests            []Test
 
 	/*
 		=== TEST GROUPS ===
@@ -70,7 +70,7 @@ type Task struct {
 }
 
 // tests are executed in order of ID
-type test struct {
+type Test struct {
 	// ID is the order in which the file comes in lexicographical order
 	// OR overriden by the filename-testID dictionary in problem.toml
 	ID     int
@@ -107,7 +107,7 @@ func NewTask(taskName string) (*Task, error) {
 		testFilenameToID:     map[string]int{},
 		testIDOverwrite:      map[string]int{},
 		testIDToFilename:     map[int]string{},
-		tests:                []test{},
+		tests:                []Test{},
 		testGroupIDs:         []int{},
 		isTGroupPublic:       map[int]bool{},
 		tGroupPoints:         map[int]int{},

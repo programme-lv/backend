@@ -38,6 +38,28 @@ func TestParsingLio2023TaskWithBothACheckerAndAnInteractor(t *testing.T) {
 		solutionFilenames = append(solutionFilenames, solution.Filename)
 	}
 	require.Contains(t, solutionFilenames, "iedalas_PP_OK.cpp")
+
+	examples := task.GetExamples()
+	require.Len(t, examples, 1)
+	require.NotNilf(t, examples[0].FName, "examples[0].FName is nil")
+	require.Equal(t, "00a", *examples[0].FName)
+	require.Equal(t, []byte("131\n"), examples[0].Input)
+	require.Equal(t, []byte("1 131\n"), examples[0].Output)
+
+	require.Equal(t, "01a", task.GetTestFilename(1))
+	require.Equal(t, "01b", task.GetTestFilename(2))
+	require.Equal(t, "01c", task.GetTestFilename(3))
+	require.Equal(t, "01d", task.GetTestFilename(4))
+
+	tests := task.GetTestsSortedByID()
+	require.Len(t, tests, 4)
+	require.Equal(t, 1, tests[0].ID)
+	require.Equal(t, 2, tests[1].ID)
+	require.Equal(t, 3, tests[2].ID)
+	require.Equal(t, 4, tests[3].ID)
+
+	require.Equal(t, []byte("560\n"), tests[2].Input)
+
 }
 
 func getTaskDirectory(t *testing.T, taskName string) (string, error) {
