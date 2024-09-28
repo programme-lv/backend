@@ -462,6 +462,16 @@ func (task *Task) storeExamples(examplesDirPath string) error {
 			mdPath = filepath.Join(examplesDirPath, mdName)
 		}
 
+		if _, err := os.Stat(inPath); err == nil {
+			return fmt.Errorf("input file already exists: %s", inPath)
+		}
+		if _, err := os.Stat(ansPath); err == nil {
+			return fmt.Errorf("answer file already exists: %s", ansPath)
+		}
+		if _, err := os.Stat(mdPath); err == nil {
+			return fmt.Errorf("Markdown note file already exists: %s", mdPath)
+		}
+
 		err = os.WriteFile(inPath, e.Input, 0644)
 		if err != nil {
 			return fmt.Errorf("error writing input file: %w", err)
