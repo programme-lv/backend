@@ -1,0 +1,6 @@
+0-0 0 Piemēri --- PUBLISKA GRUPA
+1-1 2 1. apakšuzdevums --- PUBLISKA GRUPA
+2-3 1 2. apakšuzdevums
+4-11 2 2. apakšuzdevums --- PUBLISKA GRUPA - 5
+12-24 2 3. apakšuzdevums --- PUBLISKA GRUPA - 20
+25-42 3 4. apakšuzdevums --- PUBLISKA GRUPA - 28

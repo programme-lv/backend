@@ -1,0 +1,23 @@
+0-0 0 0. apakšuzdevums --- PUBLISKA GRUPA
+1-1 2 1. apakšuzdevums --- PUBLISKA GRUPA
+2-2 2 2. apakšuzdevums --- PUBLISKA GRUPA
+3-4 3
+5-5 2 3. apakšuzdevums --- PUBLISKA GRUPA
+6-9 2
+10-10 2 4. apakšuzdevums --- PUBLISKA GRUPA
+11-14 2
+15-15 3 5. apakšuzdevums --- PUBLISKA GRUPA
+16-21 2
+22-22 3 6. apakšuzdevums --- PUBLISKA GRUPA
+23-28 2
+29-29 5 7. apakšuzdevums --- PUBLISKA GRUPA
+30-30 3
+31-31 2
+32-32 3
+33-33 2
+34-34 3
+35-35 2
+36-36 3
+37-37 2
+38-38 3 8. apakšuzdevums --- PUBLISKA GRUPA
+39-44 2

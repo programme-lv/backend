@@ -1,0 +1,6 @@
+name: 'pbumbinas'
+title: 'Pētera bumbiņas'
+public_groups: [0,1,2,5,10,15,22,29,38]
+subtask_points: [0,2,8,10,10,15,15,25,15]
+validator: './riki/kp_validator/validator.cpp'
+test_archive: './testi.zip'

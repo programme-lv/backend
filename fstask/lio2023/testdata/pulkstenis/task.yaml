@@ -1,0 +1,10 @@
+name: 'pulkstenis'
+title: 'Cik ir pulkstenis?'
+statements:
+  - ['./../Uzdevumi/TODO', 'lv']
+public_groups: [0, 1, 6, 11]
+time_limit: 1.5
+memory_limit: 256
+subtask_points: [0, 20, 20, 60]
+validator: './riki/validator.cpp'
+test_archive: './testi.zip'
