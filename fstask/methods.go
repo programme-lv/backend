@@ -182,6 +182,9 @@ func (t *Task) testGroupWithIDExists(id int) bool {
 }
 
 func (t *Task) AddTestGroupWithID(groupID int, points int, public bool, testIDs []int, subtask int) error {
+	if testIDs == nil {
+		testIDs = make([]int, 0)
+	}
 	if t.testGroupWithIDExists(groupID) {
 		return fmt.Errorf("test group with ID %d already exists", groupID)
 	}

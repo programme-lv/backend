@@ -60,7 +60,42 @@ func TestParsingLio2023TaskWithBothACheckerAndAnInteractor(t *testing.T) {
 
 	require.Equal(t, []byte("560\n"), tests[2].Input)
 
+	publicTestGroups := []int{1, 6, 11}
+	testGroups := task.GetTestGroups()
+	require.Len(t, testGroups, 25)
+	for _, testGroup := range testGroups {
+		if testGroup.Public {
+			require.Contains(t, publicTestGroups, testGroup.GroupID)
+		}
+	}
+
+	require.Equal(t, 1, testGroups[0].GroupID)
+	require.Equal(t, 4, testGroups[0].Points)
+	require.Equal(t, 1, testGroups[1].Subtask)
+	require.Equal(t, false, testGroups[1].Public)
+	require.Equal(t, true, testGroups[0].Public)
+	require.Equal(t, []int{1, 2, 3, 4}, testGroups[0].TestIDs)
+
+	require.Equal(t, 1.5, task.CpuTimeLimInSeconds)
+	require.Equal(t, 256, task.MemoryLimInMegabytes)
+
+	expectedArchive := []string{"./riki/interval.txt", "./riki/testlib.h"}
+	actualArchive := []string{}
+	for _, archiveFile := range task.ArchiveFiles {
+		actualArchive = append(actualArchive, archiveFile.RelativePath)
+	}
+
+	require.ElementsMatch(t, expectedArchive, actualArchive)
 }
+
+/*
+1-1 4 1. apakšuzdevums --- PUBLISKA GRUPA
+2-5 4
+6-6 4 2. apakšuzdevums --- PUBLISKA GRUPA
+7-10 4
+11-11 4 3. apakšuzdevums --- PUBLISKA GRUPA
+12-25 4
+*/
 
 func getTaskDirectory(t *testing.T, taskName string) (string, error) {
 	testdataDirRel := filepath.Join("testdata", taskName)

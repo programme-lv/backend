@@ -6,6 +6,8 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
 
 	"github.com/programme-lv/backend/fstask"
 	"github.com/programme-lv/backend/fstask/lio"
@@ -89,17 +91,138 @@ func ParseLio2023TaskDir(dirPath string) (*fstask.Task, error) {
 		return nil, fmt.Errorf("failed to read tests from zip: %v", err)
 	}
 
+	testGroupTestIds := make(map[int][]int)
 	for _, test := range tests {
 		filename := fmt.Sprintf("%02d%c", test.TestGroup,
 			test.NoInTestGroup+int('a')-1)
 		if test.TestGroup == 0 {
 			exampleId := task.AddExample(test.Input, test.Answer, nil)
 			task.AssignFilenameToExample(filename, int(exampleId))
-
 		} else {
 			testId := task.AddTest(test.Input, test.Answer)
 			task.AssignFilenameToTest(filename, int(testId))
+
+			if testGroupTestIds[test.TestGroup] == nil {
+				testGroupTestIds[test.TestGroup] = make([]int, 0)
+			}
+			testGroupTestIds[test.TestGroup] = append(testGroupTestIds[test.TestGroup], int(testId))
 		}
+	}
+
+	punktiTxtPath := filepath.Join(dirPath, "punkti.txt")
+	punktiTxtContent, err := os.ReadFile(punktiTxtPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read punkti.txt: %w", err)
+	}
+	// split by "\n"
+	parts := strings.Split(string(punktiTxtContent), "\n")
+	subtask := 0
+	for _, line := range parts {
+		if line == "" {
+			continue
+		}
+		// split by space
+		parts := strings.Split(line, " ")
+		testInterval := strings.Split(parts[0], "-")
+
+		if len(testInterval) != 2 {
+			return nil, fmt.Errorf("failed to parse test interval: %s", line)
+		}
+
+		start, err := strconv.Atoi(testInterval[0])
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse test interval: %w", err)
+		}
+		end, err := strconv.Atoi(testInterval[1])
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse test interval: %w", err)
+		}
+
+		points, err := strconv.Atoi(parts[1])
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse points: %w", err)
+		}
+
+		if len(parts) > 2 {
+			subtaskStr := strings.TrimSuffix(parts[2], ".")
+			newSubtask, err := strconv.Atoi(subtaskStr)
+			if err != nil {
+				return nil, fmt.Errorf("failed to parse subtask: %w", err)
+			}
+			subtask = newSubtask
+		}
+
+		for i := start; i <= end; i++ {
+			if i == 0 {
+				continue // example test group
+			}
+			public := strings.Contains(line, "PUBLISKA")
+			task.AddTestGroup(points, public, testGroupTestIds[i], subtask)
+		}
+	}
+
+	task.CpuTimeLimInSeconds = taskYaml.TimeLimit
+	task.MemoryLimInMegabytes = taskYaml.MemoryLimit
+
+	excludePrefixFromArchive := []string{
+		punktiTxtPath,
+		testZipAbsolutePath,
+		solutionsPath,
+		taskYamlPath,
+		checkerPath,
+		interactorPath,
+	}
+
+	// look at all the paths in the directory.
+	// if it starts with one of the prefixes in excludePrefixFromArchive
+	// then it should be excluded from the archive
+	// otherwise, it should be included
+
+	// task.ArchiveFiles = append(task.ArchiveFiles, fstask.ArchiveFile{
+	// 	RelativePath: "",
+	// 	Content:      []byte{},
+	// })
+
+	err = filepath.Walk(dirPath, func(path string, info fs.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if info.IsDir() {
+			return nil
+		}
+		relativePath, err := filepath.Rel(dirPath, path)
+		if err != nil {
+			return err
+		}
+		relativePath = "./" + relativePath
+		for _, prefix := range excludePrefixFromArchive {
+			prefixAbs, err := filepath.Abs(prefix)
+			if err != nil {
+				return err
+			}
+			pathAbs, err := filepath.Abs(path)
+			if err != nil {
+				return err
+			}
+			if pathAbs == prefixAbs {
+				return nil
+			}
+			if strings.HasPrefix(pathAbs, prefixAbs+string(filepath.Separator)) {
+				return nil
+			}
+		}
+		content, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		task.ArchiveFiles = append(task.ArchiveFiles, fstask.ArchiveFile{
+			RelativePath: relativePath,
+			Content:      content,
+		})
+		return nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("error walking directory: %w", err)
 	}
 
 	return task, nil
