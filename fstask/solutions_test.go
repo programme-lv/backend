@@ -14,6 +14,14 @@ func TestReadingWritingSolutions(t *testing.T) {
 	task, err := fstask.Read(testTaskPath)
 	require.NoErrorf(t, err, "failed to read task: %v", err)
 
+	ensureTaskSolutionsCorrespondToTestdata(t, task)
+
+	writtenTask := writeAndReReadTask(t, task)
+
+	ensureTaskSolutionsCorrespondToTestdata(t, writtenTask)
+}
+
+func ensureTaskSolutionsCorrespondToTestdata(t *testing.T, task *fstask.Task) {
 	expFilenames := []string{
 		"kp_kp_ok.cpp",
 		"kp_kp_tle.cpp",
@@ -44,7 +52,6 @@ func TestReadingWritingSolutions(t *testing.T) {
 	require.Equal(t, "Krišjānis Petručeņa", solutions[0].Author)
 	require.Equal(t, "Krišjānis Petručeņa", solutions[1].Author)
 	require.Equal(t, "Normunds Vilciņš", solutions[2].Author)
-
 }
 
 func getSha256Sum(data []byte) string {

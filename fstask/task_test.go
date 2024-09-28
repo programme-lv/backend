@@ -13,6 +13,28 @@ import (
 var prjRootPath = filepath.Join(".", "..")
 var testTaskPath = filepath.Join(prjRootPath, "fstask", "testdata", "kvadrputekl")
 
+// writeAndReReadTask writes the given task to a temporary directory and reads it
+// back from there. The temporary directory is removed after the function
+// returns. The function is used in tests to check that a task can be written
+// and read back correctly.
+func writeAndReReadTask(t *testing.T, task *fstask.Task) *fstask.Task {
+	tmpDirectory, err := os.MkdirTemp("", "fstaskparser-test-")
+	require.NoErrorf(t, err, "failed to create temporary directory: %v", err)
+	defer os.RemoveAll(tmpDirectory)
+
+	outputDirectory := filepath.Join(tmpDirectory, "kvadrputekl")
+
+	t.Logf("Created directory for output: %s", outputDirectory)
+
+	err = task.Store(outputDirectory)
+	require.NoErrorf(t, err, "failed to store task: %v", err)
+
+	storedTask, err := fstask.Read(outputDirectory)
+	require.NoErrorf(t, err, "failed to read task: %v", err)
+
+	return storedTask
+}
+
 func TestReadingWritingTestGroups(t *testing.T) {
 	parsedTask, err := fstask.Read(testTaskPath)
 	assert.NoErrorf(t, err, "failed to read task: %v", err)
