@@ -179,10 +179,46 @@ func (task *Task) Store(dirPath string) error {
 		return fmt.Errorf("error storing archive files: %w", err)
 	}
 
+	err = task.storeEvaluationCheckerAndInteractor(filepath.Join(dirPath, "evaluation"))
+	if err != nil {
+		return fmt.Errorf("error storing evaluation checker and interactor: %w", err)
+	}
+
+	return nil
+}
+
+func (task *Task) storeEvaluationCheckerAndInteractor(dirPath string) error {
+	if task.TestlibChecker == nil && task.TestlibInteractor == nil {
+		return nil
+	}
+
+	err := os.MkdirAll(dirPath, 0755)
+	if err != nil {
+		return fmt.Errorf("error creating evaluation directory: %w", err)
+	}
+
+	if task.TestlibChecker != nil {
+		path := filepath.Join(dirPath, "checker.cpp")
+		err = os.WriteFile(path, []byte(*task.TestlibChecker), 0644)
+		if err != nil {
+			return fmt.Errorf("error writing evaluation checker: %w", err)
+		}
+	}
+	if task.TestlibInteractor != nil {
+		path := filepath.Join(dirPath, "interactor.cpp")
+		err = os.WriteFile(path, []byte(*task.TestlibInteractor), 0644)
+		if err != nil {
+			return fmt.Errorf("error writing evaluation interactor: %w", err)
+		}
+	}
+
 	return nil
 }
 
 func (task *Task) storeArchiveFiles(archiveDir string) error {
+	if len(task.ArchiveFiles) == 0 {
+		return nil
+	}
 	err := os.MkdirAll(archiveDir, 0755)
 	if err != nil {
 		return fmt.Errorf("error creating archive directory: %w", err)
@@ -207,6 +243,9 @@ func (task *Task) storeArchiveFiles(archiveDir string) error {
 }
 
 func (task *Task) storeSolutions(solutionsDir string) error {
+	if len(task.Solutions) == 0 {
+		return nil
+	}
 	err := os.MkdirAll(solutionsDir, 0755)
 	if err != nil {
 		return fmt.Errorf("error creating solutions directory: %w", err)
@@ -221,6 +260,9 @@ func (task *Task) storeSolutions(solutionsDir string) error {
 }
 
 func (task *Task) storeAssets(assetDir string) error {
+	if len(task.assets) == 0 {
+		return nil
+	}
 	err := os.MkdirAll(assetDir, 0755)
 	if err != nil {
 		return fmt.Errorf("error creating assets directory: %w", err)
@@ -237,6 +279,9 @@ func (task *Task) storeAssets(assetDir string) error {
 }
 
 func (task *Task) storeMdStatements(mdStatementDir string) error {
+	if len(task.MarkdownStatements) == 0 {
+		return nil
+	}
 	err := os.MkdirAll(mdStatementDir, 0755)
 	if err != nil {
 		return fmt.Errorf("error creating Markdown statements directory: %w", err)
@@ -296,6 +341,9 @@ func (task *Task) storeMdStatements(mdStatementDir string) error {
 }
 
 func (task *Task) storePDFStatements(pdfStatementsDir string) error {
+	if len(task.PdfStatements) == 0 {
+		return nil
+	}
 	err := os.MkdirAll(pdfStatementsDir, 0755)
 	if err != nil {
 		return fmt.Errorf("error creating PDF statements directory: %w", err)

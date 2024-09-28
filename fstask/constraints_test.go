@@ -11,7 +11,7 @@ import (
 )
 
 func TestReadingWritingEvaluationConstraints(t *testing.T) {
-	parsedTask, err := fstask.Read(testTaskPath)
+	parsedTask, err := fstask.Read(kvadrputeklPath)
 	require.NoErrorf(t, err, "failed to read task: %v", err)
 	assert.Equal(t, 0.5, parsedTask.CpuTimeLimInSeconds)
 	assert.Equal(t, 256, parsedTask.MemoryLimInMegabytes)

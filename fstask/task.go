@@ -64,6 +64,9 @@ type Task struct {
 	Solutions []Solution
 
 	ArchiveFiles []ArchiveFile
+
+	TestlibChecker    *string
+	TestlibInteractor *string
 }
 
 // tests are executed in order of ID
@@ -117,6 +120,8 @@ func NewTask(taskName string) (*Task, error) {
 		OriginInstitution:    "",
 		Solutions:            []Solution{},
 		ArchiveFiles:         []ArchiveFile{},
+		TestlibChecker:       nil,
+		TestlibInteractor:    nil,
 	}
 
 	return &t, nil

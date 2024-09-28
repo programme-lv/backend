@@ -14,6 +14,9 @@
 ```
 
 - added archive directory
+- added evaluation directory
+    - checker.cpp
+    - interactor.cpp
 
 ### version "v2.4.0"
 

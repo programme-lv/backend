@@ -11,10 +11,10 @@ import (
 )
 
 func TestReadingWritingPDFStatement(t *testing.T) {
-	parsedTask, err := fstask.Read(testTaskPath)
+	parsedTask, err := fstask.Read(kvadrputeklPath)
 	require.NoErrorf(t, err, "failed to read task: %v", err)
 
-	expectedPdfPath := filepath.Join(testTaskPath, "statements", "pdf", "lv.pdf")
+	expectedPdfPath := filepath.Join(kvadrputeklPath, "statements", "pdf", "lv.pdf")
 	expectedPdf, err := os.ReadFile(expectedPdfPath)
 	require.NoErrorf(t, err, "failed to read PDF file: %v", err)
 

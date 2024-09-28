@@ -11,7 +11,9 @@ import (
 )
 
 var prjRootPath = filepath.Join(".", "..")
-var testTaskPath = filepath.Join(prjRootPath, "fstask", "testdata", "kvadrputekl")
+var testdataPath = filepath.Join(prjRootPath, "fstask", "testdata")
+var tornisPath = filepath.Join(testdataPath, "tornis")
+var kvadrputeklPath = filepath.Join(testdataPath, "kvadrputekl")
 
 // writeAndReReadTask writes the given task to a temporary directory and reads it
 // back from there. The temporary directory is removed after the function
@@ -36,7 +38,7 @@ func writeAndReReadTask(t *testing.T, task *fstask.Task) *fstask.Task {
 }
 
 func TestReadingWritingTestGroups(t *testing.T) {
-	parsedTask, err := fstask.Read(testTaskPath)
+	parsedTask, err := fstask.Read(kvadrputeklPath)
 	assert.NoErrorf(t, err, "failed to read task: %v", err)
 
 	parsedTestGroups := parsedTask.GetTestGroupIDs()

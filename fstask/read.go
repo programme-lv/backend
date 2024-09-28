@@ -213,6 +213,11 @@ func Read(taskRootDirPath string) (*Task, error) {
 		return nil, fmt.Errorf("error reading archive files: %w", err)
 	}
 
+	err = t.LoadEvaluationCheckerAndInteractorFromDir(taskDir)
+	if err != nil {
+		return nil, fmt.Errorf("error reading evaluation: %w", err)
+	}
+
 	return t, nil
 }
 
