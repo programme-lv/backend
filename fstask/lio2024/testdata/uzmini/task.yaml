@@ -1,0 +1,51 @@
+name: 'Uzmini'
+title: 'Uzmini skaitli!'
+statements:
+  - ['./teksts/uzmini.typ', 'lv']
+
+time_limit: 0.5
+memory_limit: 256
+
+#validator: './riki/validator.cpp'
+tests_archive: './testi/tests.zip'
+
+# == Nepieciešams ne komunikāciju uzdevumos, 
+# kur žūrijas atbilde var nesakrist ar dalībnieka atbildi
+# checker: './riki/checker.cpp'
+
+# == Nepieciešams komunikāciju uzdevumos
+task_type: "Communication"
+interactor: './riki/interactor.cpp'
+
+subtask_points: [0, 10, 10, 40, 40]
+
+tests_groups:
+  - groups: 0
+    points: 0
+    public: true
+    subtask: 0
+    comment: Piemēri
+#
+  - groups: [1,5]
+    points: 2
+    public: [5]
+    subtask: 1
+#
+  - groups: [6, 8]
+    points: 2
+    public: false
+    subtask: 2
+  - groups: [9, 9]
+    points: 4
+    public: [9]
+    subtask: 2
+#
+  - groups: [10, 13]
+    points: 10
+    public: [10]
+    subtask: 3
+#
+  - groups: [14, 17]
+    points: 10
+    public: [14]
+    subtask: 4

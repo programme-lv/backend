@@ -3,10 +3,9 @@ package lio2024_test
 import (
 	"testing"
 
+	"github.com/programme-lv/backend/fstask/lio2024"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"github.com/programme-lv/backend/importers/lio2024"
 )
 
 func TestLio2024Yaml(t *testing.T) {
@@ -49,6 +48,7 @@ tests_groups:
 	expected := lio2024.ParsedLio2024Yaml{
 		CpuTimeLimitInSeconds:  0.5,
 		MemoryLimitInMegabytes: 256,
+		TaskShortIDCode:        "Kp",
 		FullTaskName:           "Kvadrātveida putekļsūcējs",
 		TestZipPathRelToYaml:   "./testi/tests.zip",
 		CheckerPathRelToYaml:   &([]string{"./riki/checker.cpp"}[0]),

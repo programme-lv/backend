@@ -1,0 +1,76 @@
+name: 'Tornis'
+title: 'Sakārtotais tornis'
+statements:
+  - ['./teksts/tornis.typ', 'lv']
+
+time_limit: 1
+memory_limit: 256
+
+validator: './riki/validator.cpp'
+tests_archive: './testi/tests.zip'
+
+# == Nepieciešams ne komunikāciju uzdevumos, 
+# kur žūrijas atbilde var nesakrist ar dalībnieka atbildi
+checker: './riki/checker.cpp'
+
+# == Nepieciešams komunikāciju uzdevumos
+# task_type: "Communication"
+# interactor: './riki/interactor.cpp'
+
+subtask_points: [0, 2, 10, 15, 18, 23, 32]
+
+# subtask 0
+
+tests_groups:
+  - groups: 0
+    points: 0
+    public: true
+    subtask: 0
+    comment: Piemēri
+
+# subtask 1
+
+  - groups: 1
+    points: 2
+    public: true
+    subtask: 1
+
+# subtask 2
+
+  - groups: [2,3]
+    points: 5
+    public: [2]
+    subtask: 2
+
+# subtask 3
+
+  - groups: [4,6]
+    points: 5
+    public: [5]
+    subtask: 3
+
+# subtask 4
+
+  - groups: [7,9]
+    points: 6
+    public: [8]
+    subtask: 4
+
+# subtask 5
+
+  - groups: 10
+    points: 7
+    public: false
+    subtask: 5
+
+  - groups: [11,12]
+    points: 8
+    public: [12]
+    subtask: 5
+
+# subtask 6
+
+  - groups: [13,16]
+    points: 8
+    public: [15]
+    subtask: 6
