@@ -21,6 +21,11 @@ func (dir TaskDir) ReadArchiveFiles() (res []ArchiveFile, err error) {
 	}
 
 	res = make([]ArchiveFile, 0)
+	// check if the archive files exist
+	if _, err = os.Stat(filepath.Join(dir.Path, "archive")); os.IsNotExist(err) {
+		err = nil
+		return
+	}
 
 	archivePath := filepath.Join(dir.Path, "archive")
 	// read all files in archive recursively using filepath.Walk

@@ -13,6 +13,8 @@
   og_max_exec_time = 0.035
 ```
 
+- added archive directory
+
 ### version "v2.4.0"
 
 - added assets directory

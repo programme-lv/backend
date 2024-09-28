@@ -208,6 +208,11 @@ func Read(taskRootDirPath string) (*Task, error) {
 		return nil, fmt.Errorf("error reading solutions: %w", err)
 	}
 
+	err = t.LoadArchiveFilesFromDir(taskDir)
+	if err != nil {
+		return nil, fmt.Errorf("error reading archive files: %w", err)
+	}
+
 	return t, nil
 }
 

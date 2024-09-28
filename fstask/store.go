@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 
 	"github.com/pelletier/go-toml/v2"
 )
@@ -173,6 +174,35 @@ func (task *Task) Store(dirPath string) error {
 		return fmt.Errorf("error storing solutions: %w", err)
 	}
 
+	err = task.storeArchiveFiles(filepath.Join(dirPath, "archive"))
+	if err != nil {
+		return fmt.Errorf("error storing archive files: %w", err)
+	}
+
+	return nil
+}
+
+func (task *Task) storeArchiveFiles(archiveDir string) error {
+	err := os.MkdirAll(archiveDir, 0755)
+	if err != nil {
+		return fmt.Errorf("error creating archive directory: %w", err)
+	}
+	for _, v := range task.ArchiveFiles {
+		path := filepath.Join(archiveDir, v.RelativePath)
+		dir := filepath.Dir(path)
+		// check if dir is subdir of archiveDir
+		if !strings.HasPrefix(dir, archiveDir) {
+			return fmt.Errorf("invalid archive file relative path: %s", v.RelativePath)
+		}
+		err = os.MkdirAll(dir, 0755)
+		if err != nil {
+			return fmt.Errorf("error creating archive file directory: %w", err)
+		}
+		err = os.WriteFile(path, v.Content, 0644)
+		if err != nil {
+			return fmt.Errorf("error writing archive file: %w", err)
+		}
+	}
 	return nil
 }
 
