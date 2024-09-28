@@ -15,7 +15,7 @@ type Solution struct {
 	ScoreLte *int // less than or equal
 	ScoreGt  *int // greater than
 	ScoreGte *int // greater than or equal
-	Author   string
+	Author   *string
 	ExecTime *float64 // original maximum execution time
 	Content  []byte
 }
@@ -35,7 +35,7 @@ func ReadSolutionsFromTaskDir(dir TaskDirInfo) (res []Solution, err error) {
 			ScoreLte *int     `toml:"score_lte"`
 			ScoreGt  *int     `toml:"score_gt"`
 			ScoreGte *int     `toml:"score_gte"`
-			Author   string   `toml:"author"`
+			Author   *string  `toml:"author"`
 			ExecTime *float64 `toml:"og_max_exec_time"`
 		} `toml:"solutions"`
 	}{}

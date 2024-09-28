@@ -49,9 +49,9 @@ func ensureTaskSolutionsCorrespondToTestdata(t *testing.T, task *fstask.Task) {
 
 	require.Equal(t, 50, *solutions[1].ScoreLte)
 
-	require.Equal(t, "Krišjānis Petručeņa", solutions[0].Author)
-	require.Equal(t, "Krišjānis Petručeņa", solutions[1].Author)
-	require.Equal(t, "Normunds Vilciņš", solutions[2].Author)
+	require.Equal(t, "Krišjānis Petručeņa", *solutions[0].Author)
+	require.Equal(t, "Krišjānis Petručeņa", *solutions[1].Author)
+	require.Equal(t, "Normunds Vilciņš", *solutions[2].Author)
 }
 
 func getSha256Sum(data []byte) string {

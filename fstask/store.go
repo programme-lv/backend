@@ -3,7 +3,6 @@ package fstask
 import (
 	"bytes"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"sort"
@@ -11,7 +10,7 @@ import (
 	"github.com/pelletier/go-toml/v2"
 )
 
-const proglvFSTaskFormatSpecVersOfScript = "2.5.0"
+const proglvFSTaskFormatSpecVersOfScript = "v2.5.0"
 
 type ProblemTOML struct {
 	Specification        string           `toml:"specification"`
@@ -22,6 +21,18 @@ type ProblemTOML struct {
 	IllustrationImgFname string           `toml:"illustration_image,omitempty"`
 	VisInpSTs            []int            `toml:"visible_input_subtasks"`
 	TestIDOverwrite      map[string]int   `toml:"test_id_overwrite,omitempty"`
+	Solutinos            []PTomlSolution  `toml:"solutions,omitempty"`
+}
+
+type PTomlSolution struct {
+	Filename string   `toml:"filename"`
+	ScoreEq  *int     `toml:"score_eq"`
+	ScoreLt  *int     `toml:"score_lt"`
+	ScoreLte *int     `toml:"score_lte"`
+	ScoreGt  *int     `toml:"score_gt"`
+	ScoreGte *int     `toml:"score_gte"`
+	Author   *string  `toml:"author"`
+	ExecTime *float64 `toml:"og_max_exec_time"`
 }
 
 type PTomlMetadata struct {
@@ -67,6 +78,7 @@ func (task *Task) encodeProblemTOML() ([]byte, error) {
 		IllustrationImgFname: task.illstrImgFname,
 		VisInpSTs:            task.visibleInputSubtasks,
 		TestIDOverwrite:      testIDOverwrite,
+		Solutinos:            []PTomlSolution{},
 	}
 	t.Specification = proglvFSTaskFormatSpecVersOfScript
 
@@ -88,6 +100,21 @@ func (task *Task) encodeProblemTOML() ([]byte, error) {
 		t.TestGroups = append(t.TestGroups, ptomlTestGroup)
 	}
 
+	// fill solutions
+	for _, sol := range task.Solutions {
+		ptomlSol := PTomlSolution{
+			Filename: sol.Filename,
+			ScoreEq:  sol.ScoreEq,
+			ScoreLt:  sol.ScoreLt,
+			ScoreLte: sol.ScoreLte,
+			ScoreGt:  sol.ScoreGt,
+			ScoreGte: sol.ScoreGte,
+			Author:   sol.Author,
+			ExecTime: sol.ExecTime,
+		}
+		t.Solutinos = append(t.Solutinos, ptomlSol)
+	}
+
 	buf := bytes.NewBuffer(make([]byte, 0))
 	err := toml.NewEncoder(buf).
 		SetTablesInline(false).
@@ -95,89 +122,86 @@ func (task *Task) encodeProblemTOML() ([]byte, error) {
 		SetIndentTables(true).Encode(t)
 
 	if err != nil {
-		log.Fatalf("Failed to marshal the problem.toml: %v\n", err)
+		return nil, fmt.Errorf("failed to encode the problem.toml: %w", err)
 	}
 
 	return buf.Bytes(), nil
 }
 
 func (task *Task) Store(dirPath string) error {
-	log.Printf("Starting to store task to directory: %s\n", dirPath)
 	if _, err := os.Stat(dirPath); !os.IsNotExist(err) {
-		log.Printf("Directory already exists: %s\n", dirPath)
 		return fmt.Errorf("directory already exists: %s", dirPath)
 	}
 
 	err := os.Mkdir(dirPath, 0755)
 	if err != nil {
-		log.Printf("Error creating directory: %v\n", err)
 		return fmt.Errorf("error creating directory: %w", err)
 	}
 
 	err = task.storeProblemToml(filepath.Join(dirPath, "problem.toml"))
 	if err != nil {
-		log.Printf("Error storing problem.toml: %v\n", err)
 		return fmt.Errorf("error storing problem.toml: %w", err)
 	}
-	log.Println("problem.toml written successfully")
 
 	err = task.storeTests(filepath.Join(dirPath, "tests"))
 	if err != nil {
-		log.Printf("Error storing tests: %v\n", err)
 		return fmt.Errorf("error storing tests: %w", err)
 	}
-	log.Println("tests written successfully")
 
 	err = task.storeExamples(filepath.Join(dirPath, "examples"))
 	if err != nil {
-		log.Printf("Error storing examples: %v\n", err)
 		return fmt.Errorf("error storing examples: %w", err)
 	}
-	log.Println("examples written successfully")
 
 	err = task.storePDFStatements(filepath.Join(dirPath, "statements", "pdf"))
 	if err != nil {
-		log.Printf("Error storing PDF statements: %v\n", err)
 		return fmt.Errorf("error storing PDF statements: %w", err)
 	}
-	log.Println("PDF statements written successfully")
 
 	err = task.storeMdStatements(filepath.Join(dirPath, "statements", "md"))
 	if err != nil {
-		log.Printf("Error storing Markdown statements: %v\n", err)
 		return fmt.Errorf("error storing Markdown statements: %w", err)
 	}
-	log.Println("Markdown statements written successfully")
 
 	err = task.storeAssets(filepath.Join(dirPath, "assets"))
 	if err != nil {
-		log.Printf("Error storing assets: %v\n", err)
 		return fmt.Errorf("error storing assets: %w", err)
 	}
-	log.Println("assets written successfully")
 
-	log.Printf("Task successfully stored in directory: %s\n", dirPath)
+	err = task.storeSolutions(filepath.Join(dirPath, "solutions"))
+	if err != nil {
+		return fmt.Errorf("error storing solutions: %w", err)
+	}
+
+	return nil
+}
+
+func (task *Task) storeSolutions(solutionsDir string) error {
+	err := os.MkdirAll(solutionsDir, 0755)
+	if err != nil {
+		return fmt.Errorf("error creating solutions directory: %w", err)
+	}
+	for _, v := range task.Solutions {
+		err = os.WriteFile(filepath.Join(solutionsDir, v.Filename), []byte(v.Content), 0644)
+		if err != nil {
+			return fmt.Errorf("error writing solution: %w", err)
+		}
+	}
 	return nil
 }
 
 func (task *Task) storeAssets(assetDir string) error {
 	err := os.MkdirAll(assetDir, 0755)
 	if err != nil {
-		log.Printf("Error creating assets directory: %v\n", err)
 		return fmt.Errorf("error creating assets directory: %w", err)
 	}
-	log.Println("Assets directory created successfully")
 
 	for _, v := range task.assets {
-		// v.Content
-		// v.RelativePath
 		path := filepath.Join(assetDir, v.RelativePath)
 		err = os.WriteFile(path, v.Content, 0644)
 		if err != nil {
-			log.Printf("Error writing asset: %v\n", err)
 			return fmt.Errorf("error writing asset: %w", err)
 		}
-		log.Printf("Asset written: %s\n", path)
 	}
 	return nil
 }
@@ -185,20 +209,16 @@ func (task *Task) storeAssets(assetDir string) error {
 func (task *Task) storeMdStatements(mdStatementDir string) error {
 	err := os.MkdirAll(mdStatementDir, 0755)
 	if err != nil {
-		log.Printf("Error creating Markdown statements directory: %v\n", err)
 		return fmt.Errorf("error creating Markdown statements directory: %w", err)
 	}
-	log.Println("Markdown statements directory created successfully")
 
 	for _, v := range task.MarkdownStatements {
 		// create language directory
 		dirPath := filepath.Join(mdStatementDir, v.Language)
 		err = os.MkdirAll(dirPath, 0755)
 		if err != nil {
-			log.Printf("Error creating Markdown statement directory: %v\n", err)
 			return fmt.Errorf("error creating Markdown statement directory: %w", err)
 		}
-		log.Printf("Markdown statement directory created: %s\n", dirPath)
 
 		inputPath := filepath.Join(dirPath, "input.md")
 		outputPath := filepath.Join(dirPath, "output.md")
@@ -209,46 +229,36 @@ func (task *Task) storeMdStatements(mdStatementDir string) error {
 		if v.Input != "" {
 			err = os.WriteFile(inputPath, []byte(v.Input), 0644)
 			if err != nil {
-				log.Printf("Error writing Markdown statement: %v\n", err)
 				return fmt.Errorf("error writing Markdown statement: %w", err)
 			}
-			log.Printf("Markdown statement written to: %s\n", inputPath)
 		}
 
 		if v.Output != "" {
 			err = os.WriteFile(outputPath, []byte(v.Output), 0644)
 			if err != nil {
-				log.Printf("Error writing Markdown statement: %v\n", err)
 				return fmt.Errorf("error writing Markdown statement: %w", err)
 			}
-			log.Printf("Markdown statement written to: %s\n", outputPath)
 		}
 
 		if v.Story != "" {
 			err = os.WriteFile(storyPath, []byte(v.Story), 0644)
 			if err != nil {
-				log.Printf("Error writing Markdown statement: %v\n", err)
 				return fmt.Errorf("error writing Markdown statement: %w", err)
 			}
-			log.Printf("Markdown statement written to: %s\n", storyPath)
 		}
 
 		if v.Scoring != nil {
 			err = os.WriteFile(scoringPath, []byte(*v.Scoring), 0644)
 			if err != nil {
-				log.Printf("Error writing Markdown statement: %v\n", err)
 				return fmt.Errorf("error writing Markdown statement: %w", err)
 			}
-			log.Printf("Markdown statement written to: %s\n", scoringPath)
 		}
 
 		if v.Notes != nil {
 			err = os.WriteFile(notesPath, []byte(*v.Notes), 0644)
 			if err != nil {
-				log.Printf("Error writing Markdown statement: %v\n", err)
 				return fmt.Errorf("error writing Markdown statement: %w", err)
 			}
-			log.Printf("Markdown statement written to: %s\n", notesPath)
 		}
 	}
 
@@ -258,20 +268,16 @@ func (task *Task) storeMdStatements(mdStatementDir string) error {
 func (task *Task) storePDFStatements(pdfStatementsDir string) error {
 	err := os.MkdirAll(pdfStatementsDir, 0755)
 	if err != nil {
-		log.Printf("Error creating PDF statements directory: %v\n", err)
 		return fmt.Errorf("error creating PDF statements directory: %w", err)
 	}
-	log.Println("PDF statements directory created successfully")
 
 	for _, v := range task.PdfStatements {
 		fname := fmt.Sprintf("%s.pdf", v.Language)
 		fpath := filepath.Join(pdfStatementsDir, fname)
 		err = os.WriteFile(fpath, []byte(v.Content), 0644)
 		if err != nil {
-			log.Printf("Error writing PDF statement: %v\n", err)
 			return fmt.Errorf("error writing PDF statement: %w", err)
 		}
-		log.Printf("PDF statement written to: %s\n", fpath)
 	}
 
 	return nil
@@ -280,15 +286,12 @@ func (task *Task) storePDFStatements(pdfStatementsDir string) error {
 func (task *Task) storeProblemToml(problemTomlPath string) error {
 	pToml, err := task.encodeProblemTOML()
 	if err != nil {
-		log.Printf("Error encoding problem.toml: %v\n", err)
 		return fmt.Errorf("error encoding problem.toml: %w", err)
 	}
 	err = os.WriteFile(problemTomlPath, pToml, 0644)
 	if err != nil {
-		log.Printf("Error writing problem.toml: %v\n", err)
 		return fmt.Errorf("error writing problem.toml: %w", err)
 	}
-	log.Println("problem.toml written successfully")
 	return nil
 }
 
@@ -296,10 +299,8 @@ func (task *Task) storeTests(testsDirPath string) error {
 	var err error
 	err = os.Mkdir(testsDirPath, 0755)
 	if err != nil {
-		log.Printf("Error creating tests directory: %v\n", err)
 		return fmt.Errorf("error creating tests directory: %w", err)
 	}
-	log.Println("tests directory created successfully")
 
 	for _, t := range task.tests {
 		fname := task.getTestToBeWrittenFname(t.ID)
@@ -308,18 +309,15 @@ func (task *Task) storeTests(testsDirPath string) error {
 
 		err = os.WriteFile(inPath, t.Input, 0644)
 		if err != nil {
-			log.Printf("Error writing input file %s: %v\n", inPath, err)
 			return fmt.Errorf("error writing input file: %w", err)
 		}
 
 		err = os.WriteFile(ansPath, t.Answer, 0644)
 		if err != nil {
-			log.Printf("Error writing answer file %s: %v\n", ansPath, err)
 			return fmt.Errorf("error writing answer file: %w", err)
 		}
 
 	}
-	log.Println("Test files written successfully")
 
 	return nil
 }
@@ -366,10 +364,8 @@ func (task *Task) storeExamples(examplesDirPath string) error {
 	var err error
 	err = os.Mkdir(examplesDirPath, 0755)
 	if err != nil {
-		log.Printf("Error creating examples directory: %v\n", err)
 		return fmt.Errorf("error creating examples directory: %w", err)
 	}
-	log.Println("examples directory created successfully")
 	for i, e := range task.examples {
 		var inPath string
 		var ansPath string
@@ -390,24 +386,20 @@ func (task *Task) storeExamples(examplesDirPath string) error {
 
 		err = os.WriteFile(inPath, e.Input, 0644)
 		if err != nil {
-			log.Printf("Error writing input file %s: %v\n", inPath, err)
 			return fmt.Errorf("error writing input file: %w", err)
 		}
 
 		err = os.WriteFile(ansPath, e.Output, 0644)
 		if err != nil {
-			log.Printf("Error writing answer file %s: %v\n", ansPath, err)
 			return fmt.Errorf("error writing answer file: %w", err)
 		}
 
 		if len(e.MdNote) > 0 {
 			err = os.WriteFile(mdPath, e.MdNote, 0644)
 			if err != nil {
-				log.Printf("Error writing Markdown note file %s: %v\n", mdPath, err)
 				return fmt.Errorf("error writing Markdown note file: %w", err)
 			}
 		}
 	}
-	log.Println("Example files written successfully")
 	return nil
 }
