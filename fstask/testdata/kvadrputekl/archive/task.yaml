@@ -1,0 +1,53 @@
+name: 'Kp'
+title: 'Kvadrātveida putekļsūcējs'
+statements:
+  - ['./teksts/kp.typ', 'lv']
+
+time_limit: 0.5
+memory_limit: 256
+
+# validator: './riki/validator.cpp'
+tests_archive: './testi/tests.zip'
+
+# == Nepieciešams ne komunikāciju uzdevumos, 
+# kur žūrijas atbilde var nesakrist ar dalībnieka atbildi
+# checker: './riki/checker.cpp'
+
+# == Nepieciešams komunikāciju uzdevumos
+# task_type: "Communication"
+# interactor: './riki/interactor.cpp'
+
+subtask_points: [0, 3, 48, 28, 21]
+
+tests_groups:
+  - groups: 0
+    points: 0
+    public: true
+    subtask: 0
+    comment: Piemēri
+
+  - groups: 1
+    points: 3
+    public: true
+    subtask: 1
+
+  - groups: [2, 2]
+    points: 8
+    public: [2]
+    subtask: 2
+
+  - groups: [3, 6]
+    points: 10
+    public: [6]
+    subtask: 2
+
+  - groups: [7, 10]
+    points: 7
+    public: [10]
+    subtask: 3
+
+  - groups: [11, 13]
+    points: 7
+    public: [13]
+    subtask: 4
+
