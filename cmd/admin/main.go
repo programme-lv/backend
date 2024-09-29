@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/programme-lv/backend/fstask/lio2023"
 	"github.com/spf13/cobra"
 )
 
@@ -31,7 +32,10 @@ func main() {
 		Run: func(cmd *cobra.Command, args []string) {
 			switch format {
 			case "lio2023":
-				importLio2023Task(src, dst)
+				err := importLio2023Task(src, dst)
+				if err != nil {
+					log.Fatal(err)
+				}
 			default:
 				log.Fatalf("Unsupported format: %s\n", format)
 			}
@@ -60,10 +64,18 @@ func main() {
 }
 
 func importLio2023Task(src string, dst string) error {
-	fmt.Println("Transforming LIO 2023 task with the following parameters:")
-	fmt.Printf("Source: %s\n", src)
-	fmt.Printf("Destination: %s\n", dst)
-	path := filepath.Join(dst, filepath.Base(src)+"-"+time.Now().Format("2006-01-02-15-04-05"))
-	os.Mkdir(path, 0755)
+	datetime := time.Now().Format("2006-01-02-15-04-05")
+	path := filepath.Join(dst, filepath.Base(src)+"-"+datetime)
+
+	task, err := lio2023.ParseLio2023TaskDir(src)
+	if err != nil {
+		return fmt.Errorf("error parsing task: %w", err)
+	}
+
+	err = task.Store(path)
+	if err != nil {
+		return fmt.Errorf("error storing task: %w", err)
+	}
+
 	return nil
 }

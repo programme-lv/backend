@@ -116,7 +116,6 @@ func ParseLio2023TaskDir(dirPath string) (*fstask.Task, error) {
 	}
 	// split by "\n"
 	parts := strings.Split(string(punktiTxtContent), "\n")
-	subtask := 0
 	for _, line := range parts {
 		if line == "" {
 			continue
@@ -143,21 +142,11 @@ func ParseLio2023TaskDir(dirPath string) (*fstask.Task, error) {
 			return nil, fmt.Errorf("failed to parse points: %w", err)
 		}
 
-		if len(parts) > 2 {
-			subtaskStr := strings.TrimSuffix(parts[2], ".")
-			newSubtask, err := strconv.Atoi(subtaskStr)
-			if err != nil {
-				return nil, fmt.Errorf("failed to parse subtask: %w", err)
-			}
-			subtask = newSubtask
-		}
-
 		for i := start; i <= end; i++ {
 			if i == 0 {
 				continue // example test group
 			}
-			public := strings.Contains(line, "PUBLISKA")
-			task.AddTestGroup(points, public, testGroupTestIds[i], subtask)
+			task.AddTestGroup(points, false, testGroupTestIds[i], 69)
 		}
 	}
 
@@ -224,6 +213,8 @@ func ParseLio2023TaskDir(dirPath string) (*fstask.Task, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error walking directory: %w", err)
 	}
+
+	task.OriginOlympiad = "LIO"
 
 	return task, nil
 }
