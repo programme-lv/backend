@@ -1,5 +1,7 @@
 package tasksrvc
 
+import "fmt"
+
 type Task struct {
 	ShortId  string
 	FullName string
@@ -49,9 +51,9 @@ type MarkdownStatement struct {
 }
 
 type Subtask struct {
-	SubtaskID int
-	Score     int
-	TestIDs   []int
+	ID      int
+	Score   int
+	TestIDs []int
 }
 
 type TaskEvalTestGroupInformation struct {
@@ -60,24 +62,44 @@ type TaskEvalTestGroupInformation struct {
 	Subtask     int
 }
 
-type TaskSubmEvalData struct {
-	PublishedTaskID      string
-	TaskFullName         string
-	MemoryLimitMegabytes int
-	CPUTimeLimitSeconds  float64
-	Tests                []*Test
-	TestlibCheckerCode   string
-	TestGroups           []TestGroup
+type Test struct {
+	ID      int
+	InpSha2 string
+	AnsSha2 string
 }
 
-type Test struct {
-	TestID          int
-	FullInputS3URI  string
-	InputSha256     string
-	FullAnswerS3URI string
-	AnswerSha256    string
-	Subtasks        []int
-	TestGroup       *int
+func (test *Test) FullInputS3URI() string {
+	format := "s3://proglv-tests/%s.zst"
+	return fmt.Sprintf(format, test.InpSha2)
+}
+
+func (test *Test) FullAnswerS3URI() string {
+	format := "s3://proglv-tests/%s.zst"
+	return fmt.Sprintf(format, test.AnsSha2)
+}
+
+func (t *Task) FindSubtasksWithTest(testId int) []Subtask {
+	subtasks := make([]Subtask, 0)
+	for _, subtask := range t.Subtasks {
+		for _, test := range subtask.TestIDs {
+			if test == testId {
+				subtasks = append(subtasks, subtask)
+			}
+		}
+	}
+	return subtasks
+}
+
+func (t *Task) FindTestGroupsWithTest(testId int) []TestGroup {
+	testGroups := make([]TestGroup, 0)
+	for _, testGroup := range t.TestGroups {
+		for _, test := range testGroup.TestIDs {
+			if test == testId {
+				testGroups = append(testGroups, testGroup)
+			}
+		}
+	}
+	return testGroups
 }
 
 // VisInpSubtask represents a subtask with visible input.
@@ -96,18 +118,11 @@ type TestWithOnlyInput struct {
 
 // TestGroup represents a group of tests within a task.
 type TestGroup struct {
-	GroupID int
+	ID      int
 	Points  int
 	Public  bool
 	Subtask int
 	TestIDs []int
-}
-
-// TestChecksum represents the checksums for a test's input and answer.
-type TestChecksum struct {
-	TestID  int
-	InSHA2  string
-	AnsSHA2 string
 }
 
 // PdfStatement represents a PDF statement with language and checksum.
@@ -116,10 +131,10 @@ type PdfStatement struct {
 	ObjectUrl  string
 }
 
-// ImgUuidS3Pair represents a mapping between image UUIDs and their S3 keys.
-type ImgUuidS3Pair struct {
-	UUID  string
-	S3Key string
+// ImgUuidUrl represents a mapping between image UUIDs and their URLs.
+type ImgUuidUrl struct {
+	UUID string
+	Url  string
 }
 
 // OriginNote represents origin notes with language and information.

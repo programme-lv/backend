@@ -2,29 +2,30 @@ package tasksrvc
 
 import (
 	"crypto/sha256"
+	"encoding/gob"
 	"fmt"
 	"mime"
+	"os"
 
 	"github.com/klauspost/compress/zstd"
 )
 
-// PutPublicTaskInput encapsulates all data required to create a public task.
-type PutPublicTaskInput struct {
-	TaskCode    string
-	FullName    string  // Full name of the task
-	MemMBytes   int     // Max memory usage during execution in megabytes
-	CpuSecs     float64 // Max execution CPU time in seconds
-	Difficulty  *int    // Integer from 1 to 5. 1 - very easy, 5 - very hard
-	OriginOlymp string  // Name of the Olympiad where the task was used
-	IllustrKey  *string // S3 key for bucket "proglv-public"
-	VisInpSts   []VisInpSubtask
-	TestGroups  []TestGroup
-	TestChsums  []TestChecksum
-	PdfSttments []PdfStatement
-	MdSttments  []MarkdownStatement
-	ImgUuidMap  []ImgUuidS3Pair
-	Examples    []Example
-	OriginNotes []OriginNote
+func (ts *TaskService) PutTask(task *Task) (err error) {
+	// serialize task with gob and write to /home/kp/Programming/_PROGLV/task-workspace/tmp/task.gob
+
+	filePath := "/home/kp/Programming/_PROGLV/task-workspace/tmp/task.gob"
+	file, err := os.Create(filePath)
+	if err != nil {
+		return fmt.Errorf("failed to create file: %w", err)
+	}
+	defer file.Close()
+
+	encoder := gob.NewEncoder(file)
+	if err := encoder.Encode(task); err != nil {
+		return fmt.Errorf("failed to encode task: %w", err)
+	}
+
+	return nil
 }
 
 // UploadStatementPdf uploads a PDF statement with the given content to S3.

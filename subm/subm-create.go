@@ -83,15 +83,15 @@ func (s *SubmissionSrvc) createSubmissionWithValidatedInput(
 		for _, subtask := range task.Subtasks {
 			stTestCount := 0
 			for _, test := range task.Tests {
-				for _, testSt := range test.Subtasks {
-					if testSt == subtask.SubtaskID {
+				for _, testSt := range task.FindSubtasksWithTest(test.ID) {
+					if testSt.ID == subtask.ID {
 						stTestCount++
 					}
 				}
 			}
 			evalRow := &EvalScoringSubtaskRow{
 				SubmUuid:      submUuid.String(),
-				SortKey:       fmt.Sprintf("eval#%s#scoring#subtask#%02d", evalUuid.String(), subtask.SubtaskID),
+				SortKey:       fmt.Sprintf("eval#%s#scoring#subtask#%02d", evalUuid.String(), subtask.ID),
 				SubtaskScore:  subtask.Score,
 				AcceptedTests: 0,
 				WrongTests:    0,
@@ -102,7 +102,7 @@ func (s *SubmissionSrvc) createSubmissionWithValidatedInput(
 
 			submRow := &SubmScoringSubtaskRow{
 				SubmUuid:        submUuid.String(),
-				SortKey:         fmt.Sprintf("subm#scoring#subtask#%02d", subtask.SubtaskID),
+				SortKey:         fmt.Sprintf("subm#scoring#subtask#%02d", subtask.ID),
 				SubtaskScore:    subtask.Score,
 				AcceptedTests:   0,
 				WrongTests:      0,
@@ -110,7 +110,7 @@ func (s *SubmissionSrvc) createSubmissionWithValidatedInput(
 				Version:         1,
 				UntestedTests:   stTestCount,
 				Gsi1Pk:          1,
-				Gsi1SortKey:     fmt.Sprintf("%s#%s#scoring#subtask#%02d", createdAt.Format(time.RFC3339), submUuid.String(), subtask.SubtaskID),
+				Gsi1SortKey:     fmt.Sprintf("%s#%s#scoring#subtask#%02d", createdAt.Format(time.RFC3339), submUuid.String(), subtask.ID),
 			}
 			submScoringSubtaskRows = append(submScoringSubtaskRows, submRow)
 		}
@@ -161,15 +161,10 @@ func (s *SubmissionSrvc) createSubmissionWithValidatedInput(
 		evalScoringTestgroupRows := make([]*EvalScoringTestgroupRow, 0)
 		submScoringTestgroupRows := make([]*SubmScoringTestgroupRow, 0)
 		for _, testGroup := range task.TestGroups {
-			tgTests := 0
-			for _, test := range task.Tests {
-				if test.TestGroup != nil && *test.TestGroup == testGroup.GroupID {
-					tgTests++
-				}
-			}
+			tgTests := len(testGroup.TestIDs)
 			evalRow := &EvalScoringTestgroupRow{
 				SubmUuid:         submUuid.String(),
-				SortKey:          fmt.Sprintf("eval#%s#scoring#testgroup#%02d", evalUuid.String(), testGroup.GroupID),
+				SortKey:          fmt.Sprintf("eval#%s#scoring#testgroup#%02d", evalUuid.String(), testGroup.ID),
 				StatementSubtask: testGroup.Subtask,
 				TestgroupScore:   testGroup.Points,
 				AcceptedTests:    0,
@@ -181,7 +176,7 @@ func (s *SubmissionSrvc) createSubmissionWithValidatedInput(
 
 			submRow := &SubmScoringTestgroupRow{
 				SubmUuid:         submUuid.String(),
-				SortKey:          fmt.Sprintf("subm#scoring#testgroup#%02d", testGroup.GroupID),
+				SortKey:          fmt.Sprintf("subm#scoring#testgroup#%02d", testGroup.ID),
 				StatementSubtask: testGroup.Subtask,
 				TestgroupScore:   testGroup.Points,
 				AcceptedTests:    0,
@@ -190,7 +185,7 @@ func (s *SubmissionSrvc) createSubmissionWithValidatedInput(
 				Version:          1,
 				UntestedTests:    tgTests,
 				Gsi1Pk:           1,
-				Gsi1SortKey:      fmt.Sprintf("%s#%s#scoring#testgroup#%02d", createdAt.Format(time.RFC3339), submUuid.String(), testGroup.GroupID),
+				Gsi1SortKey:      fmt.Sprintf("%s#%s#scoring#testgroup#%02d", createdAt.Format(time.RFC3339), submUuid.String(), testGroup.ID),
 			}
 
 			submScoringTestgroupRows = append(submScoringTestgroupRows, submRow)
@@ -282,11 +277,22 @@ func (s *SubmissionSrvc) createSubmissionWithValidatedInput(
 	// PUT EVALUATION TEST ROWS
 	evaluationTestRows := make([]*EvalTestRow, 0)
 	for _, test := range task.Tests {
+		testGroup := new(int)
+		testGroups := task.FindTestGroupsWithTest(test.ID)
+		if len(testGroups) > 0 {
+			testGroup = &testGroups[0].ID
+		}
+		// TODO: As of now we only support one test group per test!!!
+		subtasks := task.FindSubtasksWithTest(test.ID)
+		subtasksIDs := make([]int, len(subtasks))
+		for i, subtask := range subtasks {
+			subtasksIDs[i] = subtask.ID
+		}
 		evaluationTestRows = append(evaluationTestRows, &EvalTestRow{
 			SubmUuid:               submUuid.String(),
-			SortKey:                fmt.Sprintf("eval#%s#test#%04d", evalUuid.String(), test.TestID),
-			FullInputS3Uri:         test.FullInputS3URI,
-			FullAnswerS3Uri:        test.FullAnswerS3URI,
+			SortKey:                fmt.Sprintf("eval#%s#test#%04d", evalUuid.String(), test.ID),
+			FullInputS3Uri:         test.FullInputS3URI(),
+			FullAnswerS3Uri:        test.FullAnswerS3URI(),
 			Reached:                false,
 			Ignored:                false,
 			Finished:               false,
@@ -304,8 +310,8 @@ func (s *SubmissionSrvc) createSubmissionWithValidatedInput(
 			SubmCpuTimeMillis:      nil,
 			SubmWallTimeMillis:     nil,
 			SubmMemoryKibiBytes:    nil,
-			Subtasks:               test.Subtasks,
-			TestGroup:              test.TestGroup,
+			Subtasks:               subtasksIDs,
+			TestGroup:              testGroup,
 		})
 	}
 	batchSize := 25
@@ -359,13 +365,13 @@ func (s *SubmissionSrvc) createSubmissionWithValidatedInput(
 	var tests []Test = make([]Test, 0)
 	for _, test := range task.Tests {
 		tests = append(tests, Test{
-			ID:            test.TestID,
-			InputSha256:   test.InputSha256,
-			InputS3URI:    test.FullInputS3URI,
+			ID:            test.ID,
+			InputSha256:   test.InpSha2,
+			InputS3URI:    test.FullInputS3URI(),
 			InputContent:  nil,
 			InputHttpURL:  nil,
-			AnswerSha256:  test.AnswerSha256,
-			AnswerS3URI:   test.FullAnswerS3URI,
+			AnswerSha256:  test.AnsSha2,
+			AnswerS3URI:   test.FullAnswerS3URI(),
 			AnswerContent: nil,
 			AnswerHttpURL: nil,
 		})
@@ -407,14 +413,9 @@ func (s *SubmissionSrvc) createSubmissionWithValidatedInput(
 	if scoringMethod == "testgroup" {
 		evalScoringTestgroups = make([]*TestGroupResult, 0)
 		for _, testGroup := range task.TestGroups {
-			tgTests := 0
-			for _, test := range task.Tests {
-				if test.TestGroup != nil && *test.TestGroup == testGroup.GroupID {
-					tgTests++
-				}
-			}
+			tgTests := len(testGroup.TestIDs)
 			evalScoringTestgroups = append(evalScoringTestgroups, &TestGroupResult{
-				TestGroupID:      testGroup.GroupID,
+				TestGroupID:      testGroup.ID,
 				TestGroupScore:   testGroup.Points,
 				StatementSubtask: testGroup.Subtask,
 				AcceptedTests:    0,
@@ -435,16 +436,9 @@ func (s *SubmissionSrvc) createSubmissionWithValidatedInput(
 	if scoringMethod == "subtask" {
 		evalScoringSubtasks = make([]*SubtaskResult, 0)
 		for _, subtask := range task.Subtasks {
-			stTestCount := 0
-			for _, test := range task.Tests {
-				for _, testSt := range test.Subtasks {
-					if testSt == subtask.SubtaskID {
-						stTestCount++
-					}
-				}
-			}
+			stTestCount := len(subtask.TestIDs)
 			evalScoringSubtasks = append(evalScoringSubtasks, &SubtaskResult{
-				SubtaskID:     subtask.SubtaskID,
+				SubtaskID:     subtask.ID,
 				SubtaskScore:  subtask.Score,
 				AcceptedTests: 0,
 				WrongTests:    0,
