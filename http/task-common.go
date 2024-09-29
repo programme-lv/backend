@@ -9,16 +9,21 @@ type Example struct {
 }
 
 type MdStatement struct {
-	Story   string  `json:"story"`
-	Input   string  `json:"input"`
-	Output  string  `json:"output"`
-	Notes   *string `json:"notes,omitempty"`
-	Scoring *string `json:"scoring,omitempty"`
+	Story   string `json:"story"`
+	Input   string `json:"input"`
+	Output  string `json:"output"`
+	Notes   string `json:"notes,omitempty"`
+	Scoring string `json:"scoring,omitempty"`
 }
 
-type StInputs struct {
-	Subtask int      `json:"subtask"`
-	Inputs  []string `json:"inputs"`
+type VisInputSubtask struct {
+	Subtask    int                 `json:"subtask"`
+	TestInputs []TestWithOnlyInput `json:"inputs"`
+}
+
+type TestWithOnlyInput struct {
+	TestId int    `json:"test_id"`
+	Input  string `json:"input"`
 }
 
 type Task struct {
@@ -33,19 +38,9 @@ type Task struct {
 	Examples               []Example         `json:"examples"`
 	DefaultPDFStatementURL *string           `json:"default_pdf_statement_url"`
 	OriginNotes            map[string]string `json:"origin_notes"`
-	VisibleInputSubtasks   []StInputs        `json:"visible_input_subtasks"`
+	VisibleInputSubtasks   []VisInputSubtask `json:"visible_input_subtasks"`
 }
 
-func mapStInputs(stInputs []tasksrvc.StInputs) []StInputs {
-	response := make([]StInputs, len(stInputs))
-	for i, st := range stInputs {
-		response[i] = StInputs{
-			Subtask: st.Subtask,
-			Inputs:  st.Inputs,
-		}
-	}
-	return response
-}
 func mapTaskMdStatement(md *tasksrvc.MarkdownStatement) MdStatement {
 	if md == nil {
 		return MdStatement{}
@@ -72,19 +67,31 @@ func mapTaskExamples(examples []tasksrvc.Example) []Example {
 }
 
 func mapTaskResponse(task *tasksrvc.Task) *Task {
+	illstrImgUrl := new(string)
+	if task.IllustrImgUrl != "" {
+		illstrImgUrl = new(string)
+		*illstrImgUrl = task.IllustrImgUrl
+	}
+
+	difficultyRating := new(int)
+	if task.DifficultyRating != 0 {
+		difficultyRating = new(int)
+		*difficultyRating = task.DifficultyRating
+	}
+
 	response := &Task{
 		PublishedTaskID:        task.ShortId,
 		TaskFullName:           task.FullName,
 		MemoryLimitMegabytes:   task.MemLimMegabytes,
 		CPUTimeLimitSeconds:    task.CpuTimeLimSecs,
 		OriginOlympiad:         task.OriginOlympiad,
-		IllustrationImgURL:     task.IllustrationImgUrl,
-		DifficultyRating:       task.DifficultyRating,
+		IllustrationImgURL:     illstrImgUrl,
+		DifficultyRating:       difficultyRating,
 		DefaultMDStatement:     mapTaskMdStatement(nil),
 		Examples:               mapTaskExamples(task.Examples),
 		DefaultPDFStatementURL: nil,
 		OriginNotes:            nil,
-		VisibleInputSubtasks:   mapStInputs(task.VisibleInputSubtasks),
+		VisibleInputSubtasks:   []VisInputSubtask{}, // TODO: add visible input subtasks
 	}
 	return response
 }

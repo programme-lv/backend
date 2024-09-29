@@ -1,14 +1,41 @@
 package tasksrvc
 
-type Example struct {
-	ExampleID int
-	Input     string
-	Output    string
-	MdNote    string
+type Task struct {
+	ShortId  string
+	FullName string
+
+	IllustrImgUrl string
+
+	// constraints
+	MemLimMegabytes int
+	CpuTimeLimSecs  float64
+
+	// metadata
+	OriginOlympiad   string
+	DifficultyRating int
+	OriginNotes      []OriginNote
+
+	// statement
+	MdStatements   []MarkdownStatement
+	PdfStatements  []PdfStatement
+	VisInpSubtasks []VisInpSubtask
+	Examples       []Example
+
+	// evaluation
+	Tests      []Test
+	Checker    string
+	Interactor string
+
+	// scoring
+	Subtasks   []Subtask
+	TestGroups []TestGroup
 }
 
-type GetTaskSubmEvalDataPayload struct {
-	TaskID string
+type Example struct {
+	OrderId int
+	Input   string
+	Output  string
+	MdNote  string
 }
 
 type MarkdownStatement struct {
@@ -17,46 +44,8 @@ type MarkdownStatement struct {
 	Story   string
 	Input   string
 	Output  string
-	Notes   *string
-	Scoring *string
-}
-
-type StInputs struct {
-	Subtask int
-	Inputs  []string
-}
-
-type Task struct {
-	ShortId  string
-	FullName string
-
-	MemLimMegabytes int
-	CpuTimeLimSecs  float64
-
-	OriginOlympiad   string
-	DifficultyRating *int
-	OriginNotes      []struct {
-		Lang string
-		Info string
-	}
-
-	IllustrationImgUrl   *string
-	VisibleInputSubtasks []StInputs
-
-	MdStatements  []MarkdownStatement
-	PdfStatements []struct {
-		Lang string
-		Url  string
-	}
-
-	Tests    []Test
-	Examples []Example
-
-	Subtasks   []Subtask
-	TestGroups []TestGroup
-
-	TestlibChecker    string
-	TestlibInteractor string
+	Notes   string
+	Scoring string
 }
 
 type Subtask struct {
@@ -78,7 +67,7 @@ type TaskSubmEvalData struct {
 	CPUTimeLimitSeconds  float64
 	Tests                []*Test
 	TestlibCheckerCode   string
-	TestGroups           []*TestGroup
+	TestGroups           []TestGroup
 }
 
 type Test struct {
@@ -91,7 +80,10 @@ type Test struct {
 	TestGroup       *int
 }
 
-type VisInpSt struct {
+// VisInpSubtask represents a subtask with visible input.
+// Usually, such subtasks are used to gift students some points by
+// allowing them solve some testcases by hand.
+type VisInpSubtask struct {
 	Subtask int
 	Inputs  []TestWithOnlyInput
 }
@@ -120,7 +112,7 @@ type TestChecksum struct {
 
 // PdfStatement represents a PDF statement with language and checksum.
 type PdfStatement struct {
-	LangISO639 string
+	LangIso639 string
 	ObjectUrl  string
 }
 
@@ -132,25 +124,6 @@ type ImgUuidS3Pair struct {
 
 // OriginNote represents origin notes with language and information.
 type OriginNote struct {
-	LangISO639 string
-	OgInfo     string
-}
-
-// PutPublicTaskInput encapsulates all data required to create a public task.
-type PutPublicTaskInput struct {
-	TaskCode    string
-	FullName    string  // Full name of the task
-	MemMBytes   int     // Max memory usage during execution in megabytes
-	CpuSecs     float64 // Max execution CPU time in seconds
-	Difficulty  *int    // Integer from 1 to 5. 1 - very easy, 5 - very hard
-	OriginOlymp string  // Name of the Olympiad where the task was used
-	IllustrKey  *string // S3 key for bucket "proglv-public"
-	VisInpSts   []VisInpSt
-	TestGroups  []TestGroup
-	TestChsums  []TestChecksum
-	PdfSttments []PdfStatement
-	MdSttments  []MarkdownStatement
-	ImgUuidMap  []ImgUuidS3Pair
-	Examples    []Example
-	OriginNotes []OriginNote
+	Lang string
+	Info string
 }

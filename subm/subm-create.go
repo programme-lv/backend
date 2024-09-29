@@ -250,7 +250,7 @@ func (s *SubmissionSrvc) createSubmissionWithValidatedInput(
 		SortKey:                    fmt.Sprintf("eval#%s#details", evalUuid.String()),
 		EvalUuid:                   evalUuid.String(),
 		EvaluationStage:            "waiting",
-		TestlibCheckerCode:         task.TestlibChecker,
+		TestlibCheckerCode:         task.Checker,
 		SystemInformation:          nil,
 		SubmCompileStdout:          nil,
 		SubmCompileStderr:          nil,
@@ -387,7 +387,7 @@ func (s *SubmissionSrvc) createSubmissionWithValidatedInput(
 				MemoryKibibytes: int(float64(task.MemLimMegabytes) * 976.5625),
 			},
 			Tests:          tests,
-			TestlibChecker: task.TestlibChecker,
+			TestlibChecker: task.Checker,
 		},
 		ResponseSqsUrl: aws.String(s.responseSqsUrl),
 	}

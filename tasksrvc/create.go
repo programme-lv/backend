@@ -8,6 +8,25 @@ import (
 	"github.com/klauspost/compress/zstd"
 )
 
+// PutPublicTaskInput encapsulates all data required to create a public task.
+type PutPublicTaskInput struct {
+	TaskCode    string
+	FullName    string  // Full name of the task
+	MemMBytes   int     // Max memory usage during execution in megabytes
+	CpuSecs     float64 // Max execution CPU time in seconds
+	Difficulty  *int    // Integer from 1 to 5. 1 - very easy, 5 - very hard
+	OriginOlymp string  // Name of the Olympiad where the task was used
+	IllustrKey  *string // S3 key for bucket "proglv-public"
+	VisInpSts   []VisInpSubtask
+	TestGroups  []TestGroup
+	TestChsums  []TestChecksum
+	PdfSttments []PdfStatement
+	MdSttments  []MarkdownStatement
+	ImgUuidMap  []ImgUuidS3Pair
+	Examples    []Example
+	OriginNotes []OriginNote
+}
+
 // UploadStatementPdf uploads a PDF statement with the given content to S3.
 // It returns the S3 key or an error if the process fails.
 //
