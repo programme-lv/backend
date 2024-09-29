@@ -33,7 +33,7 @@ func (c *taskConstructor) applyDdbItem(item map[string]types.AttributeValue) err
 			return fmt.Errorf("failed to unmarshal item: %w", err)
 		}
 
-		c.task.PublishedTaskID = ddbr.TaskCode
+		c.task.ShortTaskID = ddbr.TaskCode
 		c.task.TaskFullName = ddbr.FullName
 		c.task.MemoryLimitMegabytes = ddbr.MemMbytes
 		c.task.CPUTimeLimitSeconds = ddbr.CpuSecs

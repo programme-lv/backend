@@ -336,7 +336,7 @@ func (s *SubmissionSrvc) createSubmissionWithValidatedInput(
 		SortKey:           "subm#details",
 		Content:           *subm,
 		AuthorUuid:        user.UUID,
-		TaskId:            task.PublishedTaskID,
+		TaskId:            task.ShortTaskID,
 		ProgLangId:        lang.ID,
 		CurrentEvalUuid:   evalUuid.String(),
 		CurrentEvalStatus: "waiting",
@@ -465,7 +465,7 @@ func (s *SubmissionSrvc) createSubmissionWithValidatedInput(
 		PLangDisplayName:      lang.FullName,
 		PLangMonacoID:         lang.MonacoId,
 		TaskName:              task.TaskFullName,
-		TaskID:                task.PublishedTaskID,
+		TaskID:                task.ShortTaskID,
 		EvalUUID:              evalUuid.String(),
 	}
 

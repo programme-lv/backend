@@ -73,7 +73,7 @@ func mapTaskExamples(examples []tasksrvc.Example) []Example {
 
 func mapTaskResponse(task *tasksrvc.Task) *Task {
 	response := &Task{
-		PublishedTaskID:        task.PublishedTaskID,
+		PublishedTaskID:        task.ShortTaskID,
 		TaskFullName:           task.TaskFullName,
 		MemoryLimitMegabytes:   task.MemoryLimitMegabytes,
 		CPUTimeLimitSeconds:    task.CPUTimeLimitSeconds,

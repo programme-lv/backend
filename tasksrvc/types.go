@@ -26,18 +26,19 @@ type StInputs struct {
 }
 
 type Task struct {
-	PublishedTaskID        string
-	TaskFullName           string
-	MemoryLimitMegabytes   int
-	CPUTimeLimitSeconds    float64
-	OriginOlympiad         string
-	IllustrationImgURL     *string
-	DifficultyRating       *int
+	ShortTaskID          string
+	TaskFullName         string
+	MemoryLimitMegabytes int
+	CPUTimeLimitSeconds  float64
+	OriginOlympiad       string
+	IllustrationImgURL   *string
+	DifficultyRating     *int
+	Examples             []Example
+	OriginNotes          map[string]string
+	VisibleInputSubtasks []StInputs
+
 	DefaultMdStatement     *MarkdownStatement
-	Examples               []Example
 	DefaultPdfStatementURL *string
-	OriginNotes            map[string]string
-	VisibleInputSubtasks   []StInputs
 
 	Tests              []Test
 	TestlibCheckerCode string
