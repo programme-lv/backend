@@ -11,8 +11,6 @@ import (
 )
 
 func (ts *TaskService) PutTask(task *Task) (err error) {
-	// serialize task with gob and write to /home/kp/Programming/_PROGLV/task-workspace/tmp/task.gob
-
 	filePath := "/home/kp/Programming/_PROGLV/task-workspace/tmp/task.gob"
 	file, err := os.Create(filePath)
 	if err != nil {
@@ -28,21 +26,14 @@ func (ts *TaskService) PutTask(task *Task) (err error) {
 	return nil
 }
 
-// UploadStatementPdf uploads a PDF statement with the given content to S3.
-// It returns the S3 key or an error if the process fails.
-//
 // S3 bucket: "proglv-public" (as of 2024-09-29)
 // S3 key format: "task-pdf-statements/<sha2>.pdf"
 func (ts *TaskService) UploadStatementPdf(body []byte) (string, error) {
 	shaHex := ts.Sha2Hex(body)
 	s3Key := fmt.Sprintf("%s/%s.pdf", "task-pdf-statements", shaHex)
-	err := ts.s3PublicBucket.Upload(body, s3Key, "application/pdf")
-	return s3Key, err
+	return ts.s3PublicBucket.Upload(body, s3Key, "application/pdf")
 }
 
-// UploadIllustrationImg uploads an image with the given content and MIME type to S3.
-// It returns the S3 key or an error if the process fails.
-//
 // S3 bucket: "proglv-public" (as of 2024-09-29)
 // S3 key format: "task-illustrations/<sha2>.<ext>"
 func (ts *TaskService) UploadIllustrationImg(mimeType string, body []byte) (s3key string, err error) {
@@ -56,13 +47,9 @@ func (ts *TaskService) UploadIllustrationImg(mimeType string, body []byte) (s3ke
 	}
 	ext := exts[0]
 	s3Key := fmt.Sprintf("%s/%s%s", "task-illustrations", sha2, ext)
-	err = ts.s3PublicBucket.Upload(body, s3Key, mimeType)
-	return s3Key, err
+	return ts.s3PublicBucket.Upload(body, s3Key, mimeType)
 }
 
-// UploadMarkdownImage uploads an image with the given MIME type and content
-// to S3. It returns the S3 key or an error if the process fails.
-//
 // S3 key format: "task-md-images/<sha2>.<extension>"
 func (ts *TaskService) UploadMarkdownImage(mimeType string, body []byte) (s3key string, err error) {
 	sha2 := ts.Sha2Hex(body)
@@ -75,8 +62,7 @@ func (ts *TaskService) UploadMarkdownImage(mimeType string, body []byte) (s3key 
 	}
 	ext := exts[0]
 	s3Key := fmt.Sprintf("%s/%s%s", "task-md-images", sha2, ext)
-	err = ts.s3PublicBucket.Upload(body, s3Key, mimeType)
-	return s3Key, err
+	return ts.s3PublicBucket.Upload(body, s3Key, mimeType)
 }
 
 // UploadTestFile uploads a test input or output to S3 after compressing it with Zstandard.
@@ -102,7 +88,7 @@ func (ts *TaskService) UploadTestFile(body []byte) error {
 		return fmt.Errorf("failed to compress data: %w", err)
 	}
 
-	err = ts.s3TestfileBucket.Upload(zstdCompressed, s3Key, mediaType)
+	_, err = ts.s3TestfileBucket.Upload(zstdCompressed, s3Key, mediaType)
 	if err != nil {
 		return fmt.Errorf("failed to upload to S3: %w", err)
 	}

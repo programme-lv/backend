@@ -20,9 +20,11 @@ require (
 	github.com/guregu/dynamo/v2 v2.1.1
 	github.com/joho/godotenv v1.5.1
 	github.com/klauspost/compress v1.17.9
+	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
 	github.com/pelletier/go-toml/v2 v2.2.3
 	github.com/spf13/cobra v1.8.1
 	github.com/stretchr/testify v1.9.0
+	github.com/wailsapp/mimetype v1.4.1
 	goa.design/clue v1.0.6
 	golang.org/x/crypto v0.26.0
 	golang.org/x/exp v0.0.0-20240808152545-0cdaa3abc0fa
@@ -57,7 +59,6 @@ require (
 	github.com/kr/text v0.2.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/thoas/go-funk v0.9.3 // indirect
 	go.opentelemetry.io/otel v1.28.0 // indirect
 	go.opentelemetry.io/otel/trace v1.28.0 // indirect
 	goa.design/goa/v3 v3.18.2 // indirect

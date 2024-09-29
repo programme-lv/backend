@@ -26,14 +26,14 @@ func TestReadingWritingCheckerAndInteractor(t *testing.T) {
 }
 
 func ensureEvalCorrespondsToKvadrputeklTestdata(t *testing.T, task *fstask.Task) {
-	require.Nilf(t, task.TestlibChecker, "task.TestlibChecker is not nil")
-	require.Nilf(t, task.TestlibInteractor, "task.TestlibInteractor is not nil")
+	require.Emptyf(t, task.TestlibChecker, "task.TestlibChecker is not empty")
+	require.Emptyf(t, task.TestlibInteractor, "task.TestlibInteractor is not empty")
 }
 
 func ensureEvalCorrespondsToTornisTestdata(t *testing.T, task *fstask.Task) {
-	require.NotNilf(t, task.TestlibChecker, "task.TestlibChecker is nil")
-	require.Nilf(t, task.TestlibInteractor, "task.TestlibInteractor is not nil")
+	require.NotEmptyf(t, task.TestlibChecker, "task.TestlibChecker is empty")
+	require.Emptyf(t, task.TestlibInteractor, "task.TestlibInteractor is not empty")
 
-	startsWith := strings.HasPrefix(*task.TestlibChecker, "#include \"testlib.h\"")
+	startsWith := strings.HasPrefix(task.TestlibChecker, "#include \"testlib.h\"")
 	require.Truef(t, startsWith, "task.TestlibChecker does not start with #include \"testlib.h\"")
 }

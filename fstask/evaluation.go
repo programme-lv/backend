@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 )
 
-func (dir TaskDir) ReadTestlibChecker() (res *string, err error) {
+func (dir TaskDir) ReadTestlibChecker() (res string, err error) {
 	requiredSpec := SemVer{major: 2, minor: 5}
 	if dir.Spec.LessThan(requiredSpec) {
 		format := "specification version %s is not supported, required at least %s"
@@ -24,13 +24,13 @@ func (dir TaskDir) ReadTestlibChecker() (res *string, err error) {
 	if err != nil {
 		return
 	}
-	res = new(string)
-	*res = string(content)
+
+	res = string(content)
 
 	return
 }
 
-func (dir TaskDir) ReadTestlibInteractor() (res *string, err error) {
+func (dir TaskDir) ReadTestlibInteractor() (res string, err error) {
 	requiredSpec := SemVer{major: 2, minor: 5}
 	if dir.Spec.LessThan(requiredSpec) {
 		format := "specification version %s is not supported, required at least %s"
@@ -48,8 +48,7 @@ func (dir TaskDir) ReadTestlibInteractor() (res *string, err error) {
 	if err != nil {
 		return
 	}
-	res = new(string)
-	*res = string(content)
+	res = string(content)
 
 	return
 }

@@ -18,7 +18,7 @@ func TestReadingWritingIllustrationImage(t *testing.T) {
 	imgAsset2, err := os.ReadFile(imgPath)
 	require.NoErrorf(t, err, "failed to read illustration image: %v", err)
 
-	parsedImg := parsedTask.GetTaskIllustrationImage()
+	parsedImg := parsedTask.GetIllustrationImage()
 	require.NotNil(t, parsedImg)
 	expectedImgAsset := &fstask.Asset{
 		RelativePath: "illustration.png",
@@ -41,7 +41,7 @@ func TestReadingWritingIllustrationImage(t *testing.T) {
 
 	storedTask, err := fstask.Read(outputDirectory)
 	require.NoErrorf(t, err, "failed to read task: %v", err)
-	parsedImgAsset2 := storedTask.GetTaskIllustrationImage()
+	parsedImgAsset2 := storedTask.GetIllustrationImage()
 	require.NotNil(t, parsedImgAsset2)
 	require.Equal(t, expectedImgAsset, parsedImgAsset2)
 }

@@ -188,7 +188,7 @@ func (task *Task) Store(dirPath string) error {
 }
 
 func (task *Task) storeEvaluationCheckerAndInteractor(dirPath string) error {
-	if task.TestlibChecker == nil && task.TestlibInteractor == nil {
+	if task.TestlibChecker == "" && task.TestlibInteractor == "" {
 		return nil
 	}
 
@@ -197,16 +197,16 @@ func (task *Task) storeEvaluationCheckerAndInteractor(dirPath string) error {
 		return fmt.Errorf("error creating evaluation directory: %w", err)
 	}
 
-	if task.TestlibChecker != nil {
+	if task.TestlibChecker != "" {
 		path := filepath.Join(dirPath, "checker.cpp")
-		err = os.WriteFile(path, []byte(*task.TestlibChecker), 0644)
+		err = os.WriteFile(path, []byte(task.TestlibChecker), 0644)
 		if err != nil {
 			return fmt.Errorf("error writing evaluation checker: %w", err)
 		}
 	}
-	if task.TestlibInteractor != nil {
+	if task.TestlibInteractor != "" {
 		path := filepath.Join(dirPath, "interactor.cpp")
-		err = os.WriteFile(path, []byte(*task.TestlibInteractor), 0644)
+		err = os.WriteFile(path, []byte(task.TestlibInteractor), 0644)
 		if err != nil {
 			return fmt.Errorf("error writing evaluation interactor: %w", err)
 		}

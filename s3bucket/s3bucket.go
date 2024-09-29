@@ -15,6 +15,7 @@ import (
 type S3Bucket struct {
 	client *s3.Client
 	bucket string
+	region string
 }
 
 func NewS3Bucket(region string, bucket string) (*S3Bucket, error) {
@@ -26,10 +27,22 @@ func NewS3Bucket(region string, bucket string) (*S3Bucket, error) {
 	return &S3Bucket{
 		client: s3.NewFromConfig(cfg),
 		bucket: bucket,
+		region: region,
 	}, nil
 }
 
-func (bucket *S3Bucket) Upload(content []byte, key string, mediaType string) error {
+// Upload uploads the given content to the S3 bucket with the specified key and media type.
+// It returns the URL of the uploaded object or an error if the upload fails.
+//
+// Parameters:
+//   - content: The byte slice containing the content to be uploaded.
+//   - key: The key (path) under which the content will be stored in the S3 bucket.
+//   - mediaType: The MIME type of the content being uploaded.
+//
+// Returns:
+//   - string: The URL of the uploaded object.
+//   - error: An error if the upload fails, otherwise nil.
+func (bucket *S3Bucket) Upload(content []byte, key string, mediaType string) (string, error) {
 	_, err := bucket.client.PutObject(context.TODO(), &s3.PutObjectInput{
 		Bucket:      &bucket.bucket,
 		Key:         &key,
@@ -37,9 +50,13 @@ func (bucket *S3Bucket) Upload(content []byte, key string, mediaType string) err
 		ContentType: &mediaType,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to upload object: %w", err)
+		return "", fmt.Errorf("failed to upload object: %w", err)
 	}
-	return nil
+
+	// Construct the Object URL
+	objectURL := fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", bucket.bucket, bucket.region, key)
+
+	return objectURL, nil
 }
 
 func (bucket *S3Bucket) Exists(key string) (bool, error) {

@@ -37,8 +37,7 @@ func ParseLio2023TaskDir(dirPath string) (*fstask.Task, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to read checker: %w", err)
 		}
-		task.TestlibChecker = new(string)
-		*task.TestlibChecker = string(content)
+		task.TestlibChecker = string(content)
 	}
 
 	interactorPath := filepath.Join(dirPath, "riki", "interactor.cpp")
@@ -47,8 +46,7 @@ func ParseLio2023TaskDir(dirPath string) (*fstask.Task, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to read interactor: %w", err)
 		}
-		task.TestlibInteractor = new(string)
-		*task.TestlibInteractor = string(content)
+		task.TestlibInteractor = string(content)
 	}
 
 	solutionsPath := filepath.Join(dirPath, "risin")
