@@ -1,6 +1,7 @@
 package tasksrvc
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/programme-lv/backend/srvcerr"
@@ -8,9 +9,9 @@ import (
 
 const ErrCodeTaskNotFound = "task_not_found"
 
-func newErrTaskNotFound() *srvcerr.Error {
+func NewErrorTaskNotFound(id string) *srvcerr.Error {
 	return srvcerr.New(
 		ErrCodeTaskNotFound,
-		"Uzdevums netika atrasts",
+		fmt.Sprintf("Uzdevums '%s' netika atrasts", id),
 	).SetHttpStatusCode(http.StatusNotFound)
 }

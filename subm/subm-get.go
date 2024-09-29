@@ -194,7 +194,7 @@ func (s *SubmissionSrvc) GetSubmission(ctx context.Context, submUuid string) (*F
 	}
 	mapTaskIdToName := make(map[string]string)
 	for _, task := range tasks {
-		mapTaskIdToName[task.ShortTaskID] = task.TaskFullName
+		mapTaskIdToName[task.ShortId] = task.FullName
 	}
 
 	// TODO: cache submission list

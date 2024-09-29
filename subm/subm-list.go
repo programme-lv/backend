@@ -113,7 +113,7 @@ func (s *SubmissionSrvc) ListSubmissions(ctx context.Context) (res []*BriefSubmi
 	}
 	mapTaskIdToName := make(map[string]string)
 	for _, task := range tasks {
-		mapTaskIdToName[task.ShortTaskID] = task.TaskFullName
+		mapTaskIdToName[task.ShortId] = task.FullName
 	}
 
 	users, err := s.userSrvc.ListUsers(ctx)

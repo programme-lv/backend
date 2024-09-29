@@ -1,0 +1,110 @@
+package tasksrvc
+
+import (
+	"crypto/sha256"
+	"fmt"
+	"mime"
+
+	"github.com/klauspost/compress/zstd"
+)
+
+// UploadStatementPdf uploads a PDF statement with the given content to S3.
+// It returns the S3 key or an error if the process fails.
+//
+// S3 bucket: "proglv-public" (as of 2024-09-29)
+// S3 key format: "task-pdf-statements/<sha2>.pdf"
+func (ts *TaskService) UploadStatementPdf(body []byte) (string, error) {
+	shaHex := ts.Sha2Hex(body)
+	s3Key := fmt.Sprintf("%s/%s.pdf", "task-pdf-statements", shaHex)
+	err := ts.s3PublicBucket.Upload(body, s3Key, "application/pdf")
+	return s3Key, err
+}
+
+// UploadIllustrationImg uploads an image with the given content and MIME type to S3.
+// It returns the S3 key or an error if the process fails.
+//
+// S3 bucket: "proglv-public" (as of 2024-09-29)
+// S3 key format: "task-illustrations/<sha2>.<ext>"
+func (ts *TaskService) UploadIllustrationImg(mimeType string, body []byte) (s3key string, err error) {
+	sha2 := ts.Sha2Hex(body)
+	exts, err := mime.ExtensionsByType(mimeType)
+	if err != nil {
+		return "", fmt.Errorf("failed to get file extension: %w", err)
+	}
+	if len(exts) == 0 {
+		return "", fmt.Errorf("file extennsion not found")
+	}
+	ext := exts[0]
+	s3Key := fmt.Sprintf("%s/%s%s", "task-illustrations", sha2, ext)
+	err = ts.s3PublicBucket.Upload(body, s3Key, mimeType)
+	return s3Key, err
+}
+
+// UploadMarkdownImage uploads an image with the given MIME type and content
+// to S3. It returns the S3 key or an error if the process fails.
+//
+// S3 key format: "task-md-images/<sha2>.<extension>"
+func (ts *TaskService) UploadMarkdownImage(mimeType string, body []byte) (s3key string, err error) {
+	sha2 := ts.Sha2Hex(body)
+	exts, err := mime.ExtensionsByType(mimeType)
+	if err != nil {
+		return "", fmt.Errorf("failed to get file extension: %w", err)
+	}
+	if len(exts) == 0 {
+		return "", fmt.Errorf("file extennsion not found")
+	}
+	ext := exts[0]
+	s3Key := fmt.Sprintf("%s/%s%s", "task-md-images", sha2, ext)
+	err = ts.s3PublicBucket.Upload(body, s3Key, mimeType)
+	return s3Key, err
+}
+
+// UploadTestFile uploads a test input or output to S3 after compressing it with Zstandard.
+// If The test already exists, it returns no error and does nothing.
+//
+// The S3 key is the SHA256 hash of the uncompressed body with a .zst extension.
+func (ts *TaskService) UploadTestFile(body []byte) error {
+	shaHex := ts.Sha2Hex(body)
+	s3Key := fmt.Sprintf("%s.zst", shaHex)
+	mediaType := "application/zstd"
+
+	exists, err := ts.s3TestfileBucket.Exists(s3Key)
+	if err != nil {
+		return fmt.Errorf("failed to check if object exists in S3: %w", err)
+	}
+
+	if exists {
+		return nil
+	}
+
+	zstdCompressed, err := compressWithZstd(body)
+	if err != nil {
+		return fmt.Errorf("failed to compress data: %w", err)
+	}
+
+	err = ts.s3TestfileBucket.Upload(zstdCompressed, s3Key, mediaType)
+	if err != nil {
+		return fmt.Errorf("failed to upload to S3: %w", err)
+	}
+
+	return nil
+}
+
+// compressWithZstd compresses the given data using Zstandard compression.
+// It returns the compressed data or an error if the compression fails.
+func compressWithZstd(data []byte) ([]byte, error) {
+	encoder, err := zstd.NewWriter(nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create Zstd encoder: %w", err)
+	}
+	defer encoder.Close()
+
+	compressed := encoder.EncodeAll(data, make([]byte, 0, len(data)))
+	return compressed, nil
+}
+
+func (ts *TaskService) Sha2Hex(body []byte) (sha2 string) {
+	hash := sha256.Sum256(body)
+	sha2 = fmt.Sprintf("%x", hash[:])
+	return
+}

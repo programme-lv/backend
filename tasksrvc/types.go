@@ -12,12 +12,13 @@ type GetTaskSubmEvalDataPayload struct {
 }
 
 type MarkdownStatement struct {
-	LangISO639 string
-	Story      string
-	Input      string
-	Output     string
-	Notes      *string
-	Scoring    *string
+	LangIso639 string
+
+	Story   string
+	Input   string
+	Output  string
+	Notes   *string
+	Scoring *string
 }
 
 type StInputs struct {
@@ -26,24 +27,36 @@ type StInputs struct {
 }
 
 type Task struct {
-	ShortTaskID          string
-	TaskFullName         string
-	MemoryLimitMegabytes int
-	CPUTimeLimitSeconds  float64
-	OriginOlympiad       string
-	IllustrationImgURL   *string
-	DifficultyRating     *int
-	Examples             []Example
-	OriginNotes          map[string]string
+	ShortId  string
+	FullName string
+
+	MemLimMegabytes int
+	CpuTimeLimSecs  float64
+
+	OriginOlympiad   string
+	DifficultyRating *int
+	OriginNotes      []struct {
+		Lang string
+		Info string
+	}
+
+	IllustrationImgUrl   *string
 	VisibleInputSubtasks []StInputs
 
-	DefaultMdStatement     *MarkdownStatement
-	DefaultPdfStatementURL *string
+	MdStatements  []MarkdownStatement
+	PdfStatements []struct {
+		Lang string
+		Url  string
+	}
 
-	Tests              []Test
-	TestlibCheckerCode string
-	Subtasks           []Subtask
-	TestGroups         []TestGroup
+	Tests    []Test
+	Examples []Example
+
+	Subtasks   []Subtask
+	TestGroups []TestGroup
+
+	TestlibChecker    string
+	TestlibInteractor string
 }
 
 type Subtask struct {
@@ -108,7 +121,7 @@ type TestChecksum struct {
 // PdfStatement represents a PDF statement with language and checksum.
 type PdfStatement struct {
 	LangISO639 string
-	PdfSHA2    string
+	ObjectUrl  string
 }
 
 // ImgUuidS3Pair represents a mapping between image UUIDs and their S3 keys.

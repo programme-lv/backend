@@ -73,17 +73,17 @@ func mapTaskExamples(examples []tasksrvc.Example) []Example {
 
 func mapTaskResponse(task *tasksrvc.Task) *Task {
 	response := &Task{
-		PublishedTaskID:        task.ShortTaskID,
-		TaskFullName:           task.TaskFullName,
-		MemoryLimitMegabytes:   task.MemoryLimitMegabytes,
-		CPUTimeLimitSeconds:    task.CPUTimeLimitSeconds,
+		PublishedTaskID:        task.ShortId,
+		TaskFullName:           task.FullName,
+		MemoryLimitMegabytes:   task.MemLimMegabytes,
+		CPUTimeLimitSeconds:    task.CpuTimeLimSecs,
 		OriginOlympiad:         task.OriginOlympiad,
-		IllustrationImgURL:     task.IllustrationImgURL,
+		IllustrationImgURL:     task.IllustrationImgUrl,
 		DifficultyRating:       task.DifficultyRating,
-		DefaultMDStatement:     mapTaskMdStatement(task.DefaultMdStatement),
+		DefaultMDStatement:     mapTaskMdStatement(nil),
 		Examples:               mapTaskExamples(task.Examples),
-		DefaultPDFStatementURL: task.DefaultPdfStatementURL,
-		OriginNotes:            task.OriginNotes,
+		DefaultPDFStatementURL: nil,
+		OriginNotes:            nil,
 		VisibleInputSubtasks:   mapStInputs(task.VisibleInputSubtasks),
 	}
 	return response

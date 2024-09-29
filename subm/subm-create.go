@@ -239,8 +239,8 @@ func (s *SubmissionSrvc) createSubmissionWithValidatedInput(
 		}
 	}
 
-	cpuTimeLimitMillis := int(task.CPUTimeLimitSeconds * 1000)
-	memLimitKibiBytes := int(float64(task.MemoryLimitMegabytes) * 976.5625)
+	cpuTimeLimitMillis := int(task.CpuTimeLimSecs * 1000)
+	memLimitKibiBytes := int(float64(task.MemLimMegabytes) * 976.5625)
 
 	// PUT EVALUATION DETAILS ROW
 	evalDetailsRow := &EvalDetailsRow{
@@ -250,7 +250,7 @@ func (s *SubmissionSrvc) createSubmissionWithValidatedInput(
 		SortKey:                    fmt.Sprintf("eval#%s#details", evalUuid.String()),
 		EvalUuid:                   evalUuid.String(),
 		EvaluationStage:            "waiting",
-		TestlibCheckerCode:         task.TestlibCheckerCode,
+		TestlibCheckerCode:         task.TestlibChecker,
 		SystemInformation:          nil,
 		SubmCompileStdout:          nil,
 		SubmCompileStderr:          nil,
@@ -336,7 +336,7 @@ func (s *SubmissionSrvc) createSubmissionWithValidatedInput(
 		SortKey:           "subm#details",
 		Content:           *subm,
 		AuthorUuid:        user.UUID,
-		TaskId:            task.ShortTaskID,
+		TaskId:            task.ShortId,
 		ProgLangId:        lang.ID,
 		CurrentEvalUuid:   evalUuid.String(),
 		CurrentEvalStatus: "waiting",
@@ -383,11 +383,11 @@ func (s *SubmissionSrvc) createSubmissionWithValidatedInput(
 				ExecCmd:          lang.ExecuteCmd,
 			},
 			Limits: LimitsDetails{
-				CPUTimeMillis:   int(task.CPUTimeLimitSeconds * 1000),
-				MemoryKibibytes: int(float64(task.MemoryLimitMegabytes) * 976.5625),
+				CPUTimeMillis:   int(task.CpuTimeLimSecs * 1000),
+				MemoryKibibytes: int(float64(task.MemLimMegabytes) * 976.5625),
 			},
 			Tests:          tests,
-			TestlibChecker: task.TestlibCheckerCode,
+			TestlibChecker: task.TestlibChecker,
 		},
 		ResponseSqsUrl: aws.String(s.responseSqsUrl),
 	}
@@ -464,8 +464,8 @@ func (s *SubmissionSrvc) createSubmissionWithValidatedInput(
 		PLangID:               lang.ID,
 		PLangDisplayName:      lang.FullName,
 		PLangMonacoID:         lang.MonacoId,
-		TaskName:              task.TaskFullName,
-		TaskID:                task.ShortTaskID,
+		TaskName:              task.FullName,
+		TaskID:                task.ShortId,
 		EvalUUID:              evalUuid.String(),
 	}
 
