@@ -73,11 +73,16 @@ func NewSubmissions() *SubmissionSrvc {
 		panic("RESPONSE_SQS_URL not set in .env file")
 	}
 
+	taskSrvc, err := tasksrvc.NewTaskSrvc()
+	if err != nil {
+		panic(err)
+	}
+
 	srvc := &SubmissionSrvc{
 		ddbClient:              dynamodbClient,
 		submTableName:          submTableName,
 		userSrvc:               user.NewUsers(),
-		taskSrvc:               tasksrvc.NewTaskSrvc(),
+		taskSrvc:               taskSrvc,
 		sqsClient:              sqsClient,
 		submSqsUrl:             submQueueUrl,
 		createdSubmChan:        make(chan *BriefSubmission, 1000),

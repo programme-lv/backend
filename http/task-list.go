@@ -8,10 +8,9 @@ import (
 )
 
 func (httpserver *HttpServer) listTasks(w http.ResponseWriter, r *http.Request) {
-	logger := httplog.LogEntry(r.Context())
-
 	tasks, err := httpserver.taskSrvc.ListTasks(context.TODO())
 	if err != nil {
+		logger := httplog.LogEntry(r.Context())
 		handleJsonSrvcError(logger, w, err)
 		return
 	}

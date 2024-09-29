@@ -1,4 +1,4 @@
-package tasksrvc
+package s3bucket
 
 import (
 	"bytes"
@@ -12,24 +12,24 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 )
 
-type s3Bucket struct {
+type S3Bucket struct {
 	client *s3.Client
 	bucket string
 }
 
-func NewS3BucketUploader(region string, bucket string) *s3Bucket {
+func NewS3Bucket(region string, bucket string) (*S3Bucket, error) {
 	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion("eu-central-1"))
 	if err != nil {
-		log.Fatalf("Unable to load SDK config: %v", err)
+		return nil, fmt.Errorf("unable to load SDK config: %w", err)
 	}
 
-	return &s3Bucket{
+	return &S3Bucket{
 		client: s3.NewFromConfig(cfg),
 		bucket: bucket,
-	}
+	}, nil
 }
 
-func (bucket *s3Bucket) Upload(content []byte, key string, mediaType string) error {
+func (bucket *S3Bucket) Upload(content []byte, key string, mediaType string) error {
 	_, err := bucket.client.PutObject(context.TODO(), &s3.PutObjectInput{
 		Bucket:      &bucket.bucket,
 		Key:         &key,
@@ -37,12 +37,12 @@ func (bucket *s3Bucket) Upload(content []byte, key string, mediaType string) err
 		ContentType: &mediaType,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to upload object: %v", err)
+		return fmt.Errorf("failed to upload object: %w", err)
 	}
 	return nil
 }
 
-func (bucket *s3Bucket) Exists(key string) (bool, error) {
+func (bucket *S3Bucket) Exists(key string) (bool, error) {
 	_, err := bucket.client.HeadObject(context.TODO(), &s3.HeadObjectInput{
 		Bucket: &bucket.bucket,
 		Key:    &key,
@@ -53,18 +53,18 @@ func (bucket *s3Bucket) Exists(key string) (bool, error) {
 			log.Printf("Key: %s does not exist in S3 bucket: %s", key, bucket.bucket)
 			return false, nil
 		}
-		return false, fmt.Errorf("failed to check object existence: %v", err)
+		return false, fmt.Errorf("failed to check object existence: %w", err)
 	}
 	return true, nil
 }
 
-func (bucket *s3Bucket) Download(key string) ([]byte, error) {
+func (bucket *S3Bucket) Download(key string) ([]byte, error) {
 	output, err := bucket.client.GetObject(context.TODO(), &s3.GetObjectInput{
 		Bucket: &bucket.bucket,
 		Key:    &key,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to download object: %v", err)
+		return nil, fmt.Errorf("failed to download object: %w", err)
 	}
 	defer output.Body.Close()
 	buf := new(bytes.Buffer)

@@ -1,45 +1,30 @@
 package tasksrvc
 
 import (
-	"context"
 	"fmt"
-	"os"
 
-	"golang.org/x/exp/slog"
-
-	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/programme-lv/backend/s3bucket"
 )
 
-// tasks service example implementation.
-// The example methods log the requests and return zero values.
 type TaskService struct {
-	ddbClient        *dynamodb.Client
-	taskTableName    string
-	s3PublicBucket   *s3Bucket
-	s3TestfileBucket *s3Bucket
+	s3PublicBucket   *s3bucket.S3Bucket
+	s3TestfileBucket *s3bucket.S3Bucket
 }
 
-func NewTaskSrvc() *TaskService {
-	cfg, err := config.LoadDefaultConfig(context.TODO(),
-		config.WithRegion("eu-central-1"),
-		config.WithSharedConfigProfile("kp"),
-	)
+func NewTaskSrvc() (*TaskService, error) {
+	publicBucket, err := s3bucket.NewS3Bucket("eu-central-1", "proglv-public")
 	if err != nil {
-		panic(fmt.Sprintf("unable to load SDK config, %v", err))
+		format := "failed to create S3 bucket: %w"
+		return nil, fmt.Errorf(format, err)
 	}
-	dynamodbClient := dynamodb.NewFromConfig(cfg)
-
-	taskTableName := os.Getenv("DDB_TASK_TABLE_NAME")
-	if taskTableName == "" {
-		slog.Error("DDB_TASK_TABLE_NAME is not set")
-		os.Exit(1)
+	testFileBucket, err := s3bucket.NewS3Bucket("eu-central-1", "proglv-tests")
+	if err != nil {
+		format := "failed to create S3 bucket: %w"
+		return nil, fmt.Errorf(format, err)
 	}
 
 	return &TaskService{
-		ddbClient:        dynamodbClient,
-		taskTableName:    "proglv_tasks_v2",
-		s3PublicBucket:   NewS3BucketUploader("eu-central-1", "proglv-public"),
-		s3TestfileBucket: NewS3BucketUploader("eu-central-1", "proglv-tests"),
-	}
+		s3PublicBucket:   publicBucket,
+		s3TestfileBucket: testFileBucket,
+	}, nil
 }
