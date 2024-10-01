@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"image"
 	"image/jpeg"
@@ -10,6 +11,7 @@ import (
 	"mime"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"github.com/nfnt/resize"
@@ -18,6 +20,7 @@ import (
 	"github.com/programme-lv/backend/tasksrvc"
 	"github.com/spf13/cobra"
 	"github.com/wailsapp/mimetype"
+	"golang.org/x/sync/errgroup"
 )
 
 func main() {
@@ -190,23 +193,64 @@ func uploadTask(fsTask *fstask.Task, shortId string) error {
 		})
 	}
 
-	tests := make([]tasksrvc.Test, 0)
-	for _, t := range fsTask.GetTestsSortedByID() {
-		inpSha2 := taskSrvc.Sha2Hex(t.Input)
-		ansSha2 := taskSrvc.Sha2Hex(t.Answer)
-		err := taskSrvc.UploadTestFile(t.Input)
-		if err != nil {
-			return fmt.Errorf("failed to upload test input: %w", err)
-		}
-		err = taskSrvc.UploadTestFile(t.Answer)
-		if err != nil {
-			return fmt.Errorf("failed to upload test answer: %w", err)
-		}
-		tests = append(tests, tasksrvc.Test{
-			ID:      t.ID,
-			InpSha2: inpSha2,
-			AnsSha2: ansSha2,
+	tests := make([]tasksrvc.Test, len(fsTask.GetTestsSortedByID()))
+
+	// Mutex to protect access to the tests slice
+	var mu sync.Mutex
+
+	// Use errgroup for managing goroutines and error handling
+	g, ctx := errgroup.WithContext(context.Background())
+
+	// Semaphore to limit the number of concurrent uploads (e.g., 10)
+	concurrencyLimit := 10
+	sem := make(chan struct{}, concurrencyLimit)
+
+	// Iterate over tests and launch goroutines for uploading
+	for i, t := range fsTask.GetTestsSortedByID() {
+		i, t := i, t // Capture loop variables
+		g.Go(func() error {
+			// Acquire semaphore
+			select {
+			case sem <- struct{}{}:
+				// Acquired
+			case <-ctx.Done():
+				return ctx.Err()
+			}
+			defer func() { <-sem }() // Release semaphore
+
+			// Compute SHA2 hashes
+			inpSha2 := taskSrvc.Sha2Hex(t.Input)
+			ansSha2 := taskSrvc.Sha2Hex(t.Answer)
+
+			// Upload test input
+			if err := taskSrvc.UploadTestFile(t.Input); err != nil {
+				return fmt.Errorf("failed to upload test input for test ID %v: %w", t.ID, err)
+			}
+
+			// Upload test answer
+			if err := taskSrvc.UploadTestFile(t.Answer); err != nil {
+				return fmt.Errorf("failed to upload test answer for test ID %v: %w", t.ID, err)
+			}
+
+			// Create the Test struct
+			test := tasksrvc.Test{
+				ID:      t.ID,
+				InpSha2: inpSha2,
+				AnsSha2: ansSha2,
+			}
+
+			// Safely append to the tests slice
+			mu.Lock()
+			tests[i] = test
+			mu.Unlock()
+
+			return nil
 		})
+	}
+
+	// Wait for all goroutines to finish
+	if err := g.Wait(); err != nil {
+		return err
 	}
 
 	testGroups := make([]tasksrvc.TestGroup, 0)

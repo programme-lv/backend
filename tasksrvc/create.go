@@ -11,7 +11,7 @@ import (
 )
 
 func (ts *TaskService) PutTask(task *Task) (err error) {
-	filePath := "/home/kp/Programming/_PROGLV/task-workspace/tmp/task.json"
+	filePath := fmt.Sprintf("/home/kp/Programming/_PROGLV/task-workspace/tmp/%s.json", task.ShortId)
 	file, err := os.Create(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to create file: %w", err)
