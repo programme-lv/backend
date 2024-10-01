@@ -5,22 +5,21 @@ import (
 	"encoding/json"
 	"fmt"
 	"mime"
-	"os"
 
 	"github.com/klauspost/compress/zstd"
 )
 
-func (ts *TaskService) PutTask(task *Task) (err error) {
-	filePath := fmt.Sprintf("/home/kp/Programming/_PROGLV/task-workspace/tmp/%s.json", task.ShortId)
-	file, err := os.Create(filePath)
-	if err != nil {
-		return fmt.Errorf("failed to create file: %w", err)
-	}
-	defer file.Close()
+func (ts *TaskService) PutTask(task *Task) error {
+	key := fmt.Sprintf("%s.json", task.ShortId)
 
-	encoder := json.NewEncoder(file)
-	if err := encoder.Encode(task); err != nil {
-		return fmt.Errorf("failed to encode task: %w", err)
+	data, err := json.Marshal(task)
+	if err != nil {
+		return fmt.Errorf("failed to marshal task: %w", err)
+	}
+
+	_, err = ts.s3TaskBucket.Upload(data, key, "application/json")
+	if err != nil {
+		return fmt.Errorf("failed to upload task: %w", err)
 	}
 
 	return nil
