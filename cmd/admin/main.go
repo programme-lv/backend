@@ -112,7 +112,7 @@ Each path will be parsed as an fstask and uploaded accordingly.`,
 						Str("path", path).
 						Err(err).
 						Msg("Error resolving path")
-					continue
+					break
 				}
 
 				// Check if the path exists
@@ -122,13 +122,13 @@ Each path will be parsed as an fstask and uploaded accordingly.`,
 						Str("path", absPath).
 						Err(err).
 						Msg("Path does not exist")
-					continue
+					break
 				}
 				if !info.IsDir() {
 					log.Warn().
 						Str("path", absPath).
 						Msg("Path is not a directory, skipping")
-					continue
+					break
 				}
 
 				// Parse as fstask (Assuming a Read function exists)
@@ -138,7 +138,7 @@ Each path will be parsed as an fstask and uploaded accordingly.`,
 						Str("path", absPath).
 						Err(err).
 						Msg("Error parsing task")
-					continue
+					break
 				}
 
 				log.Info().
@@ -153,7 +153,7 @@ Each path will be parsed as an fstask and uploaded accordingly.`,
 						Str("taskName", task.FullName).
 						Err(err).
 						Msg("Error uploading task")
-					continue
+					break
 				}
 
 				log.Info().
