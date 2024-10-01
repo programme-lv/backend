@@ -209,41 +209,44 @@ func uploadTask(fsTask *fstask.Task, shortId string) error {
 	}
 
 	illstrImg := fsTask.GetIllustrationImage()
-	log.Debug().
-		Str("relativePath", illstrImg.RelativePath).
-		Msg("Compressing illustration image")
-
-	compressedImage, err := downscaleImage(illstrImg.Content, 600)
-	if err != nil {
-		log.Error().
-			Err(err).
-			Msg("Failed to compress image")
-		return fmt.Errorf("failed to compress image: %w", err)
-	}
-
-	mType := mime.TypeByExtension(filepath.Ext(illstrImg.RelativePath))
-	if mType == "" {
-		detectedType := mimetype.Detect(compressedImage)
-		if detectedType == nil {
-			log.Error().Msg("Failed to detect file type for image")
-			return fmt.Errorf("failed to detect file type")
-		}
-		mType = detectedType.String()
+	illstrImgUrl := ""
+	if illstrImg != nil {
 		log.Debug().
-			Str("mimeType", mType).
-			Msg("Detected MIME type for image")
-	}
+			Str("relativePath", illstrImg.RelativePath).
+			Msg("Compressing illustration image")
 
-	url, err := taskSrvc.UploadIllustrationImg(mType, compressedImage)
-	if err != nil {
-		log.Error().
-			Err(err).
-			Msg("Failed to upload illustration image")
-		return fmt.Errorf("failed to upload illustration image: %w", err)
+		compressedImage, err := downscaleImage(illstrImg.Content, 600)
+		if err != nil {
+			log.Error().
+				Err(err).
+				Msg("Failed to compress image")
+			return fmt.Errorf("failed to compress image: %w", err)
+		}
+
+		mType := mime.TypeByExtension(filepath.Ext(illstrImg.RelativePath))
+		if mType == "" {
+			detectedType := mimetype.Detect(compressedImage)
+			if detectedType == nil {
+				log.Error().Msg("Failed to detect file type for image")
+				return fmt.Errorf("failed to detect file type")
+			}
+			mType = detectedType.String()
+			log.Debug().
+				Str("mimeType", mType).
+				Msg("Detected MIME type for image")
+		}
+
+		illstrImgUrl, err = taskSrvc.UploadIllustrationImg(mType, compressedImage)
+		if err != nil {
+			log.Error().
+				Err(err).
+				Msg("Failed to upload illustration image")
+			return fmt.Errorf("failed to upload illustration image: %w", err)
+		}
+		log.Info().
+			Str("url", illstrImgUrl).
+			Msg("Uploaded illustration image")
 	}
-	log.Info().
-		Str("url", url).
-		Msg("Uploaded illustration image")
 
 	// Process Origin Notes
 	originNotes := make([]tasksrvc.OriginNote, 0)
@@ -421,7 +424,7 @@ func uploadTask(fsTask *fstask.Task, shortId string) error {
 	task := &tasksrvc.Task{
 		ShortId:          shortId,
 		FullName:         fsTask.FullName,
-		IllustrImgUrl:    url,
+		IllustrImgUrl:    illstrImgUrl,
 		MemLimMegabytes:  fsTask.MemoryLimInMegabytes,
 		CpuTimeLimSecs:   fsTask.CpuTimeLimInSeconds,
 		OriginOlympiad:   fsTask.OriginOlympiad,
