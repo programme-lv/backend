@@ -19,7 +19,7 @@ type S3Bucket struct {
 }
 
 func NewS3Bucket(region string, bucket string) (*S3Bucket, error) {
-	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion("eu-central-1"))
+	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion(region))
 	if err != nil {
 		return nil, fmt.Errorf("unable to load SDK config: %w", err)
 	}
@@ -87,4 +87,39 @@ func (bucket *S3Bucket) Download(key string) ([]byte, error) {
 	buf := new(bytes.Buffer)
 	buf.ReadFrom(output.Body)
 	return buf.Bytes(), nil
+}
+
+// ListFiles lists the files in the S3 bucket.
+// It returns a slice of file keys or an error if the operation fails.
+//
+// Parameters:
+//   - prefix: An optional prefix to filter the listed objects (e.g., "images/").
+//
+// Returns:
+//   - []string: A slice containing the keys of the objects in the bucket.
+//   - error: An error if the listing fails, otherwise nil.
+func (bucket *S3Bucket) ListFiles(prefix string) ([]string, error) {
+	var keys []string
+	input := &s3.ListObjectsV2Input{
+		Bucket: &bucket.bucket,
+	}
+
+	if prefix != "" {
+		input.Prefix = &prefix
+	}
+
+	paginator := s3.NewListObjectsV2Paginator(bucket.client, input)
+
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(context.TODO())
+		if err != nil {
+			return nil, fmt.Errorf("failed to list objects: %w", err)
+		}
+
+		for _, obj := range page.Contents {
+			keys = append(keys, *obj.Key)
+		}
+	}
+
+	return keys, nil
 }

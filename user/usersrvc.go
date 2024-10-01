@@ -17,8 +17,7 @@ type UserService struct {
 
 func NewUsers() *UserService {
 	cfg, err := config.LoadDefaultConfig(context.TODO(),
-		config.WithRegion("eu-central-1"),
-		config.WithSharedConfigProfile("kp"))
+		config.WithRegion("eu-central-1"))
 	if err != nil {
 		panic(fmt.Sprintf("unable to load SDK config, %v", err))
 	}

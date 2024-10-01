@@ -7,6 +7,8 @@ import (
 )
 
 type TaskService struct {
+	tasks []Task
+
 	s3PublicBucket   *s3bucket.S3Bucket
 	s3TestfileBucket *s3bucket.S3Bucket
 	s3TaskBucket     *s3bucket.S3Bucket

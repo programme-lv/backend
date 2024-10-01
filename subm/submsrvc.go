@@ -45,7 +45,6 @@ type SubmissionSrvc struct {
 func NewSubmissions() *SubmissionSrvc {
 	cfg, err := config.LoadDefaultConfig(context.TODO(),
 		config.WithRegion("eu-central-1"),
-		config.WithSharedConfigProfile("kp"),
 		config.WithRetryer(func() aws.Retryer {
 			return retry.AddWithMaxAttempts(retry.NewStandard(), 10)
 		}),
