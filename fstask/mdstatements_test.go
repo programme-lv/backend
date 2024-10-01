@@ -46,8 +46,8 @@ func TestReadingWritingMDStatements(t *testing.T) {
 		require.Equal(t, inputMd, mdStatement.Input)
 		require.Equal(t, outputMd, mdStatement.Output)
 		require.Equal(t, storyMd, mdStatement.Story)
-		require.Equal(t, scoringMd, *mdStatement.Scoring)
-		require.Nil(t, mdStatement.Notes)
+		require.Equal(t, scoringMd, mdStatement.Scoring)
+		require.Empty(t, mdStatement.Notes)
 	}
 
 	tmpDirectory, err := os.MkdirTemp("", "fstaskparser-test-")
@@ -71,7 +71,7 @@ func TestReadingWritingMDStatements(t *testing.T) {
 		require.Equal(t, inputMd, mdStatement.Input)
 		require.Equal(t, outputMd, mdStatement.Output)
 		require.Equal(t, storyMd, mdStatement.Story)
-		require.Equal(t, scoringMd, *mdStatement.Scoring)
-		require.Nil(t, mdStatement.Notes)
+		require.Equal(t, scoringMd, mdStatement.Scoring)
+		require.Empty(t, mdStatement.Notes)
 	}
 }

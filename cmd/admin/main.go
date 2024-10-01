@@ -148,6 +148,78 @@ func uploadTask(fsTask *fstask.Task, shortId string) error {
 		return fmt.Errorf("failed to upload illustration image: %w", err)
 	}
 
+	originNotes := make([]tasksrvc.OriginNote, 0)
+	for k, v := range fsTask.OriginNotes {
+		originNotes = append(originNotes, tasksrvc.OriginNote{
+			Lang: k,
+			Info: v,
+		})
+	}
+
+	mdStatements := make([]tasksrvc.MarkdownStatement, 0)
+	for _, mdStatement := range fsTask.MarkdownStatements {
+		mdStatements = append(mdStatements, tasksrvc.MarkdownStatement{
+			LangIso639: mdStatement.Language,
+			Story:      mdStatement.Story,
+			Input:      mdStatement.Input,
+			Output:     mdStatement.Output,
+			Notes:      mdStatement.Notes,
+			Scoring:    mdStatement.Scoring,
+		})
+	}
+
+	pdfStatements := make([]tasksrvc.PdfStatement, 0)
+	for _, pdfStatement := range fsTask.PdfStatements {
+		url, err := taskSrvc.UploadStatementPdf(pdfStatement.Content)
+		if err != nil {
+			return fmt.Errorf("failed to upload statement pdf: %w", err)
+		}
+		pdfStatements = append(pdfStatements, tasksrvc.PdfStatement{
+			LangIso639: pdfStatement.Language,
+			ObjectUrl:  url,
+		})
+	}
+
+	examples := make([]tasksrvc.Example, 0)
+	for i, e := range fsTask.GetExamples() {
+		examples = append(examples, tasksrvc.Example{
+			OrderId: i + 1,
+			Input:   string(e.Input),
+			Output:  string(e.Output),
+			MdNote:  string(e.MdNote),
+		})
+	}
+
+	tests := make([]tasksrvc.Test, 0)
+	for _, t := range fsTask.GetTestsSortedByID() {
+		inpSha2 := taskSrvc.Sha2Hex(t.Input)
+		ansSha2 := taskSrvc.Sha2Hex(t.Answer)
+		err := taskSrvc.UploadTestFile(t.Input)
+		if err != nil {
+			return fmt.Errorf("failed to upload test input: %w", err)
+		}
+		err = taskSrvc.UploadTestFile(t.Answer)
+		if err != nil {
+			return fmt.Errorf("failed to upload test answer: %w", err)
+		}
+		tests = append(tests, tasksrvc.Test{
+			ID:      t.ID,
+			InpSha2: inpSha2,
+			AnsSha2: ansSha2,
+		})
+	}
+
+	testGroups := make([]tasksrvc.TestGroup, 0)
+	for _, testGroup := range fsTask.GetTestGroups() {
+		testGroups = append(testGroups, tasksrvc.TestGroup{
+			ID:      testGroup.GroupID,
+			Points:  testGroup.Points,
+			Public:  testGroup.Public,
+			Subtask: testGroup.Subtask,
+			TestIDs: testGroup.TestIDs,
+		})
+	}
+
 	task := &tasksrvc.Task{
 		ShortId:          shortId,
 		FullName:         fsTask.FullName,
@@ -156,16 +228,16 @@ func uploadTask(fsTask *fstask.Task, shortId string) error {
 		CpuTimeLimSecs:   fsTask.CpuTimeLimInSeconds,
 		OriginOlympiad:   fsTask.OriginOlympiad,
 		DifficultyRating: fsTask.DifficultyOneToFive,
-		OriginNotes:      []tasksrvc.OriginNote{},
-		MdStatements:     []tasksrvc.MarkdownStatement{},
-		PdfStatements:    []tasksrvc.PdfStatement{},
-		VisInpSubtasks:   []tasksrvc.VisInpSubtask{},
-		Examples:         []tasksrvc.Example{},
-		Tests:            []tasksrvc.Test{},
+		OriginNotes:      originNotes,
+		MdStatements:     mdStatements,
+		PdfStatements:    pdfStatements,
+		VisInpSubtasks:   fsTask.GetVisibleInputSubtaskIds(),
+		Examples:         examples,
+		Tests:            tests,
 		Checker:          fsTask.TestlibChecker,
 		Interactor:       fsTask.TestlibInteractor,
 		Subtasks:         []tasksrvc.Subtask{},
-		TestGroups:       []tasksrvc.TestGroup{},
+		TestGroups:       testGroups,
 	}
 
 	return taskSrvc.PutTask(task)

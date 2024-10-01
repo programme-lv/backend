@@ -322,15 +322,15 @@ func (task *Task) storeMdStatements(mdStatementDir string) error {
 			}
 		}
 
-		if v.Scoring != nil {
-			err = os.WriteFile(scoringPath, []byte(*v.Scoring), 0644)
+		if v.Scoring != "" {
+			err = os.WriteFile(scoringPath, []byte(v.Scoring), 0644)
 			if err != nil {
 				return fmt.Errorf("error writing Markdown statement: %w", err)
 			}
 		}
 
-		if v.Notes != nil {
-			err = os.WriteFile(notesPath, []byte(*v.Notes), 0644)
+		if v.Notes != "" {
+			err = os.WriteFile(notesPath, []byte(v.Notes), 0644)
 			if err != nil {
 				return fmt.Errorf("error writing Markdown statement: %w", err)
 			}
@@ -469,7 +469,7 @@ func (task *Task) storeExamples(examplesDirPath string) error {
 			return fmt.Errorf("answer file already exists: %s", ansPath)
 		}
 		if _, err := os.Stat(mdPath); err == nil {
-			return fmt.Errorf("Markdown note file already exists: %s", mdPath)
+			return fmt.Errorf("markdown note file already exists: %s", mdPath)
 		}
 
 		err = os.WriteFile(inPath, e.Input, 0644)

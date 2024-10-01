@@ -20,7 +20,7 @@ type Task struct {
 	// statement
 	MdStatements   []MarkdownStatement
 	PdfStatements  []PdfStatement
-	VisInpSubtasks []VisInpSubtask
+	VisInpSubtasks []int
 	Examples       []Example
 
 	// evaluation
@@ -100,14 +100,6 @@ func (t *Task) FindTestGroupsWithTest(testId int) []TestGroup {
 		}
 	}
 	return testGroups
-}
-
-// VisInpSubtask represents a subtask with visible input.
-// Usually, such subtasks are used to gift students some points by
-// allowing them solve some testcases by hand.
-type VisInpSubtask struct {
-	Subtask int
-	Inputs  []TestWithOnlyInput
 }
 
 // TestWithOnlyInput represents a test with only its input data.

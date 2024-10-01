@@ -2,7 +2,7 @@ package tasksrvc
 
 import (
 	"crypto/sha256"
-	"encoding/gob"
+	"encoding/json"
 	"fmt"
 	"mime"
 	"os"
@@ -11,14 +11,14 @@ import (
 )
 
 func (ts *TaskService) PutTask(task *Task) (err error) {
-	filePath := "/home/kp/Programming/_PROGLV/task-workspace/tmp/task.gob"
+	filePath := "/home/kp/Programming/_PROGLV/task-workspace/tmp/task.json"
 	file, err := os.Create(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to create file: %w", err)
 	}
 	defer file.Close()
 
-	encoder := gob.NewEncoder(file)
+	encoder := json.NewEncoder(file)
 	if err := encoder.Encode(task); err != nil {
 		return fmt.Errorf("failed to encode task: %w", err)
 	}

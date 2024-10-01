@@ -12,8 +12,8 @@ type MarkdownStatement struct {
 	Story    string
 	Input    string
 	Output   string
-	Notes    *string
-	Scoring  *string
+	Notes    string
+	Scoring  string
 }
 
 func ReadMarkdownStatementsFromTaskDir(dir TaskDir) ([]MarkdownStatement, error) {
@@ -72,9 +72,9 @@ func ReadMarkdownStatementsFromTaskDir(dir TaskDir) ([]MarkdownStatement, error)
 			case "output.md":
 				statement.Output = string(content)
 			case "notes.md":
-				statement.Notes = ptr(string(content))
+				statement.Notes = string(content)
 			case "scoring.md":
-				statement.Scoring = ptr(string(content))
+				statement.Scoring = string(content)
 			}
 		}
 
@@ -87,11 +87,6 @@ func ReadMarkdownStatementsFromTaskDir(dir TaskDir) ([]MarkdownStatement, error)
 	}
 
 	return markdownStatements, nil
-}
-
-// ptr is a helper function to obtain a pointer to a string
-func ptr(s string) *string {
-	return &s
 }
 
 func (task *Task) LoadMarkdownStatementsFromDir(dir TaskDir) error {
