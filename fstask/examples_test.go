@@ -12,7 +12,7 @@ import (
 )
 
 func TestReadingWritingExamples(t *testing.T) {
-	parsedTask, err := fstask.Read(kvadrputeklPath)
+	parsedTask, err := fstask.Read(kvadrputeklV2dot5Path)
 	require.NoErrorf(t, err, "failed to read task: %v", err)
 
 	parsedExamples := parsedTask.GetExamples()
@@ -30,7 +30,7 @@ func TestReadingWritingExamples(t *testing.T) {
 		parsedInputs = append(parsedInputs, string(parsedExamples[i].Input))
 	}
 
-	examplePath := filepath.Join(kvadrputeklPath, "examples")
+	examplePath := filepath.Join(kvadrputeklV2dot5Path, "examples")
 	expectedInputs := []string{}
 	for i := 0; i < len(parsedExamples); i++ {
 		inPath := filepath.Join(examplePath, fmt.Sprintf("%s.in", *parsedExamples[i].FName))

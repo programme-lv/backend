@@ -1,0 +1,173 @@
+# solutions.og_max_exec_time -> exec_time
+# test_groups.tests -> tests
+# introduced subtasks
+
+specification = 'v3.0.0'
+task_name = 'Kvadrātveida putekļsūcējs'
+visible_input_subtasks = [1]
+illustration_image = 'illustration.png'
+
+problem_tags = ['bfs', 'grid', 'prefix-sum', 'sliding-window', 'shortest-path', 'graphs']
+difficulty_1_to_5 = 3
+
+[origin]
+  olympiad = 'LIO'
+  academic_year = '2023/2024'
+  stage = 'school' # 'school' | 'municipal' | 'national' | 'selection' | 'international'
+  institution = ''
+  authors = ['Krišjānis Petručeņa']
+  [origin.notes]
+    lv = "Uzdevums no Latvijas 37. informātikas olimpiādes (2023./2024. mācību gads) skolas kārtas."
+    en = "The problem is from the school round of the 37th Latvian Informatics Olympiad in the 2023/2024 academic year."
+
+[constraints]
+  memory_megabytes = 256
+  cpu_time_seconds = 0.5
+
+[[solutions]]
+  filename = "kp_kp_ok.cpp"
+  score_eq = 100
+  author = "Krišjānis Petručeņa"
+  exec_time = 0.035
+
+[[solutions]]
+  filename = "kp_kp_tle.cpp"
+  score_lte = 50
+  author = "Krišjānis Petručeņa"
+
+[[solutions]]
+  filename = "kp_nv.cpp"
+  score_eq = 100
+  author = "Normunds Vilciņš"
+  exec_time = 0.137
+
+[[subtasks]]
+  subtask_id = 1
+  points = 3
+  tests = [
+    '001_a', '001_b', '001_c'
+  ]
+
+  [subtasks.descriptions]
+    lv = "Uzdevuma tekstā dotie trīs piemēri"
+    en = "The three examples given in the problem statement"
+
+[[subtasks]]
+  subtask_id = 2
+  points = 48
+  tests = [
+    '002_a', '002_b', '002_c',
+    '003_a', '003_b', '003_c',
+    '004_a', '004_b', '004_c',
+    '005_a', '005_b', '005_c',
+    '006_a', '006_b', '006_c'
+  ]
+
+  [subtasks.descriptions]
+    lv = "$$NM \\leq 10^3$$"
+    en = "$$NM \\leq 10^3$$"
+
+[[subtasks]]
+  subtask_id = 3
+  points = 28
+  tests = [
+    '007_a', '007_b', '007_c',
+    '008_a', '008_b', '008_c',
+    '009_a', '009_b', '009_c',
+    '010_a', '010_b', '010_c', '010_d', '010_e'
+  ]
+
+  [subtasks.descriptions]
+    lv = "$$N \\leq 1000$$ un $$M \\leq 1000$$"
+    en = "$$N \\leq 1000$$ and $$M \\leq 1000$$"
+
+[[subtasks]]
+  subtask_id = 4
+  points = 21
+  tests = [
+    '011_a', '011_b', '011_c',
+    '012_a', '012_b', '012_c',
+    '013_a', '013_b', '013_c', '013_d'
+  ]
+
+  [subtasks.descriptions]
+    lv = "Bez papildu ierobežojumiem"
+    en = "Without additional constraints"
+
+[[test_groups]]
+  group_id = 1
+  points = 3
+  public = true
+  tests = ['001_a', '001_b', '001_c']
+
+[[test_groups]]
+  group_id = 2
+  points = 8
+  public = true
+  tests = ['002_a', '002_b', '002_c']
+
+[[test_groups]]
+  group_id = 3
+  points = 10
+  public = false
+  tests = ['003_a', '003_b', '003_c']
+
+[[test_groups]]
+  group_id = 4
+  points = 10
+  public = false
+  tests = ['004_a', '004_b', '004_c']
+
+[[test_groups]]
+  group_id = 5
+  points = 10
+  public = false
+  tests = ['005_a', '005_b', '005_c']
+
+[[test_groups]]
+  group_id = 6
+  points = 10
+  public = true
+  tests = ['006_a', '006_b', '006_c']
+
+[[test_groups]]
+  group_id = 7
+  points = 7
+  public = false
+  tests = ['007_a', '007_b', '007_c']
+
+[[test_groups]]
+  group_id = 8
+  points = 7
+  public = false
+  tests = ['008_a', '008_b', '008_c']
+
+[[test_groups]]
+  group_id = 9
+  points = 7
+  public = false
+  tests = ['009_a', '009_b', '009_c']
+
+[[test_groups]]
+  group_id = 10
+  points = 7
+  public = true
+  tests = ['010_a', '010_b', '010_c', '010_d', '010_e']
+
+[[test_groups]]
+  group_id = 11
+  points = 7
+  public = false
+  tests = ['011_a', '011_b', '011_c']
+
+[[test_groups]]
+  group_id = 12
+  points = 7
+  public = false
+  tests = ['012_a', '012_b', '012_c']
+
+[[test_groups]]
+  group_id = 13
+  points = 7
+  public = true
+  tests = ['013_a', '013_b', '013_c', '013_d']

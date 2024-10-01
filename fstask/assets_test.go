@@ -10,11 +10,11 @@ import (
 )
 
 func TestReadingWritingIllustrationImage(t *testing.T) {
-	parsedTask, err := fstask.Read(kvadrputeklPath)
+	parsedTask, err := fstask.Read(kvadrputeklV2dot5Path)
 	require.NoErrorf(t, err, "failed to read task: %v", err)
 
 	// read illustration image
-	imgPath := filepath.Join(kvadrputeklPath, "assets", "illustration.png")
+	imgPath := filepath.Join(kvadrputeklV2dot5Path, "assets", "illustration.png")
 	imgAsset2, err := os.ReadFile(imgPath)
 	require.NoErrorf(t, err, "failed to read illustration image: %v", err)
 

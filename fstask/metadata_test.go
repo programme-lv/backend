@@ -11,7 +11,7 @@ import (
 )
 
 func TestReadingWritingMetadata(t *testing.T) {
-	parsedTask, err := fstask.Read(kvadrputeklPath)
+	parsedTask, err := fstask.Read(kvadrputeklV2dot5Path)
 	require.NoErrorf(t, err, "failed to read task: %v", err)
 
 	parsedTask.SetTaskName("Kvadrātveida putekļsūcējs")

@@ -11,7 +11,7 @@ import (
 	"github.com/pelletier/go-toml/v2"
 )
 
-const proglvFSTaskFormatSpecVersOfScript = "v2.5.0"
+const proglvFSTaskFormatSpecVersOfScript = "v3.0.0"
 
 type ProblemTOML struct {
 	Specification        string           `toml:"specification"`
@@ -260,7 +260,7 @@ func (task *Task) storeSolutions(solutionsDir string) error {
 }
 
 func (task *Task) storeAssets(assetDir string) error {
-	if len(task.assets) == 0 {
+	if len(task.Assets) == 0 {
 		return nil
 	}
 	err := os.MkdirAll(assetDir, 0755)
@@ -268,7 +268,7 @@ func (task *Task) storeAssets(assetDir string) error {
 		return fmt.Errorf("error creating assets directory: %w", err)
 	}
 
-	for _, v := range task.assets {
+	for _, v := range task.Assets {
 		path := filepath.Join(assetDir, v.RelativePath)
 		err = os.WriteFile(path, v.Content, 0644)
 		if err != nil {

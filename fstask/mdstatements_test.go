@@ -10,11 +10,11 @@ import (
 )
 
 func TestReadingWritingMDStatements(t *testing.T) {
-	parsedTask, err := fstask.Read(kvadrputeklPath)
+	parsedTask, err := fstask.Read(kvadrputeklV2dot5Path)
 	require.NoErrorf(t, err, "failed to read task: %v", err)
 
 	// compare markdown story to parsed one
-	mdLvDir := filepath.Join(kvadrputeklPath, "statements", "md", "lv")
+	mdLvDir := filepath.Join(kvadrputeklV2dot5Path, "statements", "md", "lv")
 	InputMdPath := filepath.Join(mdLvDir, "input.md")
 	OutputMdPath := filepath.Join(mdLvDir, "output.md")
 	StoryMdPath := filepath.Join(mdLvDir, "story.md")

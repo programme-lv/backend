@@ -13,7 +13,7 @@ import (
 )
 
 func TestReadingWritingTests(t *testing.T) {
-	parsedTask, err := fstask.Read(kvadrputeklPath)
+	parsedTask, err := fstask.Read(kvadrputeklV2dot5Path)
 	require.NoErrorf(t, err, "failed to read task: %v", err)
 
 	parsedTests := parsedTask.GetTestsSortedByID()
@@ -39,7 +39,7 @@ func TestReadingWritingTests(t *testing.T) {
 		parsedInputs = append(parsedInputs, string(parsedTests[i].Input))
 	}
 
-	testPath := filepath.Join(kvadrputeklPath, "tests")
+	testPath := filepath.Join(kvadrputeklV2dot5Path, "tests")
 	expectedInputs := []string{}
 	for i := 0; i < 6; i++ {
 		filename := parsedTask.GetTestFilename(parsedTests[i].ID)

@@ -1,8 +1,6 @@
 package fstask
 
 type Task struct {
-	problemTomlContent []byte
-
 	// specificationVersion string
 	// srcDirPath           string
 	ProblemTags []string
@@ -56,7 +54,7 @@ type Task struct {
 
 	illstrImgFname string
 
-	assets []Asset
+	Assets []Asset
 
 	OriginNotes       map[string]string
 	OriginInstitution string
@@ -91,7 +89,6 @@ type example struct {
 
 func NewTask(taskName string) (*Task, error) {
 	t := Task{
-		problemTomlContent:   []byte{},
 		ProblemTags:          []string{},
 		TaskAuthors:          []string{},
 		FullName:             taskName,
@@ -115,7 +112,7 @@ func NewTask(taskName string) (*Task, error) {
 		tGroupTestIDs:        map[int][]int{},
 		tGroupFnames:         map[int][]string{},
 		illstrImgFname:       "",
-		assets:               []Asset{},
+		Assets:               []Asset{},
 		OriginNotes:          map[string]string{},
 		OriginInstitution:    "",
 		Solutions:            []Solution{},

@@ -253,7 +253,7 @@ func (t *Task) GetVisibleInputSubtaskIds() []int {
 }
 
 func (t *Task) GetIllustrationImage() *Asset {
-	for _, asset := range t.assets {
+	for _, asset := range t.Assets {
 		if asset.RelativePath == t.illstrImgFname {
 			return &Asset{
 				RelativePath: asset.RelativePath,
@@ -266,7 +266,7 @@ func (t *Task) GetIllustrationImage() *Asset {
 }
 
 func (t *Task) GetAssets() []Asset {
-	return t.assets
+	return t.Assets
 }
 
 func (t *Task) GetOriginNotes() map[string]string {

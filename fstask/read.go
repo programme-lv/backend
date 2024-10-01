@@ -25,8 +25,6 @@ func Read(taskRootDirPath string) (*Task, error) {
 		return nil, fmt.Errorf("error reading problem.toml: %w", err)
 	}
 
-	t.problemTomlContent = problemTomlContent
-
 	var specVersStruct struct {
 		Specification string `toml:"specification"`
 	}
@@ -193,7 +191,7 @@ func Read(taskRootDirPath string) (*Task, error) {
 		log.Printf("Error reading task illustration filename: %v\n", err)
 	}
 
-	t.assets, err = readAssets(taskRootDirPath)
+	t.Assets, err = readAssets(taskRootDirPath)
 	if err != nil {
 		log.Printf("Error reading all assets: %v\n", err)
 	}
