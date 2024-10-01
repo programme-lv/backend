@@ -42,7 +42,7 @@ type SubmissionSrvc struct {
 }
 
 // NewSubmissions returns the submissions service implementation.
-func NewSubmissions() *SubmissionSrvc {
+func NewSubmissions(taskSrvc *tasksrvc.TaskService) *SubmissionSrvc {
 	cfg, err := config.LoadDefaultConfig(context.TODO(),
 		config.WithRegion("eu-central-1"),
 		config.WithRetryer(func() aws.Retryer {
@@ -70,11 +70,6 @@ func NewSubmissions() *SubmissionSrvc {
 	responseSQSURL := os.Getenv("RESPONSE_SQS_URL")
 	if responseSQSURL == "" {
 		panic("RESPONSE_SQS_URL not set in .env file")
-	}
-
-	taskSrvc, err := tasksrvc.NewTaskSrvc()
-	if err != nil {
-		panic(err)
 	}
 
 	srvc := &SubmissionSrvc{

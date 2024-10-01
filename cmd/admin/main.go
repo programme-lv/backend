@@ -420,6 +420,7 @@ func uploadTask(fsTask *fstask.Task, shortId string) error {
 		Int("count", len(testGroups)).
 		Msg("Processed test groups")
 
+	visInpSubtasks := make([]tasksrvc.VisibleInputSubtask, 0)
 	// Assemble the Task struct
 	task := &tasksrvc.Task{
 		ShortId:          shortId,
@@ -432,7 +433,7 @@ func uploadTask(fsTask *fstask.Task, shortId string) error {
 		OriginNotes:      originNotes,
 		MdStatements:     mdStatements,
 		PdfStatements:    pdfStatements,
-		VisInpSubtasks:   fsTask.GetVisibleInputSubtaskIds(),
+		VisInpSubtasks:   visInpSubtasks,
 		Examples:         examples,
 		Tests:            tests,
 		Checker:          fsTask.TestlibChecker,

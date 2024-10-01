@@ -1,6 +1,8 @@
 package http
 
-import "github.com/programme-lv/backend/tasksrvc"
+import (
+	"github.com/programme-lv/backend/tasksrvc"
+)
 
 type Example struct {
 	Input  string `json:"input"`
@@ -17,12 +19,12 @@ type MdStatement struct {
 }
 
 type VisInputSubtask struct {
-	Subtask    int                 `json:"subtask"`
+	SubtaskID  int                 `json:"subtask"`
 	TestInputs []TestWithOnlyInput `json:"inputs"`
 }
 
 type TestWithOnlyInput struct {
-	TestId int    `json:"test_id"`
+	TestID int    `json:"test_id"`
 	Input  string `json:"input"`
 }
 
@@ -79,6 +81,61 @@ func mapTaskResponse(task *tasksrvc.Task) *Task {
 		*difficultyRating = task.DifficultyRating
 	}
 
+	pdfStatements := task.PdfStatements
+	defaultPdfStatementUrl := new(string)
+	for _, pdfStatement := range pdfStatements {
+		if pdfStatement.LangIso639 == "lv" {
+			*defaultPdfStatementUrl = pdfStatement.ObjectUrl
+		}
+	}
+
+	originNotes := task.OriginNotes
+	originNotesAsAMap := make(map[string]string)
+	for _, originNote := range originNotes {
+		originNotesAsAMap[originNote.Lang] = originNote.Info
+	}
+
+	mdStatements := task.MdStatements
+	defaultMdStatement := MdStatement{}
+	foundMd := false
+	// check if there is an lv statement
+	for _, mdStatement := range mdStatements {
+		if mdStatement.LangIso639 == "lv" {
+			defaultMdStatement = mapTaskMdStatement(&mdStatement)
+			foundMd = true
+			break
+		}
+	}
+	// if there is no lv statement, check if there is an en statement
+	if !foundMd {
+		for _, mdStatement := range mdStatements {
+			if mdStatement.LangIso639 == "en" {
+				defaultMdStatement = mapTaskMdStatement(&mdStatement)
+				foundMd = true
+				break
+			}
+		}
+	}
+	// if there is no en statement, pick the first statement
+	if !foundMd {
+		defaultMdStatement = mapTaskMdStatement(&mdStatements[0])
+	}
+
+	visInputSubtasks := make([]VisInputSubtask, 0)
+	for _, visInputSt := range task.VisInpSubtasks {
+		testInputs := make([]TestWithOnlyInput, 0)
+		for _, test := range visInputSt.Tests {
+			testInputs = append(testInputs, TestWithOnlyInput{
+				TestID: test.TestId,
+				Input:  test.Input,
+			})
+		}
+		visInputSubtasks = append(visInputSubtasks, VisInputSubtask{
+			SubtaskID:  visInputSt.SubtaskId,
+			TestInputs: testInputs,
+		})
+	}
+
 	response := &Task{
 		PublishedTaskID:        task.ShortId,
 		TaskFullName:           task.FullName,
@@ -87,19 +144,19 @@ func mapTaskResponse(task *tasksrvc.Task) *Task {
 		OriginOlympiad:         task.OriginOlympiad,
 		IllustrationImgURL:     illstrImgUrl,
 		DifficultyRating:       difficultyRating,
-		DefaultMDStatement:     mapTaskMdStatement(nil),
+		DefaultMDStatement:     defaultMdStatement,
 		Examples:               mapTaskExamples(task.Examples),
-		DefaultPDFStatementURL: nil,
-		OriginNotes:            nil,
-		VisibleInputSubtasks:   []VisInputSubtask{}, // TODO: add visible input subtasks
+		DefaultPDFStatementURL: defaultPdfStatementUrl,
+		OriginNotes:            originNotesAsAMap,
+		VisibleInputSubtasks:   visInputSubtasks,
 	}
 	return response
 }
 
-func mapTasksResponse(tasks []*tasksrvc.Task) []*Task {
+func mapTasksResponse(tasks []tasksrvc.Task) []*Task {
 	response := make([]*Task, len(tasks))
 	for i, task := range tasks {
-		response[i] = mapTaskResponse(task)
+		response[i] = mapTaskResponse(&task)
 	}
 	return response
 }

@@ -24,12 +24,12 @@ func main() {
 		os.Exit(1)
 	}
 
-	submSrvc := subm.NewSubmissions()
-	userSrvc := user.NewUsers()
 	taskSrvc, err := tasksrvc.NewTaskSrvc()
 	if err != nil {
 		log.Fatalf("error creating task service: %v", err)
 	}
+	submSrvc := subm.NewSubmissions(taskSrvc)
+	userSrvc := user.NewUsers()
 	httpServer := http.NewHttpServer(submSrvc, userSrvc, taskSrvc,
 		[]byte(jwtKey))
 

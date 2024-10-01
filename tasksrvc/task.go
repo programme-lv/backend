@@ -20,7 +20,7 @@ type Task struct {
 	// statement
 	MdStatements   []MarkdownStatement
 	PdfStatements  []PdfStatement
-	VisInpSubtasks []int
+	VisInpSubtasks []VisibleInputSubtask
 	Examples       []Example
 
 	// evaluation
@@ -38,6 +38,14 @@ type Example struct {
 	Input   string
 	Output  string
 	MdNote  string
+}
+
+type VisibleInputSubtask struct {
+	SubtaskId int
+	Tests     []struct {
+		TestId int
+		Input  string
+	}
 }
 
 type MarkdownStatement struct {

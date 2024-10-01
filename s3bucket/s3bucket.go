@@ -12,10 +12,24 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 )
 
+// FileData holds the key and content of an S3 object.
+type FileData struct {
+	Key     string
+	Content []byte
+}
+
 type S3Bucket struct {
 	client *s3.Client
 	bucket string
 	region string
+}
+
+func (bucket *S3Bucket) Region() string {
+	return bucket.region
+}
+
+func (bucket *S3Bucket) Bucket() string {
+	return bucket.bucket
 }
 
 func NewS3Bucket(region string, bucket string) (*S3Bucket, error) {
@@ -85,7 +99,10 @@ func (bucket *S3Bucket) Download(key string) ([]byte, error) {
 	}
 	defer output.Body.Close()
 	buf := new(bytes.Buffer)
-	buf.ReadFrom(output.Body)
+	_, err = buf.ReadFrom(output.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read object body: %w", err)
+	}
 	return buf.Bytes(), nil
 }
 
@@ -122,4 +139,84 @@ func (bucket *S3Bucket) ListFiles(prefix string) ([]string, error) {
 	}
 
 	return keys, nil
+}
+
+// ListAndGetAllFiles lists all files in the S3 bucket and retrieves their contents.
+// It returns a slice of FileData containing each file's key and content, or an error if the operation fails.
+//
+// Parameters:
+//   - prefix: An optional prefix to filter the listed objects (e.g., "images/").
+//
+// Returns:
+//   - []FileData: A slice containing the keys and contents of the objects in the bucket.
+//   - error: An error if the operation fails, otherwise nil.
+func (bucket *S3Bucket) ListAndGetAllFiles(prefix string) ([]FileData, error) {
+	// Step 1: List all file keys
+	keys, err := bucket.ListFiles(prefix)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list files: %w", err)
+	}
+
+	// Step 2: Initialize a slice to hold the file data
+	var files []FileData
+
+	// Optional: Use concurrency to download files in parallel for efficiency
+	// Here, we'll use a buffered channel to limit the number of concurrent downloads
+	const maxConcurrency = 10
+	semaphore := make(chan struct{}, maxConcurrency)
+	results := make(chan FileData)
+	errs := make(chan error)
+
+	// Step 3: Start downloading each file concurrently
+	for _, key := range keys {
+		semaphore <- struct{}{} // Acquire a slot
+		go func(k string) {
+			defer func() { <-semaphore }() // Release the slot
+
+			content, err := bucket.Download(k)
+			if err != nil {
+				errs <- fmt.Errorf("failed to download file %s: %w", k, err)
+				return
+			}
+
+			results <- FileData{
+				Key:     k,
+				Content: content,
+			}
+		}(key)
+	}
+
+	// Step 4: Collect the results
+	go func() {
+		// Wait for all goroutines to finish
+		for i := 0; i < cap(semaphore); i++ {
+			semaphore <- struct{}{}
+		}
+		close(results)
+		close(errs)
+	}()
+
+	// Step 5: Handle the results and errors
+	for {
+		select {
+		case file, ok := <-results:
+			if !ok {
+				results = nil
+			} else {
+				files = append(files, file)
+			}
+		case err, ok := <-errs:
+			if !ok {
+				errs = nil
+			} else {
+				return nil, err
+			}
+		}
+
+		if results == nil && errs == nil {
+			break
+		}
+	}
+
+	return files, nil
 }
