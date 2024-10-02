@@ -252,10 +252,10 @@ func (t *Task) GetVisibleInputSubtaskIds() []int {
 	return t.visibleInputSubtasks
 }
 
-func (t *Task) GetIllustrationImage() *Asset {
+func (t *Task) GetIllustrationImage() *AssetFile {
 	for _, asset := range t.Assets {
 		if asset.RelativePath == t.illstrImgFname {
-			return &Asset{
+			return &AssetFile{
 				RelativePath: asset.RelativePath,
 				Content:      asset.Content,
 			}
@@ -265,7 +265,7 @@ func (t *Task) GetIllustrationImage() *Asset {
 	return nil
 }
 
-func (t *Task) GetAssets() []Asset {
+func (t *Task) GetAssets() []AssetFile {
 	return t.Assets
 }
 

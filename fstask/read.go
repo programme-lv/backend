@@ -191,9 +191,9 @@ func Read(taskRootDirPath string) (*Task, error) {
 		log.Printf("Error reading task illustration filename: %v\n", err)
 	}
 
-	t.Assets, err = readAssets(taskRootDirPath)
+	err = t.LoadAssetsFromDir(taskDir)
 	if err != nil {
-		log.Printf("Error reading all assets: %v\n", err)
+		return nil, fmt.Errorf("error reading assets: %w", err)
 	}
 
 	t.visibleInputSubtasks, err = readVisibleInputSubtasks(specVers, problemTomlContent)
@@ -255,4 +255,20 @@ func readTaskName(specVers string, tomlContent string) (string, error) {
 	}
 
 	return tomlStruct.TaskName, nil
+}
+
+func readIllstrImgFnameFromPToml(pToml []byte) (string, error) {
+	illustrationPath := ""
+	tomlStruct := struct {
+		IllstrImgFname string `toml:"illustration_image"`
+	}{}
+
+	err := toml.Unmarshal(pToml, &tomlStruct)
+	if err != nil {
+		log.Printf("Failed to unmarshal the task name: %v\n", err)
+		return "", fmt.Errorf("failed to unmarshal the task name: %w", err)
+	}
+
+	illustrationPath = tomlStruct.IllstrImgFname
+	return illustrationPath, nil
 }

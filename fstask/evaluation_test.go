@@ -9,7 +9,7 @@ import (
 )
 
 func TestReadingWritingCheckerAndInteractor(t *testing.T) {
-	kvadrputekl, err := fstask.Read(kvadrputeklV2dot5Path)
+	kvadrputekl, err := fstask.Read(kvadrputeklV2Dot5Path)
 	require.NoErrorf(t, err, "failed to read task: %v", err)
 
 	tornis, err := fstask.Read(tornisPath)

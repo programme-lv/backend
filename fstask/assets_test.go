@@ -9,23 +9,23 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestReadingWritingIllustrationImage(t *testing.T) {
-	parsedTask, err := fstask.Read(kvadrputeklV2dot5Path)
+func TestIllustration(t *testing.T) {
+	parsedTask, err := fstask.Read(kvadrputeklV2Dot5Path)
 	require.NoErrorf(t, err, "failed to read task: %v", err)
 
 	// read illustration image
-	imgPath := filepath.Join(kvadrputeklV2dot5Path, "assets", "illustration.png")
+	imgPath := filepath.Join(kvadrputeklV2Dot5Path, "assets", "illustration.png")
 	imgAsset2, err := os.ReadFile(imgPath)
 	require.NoErrorf(t, err, "failed to read illustration image: %v", err)
 
 	parsedImg := parsedTask.GetIllustrationImage()
 	require.NotNil(t, parsedImg)
-	expectedImgAsset := &fstask.Asset{
+	expectedImgAsset := &fstask.AssetFile{
 		RelativePath: "illustration.png",
 		Content:      imgAsset2,
 	}
 	require.Equal(t, len(parsedTask.GetAssets()), 3)
-	require.Equal(t, expectedImgAsset.Content, parsedImg.Content)
+	require.Equal(t, expectedImgAsset.Content, parsedImg)
 	require.Equal(t, expectedImgAsset.RelativePath, parsedImg.RelativePath)
 	require.Equal(t, expectedImgAsset, parsedImg)
 

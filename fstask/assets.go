@@ -2,59 +2,73 @@ package fstask
 
 import (
 	"fmt"
-	"log"
+	"io/fs"
 	"os"
 	"path/filepath"
-
-	"github.com/pelletier/go-toml/v2"
 )
 
-type Asset struct {
+type AssetFile struct {
 	RelativePath string
 	Content      []byte
 }
 
-func readAssets(rootDirPath string) ([]Asset, error) {
-	res := make([]Asset, 0)
-	dirPath := filepath.Join(rootDirPath, "assets")
-	if _, err := os.Stat(dirPath); os.IsNotExist(err) {
-		return res, nil
+func (dir TaskDir) ReadAssetFiles() (res []AssetFile, err error) {
+	res = make([]AssetFile, 0)
+
+	assetsPath := filepath.Join(dir.Path, "assets")
+
+	if _, statErr := os.Stat(assetsPath); os.IsNotExist(statErr) {
+		err = nil
+		return
+	} else if statErr != nil {
+		err = fmt.Errorf("error accessing assets directory: %w", statErr)
+		return
 	}
 
-	files, err := os.ReadDir(dirPath)
-	if err != nil {
-		return res, fmt.Errorf("error reading assets directory: %w", err)
-	}
+	err = filepath.WalkDir(assetsPath, func(path string, d fs.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
 
-	for _, f := range files {
-		if f.IsDir() {
-			return nil, fmt.Errorf("directories are currently not supported")
+		if path == assetsPath {
+			return nil
 		}
-		bytes, err := os.ReadFile(filepath.Join(dirPath, f.Name()))
-		if err != nil {
-			return nil, fmt.Errorf("error reading asset: %w", err)
+
+		if d.IsDir() {
+			return nil // Continue walking through directories.
 		}
-		res = append(res, Asset{
-			RelativePath: f.Name(),
-			Content:      bytes,
+
+		relativePath, relErr := filepath.Rel(assetsPath, path)
+		if relErr != nil {
+			return relErr
+		}
+
+		content, readErr := os.ReadFile(path)
+		if readErr != nil {
+			return fmt.Errorf("error reading asset '%s': %w", relativePath, readErr)
+		}
+
+		res = append(res, AssetFile{
+			RelativePath: relativePath,
+			Content:      content,
 		})
+		return nil
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("error walking through assets directory: %w", err)
 	}
 
-	return res, nil
+	return
 }
 
-func readIllstrImgFnameFromPToml(pToml []byte) (string, error) {
-	illustrationPath := ""
-	tomlStruct := struct {
-		IllstrImgFname string `toml:"illustration_image"`
-	}{}
-
-	err := toml.Unmarshal(pToml, &tomlStruct)
+// LoadAssetsFromDir loads asset files into the Task from the specified TaskDir.
+// It updates the Task's Assets field with the loaded assets.
+func (task *Task) LoadAssetsFromDir(dir TaskDir) error {
+	assetFiles, err := dir.ReadAssetFiles()
 	if err != nil {
-		log.Printf("Failed to unmarshal the task name: %v\n", err)
-		return "", fmt.Errorf("failed to unmarshal the task name: %w", err)
+		return fmt.Errorf("failed to read asset files: %w", err)
 	}
-
-	illustrationPath = tomlStruct.IllstrImgFname
-	return illustrationPath, nil
+	task.Assets = assetFiles
+	return nil
 }

@@ -10,8 +10,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestReadingWritingEvaluationConstraints(t *testing.T) {
-	parsedTask, err := fstask.Read(kvadrputeklV2dot5Path)
+func TesConstraintsVersV2(t *testing.T) {
+	parsedTask, err := fstask.Read(kvadrputeklV2Dot5Path)
 	require.NoErrorf(t, err, "failed to read task: %v", err)
 	assert.Equal(t, 0.5, parsedTask.CpuTimeLimInSeconds)
 	assert.Equal(t, 256, parsedTask.MemoryLimInMegabytes)

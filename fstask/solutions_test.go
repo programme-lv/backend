@@ -11,7 +11,7 @@ import (
 
 // TestReadingWritingSolutions tests the reading and writing of solutions.
 func TestReadingWritingSolutions(t *testing.T) {
-	task, err := fstask.Read(kvadrputeklV2dot5Path)
+	task, err := fstask.Read(kvadrputeklV2Dot5Path)
 	require.NoErrorf(t, err, "failed to read task: %v", err)
 
 	ensureTaskSolutionsCorrespondToTestdata(t, task)
