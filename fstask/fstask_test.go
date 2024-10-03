@@ -130,6 +130,10 @@ func requireKvadrputekl(t *testing.T, task *fstask.Task) {
 		"lv": "Uzdevums no Latvijas 37. informātikas olimpiādes (2023./2024. mācību gads) skolas kārtas.",
 		"en": "The problem is from the school round of the 37th Latvian Informatics Olympiad in the 2023/2024 academic year.",
 	}, task.OriginNotes)
+
+	// CHECKERS, INTERACTORS
+	require.NotEmpty(t, task.TestlibChecker)
+	require.Empty(t, task.TestlibInteractor)
 }
 
 func intPtr(i int) *int {

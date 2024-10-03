@@ -35,10 +35,8 @@ func ParseLio2024TaskDir(dirPath string) (*fstask.Task, error) {
 		return nil, fmt.Errorf("interactors are not implemented yet")
 	}
 
-	task, err := fstask.NewTask(parsedYaml.FullTaskName)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create new task: %v", err)
-	}
+	task := fstask.Task{}
+	task.FullName = parsedYaml.FullTaskName
 
 	testZipAbsolutePath := filepath.Join(dirPath, parsedYaml.TestZipPathRelToYaml)
 
@@ -58,7 +56,11 @@ func ParseLio2024TaskDir(dirPath string) (*fstask.Task, error) {
 
 	for _, t := range tests {
 		if t.TestGroup == 0 {
-			task.AddExample(t.Input, t.Answer, []byte(""))
+			task.Examples = append(task.Examples, fstask.Example{
+				Input:  t.Input,
+				Output: t.Answer,
+				MdNote: []byte{},
+			})
 			continue
 		}
 		id := task.AddTest(t.Input, t.Answer)
