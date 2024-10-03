@@ -35,7 +35,7 @@ func ParseLio2024TaskDir(dirPath string) (*fstask.Task, error) {
 		return nil, fmt.Errorf("interactors are not implemented yet")
 	}
 
-	task := fstask.Task{}
+	task := &fstask.Task{}
 	task.FullName = parsedYaml.FullTaskName
 
 	testZipAbsolutePath := filepath.Join(dirPath, parsedYaml.TestZipPathRelToYaml)
@@ -63,9 +63,11 @@ func ParseLio2024TaskDir(dirPath string) (*fstask.Task, error) {
 			})
 			continue
 		}
-		id := task.AddTest(t.Input, t.Answer)
-		name := fmt.Sprintf("%03d_%c", t.TestGroup, t.NoInTestGroup+int('a')-1)
-		task.AssignFilenameToTest(name, id)
+		task.Tests = append(task.Tests, fstask.Test{
+			Input:  t.Input,
+			Answer: t.Answer,
+		})
+		id := len(task.Tests)
 		mapTestsToTestGroups[t.TestGroup] = append(mapTestsToTestGroups[t.TestGroup], id)
 	}
 
@@ -73,20 +75,13 @@ func ParseLio2024TaskDir(dirPath string) (*fstask.Task, error) {
 		if g.GroupID == 0 {
 			continue // examples
 		}
-		err := task.AddTestGroupWithID(g.GroupID, g.Points,
-			g.Public, mapTestsToTestGroups[g.GroupID],
-			g.Subtask)
-		if err != nil {
-			return nil, fmt.Errorf("failed to add test group: %v", err)
-		}
+		task.TestGroups = append(task.TestGroups, fstask.TestGroup{
+			Points:  g.Points,
+			Public:  g.Public,
+			TestIDs: mapTestsToTestGroups[g.GroupID],
+		})
 	}
 
-	/*
-			type ParsedLio2024Yaml struct {
-			CheckerPathRelToYaml    string
-			InteractorPathRelToYaml string
-		}
-	*/
 	task.CPUTimeLimitSeconds = parsedYaml.CpuTimeLimitInSeconds
 	task.MemoryLimitMegabytes = parsedYaml.MemoryLimitInMegabytes
 
@@ -114,7 +109,7 @@ func ParseLio2024TaskDir(dirPath string) (*fstask.Task, error) {
 	task.PdfStatements = append(task.PdfStatements,
 		fstask.PdfStatement{Language: "lv", Content: pdfBytes})
 
-	task.AddVisibleInputSubtask(1)
+	task.VisibleInputSubtasks = append(task.VisibleInputSubtasks, 1)
 	task.OriginOlympiad = "LIO"
 
 	// TODO: implement adding checker and interactor if present

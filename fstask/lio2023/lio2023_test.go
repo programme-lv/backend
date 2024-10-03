@@ -8,18 +8,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestParsingLio2023TaskWithoutAChecker(t *testing.T) {
-	// TODO: parse task "pbumbinas"
-}
-
-func TestParsingLio2023TaskWithAChecker(t *testing.T) {
-	// TODO: parse task "zagas"
-}
-
-func TestParsingLio2023TaskWithAnInteractor(t *testing.T) {
-	// TODO: parse task "pulkstenis"
-}
-
 func TestParsingLio2023TaskWithBothACheckerAndAnInteractor(t *testing.T) {
 	taskDir, err := getTaskDirectory(t, "iedalas")
 	require.NoErrorf(t, err, "failed to get task directory: %v", err)
@@ -39,37 +27,25 @@ func TestParsingLio2023TaskWithBothACheckerAndAnInteractor(t *testing.T) {
 	}
 	require.Contains(t, solutionFilenames, "iedalas_PP_OK.cpp")
 
-	examples := task.GetExamples()
+	examples := task.Examples
 	require.Len(t, examples, 1)
-	require.NotNilf(t, examples[0].FName, "examples[0].FName is nil")
-	require.Equal(t, "00a", *examples[0].FName)
 	require.Equal(t, []byte("131\n"), examples[0].Input)
 	require.Equal(t, []byte("1 131\n"), examples[0].Output)
 
-	require.Equal(t, "01a", task.GetTestFilename(1))
-	require.Equal(t, "01b", task.GetTestFilename(2))
-	require.Equal(t, "01c", task.GetTestFilename(3))
-	require.Equal(t, "01d", task.GetTestFilename(4))
-
-	tests := task.GetTestsSortedByID()
+	tests := task.Tests
 	require.Len(t, tests, 4)
-	require.Equal(t, 1, tests[0].TestID)
-	require.Equal(t, 2, tests[1].TestID)
-	require.Equal(t, 3, tests[2].TestID)
-	require.Equal(t, 4, tests[3].TestID)
 
 	require.Equal(t, []byte("560\n"), tests[2].Input)
 
 	publicTestGroups := []int{1, 6, 11}
-	testGroups := task.GetTestGroups()
+	testGroups := task.TestGroups
 	require.Len(t, testGroups, 25)
-	for _, testGroup := range testGroups {
+	for i, testGroup := range testGroups {
 		if testGroup.Public {
-			require.Contains(t, publicTestGroups, testGroup.GroupID)
+			require.Contains(t, publicTestGroups, i+1)
 		}
 	}
 
-	require.Equal(t, 1, testGroups[0].GroupID)
 	require.Equal(t, 4, testGroups[0].Points)
 	// require.Equal(t, 1, testGroups[1].Subtask) (can't be accurately determined)
 	require.Equal(t, false, testGroups[1].Public)

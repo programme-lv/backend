@@ -26,10 +26,8 @@ func ParseLio2023TaskDir(dirPath string) (*fstask.Task, error) {
 		return nil, fmt.Errorf("failed to parse task.yaml: %w", err)
 	}
 
-	task, err := fstask.NewTask(taskYaml.Title)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create new task: %w", err)
-	}
+	task := &fstask.Task{}
+	task.FullName = taskYaml.Title
 
 	checkerPath := filepath.Join(dirPath, "riki", "checker.cpp")
 	if _, err := os.Stat(checkerPath); !errors.Is(err, fs.ErrNotExist) {
@@ -91,14 +89,17 @@ func ParseLio2023TaskDir(dirPath string) (*fstask.Task, error) {
 
 	testGroupTestIds := make(map[int][]int)
 	for _, test := range tests {
-		filename := fmt.Sprintf("%02d%c", test.TestGroup,
-			test.NoInTestGroup+int('a')-1)
 		if test.TestGroup == 0 {
-			exampleId := task.AddExample(test.Input, test.Answer, nil)
-			task.AssignFilenameToExample(filename, int(exampleId))
+			task.Examples = append(task.Examples, fstask.Example{
+				Input:  test.Input,
+				Output: test.Answer,
+			})
 		} else {
-			testId := task.AddTest(test.Input, test.Answer)
-			task.AssignFilenameToTest(filename, int(testId))
+			task.Tests = append(task.Tests, fstask.Test{
+				Input:  test.Input,
+				Answer: test.Answer,
+			})
+			testId := len(task.Tests)
 
 			if testGroupTestIds[test.TestGroup] == nil {
 				testGroupTestIds[test.TestGroup] = make([]int, 0)
@@ -144,7 +145,7 @@ func ParseLio2023TaskDir(dirPath string) (*fstask.Task, error) {
 			if i == 0 {
 				continue // example test group
 			}
-			task.AddTestGroup(points, false, testGroupTestIds[i], 69)
+			task.TestGroups = append(task.TestGroups, fstask.TestGroup{Points: points, TestIDs: testGroupTestIds[i]})
 		}
 	}
 

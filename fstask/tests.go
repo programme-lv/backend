@@ -51,7 +51,6 @@ func (dir TaskDir) ReadTests() ([]Test, error) {
 		tests = append(tests, Test{
 			Input:  input,
 			Answer: answer,
-			MdNote: []byte{}, // TODO read .md file
 		})
 	}
 

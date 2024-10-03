@@ -36,7 +36,6 @@ type TestGroup struct {
 type Test struct {
 	Input  []byte
 	Answer []byte
-	MdNote []byte
 }
 
 type Example struct {
