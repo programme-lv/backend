@@ -42,6 +42,16 @@ difficulty_1_to_5 = 3
   exec_time = 0.137
 
 [[subtasks]]
+  id = 2
+  points = 48
+  tests = [
+    '002_a', '002_b', '002_c',
+  ]
+
+  [subtasks.descriptions]
+    lv = "$$NM \\leq 10^3$$"
+    en = "$$NM \\leq 10^3$$"
+[[subtasks]]
   id = 1
   points = 3
   tests = [
@@ -52,109 +62,14 @@ difficulty_1_to_5 = 3
     lv = "Uzdevuma tekstā dotie trīs piemēri"
     en = "The three examples given in the problem statement"
 
-[[subtasks]]
-  id = 2
-  points = 48
-  tests = [
-    '002_a', '002_b', '002_c',
-    '003_a', '003_b', '003_c',
-    '004_a', '004_b', '004_c',
-    '005_a', '005_b', '005_c',
-    '006_a', '006_b', '006_c'
-  ]
-
-  [subtasks.descriptions]
-    lv = "$$NM \\leq 10^3$$"
-    en = "$$NM \\leq 10^3$$"
-
-[[subtasks]]
-  id = 3
-  points = 28
-  tests = [
-    '007_a', '007_b', '007_c',
-    '008_a', '008_b', '008_c',
-    '009_a', '009_b', '009_c',
-    '010_a', '010_b', '010_c', '010_d', '010_e'
-  ]
-
-  [subtasks.descriptions]
-    lv = "$$N \\leq 1000$$ un $$M \\leq 1000$$"
-    en = "$$N \\leq 1000$$ and $$M \\leq 1000$$"
-
-[[subtasks]]
-  id = 4
-  points = 21
-  tests = [
-    '011_a', '011_b', '011_c',
-    '012_a', '012_b', '012_c',
-    '013_a', '013_b', '013_c', '013_d'
-  ]
-
-  [subtasks.descriptions]
-    lv = "Bez papildu ierobežojumiem"
-    en = "Without additional constraints"
-
-[[test_groups]]
-  id = 1
-  points = 3
-  tests = ['001_a', '001_b', '001_c']
 
 [[test_groups]]
   id = 2
   points = 8
   tests = ['002_a', '002_b', '002_c']
-
 [[test_groups]]
-  id = 3
-  points = 10
-  tests = ['003_a', '003_b', '003_c']
+  id = 1
+  points = 3
+  public = true
+  tests = ['001_a', '001_b', '001_c']
 
-[[test_groups]]
-  id = 4
-  points = 10
-  tests = ['004_a', '004_b', '004_c']
-
-[[test_groups]]
-  id = 5
-  points = 10
-  tests = ['005_a', '005_b', '005_c']
-
-[[test_groups]]
-  id = 6
-  points = 10
-  tests = ['006_a', '006_b', '006_c']
-
-[[test_groups]]
-  id = 7
-  points = 7
-  tests = ['007_a', '007_b', '007_c']
-
-[[test_groups]]
-  id = 8
-  points = 7
-  tests = ['008_a', '008_b', '008_c']
-
-[[test_groups]]
-  id = 9
-  points = 7
-  tests = ['009_a', '009_b', '009_c']
-
-[[test_groups]]
-  id = 10
-  points = 7
-  tests = ['010_a', '010_b', '010_c', '010_d', '010_e']
-
-[[test_groups]]
-  id = 11
-  points = 7
-  tests = ['011_a', '011_b', '011_c']
-
-[[test_groups]]
-  id = 12
-  points = 7
-  tests = ['012_a', '012_b', '012_c']
-
-[[test_groups]]
-  id = 13
-  points = 7
-  tests = ['013_a', '013_b', '013_c', '013_d']

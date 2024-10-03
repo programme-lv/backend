@@ -11,7 +11,123 @@ import (
 
 var prjRootPath = filepath.Join(".", "..")
 var testdataPath = filepath.Join(prjRootPath, "fstask", "testdata")
-var kvadrputeklV3Dot0Path = filepath.Join(testdataPath, "kvadrputekl_v3dot0")
+var kvadrputeklPath = filepath.Join(testdataPath, "kvadrputekl")
+
+func TestKvadrputeklTask(t *testing.T) {
+	task, err := fstask.Read(kvadrputeklPath)
+	require.NoError(t, err)
+
+	requireKvadrputekl(t, task)
+
+	task2 := writeAndReReadTask(t, task)
+
+	requireKvadrputekl(t, task2)
+}
+
+func requireKvadrputekl(t *testing.T, task *fstask.Task) {
+	// ARCHIVE
+	require.Len(t, task.ArchiveFiles, 4)
+	require.Contains(t, task.ArchiveFiles, fstask.ArchiveFile{
+		RelativePath: "riki/hello.txt",
+		Content:      []byte("hello"),
+	})
+
+	// ASSETS
+	require.Len(t, task.Assets, 4)
+	require.Contains(t, task.Assets, fstask.AssetFile{
+		RelativePath: "test.txt",
+		Content:      []byte("test"),
+	})
+
+	// EXAMPLES
+	require.Len(t, task.Examples, 1)
+	require.Contains(t, task.Examples, fstask.Example{
+		Input:  []byte(`5 9 3`),
+		Output: []byte(`10`),
+		MdNote: []byte(`asdf`),
+	})
+
+	// SOLUTIONS
+	require.Len(t, task.Solutions, 3)
+	require.Equal(t, task.Solutions[0], fstask.Solution{
+		Filename: "kp_kp_ok.cpp",
+		ScoreEq:  intPtr(100),
+		ScoreLt:  nil,
+		ScoreLte: nil,
+		ScoreGt:  nil,
+		ScoreGte: nil,
+		Author:   strPtr("Krišjānis Petručeņa"),
+		ExecTime: float64Ptr(0.035),
+		Content:  []byte("#include <iostream>"),
+	})
+
+	// STATEMENTS
+	require.Contains(t, task.MarkdownStatements, fstask.MarkdownStatement{
+		Language: "lv",
+		Story:    "![1. attēls: Laukuma piemērs](kp1.png)",
+		Input:    "Ievaddati",
+		Output:   "Izvaddati",
+		Notes:    "",
+		Scoring:  "",
+	})
+	require.Contains(t, task.MarkdownStatements, fstask.MarkdownStatement{
+		Language: "en",
+		Story:    "story",
+		Input:    "input",
+		Output:   "output",
+		Notes:    "",
+		Scoring:  "",
+	})
+	require.Len(t, task.PdfStatements, 1)
+	require.Equal(t, task.PdfStatements[0].Language, "lv")
+	require.NotEmpty(t, task.PdfStatements[0])
+
+	// TESTS
+	require.Len(t, task.Tests, 6)
+
+	// SUBTASKS
+	require.Len(t, task.Subtasks, 2)
+	require.Equal(t, fstask.Subtask{
+		Points:  48,
+		TestIDs: []int{4, 5, 6},
+		Descriptions: map[string]string{
+			"lv": "$$NM \\leq 10^3$$",
+			"en": "$$NM \\leq 10^3$$",
+		},
+	}, task.Subtasks[1])
+
+	// TEST GROUPS
+	require.Len(t, task.TestGroups, 2)
+	require.Equal(t, task.TestGroups[0], fstask.TestGroup{
+		Points:  3,
+		Public:  true,
+		TestIDs: []int{1, 2, 3},
+	})
+	require.Equal(t, task.TestGroups[1], fstask.TestGroup{
+		Points:  8,
+		Public:  false,
+		TestIDs: []int{4, 5, 6},
+	})
+
+	// GENERAL
+
+	// CONSTRAINTS
+
+	// ORIGIN
+
+}
+
+func intPtr(i int) *int {
+	return &i
+}
+
+func strPtr(s string) *string {
+	return &s
+}
+
+func float64Ptr(f float64) *float64 {
+	return &f
+}
 
 // writeAndReReadTask writes the given task to a temporary directory and reads it
 // back from there. The temporary directory is removed after the function
@@ -22,7 +138,7 @@ func writeAndReReadTask(t *testing.T, task *fstask.Task) *fstask.Task {
 	require.NoErrorf(t, err, "failed to create temporary directory: %v", err)
 	defer os.RemoveAll(tmpDirectory)
 
-	outputDirectory := filepath.Join(tmpDirectory, "kvadrputekl")
+	outputDirectory := filepath.Join(tmpDirectory, "task")
 
 	err = task.Store(outputDirectory)
 	require.NoErrorf(t, err, "failed to store task: %v", err)

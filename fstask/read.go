@@ -96,5 +96,10 @@ func Read(dir string) (*Task, error) {
 		return nil, fmt.Errorf("error reading evaluation: %w", err)
 	}
 
+	err = t.LoadSubtasks(taskDir)
+	if err != nil {
+		return nil, fmt.Errorf("error reading subtasks: %w", err)
+	}
+
 	return t, nil
 }

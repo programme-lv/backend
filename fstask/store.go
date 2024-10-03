@@ -23,6 +23,14 @@ type ProblemTOML struct {
 	Solutions     []PTomlSolution  `toml:"solutions"`
 	ProblemTags   []string         `toml:"problem_tags"`
 	Difficulty    int              `toml:"difficulty_1_to_5"`
+	Subtasks      []PTomlSubtask   `toml:"subtasks"`
+}
+
+type PTomlSubtask struct {
+	ID           int               `toml:"id"`
+	Points       int               `toml:"points"`
+	Descriptions map[string]string `toml:"descriptions"`
+	Tests        []int             `toml:"tests"`
 }
 
 type PTomlSolution struct {
@@ -33,7 +41,7 @@ type PTomlSolution struct {
 	ScoreGt  *int     `toml:"score_gt"`
 	ScoreGte *int     `toml:"score_gte"`
 	Author   *string  `toml:"author"`
-	ExecTime *float64 `toml:"og_max_exec_time"`
+	ExecTime *float64 `toml:"exec_time"`
 }
 
 type PTomlOrigin struct {
@@ -55,6 +63,7 @@ type PTomlConstraints struct {
 type PTomlTestGroup struct {
 	GroupID int   `toml:"id"`
 	Points  int   `toml:"points"`
+	Public  bool  `toml:"public"`
 	Tests   []int `toml:"tests"`
 }
 
@@ -80,12 +89,24 @@ func (task *Task) encodeProblemTOML() ([]byte, error) {
 		Solutions:    []PTomlSolution{},
 		ProblemTags:  task.ProblemTags,
 		Difficulty:   task.DifficultyOneToFive,
+		Subtasks:     []PTomlSubtask{},
 	}
 	t.Specification = directorySpecificationVersion
+
+	for i, st := range task.Subtasks {
+		ptomlSubtask := PTomlSubtask{
+			ID:           i + 1,
+			Points:       st.Points,
+			Descriptions: st.Descriptions,
+			Tests:        st.TestIDs,
+		}
+		t.Subtasks = append(t.Subtasks, ptomlSubtask)
+	}
 
 	for i, tg := range task.TestGroups {
 		ptomlTestGroup := PTomlTestGroup{
 			GroupID: i + 1,
+			Public:  tg.Public,
 			Points:  tg.Points,
 			Tests:   tg.TestIDs,
 		}
@@ -145,12 +166,12 @@ func (task *Task) Store(dirPath string) error {
 		return fmt.Errorf("error storing examples: %w", err)
 	}
 
-	err = task.storePDFStatements(filepath.Join(dirPath, "statements", "pdf"))
+	err = task.storePDFStatementsShallow(filepath.Join(dirPath, "statements"))
 	if err != nil {
 		return fmt.Errorf("error storing PDF statements: %w", err)
 	}
 
-	err = task.storeMdStatements(filepath.Join(dirPath, "statements", "md"))
+	err = task.storeMdStatementsShallow(filepath.Join(dirPath, "statements"))
 	if err != nil {
 		return fmt.Errorf("error storing Markdown statements: %w", err)
 	}
@@ -269,88 +290,130 @@ func (task *Task) storeAssets(assetDir string) error {
 	return nil
 }
 
-func (task *Task) storeMdStatements(mdStatementDir string) error {
+func (task *Task) storeMdStatementsShallow(statementsDir string) error {
 	if len(task.MarkdownStatements) == 0 {
 		return nil
 	}
-	err := os.MkdirAll(mdStatementDir, 0755)
+	err := os.MkdirAll(statementsDir, 0755)
 	if err != nil {
 		return fmt.Errorf("error creating Markdown statements directory: %w", err)
 	}
 
 	for _, v := range task.MarkdownStatements {
-		// create language directory
-		dirPath := filepath.Join(mdStatementDir, v.Language)
-		err = os.MkdirAll(dirPath, 0755)
+		filename := fmt.Sprintf("%s.md", v.Language)
+		filePath := filepath.Join(statementsDir, filename)
+		sections := []string{v.Story, v.Input, v.Output}
+		contentStr := strings.Join(sections, "\n\n---\n\n")
+		err = os.WriteFile(filePath, []byte(contentStr), 0644)
 		if err != nil {
-			return fmt.Errorf("error creating Markdown statement directory: %w", err)
-		}
-
-		inputPath := filepath.Join(dirPath, "input.md")
-		outputPath := filepath.Join(dirPath, "output.md")
-		storyPath := filepath.Join(dirPath, "story.md")
-		scoringPath := filepath.Join(dirPath, "scoring.md")
-		notesPath := filepath.Join(dirPath, "notes.md")
-
-		if v.Input != "" {
-			err = os.WriteFile(inputPath, []byte(v.Input), 0644)
-			if err != nil {
-				return fmt.Errorf("error writing Markdown statement: %w", err)
-			}
-		}
-
-		if v.Output != "" {
-			err = os.WriteFile(outputPath, []byte(v.Output), 0644)
-			if err != nil {
-				return fmt.Errorf("error writing Markdown statement: %w", err)
-			}
-		}
-
-		if v.Story != "" {
-			err = os.WriteFile(storyPath, []byte(v.Story), 0644)
-			if err != nil {
-				return fmt.Errorf("error writing Markdown statement: %w", err)
-			}
-		}
-
-		if v.Scoring != "" {
-			err = os.WriteFile(scoringPath, []byte(v.Scoring), 0644)
-			if err != nil {
-				return fmt.Errorf("error writing Markdown statement: %w", err)
-			}
-		}
-
-		if v.Notes != "" {
-			err = os.WriteFile(notesPath, []byte(v.Notes), 0644)
-			if err != nil {
-				return fmt.Errorf("error writing Markdown statement: %w", err)
-			}
+			return fmt.Errorf("error writing Markdown statement: %w", err)
 		}
 	}
 
 	return nil
 }
 
-func (task *Task) storePDFStatements(pdfStatementsDir string) error {
+// func (task *Task) storeMdStatements(statementsDir string) error {
+// 	if len(task.MarkdownStatements) == 0 {
+// 		return nil
+// 	}
+// 	mdStatementDir := filepath.Join(statementsDir, "md")
+// 	err := os.MkdirAll(mdStatementDir, 0755)
+// 	if err != nil {
+// 		return fmt.Errorf("error creating Markdown statements directory: %w", err)
+// 	}
+
+// 	for _, v := range task.MarkdownStatements {
+// 		dirPath := filepath.Join(mdStatementDir, v.Language)
+// 		err = os.MkdirAll(dirPath, 0755)
+// 		if err != nil {
+// 			return fmt.Errorf("error creating Markdown statement directory: %w", err)
+// 		}
+
+// 		inputPath := filepath.Join(dirPath, "input.md")
+// 		outputPath := filepath.Join(dirPath, "output.md")
+// 		storyPath := filepath.Join(dirPath, "story.md")
+// 		scoringPath := filepath.Join(dirPath, "scoring.md")
+// 		notesPath := filepath.Join(dirPath, "notes.md")
+
+// 		if v.Input != "" {
+// 			err = os.WriteFile(inputPath, []byte(v.Input), 0644)
+// 			if err != nil {
+// 				return fmt.Errorf("error writing Markdown statement: %w", err)
+// 			}
+// 		}
+
+// 		if v.Output != "" {
+// 			err = os.WriteFile(outputPath, []byte(v.Output), 0644)
+// 			if err != nil {
+// 				return fmt.Errorf("error writing Markdown statement: %w", err)
+// 			}
+// 		}
+
+// 		if v.Story != "" {
+// 			err = os.WriteFile(storyPath, []byte(v.Story), 0644)
+// 			if err != nil {
+// 				return fmt.Errorf("error writing Markdown statement: %w", err)
+// 			}
+// 		}
+
+// 		if v.Scoring != "" {
+// 			err = os.WriteFile(scoringPath, []byte(v.Scoring), 0644)
+// 			if err != nil {
+// 				return fmt.Errorf("error writing Markdown statement: %w", err)
+// 			}
+// 		}
+
+// 		if v.Notes != "" {
+// 			err = os.WriteFile(notesPath, []byte(v.Notes), 0644)
+// 			if err != nil {
+// 				return fmt.Errorf("error writing Markdown statement: %w", err)
+// 			}
+// 		}
+// 	}
+
+// 	return nil
+// }
+
+func (task *Task) storePDFStatementsShallow(statementsDir string) error {
 	if len(task.PdfStatements) == 0 {
 		return nil
 	}
-	err := os.MkdirAll(pdfStatementsDir, 0755)
+	err := os.MkdirAll(statementsDir, 0755)
 	if err != nil {
 		return fmt.Errorf("error creating PDF statements directory: %w", err)
 	}
-
 	for _, v := range task.PdfStatements {
 		fname := fmt.Sprintf("%s.pdf", v.Language)
-		fpath := filepath.Join(pdfStatementsDir, fname)
+		fpath := filepath.Join(statementsDir, fname)
 		err = os.WriteFile(fpath, []byte(v.Content), 0644)
 		if err != nil {
 			return fmt.Errorf("error writing PDF statement: %w", err)
 		}
 	}
-
 	return nil
 }
+
+// func (task *Task) storePDFStatements(pdfStatementsDir string) error {
+// 	if len(task.PdfStatements) == 0 {
+// 		return nil
+// 	}
+// 	err := os.MkdirAll(pdfStatementsDir, 0755)
+// 	if err != nil {
+// 		return fmt.Errorf("error creating PDF statements directory: %w", err)
+// 	}
+
+// 	for _, v := range task.PdfStatements {
+// 		fname := fmt.Sprintf("%s.pdf", v.Language)
+// 		fpath := filepath.Join(pdfStatementsDir, fname)
+// 		err = os.WriteFile(fpath, []byte(v.Content), 0644)
+// 		if err != nil {
+// 			return fmt.Errorf("error writing PDF statement: %w", err)
+// 		}
+// 	}
+
+// 	return nil
+// }
 
 func (task *Task) storeProblemToml(problemTomlPath string) error {
 	pToml, err := task.encodeProblemTOML()

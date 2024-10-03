@@ -10,22 +10,8 @@ import (
 	"github.com/pelletier/go-toml/v2"
 )
 
-func ReadTestGroupsFromDir(dir TaskDir) ([]TestGroup, error) {
-	obj := struct {
-		TestGroups []struct {
-			GroupID int           `toml:"id"`
-			Points  int           `toml:"points"`
-			Tests   []interface{} `toml:"tests"`
-		} `toml:"test_groups"`
-	}{}
-
-	err := toml.Unmarshal(dir.ProblemToml, &obj)
-	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal test groups: %w", err)
-	}
-
+func findTestIDs(dir TaskDir, tests []any) ([]int, error) {
 	testPath := filepath.Join(dir.AbsPath, "tests")
-	// read test files in lex order. create a map from basename to id. id starts from 1
 
 	entries, err := os.ReadDir(testPath)
 	if err != nil {
@@ -47,26 +33,70 @@ func ReadTestGroupsFromDir(dir TaskDir) ([]TestGroup, error) {
 		}
 	}
 
+	ids := make([]int, 0, len(tests))
+
+	for _, test := range tests {
+		switch v := test.(type) {
+		case int:
+			ids = append(ids, v)
+		case int64:
+			ids = append(ids, int(v))
+		case string:
+			base := strings.TrimSuffix(v, filepath.Ext(v))
+			id, ok := testOrderIds[base]
+			if !ok {
+				return nil, fmt.Errorf("test %s not found in tests", base)
+			}
+			ids = append(ids, id)
+		}
+	}
+
+	return ids, nil
+}
+
+func ReadTestGroupsFromDir(dir TaskDir) ([]TestGroup, error) {
+	obj := struct {
+		TestGroups []struct {
+			GroupID int           `toml:"id"`
+			Points  int           `toml:"points"`
+			Public  bool          `toml:"public"`
+			Tests   []interface{} `toml:"tests"`
+		} `toml:"test_groups"`
+	}{}
+
+	err := toml.Unmarshal(dir.ProblemToml, &obj)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal test groups: %w", err)
+	}
+
+	if len(obj.TestGroups) == 0 {
+		return nil, nil
+	}
+
+	// sort obj.TestGroups by GroupID
+	sort.Slice(obj.TestGroups, func(i, j int) bool {
+		return obj.TestGroups[i].GroupID < obj.TestGroups[j].GroupID
+	})
+
+	if obj.TestGroups[0].GroupID != 1 {
+		return nil, fmt.Errorf("consecutive test group IDs must start with 1")
+	}
+	if obj.TestGroups[len(obj.TestGroups)-1].GroupID != len(obj.TestGroups) {
+		return nil, fmt.Errorf("consecutive test group IDs must end with %d", len(obj.TestGroups))
+	}
+
 	testGroups := make([]TestGroup, 0, len(obj.TestGroups))
 	for _, group := range obj.TestGroups {
 		testGroup := TestGroup{
-			GroupID: group.GroupID,
 			Points:  group.Points,
 			TestIDs: make([]int, 0, len(group.Tests)),
+			Public:  group.Public,
 		}
-		for _, test := range group.Tests {
-			switch v := test.(type) {
-			case int:
-				testGroup.TestIDs = append(testGroup.TestIDs, v)
-			case string:
-				base := strings.TrimSuffix(v, filepath.Ext(v))
-				id, ok := testOrderIds[base]
-				if !ok {
-					return nil, fmt.Errorf("test %s not found in test order", base)
-				}
-				testGroup.TestIDs = append(testGroup.TestIDs, id)
-			}
+		testIDs, err := findTestIDs(dir, group.Tests)
+		if err != nil {
+			return nil, fmt.Errorf("failed to translate test references to IDs: %w", err)
 		}
+		testGroup.TestIDs = testIDs
 		testGroups = append(testGroups, testGroup)
 	}
 

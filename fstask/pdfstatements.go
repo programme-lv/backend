@@ -20,11 +20,33 @@ func ReadPDFStatementsFromTaskDir(dir TaskDir) ([]PdfStatement, error) {
 		format := "specification version %s is not supported, required at least %s"
 		return nil, fmt.Errorf(format, dir.Specification.String(), requiredSpec.String())
 	}
+	statementsDir := filepath.Join(dir.AbsPath, "statements")
+	var pdfStatements []PdfStatement
+	if _, err := os.Stat(statementsDir); !os.IsNotExist(err) {
+		pdfFiles, err := filepath.Glob(filepath.Join(statementsDir, "*.pdf"))
+		if err != nil {
+			return nil, fmt.Errorf("error finding pdf files: %w", err)
+		}
 
-	pdfDirPath := filepath.Join(dir.AbsPath, "statements", "pdf")
+		for _, file := range pdfFiles {
+			content, err := os.ReadFile(file)
+			if err != nil {
+				return nil, fmt.Errorf("error reading pdf file '%s': %w", file, err)
+			}
+
+			statement := PdfStatement{
+				Language: strings.TrimSuffix(filepath.Base(file), ".pdf"),
+				Content:  content,
+			}
+
+			pdfStatements = append(pdfStatements, statement)
+		}
+	}
+
+	pdfDirPath := filepath.Join(statementsDir, "pdf")
 	if _, err := os.Stat(pdfDirPath); os.IsNotExist(err) {
 		// PDF directory does not exist; no PDF statements to read.
-		return nil, nil
+		return pdfStatements, nil
 	} else if err != nil {
 		return nil, fmt.Errorf("error accessing PDF directory '%s': %w", pdfDirPath, err)
 	}
@@ -33,8 +55,6 @@ func ReadPDFStatementsFromTaskDir(dir TaskDir) ([]PdfStatement, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error reading PDF directory '%s': %w", pdfDirPath, err)
 	}
-
-	var pdfStatements []PdfStatement
 
 	for _, file := range files {
 		if !strings.HasSuffix(file.Name(), ".pdf") {

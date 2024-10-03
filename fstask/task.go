@@ -27,14 +27,7 @@ type Task struct {
 	TestlibInteractor    string
 }
 
-type Subtask struct {
-	Points       int
-	Tests        []string
-	Descriptions map[string]string
-}
-
 type TestGroup struct {
-	GroupID int
 	Points  int
 	Public  bool
 	TestIDs []int

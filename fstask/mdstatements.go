@@ -23,12 +23,43 @@ func ReadMarkdownStatementsFromTaskDir(dir TaskDir) ([]MarkdownStatement, error)
 		return nil, fmt.Errorf(format, dir.Specification.String(), requiredSpec.String())
 	}
 
+	var markdownStatements []MarkdownStatement
+
+	statementsDir := filepath.Join(dir.AbsPath, "statements")
+	if _, err := os.Stat(statementsDir); !os.IsNotExist(err) {
+		// find all files that end with .md
+		markdownFiles, err := filepath.Glob(filepath.Join(statementsDir, "*.md"))
+		if err != nil {
+			return nil, fmt.Errorf("error finding markdown files: %w", err)
+		}
+
+		for _, file := range markdownFiles {
+			content, err := os.ReadFile(file)
+			if err != nil {
+				return nil, fmt.Errorf("error reading markdown file '%s': %w", file, err)
+			}
+
+			sections := strings.Split(string(content), "\n\n---\n\n")
+			if len(sections) < 3 {
+				return nil, fmt.Errorf("invalid markdown file '%s': not enough sections", file)
+			}
+
+			statement := MarkdownStatement{
+				Language: strings.TrimSuffix(filepath.Base(file), ".md"),
+				Story:    sections[0],
+				Input:    sections[1],
+				Output:   sections[2],
+			}
+
+			markdownStatements = append(markdownStatements, statement)
+		}
+	} else if err != nil {
+		return nil, fmt.Errorf("error accessing statements directory: %w", err)
+	}
+
 	mdDirPath := filepath.Join(dir.AbsPath, "statements", "md")
 	if _, err := os.Stat(mdDirPath); os.IsNotExist(err) {
-		// No markdown statements to read
-		return nil, nil
-	} else if err != nil {
-		return nil, fmt.Errorf("error accessing markdown directory: %w", err)
+		return markdownStatements, nil
 	}
 
 	langs, err := os.ReadDir(mdDirPath)
@@ -36,10 +67,28 @@ func ReadMarkdownStatementsFromTaskDir(dir TaskDir) ([]MarkdownStatement, error)
 		return nil, fmt.Errorf("error reading markdown directory: %w", err)
 	}
 
-	var markdownStatements []MarkdownStatement
-
 	for _, lang := range langs {
 		if !lang.IsDir() {
+			// check if has suffix .md
+			// if it has, read it, divide into sections by ---\n
+			if !strings.HasSuffix(lang.Name(), ".md") {
+				continue
+			}
+
+			content, err := os.ReadFile(filepath.Join(mdDirPath, lang.Name()))
+			if err != nil {
+				return nil, fmt.Errorf("error reading markdown file '%s': %w", lang.Name(), err)
+			}
+
+			sections := strings.Split(string(content), "\n\n---\n\n")
+			statement := MarkdownStatement{
+				Language: strings.TrimSuffix(lang.Name(), ".md"),
+				Story:    sections[0],
+				Input:    sections[1],
+				Output:   sections[2],
+			}
+
+			markdownStatements = append(markdownStatements, statement)
 			continue
 		}
 
@@ -84,6 +133,15 @@ func ReadMarkdownStatementsFromTaskDir(dir TaskDir) ([]MarkdownStatement, error)
 		}
 
 		markdownStatements = append(markdownStatements, statement)
+	}
+
+	// check if duplicate language
+	seen := make(map[string]bool)
+	for _, statement := range markdownStatements {
+		if seen[statement.Language] {
+			return nil, fmt.Errorf("duplicate language '%s' in markdown statements", statement.Language)
+		}
+		seen[statement.Language] = true
 	}
 
 	return markdownStatements, nil

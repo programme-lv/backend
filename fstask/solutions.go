@@ -36,7 +36,7 @@ func ReadSolutionsFromTaskDir(dir TaskDir) (res []Solution, err error) {
 			ScoreGt  *int     `toml:"score_gt"`
 			ScoreGte *int     `toml:"score_gte"`
 			Author   *string  `toml:"author"`
-			ExecTime *float64 `toml:"og_max_exec_time"`
+			ExecTime *float64 `toml:"exec_time"`
 		} `toml:"solutions"`
 	}{}
 
