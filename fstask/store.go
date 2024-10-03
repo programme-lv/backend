@@ -17,13 +17,13 @@ type ProblemTOML struct {
 	TaskName      string           `toml:"task_name"`
 	Origin        PTomlOrigin      `toml:"origin"`
 	Constraints   PTomlConstraints `toml:"constraints"`
-	TestGroups    []PTomlTestGroup `toml:"test_groups"`
 	IllustrImage  string           `toml:"illustration_image"`
 	VisInpSTs     []int            `toml:"visible_input_subtasks"`
 	Solutions     []PTomlSolution  `toml:"solutions"`
 	ProblemTags   []string         `toml:"problem_tags"`
 	Difficulty    int              `toml:"difficulty_1_to_5"`
 	Subtasks      []PTomlSubtask   `toml:"subtasks"`
+	TestGroups    []PTomlTestGroup `toml:"test_groups"`
 }
 
 type PTomlSubtask struct {
