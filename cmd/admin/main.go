@@ -343,7 +343,7 @@ func uploadTask(fsTask *fstask.Task, shortId string) error {
 			defer func() { <-sem }() // Release semaphore
 
 			log.Debug().
-				Int("testID", t.ID).
+				Int("testID", t.TestID).
 				Msg("Uploading test files")
 
 			// Compute SHA2 hashes
@@ -353,30 +353,30 @@ func uploadTask(fsTask *fstask.Task, shortId string) error {
 			// Upload test input
 			if err := taskSrvc.UploadTestFile(t.Input); err != nil {
 				log.Error().
-					Int("testID", t.ID).
+					Int("testID", t.TestID).
 					Err(err).
 					Msg("Failed to upload test input")
-				return fmt.Errorf("failed to upload test input for test ID %v: %w", t.ID, err)
+				return fmt.Errorf("failed to upload test input for test ID %v: %w", t.TestID, err)
 			}
 			log.Debug().
-				Int("testID", t.ID).
+				Int("testID", t.TestID).
 				Msg("Uploaded test input")
 
 			// Upload test answer
 			if err := taskSrvc.UploadTestFile(t.Answer); err != nil {
 				log.Error().
-					Int("testID", t.ID).
+					Int("testID", t.TestID).
 					Err(err).
 					Msg("Failed to upload test answer")
-				return fmt.Errorf("failed to upload test answer for test ID %v: %w", t.ID, err)
+				return fmt.Errorf("failed to upload test answer for test ID %v: %w", t.TestID, err)
 			}
 			log.Debug().
-				Int("testID", t.ID).
+				Int("testID", t.TestID).
 				Msg("Uploaded test answer")
 
 			// Create the Test struct
 			test := tasksrvc.Test{
-				ID:      t.ID,
+				ID:      t.TestID,
 				InpSha2: inpSha2,
 				AnsSha2: ansSha2,
 			}
@@ -387,7 +387,7 @@ func uploadTask(fsTask *fstask.Task, shortId string) error {
 			mu.Unlock()
 
 			log.Debug().
-				Int("testID", t.ID).
+				Int("testID", t.TestID).
 				Msg("Test struct created")
 
 			return nil
@@ -426,8 +426,8 @@ func uploadTask(fsTask *fstask.Task, shortId string) error {
 		ShortId:          shortId,
 		FullName:         fsTask.FullName,
 		IllustrImgUrl:    illstrImgUrl,
-		MemLimMegabytes:  fsTask.MemoryLimInMegabytes,
-		CpuTimeLimSecs:   fsTask.CpuTimeLimInSeconds,
+		MemLimMegabytes:  fsTask.MemoryLimitMegabytes,
+		CpuTimeLimSecs:   fsTask.CPUTimeLimitSeconds,
 		OriginOlympiad:   fsTask.OriginOlympiad,
 		DifficultyRating: fsTask.DifficultyOneToFive,
 		OriginNotes:      originNotes,

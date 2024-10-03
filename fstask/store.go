@@ -5,24 +5,24 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 
 	"github.com/pelletier/go-toml/v2"
 )
 
-const proglvFSTaskFormatSpecVersOfScript = "v3.0.0"
+const directorySpecificationVersion = "v3.0.0"
 
 type ProblemTOML struct {
-	Specification        string           `toml:"specification"`
-	TaskName             string           `toml:"task_name"`
-	Metadata             PTomlMetadata    `toml:"metadata"`
-	Constraints          PTomlConstraints `toml:"constraints"`
-	TestGroups           []PTomlTestGroup `toml:"test_groups"`
-	IllustrationImgFname string           `toml:"illustration_image,omitempty"`
-	VisInpSTs            []int            `toml:"visible_input_subtasks"`
-	TestIDOverwrite      map[string]int   `toml:"test_id_overwrite,omitempty"`
-	Solutinos            []PTomlSolution  `toml:"solutions,omitempty"`
+	Specification string           `toml:"specification"`
+	TaskName      string           `toml:"task_name"`
+	Origin        PTomlOrigin      `toml:"origin"`
+	Constraints   PTomlConstraints `toml:"constraints"`
+	TestGroups    []PTomlTestGroup `toml:"test_groups"`
+	IllustrImage  string           `toml:"illustration_image"`
+	VisInpSTs     []int            `toml:"visible_input_subtasks"`
+	Solutions     []PTomlSolution  `toml:"solutions"`
+	ProblemTags   []string         `toml:"problem_tags"`
+	Difficulty    int              `toml:"difficulty_1_to_5"`
 }
 
 type PTomlSolution struct {
@@ -36,13 +36,14 @@ type PTomlSolution struct {
 	ExecTime *float64 `toml:"og_max_exec_time"`
 }
 
-type PTomlMetadata struct {
-	ProblemTags        []string          `toml:"problem_tags"`
-	DifficultyFrom1To5 int               `toml:"difficulty_1_to_5"`
-	TaskAuthors        []string          `toml:"task_authors"`
-	OriginOlympiad     string            `toml:"origin_olympiad"`
-	OriginNotes        map[string]string `toml:"origin_notes,omitempty"`
-	OriginInstitution  string            `toml:"origin_institution,omitempty"`
+type PTomlOrigin struct {
+	Olympiad     string   `toml:"olympiad"`
+	AcademicYear string   `toml:"academic_year"`
+	Stage        string   `toml:"stage"`
+	Institution  string   `toml:"institution"`
+	Authors      []string `toml:"authors"`
+
+	Notes map[string]string `toml:"notes,omitempty"`
 }
 
 type PTomlConstraints struct {
@@ -52,56 +53,46 @@ type PTomlConstraints struct {
 
 // PTomlTestGroup is a structure to store groups used in LIO test format
 type PTomlTestGroup struct {
-	GroupID    int      `toml:"group_id"`
-	Points     int      `toml:"points"`
-	Public     bool     `toml:"public"`
-	Subtask    int      `toml:"subtask,omitempty"`
-	TestIDs    []int    `toml:"test_ids,omitempty"`
-	TestFnames []string `toml:"test_filenames,omitempty"`
+	GroupID int   `toml:"id"`
+	Points  int   `toml:"points"`
+	Tests   []int `toml:"tests"`
 }
 
 func (task *Task) encodeProblemTOML() ([]byte, error) {
-	testIDOverwrite := task.getTestIDByFilenameOverwriteMap()
-
 	t := ProblemTOML{
-		Specification: proglvFSTaskFormatSpecVersOfScript,
+		Specification: directorySpecificationVersion,
 		TaskName:      task.FullName,
-		Metadata: PTomlMetadata{
-			ProblemTags:        task.ProblemTags,
-			DifficultyFrom1To5: task.DifficultyOneToFive,
-			TaskAuthors:        task.TaskAuthors,
-			OriginOlympiad:     task.OriginOlympiad,
-			OriginNotes:        task.OriginNotes,
-			OriginInstitution:  task.OriginInstitution,
+		Origin: PTomlOrigin{
+			Olympiad:     task.OriginOlympiad,
+			AcademicYear: task.AcademicYear,
+			Stage:        task.OlympiadStage,
+			Institution:  task.OriginInstitution,
+			Authors:      task.TaskAuthors,
+			Notes:        task.OriginNotes,
 		},
-		Constraints:          PTomlConstraints{MemoryMegabytes: task.MemoryLimInMegabytes, CPUTimeSeconds: task.CpuTimeLimInSeconds},
-		TestGroups:           []PTomlTestGroup{},
-		IllustrationImgFname: task.illstrImgFname,
-		VisInpSTs:            task.visibleInputSubtasks,
-		TestIDOverwrite:      testIDOverwrite,
-		Solutinos:            []PTomlSolution{},
+		Constraints: PTomlConstraints{
+			MemoryMegabytes: task.MemoryLimitMegabytes,
+			CPUTimeSeconds:  task.CPUTimeLimitSeconds,
+		},
+		TestGroups:   []PTomlTestGroup{},
+		IllustrImage: task.IllustrAssetFilename,
+		VisInpSTs:    task.VisibleInputSubtasks,
+		Solutions:    []PTomlSolution{},
+		ProblemTags:  task.ProblemTags,
+		Difficulty:   task.DifficultyOneToFive,
 	}
-	t.Specification = proglvFSTaskFormatSpecVersOfScript
+	t.Specification = directorySpecificationVersion
 
-	// fill test groups
-	for _, tg := range task.testGroupIDs {
-		testFnames := make([]string, 0)
-		for _, testID := range task.tGroupTestIDs[tg] {
-			testFnames = append(testFnames, task.getTestToBeWrittenFname(testID))
-		}
+	for i, tg := range task.TestGroups {
 		ptomlTestGroup := PTomlTestGroup{
-			GroupID: tg,
-			Points:  task.tGroupPoints[tg],
-			Public:  task.isTGroupPublic[tg],
-			Subtask: task.tGroupToStMap[tg],
-			// TestIDs: task.tGroupTestIDs[tg],
-			TestFnames: testFnames,
+			GroupID: i + 1,
+			Points:  tg.Points,
+			Tests:   tg.TestIDs,
 		}
 
 		t.TestGroups = append(t.TestGroups, ptomlTestGroup)
 	}
 
-	// fill solutions
 	for _, sol := range task.Solutions {
 		ptomlSol := PTomlSolution{
 			Filename: sol.Filename,
@@ -113,7 +104,7 @@ func (task *Task) encodeProblemTOML() ([]byte, error) {
 			Author:   sol.Author,
 			ExecTime: sol.ExecTime,
 		}
-		t.Solutinos = append(t.Solutinos, ptomlSol)
+		t.Solutions = append(t.Solutions, ptomlSol)
 	}
 
 	buf := bytes.NewBuffer(make([]byte, 0))
@@ -179,7 +170,7 @@ func (task *Task) Store(dirPath string) error {
 		return fmt.Errorf("error storing archive files: %w", err)
 	}
 
-	err = task.storeEvaluationCheckerAndInteractor(filepath.Join(dirPath, "evaluation"))
+	err = task.storeCheckerAndInteractor(filepath.Join(dirPath, "evaluation"))
 	if err != nil {
 		return fmt.Errorf("error storing evaluation checker and interactor: %w", err)
 	}
@@ -187,7 +178,7 @@ func (task *Task) Store(dirPath string) error {
 	return nil
 }
 
-func (task *Task) storeEvaluationCheckerAndInteractor(dirPath string) error {
+func (task *Task) storeCheckerAndInteractor(dirPath string) error {
 	if task.TestlibChecker == "" && task.TestlibInteractor == "" {
 		return nil
 	}
@@ -380,8 +371,8 @@ func (task *Task) storeTests(testsDirPath string) error {
 		return fmt.Errorf("error creating tests directory: %w", err)
 	}
 
-	for _, t := range task.tests {
-		fname := task.getTestToBeWrittenFname(t.ID)
+	for i, t := range task.Tests {
+		fname := fmt.Sprintf("%03d", i+1)
 		inPath := filepath.Join(testsDirPath, fname+".in")
 		ansPath := filepath.Join(testsDirPath, fname+".out")
 
@@ -400,89 +391,45 @@ func (task *Task) storeTests(testsDirPath string) error {
 	return nil
 }
 
-func (task *Task) getTestToBeWrittenFname(id int) string {
-	if fname, ok := task.testIDToFilename[id]; ok {
-		return fname
-	} else {
-		return fmt.Sprintf("%03d", id)
-	}
-}
-
-func (task *Task) getTestIDByFilenameOverwriteMap() map[string]int {
-	res := map[string]int{}
-
-	type testWrittenFilename struct {
-		ID    int
-		Fname string
-	}
-	order := []testWrittenFilename{}
-	for _, t := range task.tests {
-		order = append(order, testWrittenFilename{
-			ID:    t.ID,
-			Fname: task.getTestToBeWrittenFname(t.ID),
-		})
-	}
-
-	sort.Slice(order, func(i, j int) bool {
-		return order[i].Fname < order[j].Fname
-	})
-
-	for i, o := range order {
-		received := i + 1
-		actual := o.ID
-		if received != actual {
-			res[o.Fname] = received
-		}
-	}
-
-	return res
-}
-
 func (task *Task) storeExamples(examplesDirPath string) error {
 	var err error
 	err = os.Mkdir(examplesDirPath, 0755)
 	if err != nil {
 		return fmt.Errorf("error creating examples directory: %w", err)
 	}
-	for i, e := range task.examples {
+	for i, e := range task.Examples {
 		var inPath string
 		var ansPath string
 		var mdPath string
 
-		if e.Name != nil {
-			inPath = filepath.Join(examplesDirPath, *e.Name+".in")
-			ansPath = filepath.Join(examplesDirPath, *e.Name+".out")
-			mdPath = filepath.Join(examplesDirPath, *e.Name+".md")
-		} else {
-			inName := fmt.Sprintf("%03d.in", i+1)
-			ansName := fmt.Sprintf("%03d.out", i+1)
-			mdName := fmt.Sprintf("%03d.md", i+1)
-			inPath = filepath.Join(examplesDirPath, inName)
-			ansPath = filepath.Join(examplesDirPath, ansName)
-			mdPath = filepath.Join(examplesDirPath, mdName)
-		}
+		inName := fmt.Sprintf("%03d.in", i+1)
+		ansName := fmt.Sprintf("%03d.out", i+1)
+		mdName := fmt.Sprintf("%03d.md", i+1)
+		inPath = filepath.Join(examplesDirPath, inName)
+		ansPath = filepath.Join(examplesDirPath, ansName)
+		mdPath = filepath.Join(examplesDirPath, mdName)
 
 		if _, err := os.Stat(inPath); err == nil {
 			return fmt.Errorf("input file already exists: %s", inPath)
 		}
-		if _, err := os.Stat(ansPath); err == nil {
-			return fmt.Errorf("answer file already exists: %s", ansPath)
-		}
-		if _, err := os.Stat(mdPath); err == nil {
-			return fmt.Errorf("markdown note file already exists: %s", mdPath)
-		}
-
 		err = os.WriteFile(inPath, e.Input, 0644)
 		if err != nil {
 			return fmt.Errorf("error writing input file: %w", err)
 		}
 
+		if _, err := os.Stat(ansPath); err == nil {
+			return fmt.Errorf("answer file already exists: %s", ansPath)
+		}
 		err = os.WriteFile(ansPath, e.Output, 0644)
 		if err != nil {
 			return fmt.Errorf("error writing answer file: %w", err)
 		}
 
 		if len(e.MdNote) > 0 {
+			if _, err := os.Stat(mdPath); err == nil {
+				return fmt.Errorf("markdown note file already exists: %s", mdPath)
+			}
+
 			err = os.WriteFile(mdPath, e.MdNote, 0644)
 			if err != nil {
 				return fmt.Errorf("error writing Markdown note file: %w", err)

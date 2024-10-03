@@ -8,7 +8,7 @@ import (
 )
 
 func TestReadingWritingArchiveFiles(t *testing.T) {
-	task, err := fstask.Read(kvadrputeklV2Dot5Path)
+	task, err := fstask.Read(kvadrputeklV3Dot0Path)
 	require.NoErrorf(t, err, "failed to read task: %v", err)
 
 	ensureArchiveFilesCorrespondToTestdata(t, task)

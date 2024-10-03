@@ -7,14 +7,14 @@ import (
 )
 
 func (dir TaskDir) ReadTestlibChecker() (res string, err error) {
-	requiredSpec := SemVer{major: 2, minor: 5}
-	if dir.Spec.LessThan(requiredSpec) {
+	requiredSpec := Version{major: 2, minor: 5}
+	if dir.Specification.LessThan(requiredSpec) {
 		format := "specification version %s is not supported, required at least %s"
-		err = fmt.Errorf(format, dir.Spec.String(), requiredSpec.String())
+		err = fmt.Errorf(format, dir.Specification.String(), requiredSpec.String())
 		return
 	}
 
-	path := filepath.Join(dir.Path, "evaluation", "checker.cpp")
+	path := filepath.Join(dir.AbsPath, "evaluation", "checker.cpp")
 	if _, err = os.Stat(path); os.IsNotExist(err) {
 		err = nil
 		return
@@ -31,14 +31,14 @@ func (dir TaskDir) ReadTestlibChecker() (res string, err error) {
 }
 
 func (dir TaskDir) ReadTestlibInteractor() (res string, err error) {
-	requiredSpec := SemVer{major: 2, minor: 5}
-	if dir.Spec.LessThan(requiredSpec) {
+	requiredSpec := Version{major: 2, minor: 5}
+	if dir.Specification.LessThan(requiredSpec) {
 		format := "specification version %s is not supported, required at least %s"
-		err = fmt.Errorf(format, dir.Spec.String(), requiredSpec.String())
+		err = fmt.Errorf(format, dir.Specification.String(), requiredSpec.String())
 		return
 	}
 
-	path := filepath.Join(dir.Path, "evaluation", "interactor.cpp")
+	path := filepath.Join(dir.AbsPath, "evaluation", "interactor.cpp")
 	if _, err = os.Stat(path); os.IsNotExist(err) {
 		err = nil
 		return
@@ -53,7 +53,7 @@ func (dir TaskDir) ReadTestlibInteractor() (res string, err error) {
 	return
 }
 
-func (task *Task) LoadEvaluationCheckerAndInteractorFromDir(dir TaskDir) error {
+func (task *Task) LoadCheckerAndInteractor(dir TaskDir) error {
 	checker, err := dir.ReadTestlibChecker()
 	if err != nil {
 		return fmt.Errorf("failed to read testlib checker: %w", err)

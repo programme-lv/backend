@@ -17,13 +17,13 @@ type MarkdownStatement struct {
 }
 
 func ReadMarkdownStatementsFromTaskDir(dir TaskDir) ([]MarkdownStatement, error) {
-	requiredSpec := SemVer{major: 2}
-	if dir.Spec.LessThan(requiredSpec) {
+	requiredSpec := Version{major: 2}
+	if dir.Specification.LessThan(requiredSpec) {
 		format := "specification version %s is not supported, required at least %s"
-		return nil, fmt.Errorf(format, dir.Spec.String(), requiredSpec.String())
+		return nil, fmt.Errorf(format, dir.Specification.String(), requiredSpec.String())
 	}
 
-	mdDirPath := filepath.Join(dir.Path, "statements", "md")
+	mdDirPath := filepath.Join(dir.AbsPath, "statements", "md")
 	if _, err := os.Stat(mdDirPath); os.IsNotExist(err) {
 		// No markdown statements to read
 		return nil, nil
@@ -89,7 +89,7 @@ func ReadMarkdownStatementsFromTaskDir(dir TaskDir) ([]MarkdownStatement, error)
 	return markdownStatements, nil
 }
 
-func (task *Task) LoadMarkdownStatementsFromDir(dir TaskDir) error {
+func (task *Task) LoadMarkdownStatements(dir TaskDir) error {
 	markdownStatements, err := ReadMarkdownStatementsFromTaskDir(dir)
 	if err != nil {
 		return fmt.Errorf("failed to read markdown statements: %w", err)

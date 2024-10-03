@@ -85,8 +85,8 @@ func ParseLio2024TaskDir(dirPath string) (*fstask.Task, error) {
 			InteractorPathRelToYaml string
 		}
 	*/
-	task.CpuTimeLimInSeconds = parsedYaml.CpuTimeLimitInSeconds
-	task.MemoryLimInMegabytes = parsedYaml.MemoryLimitInMegabytes
+	task.CPUTimeLimitSeconds = parsedYaml.CpuTimeLimitInSeconds
+	task.MemoryLimitMegabytes = parsedYaml.MemoryLimitInMegabytes
 
 	pdfFilePath := filepath.Join(dirPath, "teksts")
 	pdfFiles, err := filepath.Glob(filepath.Join(pdfFilePath, "*.pdf"))

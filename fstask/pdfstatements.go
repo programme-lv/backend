@@ -15,13 +15,13 @@ type PdfStatement struct {
 // ReadPDFStatementsFromTaskDir reads PDF statements from the specified task directory.
 // It returns a slice of PDFStatement and an error, if any.
 func ReadPDFStatementsFromTaskDir(dir TaskDir) ([]PdfStatement, error) {
-	requiredSpec := SemVer{major: 2}
-	if dir.Spec.LessThan(requiredSpec) {
+	requiredSpec := Version{major: 2}
+	if dir.Specification.LessThan(requiredSpec) {
 		format := "specification version %s is not supported, required at least %s"
-		return nil, fmt.Errorf(format, dir.Spec.String(), requiredSpec.String())
+		return nil, fmt.Errorf(format, dir.Specification.String(), requiredSpec.String())
 	}
 
-	pdfDirPath := filepath.Join(dir.Path, "statements", "pdf")
+	pdfDirPath := filepath.Join(dir.AbsPath, "statements", "pdf")
 	if _, err := os.Stat(pdfDirPath); os.IsNotExist(err) {
 		// PDF directory does not exist; no PDF statements to read.
 		return nil, nil
@@ -63,8 +63,8 @@ func ReadPDFStatementsFromTaskDir(dir TaskDir) ([]PdfStatement, error) {
 	return pdfStatements, nil
 }
 
-// LoadPDFStatementsFromDir loads PDF statements into the task from the specified directory.
-func (task *Task) LoadPDFStatementsFromDir(dir TaskDir) error {
+// LoadPDFStatements loads PDF statements into the task from the specified directory.
+func (task *Task) LoadPDFStatements(dir TaskDir) error {
 	pdfStatements, err := ReadPDFStatementsFromTaskDir(dir)
 	if err != nil {
 		return fmt.Errorf("failed to read PDF statements: %w", err)

@@ -21,10 +21,10 @@ type Solution struct {
 }
 
 func ReadSolutionsFromTaskDir(dir TaskDir) (res []Solution, err error) {
-	requiredSpec := SemVer{major: 2, minor: 5}
-	if dir.Spec.LessThan(requiredSpec) {
+	requiredSpec := Version{major: 2, minor: 5}
+	if dir.Specification.LessThan(requiredSpec) {
 		format := "specification version %s is not supported, required at least %s"
-		return nil, fmt.Errorf(format, dir.Spec.String(), requiredSpec.String())
+		return nil, fmt.Errorf(format, dir.Specification.String(), requiredSpec.String())
 	}
 
 	tomlStruct := struct {
@@ -40,7 +40,7 @@ func ReadSolutionsFromTaskDir(dir TaskDir) (res []Solution, err error) {
 		} `toml:"solutions"`
 	}{}
 
-	err = toml.Unmarshal(dir.Info, &tomlStruct)
+	err = toml.Unmarshal(dir.ProblemToml, &tomlStruct)
 	if err != nil {
 		err = fmt.Errorf("failed to unmarshal the solutions: %w", err)
 		return
@@ -53,7 +53,7 @@ func ReadSolutionsFromTaskDir(dir TaskDir) (res []Solution, err error) {
 	}
 
 	// Verify that each solution file exists in the solutions directory.
-	solutionsDirPath := filepath.Join(dir.Path, "solutions")
+	solutionsDirPath := filepath.Join(dir.AbsPath, "solutions")
 	for _, sol := range tomlStruct.Solutions {
 		solPath := filepath.Join(solutionsDirPath, sol.Filename)
 		if _, err := os.Stat(solPath); os.IsNotExist(err) {
@@ -87,8 +87,7 @@ func ReadSolutionsFromTaskDir(dir TaskDir) (res []Solution, err error) {
 	return res, nil
 }
 
-// LoadSolutionsFromDir loads solutions into the task from the specified directory.
-func (task *Task) LoadSolutionsFromDir(dir TaskDir) error {
+func (task *Task) LoadSolutions(dir TaskDir) error {
 	solutions, err := ReadSolutionsFromTaskDir(dir)
 	if err != nil {
 		return fmt.Errorf("failed to read solutions: %w", err)

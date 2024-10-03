@@ -12,10 +12,10 @@ type Constraints struct {
 }
 
 func (dir TaskDir) ReadConstraintsFromTaskDir() (res Constraints, err error) {
-	requiredSpec := SemVer{major: 2}
-	if dir.Spec.LessThan(requiredSpec) {
+	requiredSpec := Version{major: 2}
+	if dir.Specification.LessThan(requiredSpec) {
 		format := "specification version %s is not supported, required at least %s"
-		err = fmt.Errorf(format, dir.Spec.String(), requiredSpec.String())
+		err = fmt.Errorf(format, dir.Specification.String(), requiredSpec.String())
 		return
 	}
 
@@ -26,7 +26,7 @@ func (dir TaskDir) ReadConstraintsFromTaskDir() (res Constraints, err error) {
 		} `toml:"constraints"`
 	}{}
 
-	err = toml.Unmarshal(dir.Info, &x)
+	err = toml.Unmarshal(dir.ProblemToml, &x)
 	if err != nil {
 		format := "failed to unmarshal the constraints: %w"
 		err = fmt.Errorf(format, err)
@@ -44,7 +44,7 @@ func (task *Task) LoadConstraintsFromDir(dir TaskDir) error {
 	if err != nil {
 		return fmt.Errorf("failed to read constraints: %w", err)
 	}
-	task.CpuTimeLimInSeconds = constraints.CPUTimeLimitInSeconds
-	task.MemoryLimInMegabytes = constraints.MemoryLimitInMegabytes
+	task.CPUTimeLimitSeconds = constraints.CPUTimeLimitInSeconds
+	task.MemoryLimitMegabytes = constraints.MemoryLimitInMegabytes
 	return nil
 }

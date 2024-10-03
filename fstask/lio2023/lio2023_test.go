@@ -53,10 +53,10 @@ func TestParsingLio2023TaskWithBothACheckerAndAnInteractor(t *testing.T) {
 
 	tests := task.GetTestsSortedByID()
 	require.Len(t, tests, 4)
-	require.Equal(t, 1, tests[0].ID)
-	require.Equal(t, 2, tests[1].ID)
-	require.Equal(t, 3, tests[2].ID)
-	require.Equal(t, 4, tests[3].ID)
+	require.Equal(t, 1, tests[0].TestID)
+	require.Equal(t, 2, tests[1].TestID)
+	require.Equal(t, 3, tests[2].TestID)
+	require.Equal(t, 4, tests[3].TestID)
 
 	require.Equal(t, []byte("560\n"), tests[2].Input)
 
@@ -76,8 +76,8 @@ func TestParsingLio2023TaskWithBothACheckerAndAnInteractor(t *testing.T) {
 	// require.Equal(t, true, testGroups[0].Public) (can't be accurately determined)
 	require.Equal(t, []int{1, 2, 3, 4}, testGroups[0].TestIDs)
 
-	require.Equal(t, 1.5, task.CpuTimeLimInSeconds)
-	require.Equal(t, 256, task.MemoryLimInMegabytes)
+	require.Equal(t, 1.5, task.CPUTimeLimitSeconds)
+	require.Equal(t, 256, task.MemoryLimitMegabytes)
 
 	expectedArchive := []string{"./riki/interval.txt", "./riki/testlib.h"}
 	actualArchive := []string{}

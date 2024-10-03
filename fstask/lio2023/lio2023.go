@@ -148,8 +148,8 @@ func ParseLio2023TaskDir(dirPath string) (*fstask.Task, error) {
 		}
 	}
 
-	task.CpuTimeLimInSeconds = taskYaml.TimeLimit
-	task.MemoryLimInMegabytes = taskYaml.MemoryLimit
+	task.CPUTimeLimitSeconds = taskYaml.TimeLimit
+	task.MemoryLimitMegabytes = taskYaml.MemoryLimit
 
 	excludePrefixFromArchive := []string{
 		punktiTxtPath,

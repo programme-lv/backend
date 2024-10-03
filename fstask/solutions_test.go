@@ -9,19 +9,19 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestReadingWritingSolutions tests the reading and writing of solutions.
-func TestReadingWritingSolutions(t *testing.T) {
-	task, err := fstask.Read(kvadrputeklV2Dot5Path)
+// TestSolutionsV3Dot0 tests the reading and writing of solutions.
+func TestSolutionsV3Dot0(t *testing.T) {
+	task, err := fstask.Read(kvadrputeklV3Dot0Path)
 	require.NoErrorf(t, err, "failed to read task: %v", err)
 
-	ensureTaskSolutionsCorrespondToTestdata(t, task)
+	requireSolutionsCorrespondToKvadrputeklV3Dot0(t, task)
 
 	writtenTask := writeAndReReadTask(t, task)
 
-	ensureTaskSolutionsCorrespondToTestdata(t, writtenTask)
+	requireSolutionsCorrespondToKvadrputeklV3Dot0(t, writtenTask)
 }
 
-func ensureTaskSolutionsCorrespondToTestdata(t *testing.T, task *fstask.Task) {
+func requireSolutionsCorrespondToKvadrputeklV3Dot0(t *testing.T, task *fstask.Task) {
 	expFilenames := []string{
 		"kp_kp_ok.cpp",
 		"kp_kp_tle.cpp",

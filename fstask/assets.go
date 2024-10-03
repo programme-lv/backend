@@ -15,7 +15,7 @@ type AssetFile struct {
 func (dir TaskDir) ReadAssetFiles() (res []AssetFile, err error) {
 	res = make([]AssetFile, 0)
 
-	assetsPath := filepath.Join(dir.Path, "assets")
+	assetsPath := filepath.Join(dir.AbsPath, "assets")
 
 	if _, statErr := os.Stat(assetsPath); os.IsNotExist(statErr) {
 		err = nil
@@ -62,9 +62,9 @@ func (dir TaskDir) ReadAssetFiles() (res []AssetFile, err error) {
 	return
 }
 
-// LoadAssetsFromDir loads asset files into the Task from the specified TaskDir.
+// LoadAssetFiles loads asset files into the Task from the specified TaskDir.
 // It updates the Task's Assets field with the loaded assets.
-func (task *Task) LoadAssetsFromDir(dir TaskDir) error {
+func (task *Task) LoadAssetFiles(dir TaskDir) error {
 	assetFiles, err := dir.ReadAssetFiles()
 	if err != nil {
 		return fmt.Errorf("failed to read asset files: %w", err)
