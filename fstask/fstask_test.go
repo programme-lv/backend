@@ -49,7 +49,7 @@ func requireKvadrputekl(t *testing.T, task *fstask.Task) {
 
 	// SOLUTIONS
 	require.Len(t, task.Solutions, 3)
-	require.Equal(t, task.Solutions[0], fstask.Solution{
+	require.Equal(t, fstask.Solution{
 		Filename: "kp_kp_ok.cpp",
 		ScoreEq:  intPtr(100),
 		ScoreLt:  nil,
@@ -59,7 +59,7 @@ func requireKvadrputekl(t *testing.T, task *fstask.Task) {
 		Author:   strPtr("Krišjānis Petručeņa"),
 		ExecTime: float64Ptr(0.035),
 		Content:  []byte("#include <iostream>"),
-	})
+	}, task.Solutions[0])
 
 	// STATEMENTS
 	require.Contains(t, task.MarkdownStatements, fstask.MarkdownStatement{
@@ -79,7 +79,7 @@ func requireKvadrputekl(t *testing.T, task *fstask.Task) {
 		Scoring:  "",
 	})
 	require.Len(t, task.PdfStatements, 1)
-	require.Equal(t, task.PdfStatements[0].Language, "lv")
+	require.Equal(t, "lv", task.PdfStatements[0].Language)
 	require.NotEmpty(t, task.PdfStatements[0])
 
 	// TESTS
@@ -98,23 +98,38 @@ func requireKvadrputekl(t *testing.T, task *fstask.Task) {
 
 	// TEST GROUPS
 	require.Len(t, task.TestGroups, 2)
-	require.Equal(t, task.TestGroups[0], fstask.TestGroup{
+	require.Equal(t, fstask.TestGroup{
 		Points:  3,
 		Public:  true,
 		TestIDs: []int{1, 2, 3},
-	})
-	require.Equal(t, task.TestGroups[1], fstask.TestGroup{
+	}, task.TestGroups[0])
+	require.Equal(t, fstask.TestGroup{
 		Points:  8,
 		Public:  false,
 		TestIDs: []int{4, 5, 6},
-	})
+	}, task.TestGroups[1])
 
 	// GENERAL
+	require.Equal(t, "Kvadrātveida putekļsūcējs", task.FullName)
+	require.Equal(t, []int{1}, task.VisibleInputSubtasks)
+	require.Equal(t, "illustration.png", task.IllustrAssetFilename)
+	require.Equal(t, []string{"bfs", "grid", "prefix-sum", "sliding-window", "shortest-path", "graphs"}, task.ProblemTags)
+	require.Equal(t, 3, task.DifficultyOneToFive)
 
 	// CONSTRAINTS
+	require.Equal(t, 0.5, task.CPUTimeLimitSeconds)
+	require.Equal(t, 256, task.MemoryLimitMegabytes)
 
 	// ORIGIN
-
+	require.Equal(t, "LIO", task.OriginOlympiad)
+	require.Equal(t, "2023/2024", task.AcademicYear)
+	require.Equal(t, "school", task.OlympiadStage)
+	require.Equal(t, "", task.OriginInstitution)
+	require.Equal(t, []string{"Krišjānis Petručeņa"}, task.TaskAuthors)
+	require.Equal(t, map[string]string{
+		"lv": "Uzdevums no Latvijas 37. informātikas olimpiādes (2023./2024. mācību gads) skolas kārtas.",
+		"en": "The problem is from the school round of the 37th Latvian Informatics Olympiad in the 2023/2024 academic year.",
+	}, task.OriginNotes)
 }
 
 func intPtr(i int) *int {

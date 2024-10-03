@@ -41,6 +41,11 @@ func Read(dir string) (*Task, error) {
 		ProblemToml:   problemToml,
 	}
 
+	err = t.LoadGeneralInformation(taskDir)
+	if err != nil {
+		return nil, fmt.Errorf("error reading general information: %w", err)
+	}
+
 	err = t.LoadConstraintsFromDir(taskDir)
 	if err != nil {
 		return nil, fmt.Errorf("error reading constraints: %w", err)
