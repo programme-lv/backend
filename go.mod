@@ -25,6 +25,7 @@ require (
 	github.com/rs/zerolog v1.33.0
 	github.com/spf13/cobra v1.8.1
 	github.com/stretchr/testify v1.9.0
+	github.com/thoas/go-funk v0.9.3
 	github.com/wailsapp/mimetype v1.4.1
 	goa.design/clue v1.0.6
 	golang.org/x/crypto v0.26.0

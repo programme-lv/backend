@@ -1,6 +1,10 @@
 package tasksrvc
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/thoas/go-funk"
+)
 
 type Task struct {
 	ShortId  string
@@ -34,10 +38,9 @@ type Task struct {
 }
 
 type Example struct {
-	OrderId int
-	Input   string
-	Output  string
-	MdNote  string
+	Input  string
+	Output string
+	MdNote string
 }
 
 type VisibleInputSubtask struct {
@@ -71,7 +74,6 @@ type TaskEvalTestGroupInformation struct {
 }
 
 type Test struct {
-	ID      int
 	InpSha2 string
 	AnsSha2 string
 }
@@ -98,12 +100,20 @@ func (t *Task) FindSubtasksWithTest(testId int) []Subtask {
 	return subtasks
 }
 
-func (t *Task) FindTestGroupsWithTest(testId int) []TestGroup {
-	testGroups := make([]TestGroup, 0)
-	for _, testGroup := range t.TestGroups {
+type TestGroupWithID struct {
+	ID int
+	TestGroup
+}
+
+func (t *Task) FindTestGroupsWithTest(testId int) []TestGroupWithID {
+	testGroups := make([]TestGroupWithID, 0)
+	for i, testGroup := range t.TestGroups {
 		for _, test := range testGroup.TestIDs {
 			if test == testId {
-				testGroups = append(testGroups, testGroup)
+				testGroups = append(testGroups, TestGroupWithID{
+					ID:        i + 1,
+					TestGroup: testGroup,
+				})
 			}
 		}
 	}
@@ -118,11 +128,26 @@ type TestWithOnlyInput struct {
 
 // TestGroup represents a group of tests within a task.
 type TestGroup struct {
-	ID      int
-	Points  int
-	Public  bool
-	Subtask int
+	Points int
+	Public bool
+	// Subtask int
 	TestIDs []int
+}
+
+func (t *Task) FindTestGroupSubtasks(testGroupId int) []int {
+	tests := make([]int, 0)
+	tests = append(tests, t.TestGroups[testGroupId-1].TestIDs...)
+
+	subtasks := make([]int, 0)
+	for i, subtask := range t.Subtasks {
+		for _, test := range subtask.TestIDs {
+			if funk.ContainsInt(tests, test) {
+				subtasks = append(subtasks, i+1)
+				break
+			}
+		}
+	}
+	return subtasks
 }
 
 // PdfStatement represents a PDF statement with language and checksum.

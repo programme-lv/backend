@@ -300,12 +300,11 @@ func uploadTask(fsTask *fstask.Task, shortId string) error {
 
 	// Process Examples
 	examples := make([]tasksrvc.Example, 0)
-	for i, e := range fsTask.GetExamples() {
+	for _, e := range fsTask.Examples {
 		examples = append(examples, tasksrvc.Example{
-			OrderId: i + 1,
-			Input:   string(e.Input),
-			Output:  string(e.Output),
-			MdNote:  string(e.MdNote),
+			Input:  string(e.Input),
+			Output: string(e.Output),
+			MdNote: string(e.MdNote),
 		})
 	}
 	log.Debug().
@@ -313,7 +312,7 @@ func uploadTask(fsTask *fstask.Task, shortId string) error {
 		Msg("Processed examples")
 
 	// Process Tests Concurrently
-	tests := make([]tasksrvc.Test, len(fsTask.GetTestsSortedByID()))
+	tests := make([]tasksrvc.Test, len(fsTask.Tests))
 
 	// Mutex to protect access to the tests slice
 	var mu sync.Mutex
@@ -330,7 +329,7 @@ func uploadTask(fsTask *fstask.Task, shortId string) error {
 		Msg("Starting concurrent test uploads")
 
 	// Iterate over tests and launch goroutines for uploading
-	for i, t := range fsTask.GetTestsSortedByID() {
+	for i, t := range fsTask.Tests {
 		i, t := i, t // Capture loop variables
 		g.Go(func() error {
 			// Acquire semaphore
@@ -343,7 +342,7 @@ func uploadTask(fsTask *fstask.Task, shortId string) error {
 			defer func() { <-sem }() // Release semaphore
 
 			log.Debug().
-				Int("testID", t.TestID).
+				Int("testID", i+1).
 				Msg("Uploading test files")
 
 			// Compute SHA2 hashes
@@ -353,30 +352,29 @@ func uploadTask(fsTask *fstask.Task, shortId string) error {
 			// Upload test input
 			if err := taskSrvc.UploadTestFile(t.Input); err != nil {
 				log.Error().
-					Int("testID", t.TestID).
+					Int("testID", i+1).
 					Err(err).
 					Msg("Failed to upload test input")
-				return fmt.Errorf("failed to upload test input for test ID %v: %w", t.TestID, err)
+				return fmt.Errorf("failed to upload test input for test ID %v: %w", i+1, err)
 			}
 			log.Debug().
-				Int("testID", t.TestID).
+				Int("testID", i+1).
 				Msg("Uploaded test input")
 
 			// Upload test answer
 			if err := taskSrvc.UploadTestFile(t.Answer); err != nil {
 				log.Error().
-					Int("testID", t.TestID).
+					Int("testID", i+1).
 					Err(err).
 					Msg("Failed to upload test answer")
-				return fmt.Errorf("failed to upload test answer for test ID %v: %w", t.TestID, err)
+				return fmt.Errorf("failed to upload test answer for test ID %v: %w", i+1, err)
 			}
 			log.Debug().
-				Int("testID", t.TestID).
+				Int("testID", i+1).
 				Msg("Uploaded test answer")
 
 			// Create the Test struct
 			test := tasksrvc.Test{
-				ID:      t.TestID,
 				InpSha2: inpSha2,
 				AnsSha2: ansSha2,
 			}
@@ -387,7 +385,7 @@ func uploadTask(fsTask *fstask.Task, shortId string) error {
 			mu.Unlock()
 
 			log.Debug().
-				Int("testID", t.TestID).
+				Int("testID", i+1).
 				Msg("Test struct created")
 
 			return nil
@@ -407,12 +405,10 @@ func uploadTask(fsTask *fstask.Task, shortId string) error {
 
 	// Process Test Groups
 	testGroups := make([]tasksrvc.TestGroup, 0)
-	for _, testGroup := range fsTask.GetTestGroups() {
+	for _, testGroup := range fsTask.TestGroups {
 		testGroups = append(testGroups, tasksrvc.TestGroup{
-			ID:      testGroup.GroupID,
 			Points:  testGroup.Points,
 			Public:  testGroup.Public,
-			Subtask: testGroup.Subtask,
 			TestIDs: testGroup.TestIDs,
 		})
 	}
