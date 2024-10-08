@@ -416,7 +416,43 @@ func uploadTask(fsTask *fstask.Task, shortId string) error {
 		Int("count", len(testGroups)).
 		Msg("Processed test groups")
 
+	subtasks := make([]tasksrvc.Subtask, 0)
+	for _, subtask := range fsTask.Subtasks {
+		subtasks = append(subtasks, tasksrvc.Subtask{
+			Score:   subtask.Points,
+			TestIDs: subtask.TestIDs,
+		})
+	}
+
 	visInpSubtasks := make([]tasksrvc.VisibleInputSubtask, 0)
+	for _, visInputSubtask := range fsTask.VisibleInputSubtasks {
+		if len(subtasks) < visInputSubtask {
+			log.Error().
+				Int("subtaskID", visInputSubtask).
+				Msg("Invalid subtask ID")
+			return fmt.Errorf("invalid subtask ID: %v", visInputSubtask)
+		}
+		subtask := subtasks[visInputSubtask-1]
+		tests := make([]tasksrvc.VisInpSubtaskTest, 0)
+		for _, testId := range subtask.TestIDs {
+			if len(fsTask.Tests) < testId {
+				log.Error().
+					Int("testID", testId).
+					Ints("tests", subtask.TestIDs).
+					Msg("Invalid test ID")
+				return fmt.Errorf("invalid test ID: %v", testId)
+			}
+			tests = append(tests, tasksrvc.VisInpSubtaskTest{
+				TestId: testId,
+				Input:  string(fsTask.Tests[testId-1].Input),
+			})
+		}
+		visInpSubtasks = append(visInpSubtasks, tasksrvc.VisibleInputSubtask{
+			SubtaskId: visInputSubtask,
+			Tests:     tests,
+		})
+	}
+
 	// Assemble the Task struct
 	task := &tasksrvc.Task{
 		ShortId:          shortId,
@@ -434,7 +470,7 @@ func uploadTask(fsTask *fstask.Task, shortId string) error {
 		Tests:            tests,
 		Checker:          fsTask.TestlibChecker,
 		Interactor:       fsTask.TestlibInteractor,
-		Subtasks:         []tasksrvc.Subtask{},
+		Subtasks:         subtasks,
 		TestGroups:       testGroups,
 	}
 	log.Debug().

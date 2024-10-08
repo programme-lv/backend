@@ -80,18 +80,18 @@ func (s *SubmissionSrvc) createSubmissionWithValidatedInput(
 		// PUT EVALUATION, SUBMISSION SCORING SUBTASK ROWS
 		evalScoringSubtaskRows := make([]*EvalScoringSubtaskRow, 0)
 		submScoringSubtaskRows := make([]*SubmScoringSubtaskRow, 0)
-		for _, subtask := range task.Subtasks {
+		for stIdx, subtask := range task.Subtasks {
 			stTestCount := 0
 			for i := range task.Tests {
 				for _, testSt := range task.FindSubtasksWithTest(i + 1) {
-					if testSt.ID == subtask.ID {
+					if testSt.ID == stIdx+1 {
 						stTestCount++
 					}
 				}
 			}
 			evalRow := &EvalScoringSubtaskRow{
 				SubmUuid:      submUuid.String(),
-				SortKey:       fmt.Sprintf("eval#%s#scoring#subtask#%02d", evalUuid.String(), subtask.ID),
+				SortKey:       fmt.Sprintf("eval#%s#scoring#subtask#%02d", evalUuid.String(), stIdx+1),
 				SubtaskScore:  subtask.Score,
 				AcceptedTests: 0,
 				WrongTests:    0,
@@ -102,7 +102,7 @@ func (s *SubmissionSrvc) createSubmissionWithValidatedInput(
 
 			submRow := &SubmScoringSubtaskRow{
 				SubmUuid:        submUuid.String(),
-				SortKey:         fmt.Sprintf("subm#scoring#subtask#%02d", subtask.ID),
+				SortKey:         fmt.Sprintf("subm#scoring#subtask#%02d", stIdx+1),
 				SubtaskScore:    subtask.Score,
 				AcceptedTests:   0,
 				WrongTests:      0,
@@ -110,7 +110,7 @@ func (s *SubmissionSrvc) createSubmissionWithValidatedInput(
 				Version:         1,
 				UntestedTests:   stTestCount,
 				Gsi1Pk:          1,
-				Gsi1SortKey:     fmt.Sprintf("%s#%s#scoring#subtask#%02d", createdAt.Format(time.RFC3339), submUuid.String(), subtask.ID),
+				Gsi1SortKey:     fmt.Sprintf("%s#%s#scoring#subtask#%02d", createdAt.Format(time.RFC3339), submUuid.String(), stIdx),
 			}
 			submScoringSubtaskRows = append(submScoringSubtaskRows, submRow)
 		}
@@ -435,10 +435,10 @@ func (s *SubmissionSrvc) createSubmissionWithValidatedInput(
 	var evalScoringSubtasks []*SubtaskResult = nil
 	if scoringMethod == "subtask" {
 		evalScoringSubtasks = make([]*SubtaskResult, 0)
-		for _, subtask := range task.Subtasks {
+		for stIdx, subtask := range task.Subtasks {
 			stTestCount := len(subtask.TestIDs)
 			evalScoringSubtasks = append(evalScoringSubtasks, &SubtaskResult{
-				SubtaskID:     subtask.ID,
+				SubtaskID:     stIdx,
 				SubtaskScore:  subtask.Score,
 				AcceptedTests: 0,
 				WrongTests:    0,

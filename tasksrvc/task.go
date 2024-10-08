@@ -45,10 +45,12 @@ type Example struct {
 
 type VisibleInputSubtask struct {
 	SubtaskId int
-	Tests     []struct {
-		TestId int
-		Input  string
-	}
+	Tests     []VisInpSubtaskTest
+}
+
+type VisInpSubtaskTest struct {
+	TestId int
+	Input  string
 }
 
 type MarkdownStatement struct {
@@ -62,9 +64,13 @@ type MarkdownStatement struct {
 }
 
 type Subtask struct {
-	ID      int
 	Score   int
 	TestIDs []int
+}
+
+type SubtaskWithId struct {
+	ID int
+	Subtask
 }
 
 type TaskEvalTestGroupInformation struct {
@@ -88,12 +94,15 @@ func (test *Test) FullAnswerS3URI() string {
 	return fmt.Sprintf(format, test.AnsSha2)
 }
 
-func (t *Task) FindSubtasksWithTest(testId int) []Subtask {
-	subtasks := make([]Subtask, 0)
-	for _, subtask := range t.Subtasks {
+func (t *Task) FindSubtasksWithTest(testId int) []SubtaskWithId {
+	subtasks := make([]SubtaskWithId, 0)
+	for i, subtask := range t.Subtasks {
 		for _, test := range subtask.TestIDs {
 			if test == testId {
-				subtasks = append(subtasks, subtask)
+				subtasks = append(subtasks, SubtaskWithId{
+					ID:      i + 1,
+					Subtask: subtask,
+				})
 			}
 		}
 	}

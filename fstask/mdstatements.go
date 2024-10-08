@@ -39,16 +39,16 @@ func ReadMarkdownStatementsFromTaskDir(dir TaskDir) ([]MarkdownStatement, error)
 				return nil, fmt.Errorf("error reading markdown file '%s': %w", file, err)
 			}
 
-			sections := strings.Split(string(content), "\n\n---\n\n")
+			sections := strings.Split(string(content), "\n\n---\n")
 			if len(sections) < 3 {
 				return nil, fmt.Errorf("invalid markdown file '%s': not enough sections", file)
 			}
 
 			statement := MarkdownStatement{
 				Language: strings.TrimSuffix(filepath.Base(file), ".md"),
-				Story:    sections[0],
-				Input:    sections[1],
-				Output:   sections[2],
+				Story:    strings.TrimSpace(sections[0]),
+				Input:    strings.TrimSpace(sections[1]),
+				Output:   strings.TrimSpace(sections[2]),
 			}
 
 			markdownStatements = append(markdownStatements, statement)
