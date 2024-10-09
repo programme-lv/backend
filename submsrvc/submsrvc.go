@@ -13,32 +13,34 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws/retry"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
+	"github.com/jmoiron/sqlx"
 	"github.com/programme-lv/backend/tasksrvc"
 	"github.com/programme-lv/backend/user"
+
+	_ "github.com/lib/pq"
 )
 
-// submissions service example implementation.
-// The example methods log the requests and return zero values.
 type SubmissionSrvc struct {
 	userSrvc *user.UserService
 	taskSrvc *tasksrvc.TaskService
+
+	postgres *sqlx.DB
 
 	sqsClient  *sqs.Client
 	submSqsUrl string
 	resSqsUrl  string
 
 	// real-time updates
-	createNewSubmChan        chan *BriefSubmission
+	createNewSubmChan        chan *Submission
 	updateSubmEvalStageChan  chan *SubmEvalStageUpdate
-	updateTestGroupScoreChan chan *TestGroupScoreUpdate
-	updateTestScoreChan      chan *TestScoreUpdate
+	updateTestGroupScoreChan chan *TestGroupScoringUpdate
+	updateTestScoreChan      chan *TestSetScoringUpdate
 	listenerLock             sync.Mutex
 	listeners                []chan *SubmissionListUpdate
 
 	evalUuidToSubmUuid sync.Map
 }
 
-// NewSubmissions returns the submissions service implementation.
 func NewSubmissions(taskSrvc *tasksrvc.TaskService) *SubmissionSrvc {
 	cfg, err := config.LoadDefaultConfig(context.TODO(),
 		config.WithRegion("eu-central-1"),
@@ -48,12 +50,6 @@ func NewSubmissions(taskSrvc *tasksrvc.TaskService) *SubmissionSrvc {
 	)
 	if err != nil {
 		panic(fmt.Sprintf("unable to load SDK config, %v", err))
-	}
-
-	submTableName := os.Getenv("DDB_SUBM_TABLE_NAME")
-	if submTableName == "" {
-		slog.Error("DDB_SUBM_TABLE_NAME is not set")
-		os.Exit(1)
 	}
 
 	sqsClient := sqs.NewFromConfig(cfg)
@@ -68,15 +64,21 @@ func NewSubmissions(taskSrvc *tasksrvc.TaskService) *SubmissionSrvc {
 		panic("RESPONSE_SQS_URL not set in .env file")
 	}
 
+	db, err := sqlx.Connect("postgres", os.Getenv("POSTGRES_CONN_STR"))
+	if err != nil {
+		panic(fmt.Sprintf("failed to connect to postgres: %v", err))
+	}
+
 	srvc := &SubmissionSrvc{
 		userSrvc:                 user.NewUsers(),
 		taskSrvc:                 taskSrvc,
+		postgres:                 db,
 		sqsClient:                sqsClient,
 		submSqsUrl:               submQueueUrl,
-		createNewSubmChan:        make(chan *BriefSubmission, 1000),
+		createNewSubmChan:        make(chan *Submission, 1000),
 		updateSubmEvalStageChan:  make(chan *SubmEvalStageUpdate, 1000),
-		updateTestGroupScoreChan: make(chan *TestGroupScoreUpdate, 1000),
-		updateTestScoreChan:      make(chan *TestScoreUpdate, 1000),
+		updateTestGroupScoreChan: make(chan *TestGroupScoringUpdate, 1000),
+		updateTestScoreChan:      make(chan *TestSetScoringUpdate, 1000),
 		listenerLock:             sync.Mutex{},
 		listeners:                make([]chan *SubmissionListUpdate, 0, 100),
 		evalUuidToSubmUuid:       sync.Map{},

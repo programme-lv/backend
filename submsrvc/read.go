@@ -6,6 +6,6 @@ func (s *SubmissionSrvc) GetSubmission(ctx context.Context, submUuid string) (*F
 	panic("not implemented")
 }
 
-func (s *SubmissionSrvc) ListSubmissions(ctx context.Context) ([]*BriefSubmission, error) {
+func (s *SubmissionSrvc) ListSubmissions(ctx context.Context) ([]*Submission, error) {
 	panic("not implemented")
 }

@@ -35,10 +35,10 @@ func (s *SubmissionSrvc) StartStreamingSubmListUpdates(ctx context.Context) {
 		case testgroupScoringResUpdate := <-s.updateTestGroupScoreChan:
 			// notify all listeners about the testgroup result update
 			update := &SubmissionListUpdate{
-				TestgroupResUpdate: &TestgroupScoreUpdate{
-					SubmUUID:      testgroupScoringResUpdate.SubmUuid,
-					EvalUUID:      testgroupScoringResUpdate.EvalUuid,
-					TestGroupID:   testgroupScoringResUpdate.TestgroupId,
+				TestgroupResUpdate: &TestGroupScoringUpdate{
+					SubmUUID:      testgroupScoringResUpdate.SubmUUID,
+					EvalUUID:      testgroupScoringResUpdate.EvalUUID,
+					TestGroupID:   testgroupScoringResUpdate.TestGroupID,
 					AcceptedTests: testgroupScoringResUpdate.AcceptedTests,
 					WrongTests:    testgroupScoringResUpdate.WrongTests,
 					UntestedTests: testgroupScoringResUpdate.UntestedTests,

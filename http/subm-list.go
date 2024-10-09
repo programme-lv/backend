@@ -19,7 +19,7 @@ func (httpserver *HttpServer) listSubmissions(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	mapSubmList := func(subms []*submsrvc.BriefSubmission) listSubmissionsResponse {
+	mapSubmList := func(subms []*submsrvc.Submission) listSubmissionsResponse {
 		response := make(listSubmissionsResponse, len(subms))
 		for i, subm := range subms {
 			response[i] = mapBriefSubm(subm)

@@ -62,7 +62,7 @@ func (httpserver *HttpServer) listenToSubmUpdates(w http.ResponseWriter, r *http
 		TestsScoreUpdate   *TestsScoreUpdate      `json:"tests_score_update"`
 	}
 
-	mapTestsScoreUpdate := func(update *submsrvc.TestScoreUpdate) *TestsScoreUpdate {
+	mapTestsScoreUpdate := func(update *submsrvc.TestSetScoringUpdate) *TestsScoreUpdate {
 		if update == nil {
 			return nil
 		}
@@ -86,7 +86,7 @@ func (httpserver *HttpServer) listenToSubmUpdates(w http.ResponseWriter, r *http
 		}
 	}
 
-	mapTestgroupResUpdate := func(update *submsrvc.TestgroupScoreUpdate) *TestGroupScoreUpdate {
+	mapTestgroupResUpdate := func(update *submsrvc.TestGroupScoringUpdate) *TestGroupScoreUpdate {
 		if update == nil {
 			return nil
 		}

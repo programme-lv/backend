@@ -25,12 +25,11 @@ func (httpserver *HttpServer) createSubmission(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	subm, err := httpserver.submSrvc.CreateSubmission(r.Context(), &submsrvc.CreateSubmissionPayload{
-		Submission:        request.Submission,
-		Username:          request.Username,
-		ProgrammingLangID: request.ProgrammingLangID,
-		TaskCodeID:        request.TaskCodeID,
-		Token:             request.Token,
+	subm, err := httpserver.submSrvc.CreateSubmission(r.Context(), &submsrvc.CreateSubmissionParams{
+		Submission: request.Submission,
+		Username:   request.Username,
+		ProgLangID: request.ProgrammingLangID,
+		TaskCodeID: request.TaskCodeID,
 	})
 
 	if err != nil {

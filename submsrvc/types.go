@@ -1,24 +1,10 @@
 package submsrvc
 
-import "time"
+import (
+	"time"
+)
 
-type BriefSubmission struct {
-	SubmUUID              string
-	Username              string
-	CreatedAt             string
-	EvalUUID              string
-	EvalStatus            string
-	EvalScoringTestgroups []*TestGroupResult
-	EvalScoringTests      *TestsResult
-	EvalScoringSubtasks   []*SubtaskResult
-	PLangID               string
-	PLangDisplayName      string
-	PLangMonacoID         string
-	TaskName              string
-	TaskID                string
-}
-
-type EvalTestResults struct {
+type EvalTest struct {
 	TestId   int
 	Reached  bool
 	Ignored  bool
@@ -71,49 +57,16 @@ type EvalDetails struct {
 }
 
 type FullSubmission struct {
-	BriefSubmission
-	SubmContent     string
-	EvalTestResults []*EvalTestResults
-	EvalDetails     *EvalDetails
+	Submission
+	TestResults []EvalTest
+	EvalDetails *EvalDetails
 }
 
 type SubmissionListUpdate struct {
-	SubmCreated        *BriefSubmission
+	SubmCreated        *Submission
 	StateUpdate        *SubmEvalStageUpdate
-	TestgroupResUpdate *TestgroupScoreUpdate
-	TestsResUpdate     *TestScoreUpdate
-}
-
-type SubtaskResult struct {
-	SubtaskID     int
-	SubtaskScore  int
-	AcceptedTests int
-	WrongTests    int
-	UntestedTests int
-}
-
-type TestGroupResult struct {
-	TestGroupID      int
-	TestGroupScore   int
-	StatementSubtask int
-	AcceptedTests    int
-	WrongTests       int
-	UntestedTests    int
-}
-
-type TestgroupScoreUpdate struct {
-	SubmUUID      string
-	EvalUUID      string
-	TestGroupID   int
-	AcceptedTests int
-	WrongTests    int
-	UntestedTests int
-}
-
-type TestsResult struct {
-	Accepted int
-	Wrong    int
-	Untested int
+	TestgroupResUpdate *TestGroupScoringUpdate
+	TestsResUpdate     *TestSetScoringUpdate
 }
 
 type SubmEvalStageUpdate struct {
@@ -122,16 +75,16 @@ type SubmEvalStageUpdate struct {
 	NewStage string
 }
 
-type TestGroupScoreUpdate struct {
-	SubmUuid      string
-	EvalUuid      string
-	TestgroupId   int
+type TestGroupScoringUpdate struct {
+	SubmUUID      string
+	EvalUUID      string
+	TestGroupID   int
 	AcceptedTests int
 	WrongTests    int
 	UntestedTests int
 }
 
-type TestScoreUpdate struct {
+type TestSetScoringUpdate struct {
 	SubmUuid string
 	EvalUuid string
 	Accepted int

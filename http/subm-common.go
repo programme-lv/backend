@@ -6,7 +6,7 @@ import (
 	"github.com/programme-lv/backend/submsrvc"
 )
 
-type testGroupResultResponseBody struct {
+type TestGroupScore struct {
 	TestGroupID      int `json:"test_group_id"`
 	TestGroupScore   int `json:"test_group_score"`
 	StatementSubtask int `json:"statement_subtask"`
@@ -15,13 +15,13 @@ type testGroupResultResponseBody struct {
 	UntestedTests    int `json:"untested_tests"`
 }
 
-type testsScoringResultResponseBody struct {
+type TestsScore struct {
 	Accepted int `json:"accepted"`
 	Wrong    int `json:"wrong"`
 	Untested int `json:"untested"`
 }
 
-type subtaskResultResponseBody struct {
+type SubtaskScore struct {
 	SubtaskID     int `json:"subtask_id"`
 	SubtaskScore  int `json:"subtask_score"`
 	AcceptedTests int `json:"accepted_tests"`
@@ -30,23 +30,41 @@ type subtaskResultResponseBody struct {
 }
 
 type BriefSubmission struct {
-	SubmUUID              string                          `json:"subm_uuid"`
-	Username              string                          `json:"username"`
-	CreatedAt             string                          `json:"created_at"`
-	EvalUUID              string                          `json:"eval_uuid"`
-	EvalStatus            string                          `json:"eval_status"`
-	EvalScoringTestgroups []*testGroupResultResponseBody  `json:"eval_scoring_testgroups,omitempty"`
-	EvalScoringTests      *testsScoringResultResponseBody `json:"eval_scoring_tests,omitempty"`
-	EvalScoringSubtasks   []*subtaskResultResponseBody    `json:"eval_scoring_subtasks,omitempty"`
-	PLangID               string                          `json:"p_lang_id"`
-	PLangDisplayName      string                          `json:"p_lang_display_name"`
-	PLangMonacoID         string                          `json:"p_lang_monaco_id"`
-	TaskName              string                          `json:"task_name"`
-	TaskID                string                          `json:"task_id"`
+	SubmUUID          string           `json:"subm_uuid"`
+	Username          string           `json:"username"`
+	CreatedAt         string           `json:"created_at"`
+	EvalUUID          string           `json:"eval_uuid"`
+	EvalStatus        string           `json:"eval_status"`
+	TestGroupScoring  []TestGroupScore `json:"test_group_scoring"`
+	TestsScore        *TestsScore      `json:"tests_score"`
+	SubtasksScore     []SubtaskScore   `json:"subtasks_score"`
+	ProgrLangID       string           `json:"p_lang_id"`
+	ProgrLangName     string           `json:"p_lang_display_name"`
+	ProgrLangMonacoID string           `json:"p_lang_monaco_id"`
+	TaskFullName      string           `json:"task_name"`
+	TaskShortID       string           `json:"task_id"`
 }
 
-type EvalTestResults struct {
-	TestId   int  `json:"test_id"`
+type FullSubmission struct {
+	BriefSubmission
+	Content     string       `json:"subm_content"`
+	EvalDetails *EvalDetails `json:"eval_details"`
+	TestResults []EvalTest   `json:"test_results"`
+}
+
+type ExecutionInfo struct {
+	CpuTimeMillis int     `json:"cpu_time_millis"`
+	MemKibiBytes  int     `json:"mem_kibi_bytes"`
+	WallTime      int     `json:"wall_time"`
+	ExitCode      int     `json:"exit_code"`
+	StdoutTrimmed *string `json:"stdout_trimmed"`
+	StderrTrimmed *string `json:"stderr_trimmed"`
+	ExitSignal    *int    `json:"exit_signal"`
+}
+
+type EvalTest struct {
+	TestId int `json:"test_id"`
+
 	Reached  bool `json:"reached"`
 	Ignored  bool `json:"ignored"`
 	Finished bool `json:"finished"`
@@ -54,26 +72,14 @@ type EvalTestResults struct {
 	InputTrimmed  *string `json:"input_trimmed"`
 	AnswerTrimmed *string `json:"answer_trimmed"`
 
-	TimeLimitExceeded   *bool `json:"time_limit_exceeded"`
-	MemoryLimitExceeded *bool `json:"memory_limit_exceeded"`
+	TimeExceeded   *bool `json:"time_exceeded"`
+	MemoryExceeded *bool `json:"memory_exceeded"`
 
 	Subtasks  []int `json:"subtasks"`
 	TestGroup *int  `json:"test_group"`
 
-	SubmCpuTimeMillis *int    `json:"subm_cpu_time_millis"`
-	SubmMemKibiBytes  *int    `json:"subm_mem_kibi_bytes"`
-	SubmWallTime      *int    `json:"subm_wall_time"`
-	SubmExitCode      *int    `json:"subm_exit_code"`
-	SubmStdoutTrimmed *string `json:"subm_stdout_trimmed"`
-	SubmStderrTrimmed *string `json:"subm_stderr_trimmed"`
-	SubmExitSignal    *int    `json:"subm_exit_signal"`
-
-	CheckerCpuTimeMillis *int    `json:"checker_cpu_time_millis"`
-	CheckerMemKibiBytes  *int    `json:"checker_mem_kibi_bytes"`
-	CheckerWallTime      *int    `json:"checker_wall_time"`
-	CheckerExitCode      *int    `json:"checker_exit_code"`
-	CheckerStdoutTrimmed *string `json:"checker_stdout_trimmed"`
-	CheckerStderrTrimmed *string `json:"checker_stderr_trimmed"`
+	SubmExecInfo    *ExecutionInfo `json:"subm_exec_info"`
+	CheckerExecInfo *ExecutionInfo `json:"checker_exec_info"`
 }
 
 type EvalDetails struct {
@@ -86,177 +92,132 @@ type EvalDetails struct {
 	CpuTimeLimitMillis   *int `json:"cpu_time_limit_millis"`
 	MemoryLimitKibiBytes *int `json:"memory_limit_kibi_bytes"`
 
-	ProgrammingLang   ProgrammingLang `json:"programming_lang"`
-	SystemInformation *string         `json:"system_information"`
+	ProgrLang  ProgrammingLang `json:"programming_lang"`
+	SystemInfo *string         `json:"system_information"`
 
-	CompileCpuTimeMillis *int    `json:"compile_cpu_time_millis"`
-	CompileMemKibiBytes  *int    `json:"compile_mem_kibi_bytes"`
-	CompileWallTime      *int    `json:"compile_wall_time"`
-	CompileExitCode      *int    `json:"compile_exit_code"`
-	CompileStdoutTrimmed *string `json:"compile_stdout_trimmed"`
-	CompileStderrTrimmed *string `json:"compile_stderr_trimmed"`
+	CompileExecInfo *ExecutionInfo `json:"compile_exec_info"`
 }
 
-type FullSubmission struct {
-	BriefSubmission
-	SubmContent     string             `json:"subm_content"`
-	EvalTestResults []*EvalTestResults `json:"eval_test_results"`
-	EvalDetails     *EvalDetails       `json:"eval_details"`
+/*
+
+type Submission struct {
+	UUID uuid.UUID
+
+	Content string
+
+	Author Author
+	Task   Task
+	Lang   Lang
+
+	CurrEval Evaluation
+
+	CreatedAt time.Time
 }
 
-func mapEvalTestResults(x *submsrvc.EvalTestResults) *EvalTestResults {
+type Evaluation struct {
+	UUID      uuid.UUID
+	Stage     string
+	CreatedAt time.Time
+
+	ScoreBySubtasks   *SubtaskScoringRes
+	ScoreByTestGroups *TestGroupScoringRes
+	ScoreByTestSets   *TestSetScoringRes
+}
+
+type Author struct {
+	UUID     uuid.UUID
+	Username string
+}
+
+type Lang struct {
+	ShortID  string
+	Display  string
+	MonacoID string
+}
+
+type Task struct {
+	ShortID  string
+	FullName string
+}
+*/
+
+func mapBriefSubm(x *submsrvc.Submission) *BriefSubmission {
 	if x == nil {
 		return nil
 	}
-
-	return &EvalTestResults{
-		TestId:               x.TestId,
-		Reached:              x.Reached,
-		Ignored:              x.Ignored,
-		Finished:             x.Finished,
-		InputTrimmed:         x.InputTrimmed,
-		AnswerTrimmed:        x.AnswerTrimmed,
-		TimeLimitExceeded:    x.TimeLimitExceeded,
-		MemoryLimitExceeded:  x.MemoryLimitExceeded,
-		Subtasks:             x.Subtasks,
-		TestGroup:            x.TestGroup,
-		SubmCpuTimeMillis:    x.SubmCpuTimeMillis,
-		SubmMemKibiBytes:     x.SubmMemKibiBytes,
-		SubmWallTime:         x.SubmWallTime,
-		SubmExitCode:         x.SubmExitCode,
-		SubmStdoutTrimmed:    x.SubmStdoutTrimmed,
-		SubmStderrTrimmed:    x.SubmStderrTrimmed,
-		CheckerCpuTimeMillis: x.CheckerCpuTimeMillis,
-		CheckerMemKibiBytes:  x.CheckerMemKibiBytes,
-		CheckerWallTime:      x.CheckerWallTime,
-		CheckerExitCode:      x.CheckerExitCode,
-		CheckerStdoutTrimmed: x.CheckerStdoutTrimmed,
-		CheckerStderrTrimmed: x.CheckerStderrTrimmed,
-		SubmExitSignal:       x.SubmExitSignal,
+	return &BriefSubmission{
+		SubmUUID:          x.UUID.String(),
+		Username:          x.Author.Username,
+		CreatedAt:         x.CreatedAt.Format(time.RFC3339),
+		EvalUUID:          x.CurrEval.UUID.String(),
+		EvalStatus:        x.CurrEval.Stage,
+		TestGroupScoring:  mapTestGroupScoring(x.CurrEval.ScoreByTestGroups),
+		TestsScore:        mapTestsScore(x.CurrEval.ScoreByTestSets),
+		SubtasksScore:     mapSubtasksScore(x.CurrEval.ScoreBySubtasks),
+		ProgrLangID:       x.Lang.ShortID,
+		ProgrLangName:     x.Lang.Display,
+		ProgrLangMonacoID: x.Lang.MonacoID,
+		TaskFullName:      x.Task.FullName,
+		TaskShortID:       x.Task.ShortID,
 	}
 }
 
-func mapEvalTestResultsSlice(x []*submsrvc.EvalTestResults) []*EvalTestResults {
+func mapTestGroupScoring(x *submsrvc.TestGroupScoringRes) []TestGroupScore {
 	if x == nil {
 		return nil
 	}
-
-	res := make([]*EvalTestResults, len(x))
-	for i, v := range x {
-		res[i] = mapEvalTestResults(v)
-	}
-	return res
+	// TODO: implement
+	return []TestGroupScore{}
 }
 
-func mapProgrammingLang(x submsrvc.ProgrammingLang) ProgrammingLang {
-	return ProgrammingLang{
-		ID:               x.ID,
-		FullName:         x.FullName,
-		CodeFilename:     x.CodeFilename,
-		CompileCmd:       x.CompileCmd,
-		ExecuteCmd:       x.ExecuteCmd,
-		EnvVersionCmd:    x.EnvVersionCmd,
-		HelloWorldCode:   x.HelloWorldCode,
-		MonacoID:         x.MonacoId,
-		CompiledFilename: x.CompiledFilename,
-		Enabled:          x.Enabled,
+func mapTestsScore(x *submsrvc.TestSetScoringRes) *TestsScore {
+	if x == nil {
+		return nil
+	}
+	// TODO: implement
+	return &TestsScore{}
+}
+
+func mapSubtasksScore(x *submsrvc.SubtaskScoringRes) []SubtaskScore {
+	if x == nil {
+		return nil
+	}
+	// TODO: implement
+	return []SubtaskScore{}
+}
+
+func mapFullSubm(x *submsrvc.FullSubmission) *FullSubmission {
+	if x == nil {
+		return nil
+	}
+	return &FullSubmission{
+		BriefSubmission: *mapBriefSubm(&x.Submission),
+		Content:         x.Content,
+		EvalDetails:     mapEvalDetails(x.EvalDetails),
+		TestResults:     mapTestResults(x.TestResults),
 	}
 }
 
 func mapEvalDetails(x *submsrvc.EvalDetails) *EvalDetails {
-	return &EvalDetails{
-		EvalUuid:             x.EvalUuid,
-		CreatedAtRfc3339:     x.CreatedAt.UTC().Format(time.RFC3339),
-		ErrorMsg:             x.ErrorMsg,
-		EvalStage:            x.EvalStage,
-		CpuTimeLimitMillis:   x.CpuTimeLimitMillis,
-		MemoryLimitKibiBytes: x.MemoryLimitKibiBytes,
-		ProgrammingLang:      mapProgrammingLang(x.ProgrammingLang),
-		SystemInformation:    x.SystemInformation,
-
-		CompileCpuTimeMillis: x.CompileCpuTimeMillis,
-		CompileMemKibiBytes:  x.CompileMemKibiBytes,
-		CompileWallTime:      x.CompileWallTime,
-		CompileExitCode:      x.CompileExitCode,
-		CompileStdoutTrimmed: x.CompileStdoutTrimmed,
-		CompileStderrTrimmed: x.CompileStderrTrimmed,
-	}
-}
-
-func mapFullSubm(x *submsrvc.FullSubmission) *FullSubmission {
-	res := &FullSubmission{
-		BriefSubmission: *mapBriefSubm(&x.BriefSubmission),
-		SubmContent:     x.SubmContent,
-		EvalTestResults: mapEvalTestResultsSlice(x.EvalTestResults),
-		EvalDetails:     mapEvalDetails(x.EvalDetails),
-	}
-
-	return res
-}
-func mapBriefSubm(x *submsrvc.BriefSubmission) *BriefSubmission {
 	if x == nil {
 		return nil
 	}
-
-	mapEvalTestGroupResults := func(testGroups []*submsrvc.TestGroupResult) []*testGroupResultResponseBody {
-		if testGroups == nil {
-			return nil
-		}
-		result := make([]*testGroupResultResponseBody, len(testGroups))
-		for i, tg := range testGroups {
-			result[i] = &testGroupResultResponseBody{
-				TestGroupID:      tg.TestGroupID,
-				TestGroupScore:   tg.TestGroupScore,
-				StatementSubtask: tg.StatementSubtask,
-				AcceptedTests:    tg.AcceptedTests,
-				WrongTests:       tg.WrongTests,
-				UntestedTests:    tg.UntestedTests,
-			}
-		}
-		return result
+	// TODO: implement
+	return &EvalDetails{
+		EvalUuid: x.EvalUuid,
 	}
+}
 
-	mapEvalTestsResult := func(tests *submsrvc.TestsResult) *testsScoringResultResponseBody {
-		if tests == nil {
-			return nil
-		}
-		return &testsScoringResultResponseBody{
-			Accepted: tests.Accepted,
-			Wrong:    tests.Wrong,
-			Untested: tests.Untested,
+func mapTestResults(x []submsrvc.EvalTest) []EvalTest {
+	if x == nil {
+		return nil
+	}
+	// TODO: implement
+	res := make([]EvalTest, len(x))
+	for i, v := range x {
+		res[i] = EvalTest{
+			TestId: v.TestId,
 		}
 	}
-
-	mapEvalSubtaskResults := func(subtasks []*submsrvc.SubtaskResult) []*subtaskResultResponseBody {
-		if subtasks == nil {
-			return nil
-		}
-		result := make([]*subtaskResultResponseBody, len(subtasks))
-		for i, st := range subtasks {
-			result[i] = &subtaskResultResponseBody{
-				SubtaskID:     st.SubtaskID,
-				SubtaskScore:  st.SubtaskScore,
-				AcceptedTests: st.AcceptedTests,
-				WrongTests:    st.WrongTests,
-				UntestedTests: st.UntestedTests,
-			}
-		}
-		return result
-	}
-
-	return &BriefSubmission{
-		SubmUUID:              x.SubmUUID,
-		Username:              x.Username,
-		CreatedAt:             x.CreatedAt,
-		EvalUUID:              x.EvalUUID,
-		EvalStatus:            x.EvalStatus,
-		EvalScoringTestgroups: mapEvalTestGroupResults(x.EvalScoringTestgroups),
-		EvalScoringTests:      mapEvalTestsResult(x.EvalScoringTests),
-		EvalScoringSubtasks:   mapEvalSubtaskResults(x.EvalScoringSubtasks),
-		PLangID:               x.PLangID,
-		PLangDisplayName:      x.PLangDisplayName,
-		PLangMonacoID:         x.PLangMonacoID,
-		TaskName:              x.TaskName,
-		TaskID:                x.TaskID,
-	}
+	return res
 }

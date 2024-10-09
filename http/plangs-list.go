@@ -34,10 +34,10 @@ func (httpserver *HttpServer) listProgrammingLangs(w http.ResponseWriter, r *htt
 		}
 	}
 
-	mapProgLangsResponse := func(langs []*submsrvc.ProgrammingLang) listProgLangsResponse {
+	mapProgLangsResponse := func(langs []submsrvc.ProgrammingLang) listProgLangsResponse {
 		response := make(listProgLangsResponse, len(langs))
 		for i, lang := range langs {
-			response[i] = mapProgrammingLangResponse(lang)
+			response[i] = mapProgrammingLangResponse(&lang)
 		}
 		return response
 	}
