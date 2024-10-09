@@ -1,4 +1,4 @@
-package subm
+package submsrvc
 
 type Validatable interface {
 	IsValid() error

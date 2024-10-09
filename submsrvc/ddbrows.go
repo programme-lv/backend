@@ -1,4 +1,4 @@
-package subm
+package submsrvc
 
 import (
 	"strconv"

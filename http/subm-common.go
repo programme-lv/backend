@@ -3,7 +3,7 @@ package http
 import (
 	"time"
 
-	"github.com/programme-lv/backend/subm"
+	"github.com/programme-lv/backend/submsrvc"
 )
 
 type testGroupResultResponseBody struct {
@@ -104,7 +104,7 @@ type FullSubmission struct {
 	EvalDetails     *EvalDetails       `json:"eval_details"`
 }
 
-func mapEvalTestResults(x *subm.EvalTestResults) *EvalTestResults {
+func mapEvalTestResults(x *submsrvc.EvalTestResults) *EvalTestResults {
 	if x == nil {
 		return nil
 	}
@@ -136,7 +136,7 @@ func mapEvalTestResults(x *subm.EvalTestResults) *EvalTestResults {
 	}
 }
 
-func mapEvalTestResultsSlice(x []*subm.EvalTestResults) []*EvalTestResults {
+func mapEvalTestResultsSlice(x []*submsrvc.EvalTestResults) []*EvalTestResults {
 	if x == nil {
 		return nil
 	}
@@ -148,7 +148,7 @@ func mapEvalTestResultsSlice(x []*subm.EvalTestResults) []*EvalTestResults {
 	return res
 }
 
-func mapProgrammingLang(x subm.ProgrammingLang) ProgrammingLang {
+func mapProgrammingLang(x submsrvc.ProgrammingLang) ProgrammingLang {
 	return ProgrammingLang{
 		ID:               x.ID,
 		FullName:         x.FullName,
@@ -163,7 +163,7 @@ func mapProgrammingLang(x subm.ProgrammingLang) ProgrammingLang {
 	}
 }
 
-func mapEvalDetails(x *subm.EvalDetails) *EvalDetails {
+func mapEvalDetails(x *submsrvc.EvalDetails) *EvalDetails {
 	return &EvalDetails{
 		EvalUuid:             x.EvalUuid,
 		CreatedAtRfc3339:     x.CreatedAt.UTC().Format(time.RFC3339),
@@ -183,7 +183,7 @@ func mapEvalDetails(x *subm.EvalDetails) *EvalDetails {
 	}
 }
 
-func mapFullSubm(x *subm.FullSubmission) *FullSubmission {
+func mapFullSubm(x *submsrvc.FullSubmission) *FullSubmission {
 	res := &FullSubmission{
 		BriefSubmission: *mapBriefSubm(&x.BriefSubmission),
 		SubmContent:     x.SubmContent,
@@ -193,12 +193,12 @@ func mapFullSubm(x *subm.FullSubmission) *FullSubmission {
 
 	return res
 }
-func mapBriefSubm(x *subm.BriefSubmission) *BriefSubmission {
+func mapBriefSubm(x *submsrvc.BriefSubmission) *BriefSubmission {
 	if x == nil {
 		return nil
 	}
 
-	mapEvalTestGroupResults := func(testGroups []*subm.TestGroupResult) []*testGroupResultResponseBody {
+	mapEvalTestGroupResults := func(testGroups []*submsrvc.TestGroupResult) []*testGroupResultResponseBody {
 		if testGroups == nil {
 			return nil
 		}
@@ -216,7 +216,7 @@ func mapBriefSubm(x *subm.BriefSubmission) *BriefSubmission {
 		return result
 	}
 
-	mapEvalTestsResult := func(tests *subm.TestsResult) *testsScoringResultResponseBody {
+	mapEvalTestsResult := func(tests *submsrvc.TestsResult) *testsScoringResultResponseBody {
 		if tests == nil {
 			return nil
 		}
@@ -227,7 +227,7 @@ func mapBriefSubm(x *subm.BriefSubmission) *BriefSubmission {
 		}
 	}
 
-	mapEvalSubtaskResults := func(subtasks []*subm.SubtaskResult) []*subtaskResultResponseBody {
+	mapEvalSubtaskResults := func(subtasks []*submsrvc.SubtaskResult) []*subtaskResultResponseBody {
 		if subtasks == nil {
 			return nil
 		}

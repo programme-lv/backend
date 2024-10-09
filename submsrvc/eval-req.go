@@ -1,4 +1,4 @@
-package subm
+package submsrvc
 
 type EvalReqWithUuid struct {
 	EvaluationUuid string      `json:"evaluation_uuid"`

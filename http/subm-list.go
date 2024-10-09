@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/go-chi/httplog/v2"
-	"github.com/programme-lv/backend/subm"
+	"github.com/programme-lv/backend/submsrvc"
 )
 
 func (httpserver *HttpServer) listSubmissions(w http.ResponseWriter, r *http.Request) {
@@ -19,7 +19,7 @@ func (httpserver *HttpServer) listSubmissions(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	mapSubmList := func(subms []*subm.BriefSubmission) listSubmissionsResponse {
+	mapSubmList := func(subms []*submsrvc.BriefSubmission) listSubmissionsResponse {
 		response := make(listSubmissionsResponse, len(subms))
 		for i, subm := range subms {
 			response[i] = mapBriefSubm(subm)

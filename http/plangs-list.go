@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/go-chi/httplog/v2"
-	"github.com/programme-lv/backend/subm"
+	"github.com/programme-lv/backend/submsrvc"
 )
 
 func (httpserver *HttpServer) listProgrammingLangs(w http.ResponseWriter, r *http.Request) {
@@ -19,7 +19,7 @@ func (httpserver *HttpServer) listProgrammingLangs(w http.ResponseWriter, r *htt
 		return
 	}
 
-	mapProgrammingLangResponse := func(lang *subm.ProgrammingLang) *ProgrammingLang {
+	mapProgrammingLangResponse := func(lang *submsrvc.ProgrammingLang) *ProgrammingLang {
 		return &ProgrammingLang{
 			ID:               lang.ID,
 			FullName:         lang.FullName,
@@ -34,7 +34,7 @@ func (httpserver *HttpServer) listProgrammingLangs(w http.ResponseWriter, r *htt
 		}
 	}
 
-	mapProgLangsResponse := func(langs []*subm.ProgrammingLang) listProgLangsResponse {
+	mapProgLangsResponse := func(langs []*submsrvc.ProgrammingLang) listProgLangsResponse {
 		response := make(listProgLangsResponse, len(langs))
 		for i, lang := range langs {
 			response[i] = mapProgrammingLangResponse(lang)

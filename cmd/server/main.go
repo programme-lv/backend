@@ -7,7 +7,7 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/programme-lv/backend/http"
-	"github.com/programme-lv/backend/subm"
+	"github.com/programme-lv/backend/submsrvc"
 	"github.com/programme-lv/backend/tasksrvc"
 	"github.com/programme-lv/backend/user"
 )
@@ -28,7 +28,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("error creating task service: %v", err)
 	}
-	submSrvc := subm.NewSubmissions(taskSrvc)
+	submSrvc := submsrvc.NewSubmissions(taskSrvc)
 	userSrvc := user.NewUsers()
 	httpServer := http.NewHttpServer(submSrvc, userSrvc, taskSrvc,
 		[]byte(jwtKey))

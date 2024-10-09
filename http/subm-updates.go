@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/programme-lv/backend/subm"
+	"github.com/programme-lv/backend/submsrvc"
 )
 
 func (httpserver *HttpServer) listenToSubmUpdates(w http.ResponseWriter, r *http.Request) {
@@ -62,7 +62,7 @@ func (httpserver *HttpServer) listenToSubmUpdates(w http.ResponseWriter, r *http
 		TestsScoreUpdate   *TestsScoreUpdate      `json:"tests_score_update"`
 	}
 
-	mapTestsScoreUpdate := func(update *subm.TestsScoreUpdate) *TestsScoreUpdate {
+	mapTestsScoreUpdate := func(update *submsrvc.TestsScoreUpdate) *TestsScoreUpdate {
 		if update == nil {
 			return nil
 		}
@@ -75,7 +75,7 @@ func (httpserver *HttpServer) listenToSubmUpdates(w http.ResponseWriter, r *http
 		}
 	}
 
-	mapStateUpdate := func(update *subm.SubmissionStateUpdate) *SubmissionStateUpdate {
+	mapStateUpdate := func(update *submsrvc.SubmissionStateUpdate) *SubmissionStateUpdate {
 		if update == nil {
 			return nil
 		}
@@ -86,7 +86,7 @@ func (httpserver *HttpServer) listenToSubmUpdates(w http.ResponseWriter, r *http
 		}
 	}
 
-	mapTestgroupResUpdate := func(update *subm.TestgroupScoreUpdate) *TestGroupScoreUpdate {
+	mapTestgroupResUpdate := func(update *submsrvc.TestgroupScoreUpdate) *TestGroupScoreUpdate {
 		if update == nil {
 			return nil
 		}
@@ -147,12 +147,12 @@ func (httpserver *HttpServer) listenToSubmUpdates(w http.ResponseWriter, r *http
 }
 
 type submUpdateListener struct {
-	updateChan chan *subm.SubmissionListUpdate
+	updateChan chan *submsrvc.SubmissionListUpdate
 	mutex      *sync.Mutex
 	closed     bool
 }
 
-func (l *submUpdateListener) Send(update *subm.SubmissionListUpdate) error {
+func (l *submUpdateListener) Send(update *submsrvc.SubmissionListUpdate) error {
 	l.mutex.Lock()
 	defer l.mutex.Unlock()
 	if l.closed {
@@ -173,13 +173,13 @@ func (l *submUpdateListener) Close() error {
 	return nil
 }
 
-func (l *submUpdateListener) Listen() chan *subm.SubmissionListUpdate {
+func (l *submUpdateListener) Listen() chan *submsrvc.SubmissionListUpdate {
 	return l.updateChan
 }
 
 func newSubmUpdateListener() *submUpdateListener {
 	return &submUpdateListener{
-		updateChan: make(chan *subm.SubmissionListUpdate, 10000),
+		updateChan: make(chan *submsrvc.SubmissionListUpdate, 10000),
 		mutex:      &sync.Mutex{},
 		closed:     false,
 	}

@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/go-chi/httplog/v2"
-	"github.com/programme-lv/backend/subm"
+	"github.com/programme-lv/backend/submsrvc"
 )
 
 func (httpserver *HttpServer) createSubmission(w http.ResponseWriter, r *http.Request) {
@@ -25,7 +25,7 @@ func (httpserver *HttpServer) createSubmission(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	subm, err := httpserver.submSrvc.CreateSubmission(r.Context(), &subm.CreateSubmissionPayload{
+	subm, err := httpserver.submSrvc.CreateSubmission(r.Context(), &submsrvc.CreateSubmissionPayload{
 		Submission:        request.Submission,
 		Username:          request.Username,
 		ProgrammingLangID: request.ProgrammingLangID,
