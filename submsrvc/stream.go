@@ -4,51 +4,51 @@ import "context"
 
 func (s *SubmissionSrvc) StartStreamingSubmListUpdates(ctx context.Context) {
 	sendUpdate := func(update *SubmissionListUpdate) {
-		s.updateListenerLock.Lock()
-		for _, listener := range s.updateListeners {
+		s.listenerLock.Lock()
+		for _, listener := range s.listeners {
 			if len(listener) == cap(listener) {
 				<-listener
 			}
 			listener <- update
 		}
-		s.updateListenerLock.Unlock()
+		s.listenerLock.Unlock()
 	}
 
 	for {
 		select {
-		case created := <-s.createdSubmChan:
+		case created := <-s.createNewSubmChan:
 			// notify all listeners about the new submission
 			update := &SubmissionListUpdate{
 				SubmCreated: created,
 			}
 			sendUpdate(update)
-		case stateUpdate := <-s.updateSubmStateChan:
+		case stateUpdate := <-s.updateSubmEvalStageChan:
 			// notify all listeners about the state update
 			update := &SubmissionListUpdate{
-				StateUpdate: &SubmissionStateUpdate{
+				StateUpdate: &SubmEvalStageUpdate{
 					SubmUuid: stateUpdate.SubmUuid,
 					EvalUuid: stateUpdate.EvalUuid,
-					NewState: stateUpdate.NewState,
+					NewStage: stateUpdate.NewStage,
 				},
 			}
 			sendUpdate(update)
-		case testgroupResUpdate := <-s.updateTestgroupResChan:
+		case testgroupScoringResUpdate := <-s.updateTestGroupScoreChan:
 			// notify all listeners about the testgroup result update
 			update := &SubmissionListUpdate{
 				TestgroupResUpdate: &TestgroupScoreUpdate{
-					SubmUUID:      testgroupResUpdate.SubmUuid,
-					EvalUUID:      testgroupResUpdate.EvalUuid,
-					TestGroupID:   testgroupResUpdate.TestgroupId,
-					AcceptedTests: testgroupResUpdate.AcceptedTests,
-					WrongTests:    testgroupResUpdate.WrongTests,
-					UntestedTests: testgroupResUpdate.UntestedTests,
+					SubmUUID:      testgroupScoringResUpdate.SubmUuid,
+					EvalUUID:      testgroupScoringResUpdate.EvalUuid,
+					TestGroupID:   testgroupScoringResUpdate.TestgroupId,
+					AcceptedTests: testgroupScoringResUpdate.AcceptedTests,
+					WrongTests:    testgroupScoringResUpdate.WrongTests,
+					UntestedTests: testgroupScoringResUpdate.UntestedTests,
 				},
 			}
 
 			sendUpdate(update)
-		case testsResUpdate := <-s.updateTestsResChan:
+		case atomicTestsScoringResUpdate := <-s.updateTestScoreChan:
 			update := &SubmissionListUpdate{
-				TestsResUpdate: testsResUpdate,
+				TestsResUpdate: atomicTestsScoringResUpdate,
 			}
 
 			sendUpdate(update)
@@ -65,21 +65,21 @@ type Streamee interface {
 func (s *SubmissionSrvc) StreamSubmissionUpdates(ctx context.Context, stream Streamee) (err error) {
 	// register myself as a listener to the submission updates
 	myChan := make(chan *SubmissionListUpdate, 10000)
-	s.updateListenerLock.Lock()
-	s.updateListeners = append(s.updateListeners, myChan)
-	s.updateListenerLock.Unlock()
+	s.listenerLock.Lock()
+	s.listeners = append(s.listeners, myChan)
+	s.listenerLock.Unlock()
 
 	defer func() {
 		// lock listener slice
-		s.updateListenerLock.Lock()
+		s.listenerLock.Lock()
 		// remove myself from the listeners slice
-		for i, listener := range s.updateListeners {
+		for i, listener := range s.listeners {
 			if listener == myChan {
-				s.updateListeners = append(s.updateListeners[:i], s.updateListeners[i+1:]...)
+				s.listeners = append(s.listeners[:i], s.listeners[i+1:]...)
 				break
 			}
 		}
-		s.updateListenerLock.Unlock()
+		s.listenerLock.Unlock()
 		close(myChan)
 	}()
 

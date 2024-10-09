@@ -12,7 +12,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/aws/retry"
 	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/programme-lv/backend/tasksrvc"
 	"github.com/programme-lv/backend/user"
@@ -21,24 +20,22 @@ import (
 // submissions service example implementation.
 // The example methods log the requests and return zero values.
 type SubmissionSrvc struct {
-	ddbClient      *dynamodb.Client
-	submTableName  string
-	userSrvc       *user.UserService
-	taskSrvc       *tasksrvc.TaskService
-	sqsClient      *sqs.Client
-	submSqsUrl     string
-	responseSqsUrl string
+	userSrvc *user.UserService
+	taskSrvc *tasksrvc.TaskService
 
-	createdSubmChan        chan *BriefSubmission
-	updateSubmStateChan    chan *SubmissionStateUpdate
-	updateTestgroupResChan chan *TestgroupResultUpdate
-	updateTestsResChan     chan *TestsScoreUpdate
+	sqsClient  *sqs.Client
+	submSqsUrl string
+	resSqsUrl  string
 
-	updateListenerLock     sync.Mutex
-	updateListeners        []chan *SubmissionListUpdate
-	updateRemovedListeners []chan *SubmissionListUpdate
+	// real-time updates
+	createNewSubmChan        chan *BriefSubmission
+	updateSubmEvalStageChan  chan *SubmEvalStageUpdate
+	updateTestGroupScoreChan chan *TestGroupScoreUpdate
+	updateTestScoreChan      chan *TestScoreUpdate
+	listenerLock             sync.Mutex
+	listeners                []chan *SubmissionListUpdate
 
-	evalUuidToSubmUuid map[string]string
+	evalUuidToSubmUuid sync.Map
 }
 
 // NewSubmissions returns the submissions service implementation.
@@ -52,7 +49,6 @@ func NewSubmissions(taskSrvc *tasksrvc.TaskService) *SubmissionSrvc {
 	if err != nil {
 		panic(fmt.Sprintf("unable to load SDK config, %v", err))
 	}
-	dynamodbClient := dynamodb.NewFromConfig(cfg)
 
 	submTableName := os.Getenv("DDB_SUBM_TABLE_NAME")
 	if submTableName == "" {
@@ -73,21 +69,18 @@ func NewSubmissions(taskSrvc *tasksrvc.TaskService) *SubmissionSrvc {
 	}
 
 	srvc := &SubmissionSrvc{
-		ddbClient:              dynamodbClient,
-		submTableName:          submTableName,
-		userSrvc:               user.NewUsers(),
-		taskSrvc:               taskSrvc,
-		sqsClient:              sqsClient,
-		submSqsUrl:             submQueueUrl,
-		createdSubmChan:        make(chan *BriefSubmission, 1000),
-		updateSubmStateChan:    make(chan *SubmissionStateUpdate, 1000),
-		updateTestgroupResChan: make(chan *TestgroupResultUpdate, 1000),
-		updateTestsResChan:     make(chan *TestsScoreUpdate, 1000),
-		updateListenerLock:     sync.Mutex{},
-		updateListeners:        make([]chan *SubmissionListUpdate, 0, 100),
-		updateRemovedListeners: make([]chan *SubmissionListUpdate, 0, 100),
-		evalUuidToSubmUuid:     map[string]string{},
-		responseSqsUrl:         responseSQSURL,
+		userSrvc:                 user.NewUsers(),
+		taskSrvc:                 taskSrvc,
+		sqsClient:                sqsClient,
+		submSqsUrl:               submQueueUrl,
+		createNewSubmChan:        make(chan *BriefSubmission, 1000),
+		updateSubmEvalStageChan:  make(chan *SubmEvalStageUpdate, 1000),
+		updateTestGroupScoreChan: make(chan *TestGroupScoreUpdate, 1000),
+		updateTestScoreChan:      make(chan *TestScoreUpdate, 1000),
+		listenerLock:             sync.Mutex{},
+		listeners:                make([]chan *SubmissionListUpdate, 0, 100),
+		evalUuidToSubmUuid:       sync.Map{},
+		resSqsUrl:                responseSQSURL,
 	}
 
 	go srvc.StartProcessingSubmEvalResults(context.TODO())
@@ -97,7 +90,7 @@ func NewSubmissions(taskSrvc *tasksrvc.TaskService) *SubmissionSrvc {
 }
 
 func (s *SubmissionSrvc) StartProcessingSubmEvalResults(ctx context.Context) (err error) {
-	submEvalResQueueUrl := s.responseSqsUrl
+	submEvalResQueueUrl := s.resSqsUrl
 	throtleChan := make(chan struct{}, 20)
 	for i := 0; i < 20; i++ {
 		throtleChan <- struct{}{}

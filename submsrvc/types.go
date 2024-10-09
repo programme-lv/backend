@@ -87,9 +87,9 @@ type FullSubmission struct {
 
 type SubmissionListUpdate struct {
 	SubmCreated        *BriefSubmission
-	StateUpdate        *SubmissionStateUpdate
+	StateUpdate        *SubmEvalStageUpdate
 	TestgroupResUpdate *TestgroupScoreUpdate
-	TestsResUpdate     *TestsScoreUpdate
+	TestsResUpdate     *TestScoreUpdate
 }
 
 type SubtaskResult struct {
@@ -124,13 +124,13 @@ type TestsResult struct {
 	Untested int
 }
 
-type SubmissionStateUpdate struct {
+type SubmEvalStageUpdate struct {
 	SubmUuid string
 	EvalUuid string
-	NewState string
+	NewStage string
 }
 
-type TestgroupResultUpdate struct {
+type TestGroupScoreUpdate struct {
 	SubmUuid      string
 	EvalUuid      string
 	TestgroupId   int
@@ -139,7 +139,7 @@ type TestgroupResultUpdate struct {
 	UntestedTests int
 }
 
-type TestsScoreUpdate struct {
+type TestScoreUpdate struct {
 	SubmUuid string
 	EvalUuid string
 	Accepted int

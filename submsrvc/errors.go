@@ -9,7 +9,7 @@ import (
 
 const ErrCodeSubmissionTooLong = "submission_too_long"
 
-func newErrSubmissionTooLong(maxSubmLengthKB int) *srvcerr.Error {
+func NewErrSubmissionTooLong(maxSubmLengthKB int) *srvcerr.Error {
 	return srvcerr.New(
 		ErrCodeSubmissionTooLong,
 		fmt.Sprintf("Iesūtījuma kods ir pārāk garš, maksimālais garums ir %d KB", maxSubmLengthKB),
@@ -18,7 +18,7 @@ func newErrSubmissionTooLong(maxSubmLengthKB int) *srvcerr.Error {
 
 const ErrCodeTaskNotFound = "task_not_found"
 
-func newErrTaskNotFound() *srvcerr.Error {
+func NewErrTaskNotFound() *srvcerr.Error {
 	return srvcerr.New(
 		ErrCodeTaskNotFound,
 		"Atbilstošais uzdevums netika atrasts",
@@ -27,7 +27,7 @@ func newErrTaskNotFound() *srvcerr.Error {
 
 const ErrCodeUserNotFound = "user_not_found"
 
-func newErrUserNotFound() *srvcerr.Error {
+func NewErrUserNotFound() *srvcerr.Error {
 	return srvcerr.New(
 		ErrCodeUserNotFound,
 		"Norādītais lietotājs netika atrasts",
@@ -36,7 +36,7 @@ func newErrUserNotFound() *srvcerr.Error {
 
 const ErrCodeInvalidProgLang = "invalid_programming_language"
 
-func newErrInvalidProgLang() *srvcerr.Error {
+func NewErrInvalidProgLang() *srvcerr.Error {
 	return srvcerr.New(
 		ErrCodeInvalidProgLang,
 		"Nederīga programmēšanas valoda",
@@ -45,14 +45,14 @@ func newErrInvalidProgLang() *srvcerr.Error {
 
 const ErrCodeUnauthorized = "unauthorized_access"
 
-func newErrUnauthorizedUsernameMismatch() *srvcerr.Error {
+func NewErrUnauthorizedUsernameMismatch() *srvcerr.Error {
 	return srvcerr.New(
 		ErrCodeUnauthorized,
 		"JWT norādītais lietotājvārds nesakrīt ar pieprasīto lietotājvārdu",
 	).SetHttpStatusCode(http.StatusUnauthorized)
 }
 
-func newErrJwtTokenMissing() *srvcerr.Error {
+func NewErrJwtTokenMissing() *srvcerr.Error {
 	return srvcerr.New(
 		ErrCodeUnauthorized,
 		"JWT netika atrasts",
@@ -61,7 +61,7 @@ func newErrJwtTokenMissing() *srvcerr.Error {
 
 const ErrCodeSubmissionNotFound = "submission_not_found"
 
-func newErrSubmissionNotFound() *srvcerr.Error {
+func NewErrSubmissionNotFound() *srvcerr.Error {
 	return srvcerr.New(
 		ErrCodeSubmissionNotFound,
 		"Atbilstošais iesūtījums netika atrasts",
