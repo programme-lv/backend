@@ -396,8 +396,9 @@ func uploadTask(fsTask *fstask.Task, shortId string) error {
 	subtasks := make([]tasksrvc.Subtask, 0)
 	for _, subtask := range fsTask.Subtasks {
 		subtasks = append(subtasks, tasksrvc.Subtask{
-			Score:   subtask.Points,
-			TestIDs: subtask.TestIDs,
+			Score:        subtask.Points,
+			TestIDs:      subtask.TestIDs,
+			Descriptions: subtask.Descriptions,
 		})
 	}
 

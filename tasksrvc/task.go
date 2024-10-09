@@ -67,6 +67,8 @@ type MarkdownStatement struct {
 type Subtask struct {
 	Score   int
 	TestIDs []int
+
+	Descriptions map[string]string
 }
 
 type SubtaskWithId struct {

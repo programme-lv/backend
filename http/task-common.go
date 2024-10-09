@@ -41,6 +41,13 @@ type Task struct {
 	DefaultPDFStatementURL *string           `json:"default_pdf_statement_url"`
 	OriginNotes            map[string]string `json:"origin_notes"`
 	VisibleInputSubtasks   []VisInputSubtask `json:"visible_input_subtasks"`
+	StatementSubtasks      []SubtaskOverview `json:"statement_subtasks"`
+}
+
+type SubtaskOverview struct {
+	SubtaskID    int               `json:"subtask"`
+	Score        int               `json:"score"`
+	Descriptions map[string]string `json:"descriptions"`
 }
 
 func mapTaskMdStatement(md *tasksrvc.MarkdownStatement) MdStatement {
@@ -136,6 +143,15 @@ func mapTaskResponse(task *tasksrvc.Task) *Task {
 		})
 	}
 
+	subtasks := make([]SubtaskOverview, 0)
+	for i, subtask := range task.Subtasks {
+		subtasks = append(subtasks, SubtaskOverview{
+			SubtaskID:    i + 1,
+			Score:        subtask.Score,
+			Descriptions: subtask.Descriptions,
+		})
+	}
+
 	response := &Task{
 		PublishedTaskID:        task.ShortId,
 		TaskFullName:           task.FullName,
@@ -149,6 +165,7 @@ func mapTaskResponse(task *tasksrvc.Task) *Task {
 		DefaultPDFStatementURL: defaultPdfStatementUrl,
 		OriginNotes:            originNotesAsAMap,
 		VisibleInputSubtasks:   visInputSubtasks,
+		StatementSubtasks:      subtasks,
 	}
 	return response
 }
