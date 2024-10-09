@@ -11,7 +11,7 @@ CREATE TABLE submissions (
     task_id TEXT NOT NULL,
     prog_lang_id TEXT NOT NULL,
     current_eval_uuid UUID,
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 
 -- Table: evaluations
@@ -40,7 +40,7 @@ CREATE TABLE evaluations (
     programming_lang_compile_command TEXT,
     programming_lang_compiled_fname TEXT,
     programming_lang_exec_command TEXT NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 
 -- Table: evaluation_tests

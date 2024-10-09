@@ -2,14 +2,6 @@ package submsrvc
 
 import "time"
 
-type CreateSubmissionPayload struct {
-	Submission        string
-	Username          string
-	ProgrammingLangID string
-	TaskCodeID        string
-	Token             string
-}
-
 type BriefSubmission struct {
 	SubmUUID              string
 	Username              string
