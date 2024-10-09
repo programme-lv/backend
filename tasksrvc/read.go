@@ -44,5 +44,6 @@ func replaceUuids(uuidToUrl map[string]string, text string) string {
 	for k, v := range uuidToUrl {
 		text = strings.ReplaceAll(text, k, v)
 	}
+	text = strings.ReplaceAll(text, "https://proglv-public.s3.eu-central-1.amazonaws.com/", PublicCloudfrontEndpoint)
 	return text
 }
