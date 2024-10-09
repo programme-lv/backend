@@ -535,5 +535,5 @@ func (s *SubmissionSrvc) CreateSubmission(ctx context.Context, p *CreateSubmissi
 		return nil, newErrInvalidProgLang()
 	}
 
-	return s.createSubmissionWithValidatedInput(&submContent.Value, userByUsername, task, foundPLang)
+	return s.createSubmissionWithValidatedInput(&submContent.Value, userByUsername, &task, foundPLang)
 }

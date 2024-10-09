@@ -17,7 +17,7 @@ func (httpserver *HttpServer) getTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response := mapTaskResponse(task)
+	response := mapTaskResponse(&task)
 
 	writeJsonSuccessResponse(w, response)
 }
