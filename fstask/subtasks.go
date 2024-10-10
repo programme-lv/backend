@@ -20,6 +20,7 @@ func ReadSubtasksFromDir(dir TaskDir) ([]Subtask, error) {
 			Points       int               `toml:"points"`
 			Descriptions map[string]string `toml:"descriptions"`
 			Tests        []interface{}     `toml:"tests"`
+			TestGroups   []int             `toml:"test_groups"`
 		}
 	}{}
 
@@ -44,11 +45,23 @@ func ReadSubtasksFromDir(dir TaskDir) ([]Subtask, error) {
 		return nil, fmt.Errorf("consecutive subtask IDs must end with %d", len(x.Subtasks))
 	}
 
+	testGroups, err := ReadTestGroupsFromDir(dir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read test groups: %w", err)
+	}
+
 	subtasks := make([]Subtask, 0)
 	for _, v := range x.Subtasks {
 		testIDs, err := findTestIDs(dir, v.Tests)
 		if err != nil {
 			return nil, fmt.Errorf("failed to translate test references to IDs: %w", err)
+		}
+		for _, testGroupID := range v.TestGroups {
+			for i, testGroup := range testGroups {
+				if i+1 == testGroupID {
+					testIDs = append(testIDs, testGroup.TestIDs...)
+				}
+			}
 		}
 		subtasks = append(subtasks, Subtask{
 			Points:       v.Points,

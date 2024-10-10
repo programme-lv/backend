@@ -65,6 +65,12 @@ func main() {
 					log.Fatal().Err(err).Msg("Transform task failed")
 				}
 				log.Info().Msg("Transform task completed successfully")
+			case "lio2024":
+				err := transformLio2024Task(src, dst)
+				if err != nil {
+					log.Fatal().Err(err).Msg("Transform task failed")
+				}
+				log.Info().Msg("Transform task completed successfully")
 			default:
 				log.Fatal().Str("format", format).Msg("Unsupported format")
 			}
