@@ -1,0 +1,1 @@
+ALTER TABLE evaluations DROP COLUMN subm_uuid;

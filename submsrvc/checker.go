@@ -1,6 +1,6 @@
-package task
+package submsrvc
 
-var testlib_default_checker string = `#include "testlib.h"
+const TestlibDefaultChecker string = `#include "testlib.h"
 
 using namespace std;
 

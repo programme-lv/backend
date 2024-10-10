@@ -9,7 +9,6 @@ package model
 
 import (
 	"github.com/google/uuid"
-	"time"
 )
 
 type EvaluationScoringTestgroups struct {
@@ -20,5 +19,4 @@ type EvaluationScoringTestgroups struct {
 	Accepted          int32
 	Wrong             int32
 	Untested          int32
-	CreatedAt         time.Time
 }

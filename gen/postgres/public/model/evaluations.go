@@ -14,11 +14,10 @@ import (
 
 type Evaluations struct {
 	EvalUUID                      uuid.UUID `sql:"primary_key"`
-	SubmUUID                      *uuid.UUID
 	EvaluationStage               string
 	ScoringMethod                 string
-	CPUTimeLimitMillis            *int32
-	MemLimitKibiBytes             *int32
+	CPUTimeLimitMillis            int32
+	MemLimitKibiBytes             int32
 	ErrorMessage                  *string
 	TestlibCheckerCode            string
 	SystemInformation             *string

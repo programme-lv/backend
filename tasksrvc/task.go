@@ -87,6 +87,7 @@ type Test struct {
 	AnsSha2 string
 }
 
+// s3://proglv-tests/00a312d5348215f1afb97748059facead3a63babeb7ca24eea4eec012e8ee6bf.zst
 func (test *Test) FullInputS3URI() string {
 	format := "s3://proglv-tests/%s.zst"
 	return fmt.Sprintf(format, test.InpSha2)
@@ -94,6 +95,17 @@ func (test *Test) FullInputS3URI() string {
 
 func (test *Test) FullAnswerS3URI() string {
 	format := "s3://proglv-tests/%s.zst"
+	return fmt.Sprintf(format, test.AnsSha2)
+}
+
+// https://proglv-tests.s3.eu-central-1.amazonaws.com/00a312d5348215f1afb97748059facead3a63babeb7ca24eea4eec012e8ee6bf.zst
+func (test *Test) FullInputS3URL() string {
+	format := "https://proglv-tests.s3.eu-central-1.amazonaws.com/%s.zst"
+	return fmt.Sprintf(format, test.InpSha2)
+}
+
+func (test *Test) FullAnswerS3URL() string {
+	format := "https://proglv-tests.s3.eu-central-1.amazonaws.com/%s.zst"
 	return fmt.Sprintf(format, test.AnsSha2)
 }
 

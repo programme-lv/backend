@@ -9,7 +9,6 @@ package model
 
 import (
 	"github.com/google/uuid"
-	"time"
 )
 
 type EvaluationTests struct {
@@ -42,5 +41,4 @@ type EvaluationTests struct {
 	SubmIsolateStatus        *string
 	Subtasks                 *string
 	Testgroups               *string
-	CreatedAt                time.Time
 }

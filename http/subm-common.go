@@ -162,7 +162,7 @@ func mapBriefSubm(x *submsrvc.Submission) *BriefSubmission {
 	}
 }
 
-func mapTestGroupScoring(x *submsrvc.TestGroupScoringRes) []TestGroupScore {
+func mapTestGroupScoring(x []submsrvc.TestGroupScoringRes) []TestGroupScore {
 	if x == nil {
 		return nil
 	}
@@ -178,7 +178,7 @@ func mapTestsScore(x *submsrvc.TestSetScoringRes) *TestsScore {
 	return &TestsScore{}
 }
 
-func mapSubtasksScore(x *submsrvc.SubtaskScoringRes) []SubtaskScore {
+func mapSubtasksScore(x []submsrvc.SubtaskScoringRes) []SubtaskScore {
 	if x == nil {
 		return nil
 	}

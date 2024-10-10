@@ -12,6 +12,7 @@ package table
 func UseSchema(schema string) {
 	EvaluationScoringSubtasks = EvaluationScoringSubtasks.FromSchema(schema)
 	EvaluationScoringTestgroups = EvaluationScoringTestgroups.FromSchema(schema)
+	EvaluationScoringTestset = EvaluationScoringTestset.FromSchema(schema)
 	EvaluationTests = EvaluationTests.FromSchema(schema)
 	Evaluations = Evaluations.FromSchema(schema)
 	SchemaMigrations = SchemaMigrations.FromSchema(schema)

@@ -24,7 +24,6 @@ type evaluationScoringTestgroupsTable struct {
 	Accepted          postgres.ColumnInteger
 	Wrong             postgres.ColumnInteger
 	Untested          postgres.ColumnInteger
-	CreatedAt         postgres.ColumnTimestampz
 
 	AllColumns     postgres.ColumnList
 	MutableColumns postgres.ColumnList
@@ -72,9 +71,8 @@ func newEvaluationScoringTestgroupsTableImpl(schemaName, tableName, alias string
 		AcceptedColumn          = postgres.IntegerColumn("accepted")
 		WrongColumn             = postgres.IntegerColumn("wrong")
 		UntestedColumn          = postgres.IntegerColumn("untested")
-		CreatedAtColumn         = postgres.TimestampzColumn("created_at")
-		allColumns              = postgres.ColumnList{EvalUUIDColumn, TestgroupIDColumn, StatementSubtasksColumn, TestgroupPointsColumn, AcceptedColumn, WrongColumn, UntestedColumn, CreatedAtColumn}
-		mutableColumns          = postgres.ColumnList{StatementSubtasksColumn, TestgroupPointsColumn, AcceptedColumn, WrongColumn, UntestedColumn, CreatedAtColumn}
+		allColumns              = postgres.ColumnList{EvalUUIDColumn, TestgroupIDColumn, StatementSubtasksColumn, TestgroupPointsColumn, AcceptedColumn, WrongColumn, UntestedColumn}
+		mutableColumns          = postgres.ColumnList{StatementSubtasksColumn, TestgroupPointsColumn, AcceptedColumn, WrongColumn, UntestedColumn}
 	)
 
 	return evaluationScoringTestgroupsTable{
@@ -88,7 +86,6 @@ func newEvaluationScoringTestgroupsTableImpl(schemaName, tableName, alias string
 		Accepted:          AcceptedColumn,
 		Wrong:             WrongColumn,
 		Untested:          UntestedColumn,
-		CreatedAt:         CreatedAtColumn,
 
 		AllColumns:     allColumns,
 		MutableColumns: mutableColumns,

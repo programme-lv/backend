@@ -1,0 +1,1 @@
+ALTER TABLE evaluation_tests DROP COLUMN created_at;

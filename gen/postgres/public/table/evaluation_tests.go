@@ -46,7 +46,6 @@ type evaluationTestsTable struct {
 	SubmIsolateStatus        postgres.ColumnString
 	Subtasks                 postgres.ColumnString
 	Testgroups               postgres.ColumnString
-	CreatedAt                postgres.ColumnTimestampz
 
 	AllColumns     postgres.ColumnList
 	MutableColumns postgres.ColumnList
@@ -116,9 +115,8 @@ func newEvaluationTestsTableImpl(schemaName, tableName, alias string) evaluation
 		SubmIsolateStatusColumn        = postgres.StringColumn("subm_isolate_status")
 		SubtasksColumn                 = postgres.StringColumn("subtasks")
 		TestgroupsColumn               = postgres.StringColumn("testgroups")
-		CreatedAtColumn                = postgres.TimestampzColumn("created_at")
-		allColumns                     = postgres.ColumnList{EvalUUIDColumn, TestIDColumn, FullInputS3URLColumn, FullAnswerS3URLColumn, ReachedColumn, IgnoredColumn, FinishedColumn, InputTrimmedColumn, AnswerTrimmedColumn, CheckerStdoutColumn, CheckerStderrColumn, CheckerExitCodeColumn, CheckerCPUTimeMillisColumn, CheckerWallTimeMillisColumn, CheckerMemoryKibiBytesColumn, CheckerCtxSwitchesForcedColumn, CheckerExitSignalColumn, CheckerIsolateStatusColumn, SubmStdoutColumn, SubmStderrColumn, SubmExitCodeColumn, SubmCPUTimeMillisColumn, SubmWallTimeMillisColumn, SubmMemoryKibiBytesColumn, SubmCtxSwitchesForcedColumn, SubmExitSignalColumn, SubmIsolateStatusColumn, SubtasksColumn, TestgroupsColumn, CreatedAtColumn}
-		mutableColumns                 = postgres.ColumnList{FullInputS3URLColumn, FullAnswerS3URLColumn, ReachedColumn, IgnoredColumn, FinishedColumn, InputTrimmedColumn, AnswerTrimmedColumn, CheckerStdoutColumn, CheckerStderrColumn, CheckerExitCodeColumn, CheckerCPUTimeMillisColumn, CheckerWallTimeMillisColumn, CheckerMemoryKibiBytesColumn, CheckerCtxSwitchesForcedColumn, CheckerExitSignalColumn, CheckerIsolateStatusColumn, SubmStdoutColumn, SubmStderrColumn, SubmExitCodeColumn, SubmCPUTimeMillisColumn, SubmWallTimeMillisColumn, SubmMemoryKibiBytesColumn, SubmCtxSwitchesForcedColumn, SubmExitSignalColumn, SubmIsolateStatusColumn, SubtasksColumn, TestgroupsColumn, CreatedAtColumn}
+		allColumns                     = postgres.ColumnList{EvalUUIDColumn, TestIDColumn, FullInputS3URLColumn, FullAnswerS3URLColumn, ReachedColumn, IgnoredColumn, FinishedColumn, InputTrimmedColumn, AnswerTrimmedColumn, CheckerStdoutColumn, CheckerStderrColumn, CheckerExitCodeColumn, CheckerCPUTimeMillisColumn, CheckerWallTimeMillisColumn, CheckerMemoryKibiBytesColumn, CheckerCtxSwitchesForcedColumn, CheckerExitSignalColumn, CheckerIsolateStatusColumn, SubmStdoutColumn, SubmStderrColumn, SubmExitCodeColumn, SubmCPUTimeMillisColumn, SubmWallTimeMillisColumn, SubmMemoryKibiBytesColumn, SubmCtxSwitchesForcedColumn, SubmExitSignalColumn, SubmIsolateStatusColumn, SubtasksColumn, TestgroupsColumn}
+		mutableColumns                 = postgres.ColumnList{FullInputS3URLColumn, FullAnswerS3URLColumn, ReachedColumn, IgnoredColumn, FinishedColumn, InputTrimmedColumn, AnswerTrimmedColumn, CheckerStdoutColumn, CheckerStderrColumn, CheckerExitCodeColumn, CheckerCPUTimeMillisColumn, CheckerWallTimeMillisColumn, CheckerMemoryKibiBytesColumn, CheckerCtxSwitchesForcedColumn, CheckerExitSignalColumn, CheckerIsolateStatusColumn, SubmStdoutColumn, SubmStderrColumn, SubmExitCodeColumn, SubmCPUTimeMillisColumn, SubmWallTimeMillisColumn, SubmMemoryKibiBytesColumn, SubmCtxSwitchesForcedColumn, SubmExitSignalColumn, SubmIsolateStatusColumn, SubtasksColumn, TestgroupsColumn}
 	)
 
 	return evaluationTestsTable{
@@ -154,7 +152,6 @@ func newEvaluationTestsTableImpl(schemaName, tableName, alias string) evaluation
 		SubmIsolateStatus:        SubmIsolateStatusColumn,
 		Subtasks:                 SubtasksColumn,
 		Testgroups:               TestgroupsColumn,
-		CreatedAt:                CreatedAtColumn,
 
 		AllColumns:     allColumns,
 		MutableColumns: mutableColumns,

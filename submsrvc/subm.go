@@ -25,8 +25,8 @@ type Evaluation struct {
 	Stage     string
 	CreatedAt time.Time
 
-	ScoreBySubtasks   *SubtaskScoringRes
-	ScoreByTestGroups *TestGroupScoringRes
+	ScoreBySubtasks   []SubtaskScoringRes
+	ScoreByTestGroups []TestGroupScoringRes
 	ScoreByTestSets   *TestSetScoringRes
 }
 

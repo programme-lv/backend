@@ -18,7 +18,6 @@ type evaluationsTable struct {
 
 	// Columns
 	EvalUUID                      postgres.ColumnString
-	SubmUUID                      postgres.ColumnString
 	EvaluationStage               postgres.ColumnString
 	ScoringMethod                 postgres.ColumnString
 	CPUTimeLimitMillis            postgres.ColumnInteger
@@ -83,7 +82,6 @@ func newEvaluationsTable(schemaName, tableName, alias string) *EvaluationsTable 
 func newEvaluationsTableImpl(schemaName, tableName, alias string) evaluationsTable {
 	var (
 		EvalUUIDColumn                      = postgres.StringColumn("eval_uuid")
-		SubmUUIDColumn                      = postgres.StringColumn("subm_uuid")
 		EvaluationStageColumn               = postgres.StringColumn("evaluation_stage")
 		ScoringMethodColumn                 = postgres.StringColumn("scoring_method")
 		CPUTimeLimitMillisColumn            = postgres.IntegerColumn("cpu_time_limit_millis")
@@ -107,8 +105,8 @@ func newEvaluationsTableImpl(schemaName, tableName, alias string) evaluationsTab
 		ProgrammingLangCompiledFnameColumn  = postgres.StringColumn("programming_lang_compiled_fname")
 		ProgrammingLangExecCommandColumn    = postgres.StringColumn("programming_lang_exec_command")
 		CreatedAtColumn                     = postgres.TimestampzColumn("created_at")
-		allColumns                          = postgres.ColumnList{EvalUUIDColumn, SubmUUIDColumn, EvaluationStageColumn, ScoringMethodColumn, CPUTimeLimitMillisColumn, MemLimitKibiBytesColumn, ErrorMessageColumn, TestlibCheckerCodeColumn, SystemInformationColumn, SubmCompileStdoutColumn, SubmCompileStderrColumn, SubmCompileExitCodeColumn, SubmCompileCPUTimeMillisColumn, SubmCompileWallTimeMillisColumn, SubmCompileMemoryKibiBytesColumn, SubmCompileCtxSwitchesForcedColumn, SubmCompileExitSignalColumn, SubmCompileIsolateStatusColumn, ProgrammingLangIDColumn, ProgrammingLangDisplayNameColumn, ProgrammingLangSubmCodeFnameColumn, ProgrammingLangCompileCommandColumn, ProgrammingLangCompiledFnameColumn, ProgrammingLangExecCommandColumn, CreatedAtColumn}
-		mutableColumns                      = postgres.ColumnList{SubmUUIDColumn, EvaluationStageColumn, ScoringMethodColumn, CPUTimeLimitMillisColumn, MemLimitKibiBytesColumn, ErrorMessageColumn, TestlibCheckerCodeColumn, SystemInformationColumn, SubmCompileStdoutColumn, SubmCompileStderrColumn, SubmCompileExitCodeColumn, SubmCompileCPUTimeMillisColumn, SubmCompileWallTimeMillisColumn, SubmCompileMemoryKibiBytesColumn, SubmCompileCtxSwitchesForcedColumn, SubmCompileExitSignalColumn, SubmCompileIsolateStatusColumn, ProgrammingLangIDColumn, ProgrammingLangDisplayNameColumn, ProgrammingLangSubmCodeFnameColumn, ProgrammingLangCompileCommandColumn, ProgrammingLangCompiledFnameColumn, ProgrammingLangExecCommandColumn, CreatedAtColumn}
+		allColumns                          = postgres.ColumnList{EvalUUIDColumn, EvaluationStageColumn, ScoringMethodColumn, CPUTimeLimitMillisColumn, MemLimitKibiBytesColumn, ErrorMessageColumn, TestlibCheckerCodeColumn, SystemInformationColumn, SubmCompileStdoutColumn, SubmCompileStderrColumn, SubmCompileExitCodeColumn, SubmCompileCPUTimeMillisColumn, SubmCompileWallTimeMillisColumn, SubmCompileMemoryKibiBytesColumn, SubmCompileCtxSwitchesForcedColumn, SubmCompileExitSignalColumn, SubmCompileIsolateStatusColumn, ProgrammingLangIDColumn, ProgrammingLangDisplayNameColumn, ProgrammingLangSubmCodeFnameColumn, ProgrammingLangCompileCommandColumn, ProgrammingLangCompiledFnameColumn, ProgrammingLangExecCommandColumn, CreatedAtColumn}
+		mutableColumns                      = postgres.ColumnList{EvaluationStageColumn, ScoringMethodColumn, CPUTimeLimitMillisColumn, MemLimitKibiBytesColumn, ErrorMessageColumn, TestlibCheckerCodeColumn, SystemInformationColumn, SubmCompileStdoutColumn, SubmCompileStderrColumn, SubmCompileExitCodeColumn, SubmCompileCPUTimeMillisColumn, SubmCompileWallTimeMillisColumn, SubmCompileMemoryKibiBytesColumn, SubmCompileCtxSwitchesForcedColumn, SubmCompileExitSignalColumn, SubmCompileIsolateStatusColumn, ProgrammingLangIDColumn, ProgrammingLangDisplayNameColumn, ProgrammingLangSubmCodeFnameColumn, ProgrammingLangCompileCommandColumn, ProgrammingLangCompiledFnameColumn, ProgrammingLangExecCommandColumn, CreatedAtColumn}
 	)
 
 	return evaluationsTable{
@@ -116,7 +114,6 @@ func newEvaluationsTableImpl(schemaName, tableName, alias string) evaluationsTab
 
 		//Columns
 		EvalUUID:                      EvalUUIDColumn,
-		SubmUUID:                      SubmUUIDColumn,
 		EvaluationStage:               EvaluationStageColumn,
 		ScoringMethod:                 ScoringMethodColumn,
 		CPUTimeLimitMillis:            CPUTimeLimitMillisColumn,
