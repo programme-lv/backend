@@ -31,8 +31,8 @@ type evaluationsTable struct {
 	LangCompFname      postgres.ColumnString
 	LangExecCmd        postgres.ColumnString
 	CreatedAt          postgres.ColumnTimestampz
-	TestlibCheckerID   postgres.ColumnInteger
 	CompileRuntimeID   postgres.ColumnInteger
+	TestlibCheckerCode postgres.ColumnString
 
 	AllColumns     postgres.ColumnList
 	MutableColumns postgres.ColumnList
@@ -87,10 +87,10 @@ func newEvaluationsTableImpl(schemaName, tableName, alias string) evaluationsTab
 		LangCompFnameColumn      = postgres.StringColumn("lang_comp_fname")
 		LangExecCmdColumn        = postgres.StringColumn("lang_exec_cmd")
 		CreatedAtColumn          = postgres.TimestampzColumn("created_at")
-		TestlibCheckerIDColumn   = postgres.IntegerColumn("testlib_checker_id")
 		CompileRuntimeIDColumn   = postgres.IntegerColumn("compile_runtime_id")
-		allColumns               = postgres.ColumnList{EvalUUIDColumn, EvaluationStageColumn, ScoringMethodColumn, CPUTimeLimitMillisColumn, MemLimitKibiBytesColumn, ErrorMessageColumn, SystemInformationColumn, LangIDColumn, LangNameColumn, LangCodeFnameColumn, LangCompCmdColumn, LangCompFnameColumn, LangExecCmdColumn, CreatedAtColumn, TestlibCheckerIDColumn, CompileRuntimeIDColumn}
-		mutableColumns           = postgres.ColumnList{EvaluationStageColumn, ScoringMethodColumn, CPUTimeLimitMillisColumn, MemLimitKibiBytesColumn, ErrorMessageColumn, SystemInformationColumn, LangIDColumn, LangNameColumn, LangCodeFnameColumn, LangCompCmdColumn, LangCompFnameColumn, LangExecCmdColumn, CreatedAtColumn, TestlibCheckerIDColumn, CompileRuntimeIDColumn}
+		TestlibCheckerCodeColumn = postgres.StringColumn("testlib_checker_code")
+		allColumns               = postgres.ColumnList{EvalUUIDColumn, EvaluationStageColumn, ScoringMethodColumn, CPUTimeLimitMillisColumn, MemLimitKibiBytesColumn, ErrorMessageColumn, SystemInformationColumn, LangIDColumn, LangNameColumn, LangCodeFnameColumn, LangCompCmdColumn, LangCompFnameColumn, LangExecCmdColumn, CreatedAtColumn, CompileRuntimeIDColumn, TestlibCheckerCodeColumn}
+		mutableColumns           = postgres.ColumnList{EvaluationStageColumn, ScoringMethodColumn, CPUTimeLimitMillisColumn, MemLimitKibiBytesColumn, ErrorMessageColumn, SystemInformationColumn, LangIDColumn, LangNameColumn, LangCodeFnameColumn, LangCompCmdColumn, LangCompFnameColumn, LangExecCmdColumn, CreatedAtColumn, CompileRuntimeIDColumn, TestlibCheckerCodeColumn}
 	)
 
 	return evaluationsTable{
@@ -111,8 +111,8 @@ func newEvaluationsTableImpl(schemaName, tableName, alias string) evaluationsTab
 		LangCompFname:      LangCompFnameColumn,
 		LangExecCmd:        LangExecCmdColumn,
 		CreatedAt:          CreatedAtColumn,
-		TestlibCheckerID:   TestlibCheckerIDColumn,
 		CompileRuntimeID:   CompileRuntimeIDColumn,
+		TestlibCheckerCode: TestlibCheckerCodeColumn,
 
 		AllColumns:     allColumns,
 		MutableColumns: mutableColumns,

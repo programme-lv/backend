@@ -6,42 +6,44 @@ import (
 	"github.com/programme-lv/backend/submsrvc"
 )
 
-type TestGroupScore struct {
-	TestGroupID    int `json:"test_group_id"`
-	TestGroupScore int `json:"test_group_score"`
-	AcceptedTests  int `json:"accepted_tests"`
-	WrongTests     int `json:"wrong_tests"`
-	UntestedTests  int `json:"untested_tests"`
+type TestGroup struct {
+	TestGroupID    int   `json:"test_group_id"`
+	TestGroupScore int   `json:"test_group_score"`
+	AcceptedTests  int   `json:"accepted_tests"`
+	WrongTests     int   `json:"wrong_tests"`
+	UntestedTests  int   `json:"untested_tests"`
+	Subtasks       []int `json:"subtasks"`
 }
 
-type TestsScore struct {
+type TestSet struct {
 	Accepted int `json:"accepted"`
 	Wrong    int `json:"wrong"`
 	Untested int `json:"untested"`
 }
 
-type SubtaskScore struct {
-	SubtaskID     int `json:"subtask_id"`
-	SubtaskScore  int `json:"subtask_score"`
-	AcceptedTests int `json:"accepted_tests"`
-	WrongTests    int `json:"wrong_tests"`
-	UntestedTests int `json:"untested_tests"`
+type Subtask struct {
+	SubtaskID     int    `json:"subtask_id"`
+	SubtaskScore  int    `json:"subtask_score"`
+	AcceptedTests int    `json:"accepted_tests"`
+	WrongTests    int    `json:"wrong_tests"`
+	UntestedTests int    `json:"untested_tests"`
+	Description   string `json:"description"`
 }
 
 type BriefSubmission struct {
-	SubmUUID          string           `json:"subm_uuid"`
-	Username          string           `json:"username"`
-	CreatedAt         string           `json:"created_at"`
-	EvalUUID          string           `json:"eval_uuid"`
-	EvalStatus        string           `json:"eval_status"`
-	TestGroupScoring  []TestGroupScore `json:"test_group_scoring"`
-	TestsScore        *TestsScore      `json:"tests_score"`
-	SubtasksScore     []SubtaskScore   `json:"subtasks_score"`
-	ProgrLangID       string           `json:"p_lang_id"`
-	ProgrLangName     string           `json:"p_lang_display_name"`
-	ProgrLangMonacoID string           `json:"p_lang_monaco_id"`
-	TaskFullName      string           `json:"task_name"`
-	TaskShortID       string           `json:"task_id"`
+	SubmUUID          string      `json:"subm_uuid"`
+	Username          string      `json:"username"`
+	CreatedAt         string      `json:"created_at"`
+	EvalUUID          string      `json:"eval_uuid"`
+	EvalStatus        string      `json:"eval_status"`
+	TestGroups        []TestGroup `json:"test_groups"`
+	TestSet           *TestSet    `json:"test_set"`
+	Subtasks          []Subtask   `json:"subtasks"`
+	ProgrLangID       string      `json:"p_lang_id"`
+	ProgrLangName     string      `json:"p_lang_display_name"`
+	ProgrLangMonacoID string      `json:"p_lang_monaco_id"`
+	TaskFullName      string      `json:"task_name"`
+	TaskShortID       string      `json:"task_id"`
 }
 
 type FullSubmission struct {
@@ -97,49 +99,6 @@ type EvalDetails struct {
 	CompileExecInfo *ExecutionInfo `json:"compile_exec_info"`
 }
 
-/*
-
-type Submission struct {
-	UUID uuid.UUID
-
-	Content string
-
-	Author Author
-	Task   Task
-	Lang   Lang
-
-	CurrEval Evaluation
-
-	CreatedAt time.Time
-}
-
-type Evaluation struct {
-	UUID      uuid.UUID
-	Stage     string
-	CreatedAt time.Time
-
-	ScoreBySubtasks   *SubtaskScoringRes
-	ScoreByTestGroups *TestGroupScoringRes
-	ScoreByTestSets   *TestSetScoringRes
-}
-
-type Author struct {
-	UUID     uuid.UUID
-	Username string
-}
-
-type Lang struct {
-	ShortID  string
-	Display  string
-	MonacoID string
-}
-
-type Task struct {
-	ShortID  string
-	FullName string
-}
-*/
-
 func mapBriefSubm(x *submsrvc.Submission) *BriefSubmission {
 	if x == nil {
 		return nil
@@ -150,9 +109,9 @@ func mapBriefSubm(x *submsrvc.Submission) *BriefSubmission {
 		CreatedAt:         x.CreatedAt.Format(time.RFC3339),
 		EvalUUID:          x.CurrEval.UUID.String(),
 		EvalStatus:        x.CurrEval.Stage,
-		TestGroupScoring:  mapTestGroupScoring(x.CurrEval.ScoreByTestGroups),
-		TestsScore:        mapTestsScore(x.CurrEval.ScoreByTestSets),
-		SubtasksScore:     mapSubtasksScore(x.CurrEval.ScoreBySubtasks),
+		TestGroups:        mapTestGroupScoring(x.CurrEval.TestGroups),
+		TestSet:           mapTestsScore(x.CurrEval.TestSet),
+		Subtasks:          mapSubtasksScore(x.CurrEval.Subtasks),
 		ProgrLangID:       x.Lang.ShortID,
 		ProgrLangName:     x.Lang.Display,
 		ProgrLangMonacoID: x.Lang.MonacoID,
@@ -161,28 +120,51 @@ func mapBriefSubm(x *submsrvc.Submission) *BriefSubmission {
 	}
 }
 
-func mapTestGroupScoring(x []submsrvc.TestGroup) []TestGroupScore {
+func mapTestGroupScoring(x []submsrvc.TestGroup) []TestGroup {
 	if x == nil {
 		return nil
 	}
-	// TODO: implement
-	return []TestGroupScore{}
+	res := make([]TestGroup, len(x))
+	for i, v := range x {
+		res[i] = TestGroup{
+			TestGroupID:    v.TestGroupID,
+			TestGroupScore: v.Points,
+			AcceptedTests:  v.Accepted,
+			WrongTests:     v.Wrong,
+			UntestedTests:  v.Untested,
+			Subtasks:       v.Subtasks,
+		}
+	}
+	return res
 }
 
-func mapTestsScore(x *submsrvc.TestSet) *TestsScore {
+func mapTestsScore(x *submsrvc.TestSet) *TestSet {
 	if x == nil {
 		return nil
 	}
-	// TODO: implement
-	return &TestsScore{}
+	return &TestSet{
+		Accepted: x.Accepted,
+		Wrong:    x.Wrong,
+		Untested: x.Untested,
+	}
 }
 
-func mapSubtasksScore(x []submsrvc.Subtask) []SubtaskScore {
+func mapSubtasksScore(x []submsrvc.Subtask) []Subtask {
 	if x == nil {
 		return nil
 	}
-	// TODO: implement
-	return []SubtaskScore{}
+	res := make([]Subtask, len(x))
+	for i, v := range x {
+		res[i] = Subtask{
+			SubtaskID:     v.SubtaskID,
+			SubtaskScore:  v.Points,
+			AcceptedTests: v.Accepted,
+			WrongTests:    v.Wrong,
+			UntestedTests: v.Untested,
+			Description:   v.Description,
+		}
+	}
+	return res
 }
 
 func mapFullSubm(x *submsrvc.FullSubmission) *FullSubmission {

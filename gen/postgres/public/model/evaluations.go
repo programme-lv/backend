@@ -27,6 +27,6 @@ type Evaluations struct {
 	LangCompFname      *string
 	LangExecCmd        string
 	CreatedAt          time.Time
-	TestlibCheckerID   *int32
 	CompileRuntimeID   *int32
+	TestlibCheckerCode *string
 }
