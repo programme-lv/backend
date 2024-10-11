@@ -7,12 +7,11 @@ import (
 )
 
 type TestGroupScore struct {
-	TestGroupID      int `json:"test_group_id"`
-	TestGroupScore   int `json:"test_group_score"`
-	StatementSubtask int `json:"statement_subtask"`
-	AcceptedTests    int `json:"accepted_tests"`
-	WrongTests       int `json:"wrong_tests"`
-	UntestedTests    int `json:"untested_tests"`
+	TestGroupID    int `json:"test_group_id"`
+	TestGroupScore int `json:"test_group_score"`
+	AcceptedTests  int `json:"accepted_tests"`
+	WrongTests     int `json:"wrong_tests"`
+	UntestedTests  int `json:"untested_tests"`
 }
 
 type TestsScore struct {
@@ -162,7 +161,7 @@ func mapBriefSubm(x *submsrvc.Submission) *BriefSubmission {
 	}
 }
 
-func mapTestGroupScoring(x []submsrvc.TestGroupScoringRes) []TestGroupScore {
+func mapTestGroupScoring(x []submsrvc.TestGroup) []TestGroupScore {
 	if x == nil {
 		return nil
 	}
@@ -170,7 +169,7 @@ func mapTestGroupScoring(x []submsrvc.TestGroupScoringRes) []TestGroupScore {
 	return []TestGroupScore{}
 }
 
-func mapTestsScore(x *submsrvc.TestSetScoringRes) *TestsScore {
+func mapTestsScore(x *submsrvc.TestSet) *TestsScore {
 	if x == nil {
 		return nil
 	}
@@ -178,7 +177,7 @@ func mapTestsScore(x *submsrvc.TestSetScoringRes) *TestsScore {
 	return &TestsScore{}
 }
 
-func mapSubtasksScore(x []submsrvc.SubtaskScoringRes) []SubtaskScore {
+func mapSubtasksScore(x []submsrvc.Subtask) []SubtaskScore {
 	if x == nil {
 		return nil
 	}

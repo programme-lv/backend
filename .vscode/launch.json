@@ -9,10 +9,8 @@
             "type": "go",
             "request": "launch",
             "mode": "auto",
-            "program": "${workspaceFolder}/cmd/proglv",
-            "env": {
-                "JWT_KEY": "latviathebest",
-            }
+            "program": "${workspaceFolder}/cmd/server",
+            "cwd": "${workspaceFolder}"
         }
     ]
 }

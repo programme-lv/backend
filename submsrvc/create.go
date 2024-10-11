@@ -142,12 +142,12 @@ func (s *SubmissionSrvc) CreateSubmission(ctx context.Context,
 		// TODO: batch insert the test results
 	}
 
-	var scoreBySubtasks []SubtaskScoringRes
-	var scoreByTestGroups []TestGroupScoringRes
-	var scoreByTestSets *TestSetScoringRes
+	var scoreBySubtasks []Subtask
+	var scoreByTestGroups []TestGroup
+	var scoreByTestSets *TestSet
 
 	if scoringMethod == "subtask" {
-		scoreBySubtasks = make([]SubtaskScoringRes, len(task.Subtasks))
+		scoreBySubtasks = make([]Subtask, len(task.Subtasks))
 		for i, subtask := range task.Subtasks {
 			subtaskID := i + 1
 			evalScoringSubtask := model.EvaluationScoringSubtasks{
@@ -168,7 +168,7 @@ func (s *SubmissionSrvc) CreateSubmission(ctx context.Context,
 				return nil, fmt.Errorf("failed to insert evaluation scoring subtask: %w", err)
 			}
 
-			scoreBySubtasks[i] = SubtaskScoringRes{
+			scoreBySubtasks[i] = Subtask{
 				SubtaskID:     subtaskID,
 				SubtaskPoints: subtask.Score,
 				AcceptedTests: 0,
@@ -178,7 +178,7 @@ func (s *SubmissionSrvc) CreateSubmission(ctx context.Context,
 		}
 	}
 	if scoringMethod == "testgroup" {
-		scoreByTestGroups = make([]TestGroupScoringRes, len(task.TestGroups))
+		scoreByTestGroups = make([]TestGroup, len(task.TestGroups))
 		for i, testGroup := range task.TestGroups {
 			testGroupID := i + 1
 			evalScoringTestGroup := model.EvaluationScoringTestgroups{
@@ -199,17 +199,17 @@ func (s *SubmissionSrvc) CreateSubmission(ctx context.Context,
 				return nil, fmt.Errorf("failed to insert evaluation scoring test group: %w", err)
 			}
 
-			scoreByTestGroups[i] = TestGroupScoringRes{
-				TestGroupID:     testGroupID,
-				TestGroupPoints: testGroup.Points,
-				AcceptedTests:   0,
-				WrongTests:      0,
-				UntestedTests:   len(testGroup.TestIDs),
+			scoreByTestGroups[i] = TestGroup{
+				TestGroupID:   testGroupID,
+				Points:        testGroup.Points,
+				Accepted:      0,
+				Wrong:         0,
+				UntestedTests: len(testGroup.TestIDs),
 			}
 		}
 	}
 	if scoringMethod == "tests" {
-		scoreByTestSets = &TestSetScoringRes{
+		scoreByTestSets = &TestSet{
 			Accepted: 0,
 			Wrong:    0,
 			Untested: len(task.Tests),
@@ -266,14 +266,14 @@ func (s *SubmissionSrvc) CreateSubmission(ctx context.Context,
 			Display:  language.FullName,
 			MonacoID: language.MonacoId,
 		},
-		CreatedAt: time.Now(),
+		CreatedAt: submission.CreatedAt,
 		CurrEval: Evaluation{
-			UUID:              evalUuid,
-			Stage:             "waiting",
-			CreatedAt:         eval.CreatedAt,
-			ScoreBySubtasks:   scoreBySubtasks,
-			ScoreByTestGroups: scoreByTestGroups,
-			ScoreByTestSets:   scoreByTestSets,
+			UUID:       evalUuid,
+			Stage:      eval.EvaluationStage,
+			CreatedAt:  eval.CreatedAt,
+			Subtasks:   scoreBySubtasks,
+			TestGroups: scoreByTestGroups,
+			TestSet:    scoreByTestSets,
 		},
 	}, nil
 }

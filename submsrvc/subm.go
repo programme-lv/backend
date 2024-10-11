@@ -25,9 +25,9 @@ type Evaluation struct {
 	Stage     string
 	CreatedAt time.Time
 
-	ScoreBySubtasks   []SubtaskScoringRes
-	ScoreByTestGroups []TestGroupScoringRes
-	ScoreByTestSets   *TestSetScoringRes
+	Subtasks   []Subtask
+	TestGroups []TestGroup
+	TestSet    *TestSet
 }
 
 type Author struct {
@@ -46,23 +46,25 @@ type Task struct {
 	FullName string
 }
 
-type SubtaskScoringRes struct {
-	SubtaskID     int
-	SubtaskPoints int
-	AcceptedTests int
-	WrongTests    int
-	UntestedTests int
+type Subtask struct {
+	SubtaskID   int
+	Points      int
+	Accepted    int
+	Wrong       int
+	Untested    int
+	Description string
 }
 
-type TestGroupScoringRes struct {
-	TestGroupID     int
-	TestGroupPoints int
-	AcceptedTests   int
-	WrongTests      int
-	UntestedTests   int
+type TestGroup struct {
+	TestGroupID int
+	Points      int
+	Accepted    int
+	Wrong       int
+	Untested    int
+	Subtasks    []int
 }
 
-type TestSetScoringRes struct {
+type TestSet struct {
 	Accepted int
 	Wrong    int
 	Untested int
