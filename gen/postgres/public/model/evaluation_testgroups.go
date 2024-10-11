@@ -11,7 +11,7 @@ import (
 	"github.com/google/uuid"
 )
 
-type EvaluationScoringTestgroups struct {
+type EvaluationTestgroups struct {
 	EvalUUID          uuid.UUID `sql:"primary_key"`
 	TestgroupID       int32     `sql:"primary_key"`
 	StatementSubtasks *string

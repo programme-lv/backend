@@ -13,28 +13,20 @@ import (
 )
 
 type Evaluations struct {
-	EvalUUID                      uuid.UUID `sql:"primary_key"`
-	EvaluationStage               string
-	ScoringMethod                 string
-	CPUTimeLimitMillis            int32
-	MemLimitKibiBytes             int32
-	ErrorMessage                  *string
-	TestlibCheckerCode            string
-	SystemInformation             *string
-	SubmCompileStdout             *string
-	SubmCompileStderr             *string
-	SubmCompileExitCode           *int32
-	SubmCompileCPUTimeMillis      *int32
-	SubmCompileWallTimeMillis     *int32
-	SubmCompileMemoryKibiBytes    *int32
-	SubmCompileCtxSwitchesForced  *int64
-	SubmCompileExitSignal         *int64
-	SubmCompileIsolateStatus      *string
-	ProgrammingLangID             string
-	ProgrammingLangDisplayName    string
-	ProgrammingLangSubmCodeFname  string
-	ProgrammingLangCompileCommand *string
-	ProgrammingLangCompiledFname  *string
-	ProgrammingLangExecCommand    string
-	CreatedAt                     time.Time
+	EvalUUID           uuid.UUID `sql:"primary_key"`
+	EvaluationStage    string
+	ScoringMethod      string
+	CPUTimeLimitMillis int32
+	MemLimitKibiBytes  int32
+	ErrorMessage       *string
+	SystemInformation  *string
+	LangID             string
+	LangName           string
+	LangCodeFname      string
+	LangCompCmd        *string
+	LangCompFname      *string
+	LangExecCmd        string
+	CreatedAt          time.Time
+	TestlibCheckerID   *int32
+	CompileRuntimeID   *int32
 }

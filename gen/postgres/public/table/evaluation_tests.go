@@ -17,35 +17,19 @@ type evaluationTestsTable struct {
 	postgres.Table
 
 	// Columns
-	EvalUUID                 postgres.ColumnString
-	TestID                   postgres.ColumnInteger
-	FullInputS3URL           postgres.ColumnString
-	FullAnswerS3URL          postgres.ColumnString
-	Reached                  postgres.ColumnBool
-	Ignored                  postgres.ColumnBool
-	Finished                 postgres.ColumnBool
-	InputTrimmed             postgres.ColumnString
-	AnswerTrimmed            postgres.ColumnString
-	CheckerStdout            postgres.ColumnString
-	CheckerStderr            postgres.ColumnString
-	CheckerExitCode          postgres.ColumnInteger
-	CheckerCPUTimeMillis     postgres.ColumnInteger
-	CheckerWallTimeMillis    postgres.ColumnInteger
-	CheckerMemoryKibiBytes   postgres.ColumnInteger
-	CheckerCtxSwitchesForced postgres.ColumnInteger
-	CheckerExitSignal        postgres.ColumnInteger
-	CheckerIsolateStatus     postgres.ColumnString
-	SubmStdout               postgres.ColumnString
-	SubmStderr               postgres.ColumnString
-	SubmExitCode             postgres.ColumnInteger
-	SubmCPUTimeMillis        postgres.ColumnInteger
-	SubmWallTimeMillis       postgres.ColumnInteger
-	SubmMemoryKibiBytes      postgres.ColumnInteger
-	SubmCtxSwitchesForced    postgres.ColumnInteger
-	SubmExitSignal           postgres.ColumnInteger
-	SubmIsolateStatus        postgres.ColumnString
-	Subtasks                 postgres.ColumnString
-	Testgroups               postgres.ColumnString
+	EvalUUID         postgres.ColumnString
+	TestID           postgres.ColumnInteger
+	FullInputS3URL   postgres.ColumnString
+	FullAnswerS3URL  postgres.ColumnString
+	Reached          postgres.ColumnBool
+	Ignored          postgres.ColumnBool
+	Finished         postgres.ColumnBool
+	InputTrimmed     postgres.ColumnString
+	AnswerTrimmed    postgres.ColumnString
+	Subtasks         postgres.ColumnString
+	Testgroups       postgres.ColumnString
+	CheckerRuntimeID postgres.ColumnInteger
+	SubmRuntimeID    postgres.ColumnInteger
 
 	AllColumns     postgres.ColumnList
 	MutableColumns postgres.ColumnList
@@ -86,72 +70,40 @@ func newEvaluationTestsTable(schemaName, tableName, alias string) *EvaluationTes
 
 func newEvaluationTestsTableImpl(schemaName, tableName, alias string) evaluationTestsTable {
 	var (
-		EvalUUIDColumn                 = postgres.StringColumn("eval_uuid")
-		TestIDColumn                   = postgres.IntegerColumn("test_id")
-		FullInputS3URLColumn           = postgres.StringColumn("full_input_s3_url")
-		FullAnswerS3URLColumn          = postgres.StringColumn("full_answer_s3_url")
-		ReachedColumn                  = postgres.BoolColumn("reached")
-		IgnoredColumn                  = postgres.BoolColumn("ignored")
-		FinishedColumn                 = postgres.BoolColumn("finished")
-		InputTrimmedColumn             = postgres.StringColumn("input_trimmed")
-		AnswerTrimmedColumn            = postgres.StringColumn("answer_trimmed")
-		CheckerStdoutColumn            = postgres.StringColumn("checker_stdout")
-		CheckerStderrColumn            = postgres.StringColumn("checker_stderr")
-		CheckerExitCodeColumn          = postgres.IntegerColumn("checker_exit_code")
-		CheckerCPUTimeMillisColumn     = postgres.IntegerColumn("checker_cpu_time_millis")
-		CheckerWallTimeMillisColumn    = postgres.IntegerColumn("checker_wall_time_millis")
-		CheckerMemoryKibiBytesColumn   = postgres.IntegerColumn("checker_memory_kibi_bytes")
-		CheckerCtxSwitchesForcedColumn = postgres.IntegerColumn("checker_ctx_switches_forced")
-		CheckerExitSignalColumn        = postgres.IntegerColumn("checker_exit_signal")
-		CheckerIsolateStatusColumn     = postgres.StringColumn("checker_isolate_status")
-		SubmStdoutColumn               = postgres.StringColumn("subm_stdout")
-		SubmStderrColumn               = postgres.StringColumn("subm_stderr")
-		SubmExitCodeColumn             = postgres.IntegerColumn("subm_exit_code")
-		SubmCPUTimeMillisColumn        = postgres.IntegerColumn("subm_cpu_time_millis")
-		SubmWallTimeMillisColumn       = postgres.IntegerColumn("subm_wall_time_millis")
-		SubmMemoryKibiBytesColumn      = postgres.IntegerColumn("subm_memory_kibi_bytes")
-		SubmCtxSwitchesForcedColumn    = postgres.IntegerColumn("subm_ctx_switches_forced")
-		SubmExitSignalColumn           = postgres.IntegerColumn("subm_exit_signal")
-		SubmIsolateStatusColumn        = postgres.StringColumn("subm_isolate_status")
-		SubtasksColumn                 = postgres.StringColumn("subtasks")
-		TestgroupsColumn               = postgres.StringColumn("testgroups")
-		allColumns                     = postgres.ColumnList{EvalUUIDColumn, TestIDColumn, FullInputS3URLColumn, FullAnswerS3URLColumn, ReachedColumn, IgnoredColumn, FinishedColumn, InputTrimmedColumn, AnswerTrimmedColumn, CheckerStdoutColumn, CheckerStderrColumn, CheckerExitCodeColumn, CheckerCPUTimeMillisColumn, CheckerWallTimeMillisColumn, CheckerMemoryKibiBytesColumn, CheckerCtxSwitchesForcedColumn, CheckerExitSignalColumn, CheckerIsolateStatusColumn, SubmStdoutColumn, SubmStderrColumn, SubmExitCodeColumn, SubmCPUTimeMillisColumn, SubmWallTimeMillisColumn, SubmMemoryKibiBytesColumn, SubmCtxSwitchesForcedColumn, SubmExitSignalColumn, SubmIsolateStatusColumn, SubtasksColumn, TestgroupsColumn}
-		mutableColumns                 = postgres.ColumnList{FullInputS3URLColumn, FullAnswerS3URLColumn, ReachedColumn, IgnoredColumn, FinishedColumn, InputTrimmedColumn, AnswerTrimmedColumn, CheckerStdoutColumn, CheckerStderrColumn, CheckerExitCodeColumn, CheckerCPUTimeMillisColumn, CheckerWallTimeMillisColumn, CheckerMemoryKibiBytesColumn, CheckerCtxSwitchesForcedColumn, CheckerExitSignalColumn, CheckerIsolateStatusColumn, SubmStdoutColumn, SubmStderrColumn, SubmExitCodeColumn, SubmCPUTimeMillisColumn, SubmWallTimeMillisColumn, SubmMemoryKibiBytesColumn, SubmCtxSwitchesForcedColumn, SubmExitSignalColumn, SubmIsolateStatusColumn, SubtasksColumn, TestgroupsColumn}
+		EvalUUIDColumn         = postgres.StringColumn("eval_uuid")
+		TestIDColumn           = postgres.IntegerColumn("test_id")
+		FullInputS3URLColumn   = postgres.StringColumn("full_input_s3_url")
+		FullAnswerS3URLColumn  = postgres.StringColumn("full_answer_s3_url")
+		ReachedColumn          = postgres.BoolColumn("reached")
+		IgnoredColumn          = postgres.BoolColumn("ignored")
+		FinishedColumn         = postgres.BoolColumn("finished")
+		InputTrimmedColumn     = postgres.StringColumn("input_trimmed")
+		AnswerTrimmedColumn    = postgres.StringColumn("answer_trimmed")
+		SubtasksColumn         = postgres.StringColumn("subtasks")
+		TestgroupsColumn       = postgres.StringColumn("testgroups")
+		CheckerRuntimeIDColumn = postgres.IntegerColumn("checker_runtime_id")
+		SubmRuntimeIDColumn    = postgres.IntegerColumn("subm_runtime_id")
+		allColumns             = postgres.ColumnList{EvalUUIDColumn, TestIDColumn, FullInputS3URLColumn, FullAnswerS3URLColumn, ReachedColumn, IgnoredColumn, FinishedColumn, InputTrimmedColumn, AnswerTrimmedColumn, SubtasksColumn, TestgroupsColumn, CheckerRuntimeIDColumn, SubmRuntimeIDColumn}
+		mutableColumns         = postgres.ColumnList{FullInputS3URLColumn, FullAnswerS3URLColumn, ReachedColumn, IgnoredColumn, FinishedColumn, InputTrimmedColumn, AnswerTrimmedColumn, SubtasksColumn, TestgroupsColumn, CheckerRuntimeIDColumn, SubmRuntimeIDColumn}
 	)
 
 	return evaluationTestsTable{
 		Table: postgres.NewTable(schemaName, tableName, alias, allColumns...),
 
 		//Columns
-		EvalUUID:                 EvalUUIDColumn,
-		TestID:                   TestIDColumn,
-		FullInputS3URL:           FullInputS3URLColumn,
-		FullAnswerS3URL:          FullAnswerS3URLColumn,
-		Reached:                  ReachedColumn,
-		Ignored:                  IgnoredColumn,
-		Finished:                 FinishedColumn,
-		InputTrimmed:             InputTrimmedColumn,
-		AnswerTrimmed:            AnswerTrimmedColumn,
-		CheckerStdout:            CheckerStdoutColumn,
-		CheckerStderr:            CheckerStderrColumn,
-		CheckerExitCode:          CheckerExitCodeColumn,
-		CheckerCPUTimeMillis:     CheckerCPUTimeMillisColumn,
-		CheckerWallTimeMillis:    CheckerWallTimeMillisColumn,
-		CheckerMemoryKibiBytes:   CheckerMemoryKibiBytesColumn,
-		CheckerCtxSwitchesForced: CheckerCtxSwitchesForcedColumn,
-		CheckerExitSignal:        CheckerExitSignalColumn,
-		CheckerIsolateStatus:     CheckerIsolateStatusColumn,
-		SubmStdout:               SubmStdoutColumn,
-		SubmStderr:               SubmStderrColumn,
-		SubmExitCode:             SubmExitCodeColumn,
-		SubmCPUTimeMillis:        SubmCPUTimeMillisColumn,
-		SubmWallTimeMillis:       SubmWallTimeMillisColumn,
-		SubmMemoryKibiBytes:      SubmMemoryKibiBytesColumn,
-		SubmCtxSwitchesForced:    SubmCtxSwitchesForcedColumn,
-		SubmExitSignal:           SubmExitSignalColumn,
-		SubmIsolateStatus:        SubmIsolateStatusColumn,
-		Subtasks:                 SubtasksColumn,
-		Testgroups:               TestgroupsColumn,
+		EvalUUID:         EvalUUIDColumn,
+		TestID:           TestIDColumn,
+		FullInputS3URL:   FullInputS3URLColumn,
+		FullAnswerS3URL:  FullAnswerS3URLColumn,
+		Reached:          ReachedColumn,
+		Ignored:          IgnoredColumn,
+		Finished:         FinishedColumn,
+		InputTrimmed:     InputTrimmedColumn,
+		AnswerTrimmed:    AnswerTrimmedColumn,
+		Subtasks:         SubtasksColumn,
+		Testgroups:       TestgroupsColumn,
+		CheckerRuntimeID: CheckerRuntimeIDColumn,
+		SubmRuntimeID:    SubmRuntimeIDColumn,
 
 		AllColumns:     allColumns,
 		MutableColumns: mutableColumns,

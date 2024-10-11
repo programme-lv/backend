@@ -7,13 +7,7 @@
 
 package model
 
-import (
-	"github.com/google/uuid"
-)
-
-type EvaluationScoringTestset struct {
-	EvalUUID uuid.UUID `sql:"primary_key"`
-	Accepted int32
-	Wrong    int32
-	Untested int32
+type TestlibChecker struct {
+	ID          int32 `sql:"primary_key"`
+	CheckerCode string
 }

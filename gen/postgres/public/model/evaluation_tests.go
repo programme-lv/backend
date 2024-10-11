@@ -12,33 +12,17 @@ import (
 )
 
 type EvaluationTests struct {
-	EvalUUID                 uuid.UUID `sql:"primary_key"`
-	TestID                   int32     `sql:"primary_key"`
-	FullInputS3URL           string
-	FullAnswerS3URL          string
-	Reached                  bool
-	Ignored                  bool
-	Finished                 bool
-	InputTrimmed             *string
-	AnswerTrimmed            *string
-	CheckerStdout            *string
-	CheckerStderr            *string
-	CheckerExitCode          *int32
-	CheckerCPUTimeMillis     *int32
-	CheckerWallTimeMillis    *int32
-	CheckerMemoryKibiBytes   *int32
-	CheckerCtxSwitchesForced *int64
-	CheckerExitSignal        *int64
-	CheckerIsolateStatus     *string
-	SubmStdout               *string
-	SubmStderr               *string
-	SubmExitCode             *int32
-	SubmCPUTimeMillis        *int32
-	SubmWallTimeMillis       *int32
-	SubmMemoryKibiBytes      *int32
-	SubmCtxSwitchesForced    *int64
-	SubmExitSignal           *int32
-	SubmIsolateStatus        *string
-	Subtasks                 *string
-	Testgroups               *string
+	EvalUUID         uuid.UUID `sql:"primary_key"`
+	TestID           int32     `sql:"primary_key"`
+	FullInputS3URL   string
+	FullAnswerS3URL  string
+	Reached          bool
+	Ignored          bool
+	Finished         bool
+	InputTrimmed     *string
+	AnswerTrimmed    *string
+	Subtasks         *string
+	Testgroups       *string
+	CheckerRuntimeID *int32
+	SubmRuntimeID    *int32
 }

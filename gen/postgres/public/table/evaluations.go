@@ -17,30 +17,22 @@ type evaluationsTable struct {
 	postgres.Table
 
 	// Columns
-	EvalUUID                      postgres.ColumnString
-	EvaluationStage               postgres.ColumnString
-	ScoringMethod                 postgres.ColumnString
-	CPUTimeLimitMillis            postgres.ColumnInteger
-	MemLimitKibiBytes             postgres.ColumnInteger
-	ErrorMessage                  postgres.ColumnString
-	TestlibCheckerCode            postgres.ColumnString
-	SystemInformation             postgres.ColumnString
-	SubmCompileStdout             postgres.ColumnString
-	SubmCompileStderr             postgres.ColumnString
-	SubmCompileExitCode           postgres.ColumnInteger
-	SubmCompileCPUTimeMillis      postgres.ColumnInteger
-	SubmCompileWallTimeMillis     postgres.ColumnInteger
-	SubmCompileMemoryKibiBytes    postgres.ColumnInteger
-	SubmCompileCtxSwitchesForced  postgres.ColumnInteger
-	SubmCompileExitSignal         postgres.ColumnInteger
-	SubmCompileIsolateStatus      postgres.ColumnString
-	ProgrammingLangID             postgres.ColumnString
-	ProgrammingLangDisplayName    postgres.ColumnString
-	ProgrammingLangSubmCodeFname  postgres.ColumnString
-	ProgrammingLangCompileCommand postgres.ColumnString
-	ProgrammingLangCompiledFname  postgres.ColumnString
-	ProgrammingLangExecCommand    postgres.ColumnString
-	CreatedAt                     postgres.ColumnTimestampz
+	EvalUUID           postgres.ColumnString
+	EvaluationStage    postgres.ColumnString
+	ScoringMethod      postgres.ColumnString
+	CPUTimeLimitMillis postgres.ColumnInteger
+	MemLimitKibiBytes  postgres.ColumnInteger
+	ErrorMessage       postgres.ColumnString
+	SystemInformation  postgres.ColumnString
+	LangID             postgres.ColumnString
+	LangName           postgres.ColumnString
+	LangCodeFname      postgres.ColumnString
+	LangCompCmd        postgres.ColumnString
+	LangCompFname      postgres.ColumnString
+	LangExecCmd        postgres.ColumnString
+	CreatedAt          postgres.ColumnTimestampz
+	TestlibCheckerID   postgres.ColumnInteger
+	CompileRuntimeID   postgres.ColumnInteger
 
 	AllColumns     postgres.ColumnList
 	MutableColumns postgres.ColumnList
@@ -81,62 +73,46 @@ func newEvaluationsTable(schemaName, tableName, alias string) *EvaluationsTable 
 
 func newEvaluationsTableImpl(schemaName, tableName, alias string) evaluationsTable {
 	var (
-		EvalUUIDColumn                      = postgres.StringColumn("eval_uuid")
-		EvaluationStageColumn               = postgres.StringColumn("evaluation_stage")
-		ScoringMethodColumn                 = postgres.StringColumn("scoring_method")
-		CPUTimeLimitMillisColumn            = postgres.IntegerColumn("cpu_time_limit_millis")
-		MemLimitKibiBytesColumn             = postgres.IntegerColumn("mem_limit_kibi_bytes")
-		ErrorMessageColumn                  = postgres.StringColumn("error_message")
-		TestlibCheckerCodeColumn            = postgres.StringColumn("testlib_checker_code")
-		SystemInformationColumn             = postgres.StringColumn("system_information")
-		SubmCompileStdoutColumn             = postgres.StringColumn("subm_compile_stdout")
-		SubmCompileStderrColumn             = postgres.StringColumn("subm_compile_stderr")
-		SubmCompileExitCodeColumn           = postgres.IntegerColumn("subm_compile_exit_code")
-		SubmCompileCPUTimeMillisColumn      = postgres.IntegerColumn("subm_compile_cpu_time_millis")
-		SubmCompileWallTimeMillisColumn     = postgres.IntegerColumn("subm_compile_wall_time_millis")
-		SubmCompileMemoryKibiBytesColumn    = postgres.IntegerColumn("subm_compile_memory_kibi_bytes")
-		SubmCompileCtxSwitchesForcedColumn  = postgres.IntegerColumn("subm_compile_ctx_switches_forced")
-		SubmCompileExitSignalColumn         = postgres.IntegerColumn("subm_compile_exit_signal")
-		SubmCompileIsolateStatusColumn      = postgres.StringColumn("subm_compile_isolate_status")
-		ProgrammingLangIDColumn             = postgres.StringColumn("programming_lang_id")
-		ProgrammingLangDisplayNameColumn    = postgres.StringColumn("programming_lang_display_name")
-		ProgrammingLangSubmCodeFnameColumn  = postgres.StringColumn("programming_lang_subm_code_fname")
-		ProgrammingLangCompileCommandColumn = postgres.StringColumn("programming_lang_compile_command")
-		ProgrammingLangCompiledFnameColumn  = postgres.StringColumn("programming_lang_compiled_fname")
-		ProgrammingLangExecCommandColumn    = postgres.StringColumn("programming_lang_exec_command")
-		CreatedAtColumn                     = postgres.TimestampzColumn("created_at")
-		allColumns                          = postgres.ColumnList{EvalUUIDColumn, EvaluationStageColumn, ScoringMethodColumn, CPUTimeLimitMillisColumn, MemLimitKibiBytesColumn, ErrorMessageColumn, TestlibCheckerCodeColumn, SystemInformationColumn, SubmCompileStdoutColumn, SubmCompileStderrColumn, SubmCompileExitCodeColumn, SubmCompileCPUTimeMillisColumn, SubmCompileWallTimeMillisColumn, SubmCompileMemoryKibiBytesColumn, SubmCompileCtxSwitchesForcedColumn, SubmCompileExitSignalColumn, SubmCompileIsolateStatusColumn, ProgrammingLangIDColumn, ProgrammingLangDisplayNameColumn, ProgrammingLangSubmCodeFnameColumn, ProgrammingLangCompileCommandColumn, ProgrammingLangCompiledFnameColumn, ProgrammingLangExecCommandColumn, CreatedAtColumn}
-		mutableColumns                      = postgres.ColumnList{EvaluationStageColumn, ScoringMethodColumn, CPUTimeLimitMillisColumn, MemLimitKibiBytesColumn, ErrorMessageColumn, TestlibCheckerCodeColumn, SystemInformationColumn, SubmCompileStdoutColumn, SubmCompileStderrColumn, SubmCompileExitCodeColumn, SubmCompileCPUTimeMillisColumn, SubmCompileWallTimeMillisColumn, SubmCompileMemoryKibiBytesColumn, SubmCompileCtxSwitchesForcedColumn, SubmCompileExitSignalColumn, SubmCompileIsolateStatusColumn, ProgrammingLangIDColumn, ProgrammingLangDisplayNameColumn, ProgrammingLangSubmCodeFnameColumn, ProgrammingLangCompileCommandColumn, ProgrammingLangCompiledFnameColumn, ProgrammingLangExecCommandColumn, CreatedAtColumn}
+		EvalUUIDColumn           = postgres.StringColumn("eval_uuid")
+		EvaluationStageColumn    = postgres.StringColumn("evaluation_stage")
+		ScoringMethodColumn      = postgres.StringColumn("scoring_method")
+		CPUTimeLimitMillisColumn = postgres.IntegerColumn("cpu_time_limit_millis")
+		MemLimitKibiBytesColumn  = postgres.IntegerColumn("mem_limit_kibi_bytes")
+		ErrorMessageColumn       = postgres.StringColumn("error_message")
+		SystemInformationColumn  = postgres.StringColumn("system_information")
+		LangIDColumn             = postgres.StringColumn("lang_id")
+		LangNameColumn           = postgres.StringColumn("lang_name")
+		LangCodeFnameColumn      = postgres.StringColumn("lang_code_fname")
+		LangCompCmdColumn        = postgres.StringColumn("lang_comp_cmd")
+		LangCompFnameColumn      = postgres.StringColumn("lang_comp_fname")
+		LangExecCmdColumn        = postgres.StringColumn("lang_exec_cmd")
+		CreatedAtColumn          = postgres.TimestampzColumn("created_at")
+		TestlibCheckerIDColumn   = postgres.IntegerColumn("testlib_checker_id")
+		CompileRuntimeIDColumn   = postgres.IntegerColumn("compile_runtime_id")
+		allColumns               = postgres.ColumnList{EvalUUIDColumn, EvaluationStageColumn, ScoringMethodColumn, CPUTimeLimitMillisColumn, MemLimitKibiBytesColumn, ErrorMessageColumn, SystemInformationColumn, LangIDColumn, LangNameColumn, LangCodeFnameColumn, LangCompCmdColumn, LangCompFnameColumn, LangExecCmdColumn, CreatedAtColumn, TestlibCheckerIDColumn, CompileRuntimeIDColumn}
+		mutableColumns           = postgres.ColumnList{EvaluationStageColumn, ScoringMethodColumn, CPUTimeLimitMillisColumn, MemLimitKibiBytesColumn, ErrorMessageColumn, SystemInformationColumn, LangIDColumn, LangNameColumn, LangCodeFnameColumn, LangCompCmdColumn, LangCompFnameColumn, LangExecCmdColumn, CreatedAtColumn, TestlibCheckerIDColumn, CompileRuntimeIDColumn}
 	)
 
 	return evaluationsTable{
 		Table: postgres.NewTable(schemaName, tableName, alias, allColumns...),
 
 		//Columns
-		EvalUUID:                      EvalUUIDColumn,
-		EvaluationStage:               EvaluationStageColumn,
-		ScoringMethod:                 ScoringMethodColumn,
-		CPUTimeLimitMillis:            CPUTimeLimitMillisColumn,
-		MemLimitKibiBytes:             MemLimitKibiBytesColumn,
-		ErrorMessage:                  ErrorMessageColumn,
-		TestlibCheckerCode:            TestlibCheckerCodeColumn,
-		SystemInformation:             SystemInformationColumn,
-		SubmCompileStdout:             SubmCompileStdoutColumn,
-		SubmCompileStderr:             SubmCompileStderrColumn,
-		SubmCompileExitCode:           SubmCompileExitCodeColumn,
-		SubmCompileCPUTimeMillis:      SubmCompileCPUTimeMillisColumn,
-		SubmCompileWallTimeMillis:     SubmCompileWallTimeMillisColumn,
-		SubmCompileMemoryKibiBytes:    SubmCompileMemoryKibiBytesColumn,
-		SubmCompileCtxSwitchesForced:  SubmCompileCtxSwitchesForcedColumn,
-		SubmCompileExitSignal:         SubmCompileExitSignalColumn,
-		SubmCompileIsolateStatus:      SubmCompileIsolateStatusColumn,
-		ProgrammingLangID:             ProgrammingLangIDColumn,
-		ProgrammingLangDisplayName:    ProgrammingLangDisplayNameColumn,
-		ProgrammingLangSubmCodeFname:  ProgrammingLangSubmCodeFnameColumn,
-		ProgrammingLangCompileCommand: ProgrammingLangCompileCommandColumn,
-		ProgrammingLangCompiledFname:  ProgrammingLangCompiledFnameColumn,
-		ProgrammingLangExecCommand:    ProgrammingLangExecCommandColumn,
-		CreatedAt:                     CreatedAtColumn,
+		EvalUUID:           EvalUUIDColumn,
+		EvaluationStage:    EvaluationStageColumn,
+		ScoringMethod:      ScoringMethodColumn,
+		CPUTimeLimitMillis: CPUTimeLimitMillisColumn,
+		MemLimitKibiBytes:  MemLimitKibiBytesColumn,
+		ErrorMessage:       ErrorMessageColumn,
+		SystemInformation:  SystemInformationColumn,
+		LangID:             LangIDColumn,
+		LangName:           LangNameColumn,
+		LangCodeFname:      LangCodeFnameColumn,
+		LangCompCmd:        LangCompCmdColumn,
+		LangCompFname:      LangCompFnameColumn,
+		LangExecCmd:        LangExecCmdColumn,
+		CreatedAt:          CreatedAtColumn,
+		TestlibCheckerID:   TestlibCheckerIDColumn,
+		CompileRuntimeID:   CompileRuntimeIDColumn,
 
 		AllColumns:     allColumns,
 		MutableColumns: mutableColumns,
