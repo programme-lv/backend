@@ -5,8 +5,8 @@ import (
 )
 
 type EvalRequest struct {
-	EvalUuid  string  `json:"evaluation_uuid"`
-	ResSqsUrl *string `json:"response_sqs_url"`
+	EvalUuid  string `json:"eval_uuid"`
+	ResSqsUrl string `json:"res_sqs_url"`
 
 	Code     string    `json:"code"`
 	Language Language  `json:"language"`
