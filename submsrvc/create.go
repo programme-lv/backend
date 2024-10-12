@@ -3,10 +3,13 @@ package submsrvc
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/google/uuid"
 	"github.com/programme-lv/backend/gen/postgres/public/model"
 	"github.com/programme-lv/backend/gen/postgres/public/table"
@@ -161,8 +164,53 @@ func (s *SubmissionSrvc) CreateSubmission(ctx context.Context,
 		return nil, fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
+	evalReqTests := make([]ReqTest, len(task.Tests))
+	for i, test := range task.Tests {
+		inputS3Url := test.FullInputS3URL()
+		answerS3Url := test.FullAnswerS3URL()
+		evalReqTests[i] = ReqTest{
+			ID:            i + 1,
+			InputSha256:   test.InpSha2,
+			InputS3Url:    &inputS3Url,
+			InputContent:  nil,
+			InputHttpUrl:  nil,
+			AnswerSha256:  test.AnsSha2,
+			AnswerS3Url:   &answerS3Url,
+			AnswerContent: nil,
+			AnswerHttpUrl: nil,
+		}
+	}
+	req := EvalRequest{
+		EvalUuid:  evalUuid.String(),
+		ResSqsUrl: &s.resSqsUrl,
+		Code:      params.Submission,
+		Language: Language{
+			LangID:        language.ID,
+			LangName:      language.FullName,
+			CodeFname:     language.CodeFilename,
+			CompileCmd:    language.CompileCmd,
+			CompiledFname: language.CompiledFilename,
+			ExecCmd:       language.ExecuteCmd,
+		},
+		Tests:     evalReqTests,
+		Checker:   *getChecker(task),
+		CpuMillis: int(task.CpuTimeLimSecs * 1000),
+		MemoryKiB: int(float64(task.MemLimMegabytes) * 976.5625),
+	}
+	jsonReq, err := json.Marshal(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal evaluation request: %w", err)
+	}
+	_, err = s.sqsClient.SendMessage(ctx, &sqs.SendMessageInput{
+		QueueUrl:    &s.submSqsUrl,
+		MessageBody: aws.String(string(jsonReq)),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to send message to evaluation queue: %w", err)
+	}
+
 	// Assemble the Submission response
-	return &Submission{
+	res := &Submission{
 		UUID:    submUuid,
 		Content: params.Submission,
 		Author: Author{
@@ -187,7 +235,11 @@ func (s *SubmissionSrvc) CreateSubmission(ctx context.Context,
 			TestGroups: testGroups,
 			TestSet:    testSet,
 		},
-	}, nil
+	}
+
+	s.createNewSubmChan <- res
+
+	return res, nil
 }
 
 // InsertEvaluation inserts the prepared evaluation into the database within a transaction.

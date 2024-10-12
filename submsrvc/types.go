@@ -4,7 +4,43 @@ import (
 	"time"
 )
 
-type EvalTest struct {
+type EvalRequest struct {
+	EvalUuid  string  `json:"evaluation_uuid"`
+	ResSqsUrl *string `json:"response_sqs_url"`
+
+	Code     string    `json:"code"`
+	Language Language  `json:"language"`
+	Tests    []ReqTest `json:"tests"`
+	Checker  string    `json:"checker"`
+
+	CpuMillis int `json:"cpu_millis"`
+	MemoryKiB int `json:"memory_kib"`
+}
+
+type Language struct {
+	LangID        string  `json:"lang_id"`
+	LangName      string  `json:"lang_name"`
+	CodeFname     string  `json:"code_fname"`
+	CompileCmd    *string `json:"compile_cmd"`
+	CompiledFname *string `json:"compiled_fname"`
+	ExecCmd       string  `json:"exec_cmd"`
+}
+
+type ReqTest struct {
+	ID int `json:"id"`
+
+	InputSha256  string  `json:"input_sha256"`
+	InputS3Url   *string `json:"input_s3_url"`
+	InputContent *string `json:"input_content"`
+	InputHttpUrl *string `json:"input_http_url"`
+
+	AnswerSha256  string  `json:"answer_sha256"`
+	AnswerS3Url   *string `json:"answer_s3_url"`
+	AnswerContent *string `json:"answer_content"`
+	AnswerHttpUrl *string `json:"answer_http_url"`
+}
+
+type EvalTestResult struct {
 	TestId   int
 	Reached  bool
 	Ignored  bool
@@ -13,26 +49,24 @@ type EvalTest struct {
 	InputTrimmed  *string
 	AnswerTrimmed *string
 
-	TimeLimitExceeded   *bool
-	MemoryLimitExceeded *bool
+	TimeExceeded   *bool
+	MemoryExceeded *bool
 
 	Subtasks  []int
 	TestGroup *int
 
-	SubmCpuTimeMillis *int
-	SubmMemKibiBytes  *int
-	SubmWallTime      *int
-	SubmExitCode      *int
-	SubmStdoutTrimmed *string
-	SubmStderrTrimmed *string
-	SubmExitSignal    *int
+	SubmRuntime    *RuntimeData
+	CheckerRuntime *RuntimeData
+}
 
-	CheckerCpuTimeMillis *int
-	CheckerMemKibiBytes  *int
-	CheckerWallTime      *int
-	CheckerExitCode      *int
-	CheckerStdoutTrimmed *string
-	CheckerStderrTrimmed *string
+type RuntimeData struct {
+	CpuMillis  int
+	MemoryKiB  int
+	WallTime   int
+	ExitCode   int
+	Stdout     *string
+	Stderr     *string
+	ExitSignal *int
 }
 
 type EvalDetails struct {
@@ -42,23 +76,18 @@ type EvalDetails struct {
 	ErrorMsg  *string
 	EvalStage string
 
-	CpuTimeLimitMillis   *int
-	MemoryLimitKibiBytes *int
+	CpuTimeLimitMillis int
+	MemoryLimitKiB     int
 
 	ProgrammingLang   ProgrammingLang
 	SystemInformation *string
 
-	CompileCpuTimeMillis *int
-	CompileMemKibiBytes  *int
-	CompileWallTime      *int
-	CompileExitCode      *int
-	CompileStdoutTrimmed *string
-	CompileStderrTrimmed *string
+	CompileRuntime *RuntimeData
 }
 
 type FullSubmission struct {
 	Submission
-	TestResults []EvalTest
+	TestResults []EvalTestResult
 	EvalDetails *EvalDetails
 }
 

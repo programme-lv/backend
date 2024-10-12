@@ -189,7 +189,7 @@ func mapEvalDetails(x *submsrvc.EvalDetails) *EvalDetails {
 	}
 }
 
-func mapTestResults(x []submsrvc.EvalTest) []EvalTest {
+func mapTestResults(x []submsrvc.EvalTestResult) []EvalTest {
 	if x == nil {
 		return nil
 	}
