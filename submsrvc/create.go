@@ -2,6 +2,7 @@ package submsrvc
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"strings"
 	"time"
@@ -11,6 +12,7 @@ import (
 	"github.com/programme-lv/backend/gen/postgres/public/table"
 	"github.com/programme-lv/backend/tasksrvc"
 	"github.com/programme-lv/backend/user"
+	"golang.org/x/sync/errgroup"
 )
 
 type CreateSubmissionParams struct {
@@ -22,22 +24,58 @@ type CreateSubmissionParams struct {
 
 func (s *SubmissionSrvc) CreateSubmission(ctx context.Context,
 	params *CreateSubmissionParams) (*Submission, error) {
-	// Validate & retrieve USER
-	user, err := s.userSrvc.GetUserByUsername(ctx,
-		&user.GetUserByUsernamePayload{Username: params.Username})
-	if err != nil {
+
+	// Use errgroup to manage concurrent tasks
+	var errCtx context.Context
+	g, errCtx := errgroup.WithContext(ctx)
+
+	var (
+		userResult *user.User
+		languages  []ProgrammingLang
+		task       *tasksrvc.Task
+	)
+
+	// Parallelize fetching user, languages, and task
+	g.Go(func() error {
+		u, err := s.userSrvc.GetUserByUsername(errCtx,
+			&user.GetUserByUsernamePayload{Username: params.Username})
+		if err != nil {
+			return fmt.Errorf("failed to get user: %w", err)
+		}
+		userResult = u
+		return nil
+	})
+
+	g.Go(func() error {
+		langs, err := s.ListProgrammingLanguages(errCtx)
+		if err != nil {
+			return fmt.Errorf("failed to list programming languages: %w", err)
+		}
+		languages = langs
+		return nil
+	})
+
+	g.Go(func() error {
+		t, err := s.taskSrvc.GetTask(errCtx, params.TaskCodeID)
+		if err != nil {
+			return fmt.Errorf("failed to get task: %w", err)
+		}
+		task = &t
+		return nil
+	})
+
+	// Wait for all initial fetches to complete
+	if err := g.Wait(); err != nil {
 		return nil, err
 	}
-	userUuid, err := uuid.Parse(user.UUID)
+
+	// Parse User UUID
+	userUuid, err := uuid.Parse(userResult.UUID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse user UUID: %w", err)
 	}
 
-	// Validate & retrieve PROGRAMMING LANGUAGE
-	languages, err := s.ListProgrammingLanguages(ctx)
-	if err != nil {
-		return nil, err
-	}
+	// Find the programming language
 	var language *ProgrammingLang
 	for _, l := range languages {
 		if l.ID == params.ProgLangID {
@@ -45,60 +83,78 @@ func (s *SubmissionSrvc) CreateSubmission(ctx context.Context,
 			break
 		}
 	}
-
 	if language == nil {
 		return nil, fmt.Errorf("programming language not found")
 	}
 
-	// Validate & retrieve TASK
-	task, err := s.taskSrvc.GetTask(ctx, params.TaskCodeID)
-	if err != nil {
-		return nil, err
-	}
-
+	// Generate UUIDs for evaluation and submission
 	evalUuid := uuid.New()
 	submUuid := uuid.New()
 
-	// Prepare and Insert Evaluation
-	eval := s.prepareEvaluation(evalUuid, &task, language)
-	if err := s.insertEvaluation(eval); err != nil {
+	// Prepare Evaluation
+	eval := s.prepareEvaluation(evalUuid, task, language)
+
+	// Begin a database transaction
+	tx, err := s.postgres.BeginTx(ctx, &sql.TxOptions{
+		Isolation: sql.LevelSerializable,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	// Insert Evaluation
+	if err := s.insertEvaluation(tx, eval); err != nil {
 		return nil, fmt.Errorf("failed to insert evaluation: %w", err)
 	}
 
-	// Prepare and Insert Evaluation Tests
-	evalTests := s.prepareEvaluationTests(evalUuid, &task)
-	if err := s.insertEvaluationTests(evalTests); err != nil {
-		return nil, fmt.Errorf("failed to insert evaluation tests: %w", err)
-	}
-
-	// Prepare and Insert Subtasks
-	subtasks, evalSubtasks, err := s.prepareSubtasks(evalUuid, &task)
+	// Prepare other evaluation-related data
+	evalTests := s.prepareEvaluationTests(evalUuid, task)
+	subtasks, evalSubtasks, err := s.prepareSubtasks(evalUuid, task)
 	if err != nil {
 		return nil, fmt.Errorf("failed to prepare subtasks: %w", err)
 	}
-	if err := s.insertSubtasks(evalSubtasks); err != nil {
-		return nil, err
-	}
-
-	// Prepare and Insert Test Groups
-	testGroups, evalTestGroups, err := s.prepareTestGroups(evalUuid, &task)
+	testGroups, evalTestGroups, err := s.prepareTestGroups(evalUuid, task)
 	if err != nil {
 		return nil, fmt.Errorf("failed to prepare test groups: %w", err)
 	}
-	if err := s.insertTestGroups(evalTestGroups); err != nil {
+	testSet, evalTestSet := s.prepareTestSet(evalUuid, task)
+	submission := s.prepareSubmission(submUuid, params, userUuid, task, language, evalUuid)
+
+	// Use another errgroup for concurrent insertions
+	g2 := errgroup.Group{}
+
+	// Insert evaluation tests
+	g2.Go(func() error {
+		return s.insertEvaluationTests(tx, evalTests)
+	})
+
+	// Insert subtasks
+	g2.Go(func() error {
+		return s.insertSubtasks(tx, evalSubtasks)
+	})
+
+	// Insert test groups
+	g2.Go(func() error {
+		return s.insertTestGroups(tx, evalTestGroups)
+	})
+
+	// Insert test set
+	g2.Go(func() error {
+		return s.insertTestSet(tx, evalTestSet)
+	})
+
+	// Wait for concurrent insertions to complete
+	if err := g2.Wait(); err != nil {
 		return nil, err
 	}
 
-	// Prepare and Insert Test Set
-	testSet, evalTestSet := s.prepareTestSet(evalUuid, &task)
-	if err := s.insertTestSet(evalTestSet); err != nil {
+	// Insert submission
+	if err := s.insertSubmission(tx, submission); err != nil {
 		return nil, err
 	}
-
-	// Prepare and Insert Submission
-	submission := s.prepareSubmission(submUuid, params, userUuid, &task, language, evalUuid)
-	if err := s.insertSubmission(submission); err != nil {
-		return nil, err
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
 	// Assemble the Submission response
@@ -107,7 +163,7 @@ func (s *SubmissionSrvc) CreateSubmission(ctx context.Context,
 		Content: params.Submission,
 		Author: Author{
 			UUID:     userUuid,
-			Username: user.Username,
+			Username: userResult.Username,
 		},
 		Task: Task{
 			ShortID:  task.ShortId,
@@ -128,6 +184,81 @@ func (s *SubmissionSrvc) CreateSubmission(ctx context.Context,
 			TestSet:    testSet,
 		},
 	}, nil
+}
+
+// InsertEvaluation inserts the prepared evaluation into the database within a transaction.
+func (s *SubmissionSrvc) insertEvaluation(tx *sql.Tx, eval *model.Evaluations) error {
+	evalInsertStmt := table.Evaluations.
+		INSERT(table.Evaluations.AllColumns).
+		MODEL(eval)
+	_, err := evalInsertStmt.Exec(tx)
+	return err
+}
+
+// InsertEvaluationTests inserts the prepared evaluation tests into the database within a transaction.
+func (s *SubmissionSrvc) insertEvaluationTests(tx *sql.Tx, tests []model.EvaluationTests) error {
+	insertStmt := table.EvaluationTests.
+		INSERT(table.EvaluationTests.AllColumns)
+	for _, test := range tests {
+		insertStmt = insertStmt.MODEL(&test)
+	}
+	_, err := insertStmt.Exec(tx)
+	if err != nil {
+		return fmt.Errorf("failed to insert evaluation tests: %w", err)
+	}
+	return nil
+}
+
+// InsertSubtasks inserts the prepared evaluation subtasks into the database within a transaction.
+func (s *SubmissionSrvc) insertSubtasks(tx *sql.Tx, evalSubtasks []model.EvaluationSubtasks) error {
+	insertStmt := table.EvaluationSubtasks.
+		INSERT(table.EvaluationSubtasks.AllColumns)
+	for _, subtask := range evalSubtasks {
+		insertStmt = insertStmt.MODEL(&subtask)
+	}
+	_, err := insertStmt.Exec(tx)
+	if err != nil {
+		return fmt.Errorf("failed to insert evaluation subtasks: %w", err)
+	}
+	return nil
+}
+
+// InsertTestGroups inserts the prepared evaluation test groups into the database within a transaction.
+func (s *SubmissionSrvc) insertTestGroups(tx *sql.Tx, evalTestGroups []model.EvaluationTestgroups) error {
+	insertStmt := table.EvaluationTestgroups.
+		INSERT(table.EvaluationTestgroups.AllColumns)
+	for _, testGroup := range evalTestGroups {
+		insertStmt = insertStmt.MODEL(&testGroup)
+	}
+	_, err := insertStmt.Exec(tx)
+	if err != nil {
+		return fmt.Errorf("failed to insert evaluation test groups: %w", err)
+	}
+	return nil
+}
+
+// InsertTestSet inserts the prepared evaluation test set into the database within a transaction.
+func (s *SubmissionSrvc) insertTestSet(tx *sql.Tx, evalTestSet *model.EvaluationTestset) error {
+	insertStmt := table.EvaluationTestset.
+		INSERT(table.EvaluationTestset.AllColumns).
+		MODEL(evalTestSet)
+	_, err := insertStmt.Exec(tx)
+	if err != nil {
+		return fmt.Errorf("failed to insert evaluation test set: %w", err)
+	}
+	return nil
+}
+
+// InsertSubmission inserts the prepared submission into the database within a transaction.
+func (s *SubmissionSrvc) insertSubmission(tx *sql.Tx, submission *model.Submissions) error {
+	insertStmt := table.Submissions.
+		INSERT(table.Submissions.AllColumns).
+		MODEL(submission)
+	_, err := insertStmt.Exec(tx)
+	if err != nil {
+		return fmt.Errorf("failed to insert submission: %w", err)
+	}
+	return nil
 }
 
 func (s *SubmissionSrvc) prepareEvaluation(
@@ -178,14 +309,6 @@ func getChecker(task *tasksrvc.Task) *string {
 	return nil
 }
 
-func (s *SubmissionSrvc) insertEvaluation(eval *model.Evaluations) error {
-	evalInsertStmt := table.Evaluations.
-		INSERT(table.Evaluations.AllColumns).
-		MODEL(eval)
-	_, err := evalInsertStmt.Exec(s.postgres)
-	return err
-}
-
 func (s *SubmissionSrvc) prepareEvaluationTests(evalUuid uuid.UUID, task *tasksrvc.Task) []model.EvaluationTests {
 	// Start Generation Here
 	evalTests := []model.EvaluationTests{}
@@ -229,20 +352,6 @@ func (s *SubmissionSrvc) prepareEvaluationTests(evalUuid uuid.UUID, task *tasksr
 	return evalTests
 }
 
-func (s *SubmissionSrvc) insertEvaluationTests(tests []model.EvaluationTests) error {
-	evalTestInsertStmt := table.EvaluationTests.
-		INSERT(table.EvaluationTests.AllColumns)
-	for _, test := range tests {
-		evalTestInsertStmt = evalTestInsertStmt.MODEL(&test)
-	}
-	_, err := evalTestInsertStmt.Exec(s.postgres)
-	if err != nil {
-		return fmt.Errorf("failed to insert evaluation tests: %w", err)
-	}
-	return nil
-}
-
-// PrepareSubtasks prepares the subtasks for the evaluation.
 func (s *SubmissionSrvc) prepareSubtasks(evalUuid uuid.UUID, task *tasksrvc.Task) ([]Subtask, []model.EvaluationSubtasks, error) {
 	subtasks := make([]Subtask, len(task.Subtasks))
 	evalSubtasks := make([]model.EvaluationSubtasks, len(task.Subtasks))
@@ -277,24 +386,6 @@ func (s *SubmissionSrvc) prepareSubtasks(evalUuid uuid.UUID, task *tasksrvc.Task
 	return subtasks, evalSubtasks, nil
 }
 
-// InsertSubtasks inserts the prepared evaluation subtasks into the database.
-func (s *SubmissionSrvc) insertSubtasks(evalSubtasks []model.EvaluationSubtasks) error {
-	insertStmt := table.EvaluationSubtasks.
-		INSERT(table.EvaluationSubtasks.AllColumns)
-
-	for _, subtask := range evalSubtasks {
-		insertStmt = insertStmt.MODEL(&subtask)
-	}
-
-	_, err := insertStmt.Exec(s.postgres)
-	if err != nil {
-		return fmt.Errorf("failed to insert evaluation subtasks: %w", err)
-	}
-
-	return nil
-}
-
-// PrepareTestGroups prepares the test groups for the evaluation.
 func (s *SubmissionSrvc) prepareTestGroups(evalUuid uuid.UUID, task *tasksrvc.Task) ([]TestGroup, []model.EvaluationTestgroups, error) {
 	testGroups := make([]TestGroup, len(task.TestGroups))
 	evalTestGroups := make([]model.EvaluationTestgroups, len(task.TestGroups))
@@ -331,24 +422,6 @@ func (s *SubmissionSrvc) prepareTestGroups(evalUuid uuid.UUID, task *tasksrvc.Ta
 	return testGroups, evalTestGroups, nil
 }
 
-// InsertTestGroups inserts the prepared evaluation test groups into the database.
-func (s *SubmissionSrvc) insertTestGroups(evalTestGroups []model.EvaluationTestgroups) error {
-	insertStmt := table.EvaluationTestgroups.
-		INSERT(table.EvaluationTestgroups.AllColumns)
-
-	for _, testGroup := range evalTestGroups {
-		insertStmt = insertStmt.MODEL(&testGroup)
-	}
-
-	_, err := insertStmt.Exec(s.postgres)
-	if err != nil {
-		return fmt.Errorf("failed to insert evaluation test groups: %w", err)
-	}
-
-	return nil
-}
-
-// PrepareTestSet prepares the test set for the evaluation.
 func (s *SubmissionSrvc) prepareTestSet(evalUuid uuid.UUID, task *tasksrvc.Task) (*TestSet, *model.EvaluationTestset) {
 	testSet := &TestSet{
 		Accepted: 0,
@@ -366,21 +439,6 @@ func (s *SubmissionSrvc) prepareTestSet(evalUuid uuid.UUID, task *tasksrvc.Task)
 	return testSet, evalTestSet
 }
 
-// InsertTestSet inserts the prepared evaluation test set into the database.
-func (s *SubmissionSrvc) insertTestSet(evalTestSet *model.EvaluationTestset) error {
-	insertStmt := table.EvaluationTestset.
-		INSERT(table.EvaluationTestset.AllColumns).
-		MODEL(evalTestSet)
-
-	_, err := insertStmt.Exec(s.postgres)
-	if err != nil {
-		return fmt.Errorf("failed to insert evaluation test set: %w", err)
-	}
-
-	return nil
-}
-
-// PrepareSubmission prepares the submission model.
 func (s *SubmissionSrvc) prepareSubmission(
 	submUuid uuid.UUID,
 	params *CreateSubmissionParams,
@@ -398,18 +456,4 @@ func (s *SubmissionSrvc) prepareSubmission(
 		CurrentEvalUUID: &evalUuid,
 		CreatedAt:       time.Now(),
 	}
-}
-
-// InsertSubmission inserts the prepared submission into the database.
-func (s *SubmissionSrvc) insertSubmission(submission *model.Submissions) error {
-	insertStmt := table.Submissions.
-		INSERT(table.Submissions.AllColumns).
-		MODEL(submission)
-
-	_, err := insertStmt.Exec(s.postgres)
-	if err != nil {
-		return fmt.Errorf("failed to insert submission: %w", err)
-	}
-
-	return nil
 }
