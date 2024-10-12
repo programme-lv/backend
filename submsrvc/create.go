@@ -96,6 +96,8 @@ func (s *SubmissionSrvc) CreateSubmission(ctx context.Context,
 		return nil, fmt.Errorf("failed to insert evaluation: %w", err)
 	}
 
+	evalTestInsertStmt := table.EvaluationTests.
+		INSERT(table.EvaluationTests.AllColumns)
 	for i, test := range task.Tests {
 		testID := i + 1
 
@@ -130,16 +132,11 @@ func (s *SubmissionSrvc) CreateSubmission(ctx context.Context,
 			Testgroups:      testGroupsStrPtr,
 		}
 
-		evalTestInsertStmt := table.EvaluationTests.
-			INSERT(table.EvaluationTests.AllColumns).
-			MODEL(&evalTest)
-
-		_, err = evalTestInsertStmt.Exec(s.postgres)
-		if err != nil {
-			return nil, fmt.Errorf("failed to insert evaluation test: %w", err)
-		}
-
-		// TODO: batch insert the test results
+		evalTestInsertStmt = evalTestInsertStmt.MODEL(&evalTest)
+	}
+	_, err = evalTestInsertStmt.Exec(s.postgres)
+	if err != nil {
+		return nil, fmt.Errorf("failed to insert evaluation test: %w", err)
 	}
 
 	var subtasks []Subtask
@@ -147,6 +144,8 @@ func (s *SubmissionSrvc) CreateSubmission(ctx context.Context,
 	var testSet *TestSet
 
 	subtasks = make([]Subtask, len(task.Subtasks))
+	evalScoringSubtaskInsertStmt := table.EvaluationSubtasks.
+		INSERT(table.EvaluationSubtasks.AllColumns)
 	for i, subtask := range task.Subtasks {
 		subtaskID := i + 1
 		var description *string
@@ -163,14 +162,7 @@ func (s *SubmissionSrvc) CreateSubmission(ctx context.Context,
 			Description:   description,
 		}
 
-		evalScoringSubtaskInsertStmt := table.EvaluationSubtasks.
-			INSERT(table.EvaluationSubtasks.AllColumns).
-			MODEL(&evalScoringSubtask)
-
-		_, err = evalScoringSubtaskInsertStmt.Exec(s.postgres)
-		if err != nil {
-			return nil, fmt.Errorf("failed to insert evaluation scoring subtask: %w", err)
-		}
+		evalScoringSubtaskInsertStmt = evalScoringSubtaskInsertStmt.MODEL(&evalScoringSubtask)
 
 		subtasks[i] = Subtask{
 			SubtaskID:   subtaskID,
@@ -181,8 +173,15 @@ func (s *SubmissionSrvc) CreateSubmission(ctx context.Context,
 			Description: subtask.Descriptions["lv"],
 		}
 	}
+	_, err = evalScoringSubtaskInsertStmt.Exec(s.postgres)
+	if err != nil {
+		return nil, fmt.Errorf("failed to insert evaluation scoring subtask: %w", err)
+	}
 
 	testGroups = make([]TestGroup, len(task.TestGroups))
+
+	evalScoringTestGroupInsertStmt := table.EvaluationTestgroups.
+		INSERT(table.EvaluationTestgroups.AllColumns)
 	for i, testGroup := range task.TestGroups {
 		testGroupID := i + 1
 		subtasks := task.FindTestGroupSubtasks(testGroupID)
@@ -200,15 +199,7 @@ func (s *SubmissionSrvc) CreateSubmission(ctx context.Context,
 			TestgroupPoints:   int32(testGroup.Points),
 			StatementSubtasks: &subtasksArray,
 		}
-
-		evalScoringTestGroupInsertStmt := table.EvaluationTestgroups.
-			INSERT(table.EvaluationTestgroups.AllColumns).
-			MODEL(&evalScoringTestGroup)
-
-		_, err = evalScoringTestGroupInsertStmt.Exec(s.postgres)
-		if err != nil {
-			return nil, fmt.Errorf("failed to insert evaluation scoring test group: %w", err)
-		}
+		evalScoringTestGroupInsertStmt = evalScoringTestGroupInsertStmt.MODEL(&evalScoringTestGroup)
 
 		testGroups[i] = TestGroup{
 			TestGroupID: testGroupID,
@@ -218,6 +209,10 @@ func (s *SubmissionSrvc) CreateSubmission(ctx context.Context,
 			Untested:    int(len(testGroup.TestIDs)),
 			Subtasks:    subtasks,
 		}
+	}
+	_, err = evalScoringTestGroupInsertStmt.Exec(s.postgres)
+	if err != nil {
+		return nil, fmt.Errorf("failed to insert evaluation scoring test group: %w", err)
 	}
 
 	testSet = &TestSet{
