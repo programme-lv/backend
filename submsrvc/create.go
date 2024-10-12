@@ -25,6 +25,10 @@ type CreateSubmissionParams struct {
 func (s *SubmissionSrvc) CreateSubmission(ctx context.Context,
 	params *CreateSubmissionParams) (*Submission, error) {
 
+	if len(params.Submission) > 64*1024 { // 64 KB
+		return nil, NewErrSubmissionTooLong(64)
+	}
+
 	// Use errgroup to manage concurrent tasks
 	var errCtx context.Context
 	g, errCtx := errgroup.WithContext(ctx)
@@ -84,7 +88,7 @@ func (s *SubmissionSrvc) CreateSubmission(ctx context.Context,
 		}
 	}
 	if language == nil {
-		return nil, fmt.Errorf("programming language not found")
+		return nil, NewErrInvalidProgLang()
 	}
 
 	// Generate UUIDs for evaluation and submission
@@ -306,7 +310,8 @@ func getChecker(task *tasksrvc.Task) *string {
 		checker := task.Checker
 		return &checker
 	}
-	return nil
+	res := TestlibDefaultChecker
+	return &res
 }
 
 func (s *SubmissionSrvc) prepareEvaluationTests(evalUuid uuid.UUID, task *tasksrvc.Task) []model.EvaluationTests {

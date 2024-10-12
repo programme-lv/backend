@@ -2,12 +2,15 @@ package user
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb" // assuming custom Latvian translations
+	"github.com/google/uuid"
+	"github.com/guregu/dynamo/v2"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -88,4 +91,28 @@ func (s *UserService) GetUserByUsername(ctx context.Context, p *GetUserByUsernam
 	}
 
 	return &resSlice[0], nil
+}
+
+func (s *UserService) GetUsernames(ctx context.Context, uuids []uuid.UUID) ([]string, error) {
+	// Create a slice to store the usernames
+	usernames := make([]string, 0, len(uuids))
+
+	// Iterate through the provided UUIDs
+	for _, id := range uuids {
+		// Fetch the user from the database
+		user, err := s.ddbUserTable.Get(ctx, id)
+		if err != nil {
+			// If the user is not found, continue to the next UUID
+			if errors.Is(err, dynamo.ErrNotFound) {
+				continue
+			}
+			// For other errors, return the error
+			return nil, fmt.Errorf("error fetching user: %w", err)
+		}
+
+		// Add the username to the slice
+		usernames = append(usernames, user.Username)
+	}
+
+	return usernames, nil
 }
