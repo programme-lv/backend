@@ -323,9 +323,6 @@ func (s *SubmissionSrvc) handleFinishedTest(x *sqsgath.FinishedTest) {
 		if x.Checker.ExitCode != 0 {
 			accepted = false
 		}
-		if x.Checker.Stderr != nil && *x.Checker.Stderr != "" {
-			accepted = false
-		}
 
 		// Update EvaluationTests table
 		updateStmt := table.EvaluationTests.
@@ -352,24 +349,24 @@ func (s *SubmissionSrvc) handleFinishedTest(x *sqsgath.FinishedTest) {
 		}
 	}
 
-	var updStmt postgres.UpdateStatement
+	var updSubtasksStmt postgres.UpdateStatement
 	if accepted {
-		updStmt = table.EvaluationSubtasks.
+		updSubtasksStmt = table.EvaluationSubtasks.
 			UPDATE(table.EvaluationSubtasks.Accepted, table.EvaluationSubtasks.Untested)
-		updStmt = updStmt.SET(
+		updSubtasksStmt = updSubtasksStmt.SET(
 			table.EvaluationSubtasks.Accepted.ADD(postgres.Int(1)),
 			table.EvaluationSubtasks.Untested.SUB(postgres.Int(1)),
 		)
 	} else {
-		updStmt = table.EvaluationSubtasks.
+		updSubtasksStmt = table.EvaluationSubtasks.
 			UPDATE(table.EvaluationSubtasks.Untested, table.EvaluationSubtasks.Wrong)
-		updStmt = updStmt.SET(
+		updSubtasksStmt = updSubtasksStmt.SET(
 			table.EvaluationSubtasks.Untested.SUB(postgres.Int(1)),
 			table.EvaluationSubtasks.Wrong.ADD(postgres.Int(1)),
 		)
 	}
 
-	updStmt = updStmt.
+	updSubtasksStmt = updSubtasksStmt.
 		WHERE(table.EvaluationSubtasks.EvalUUID.EQ(postgres.UUID(evalUuid)).
 			AND(
 				table.EvaluationSubtasks.SubtaskID.IN(
@@ -382,11 +379,70 @@ func (s *SubmissionSrvc) handleFinishedTest(x *sqsgath.FinishedTest) {
 						),
 				),
 			))
-	_, err = updStmt.Exec(s.postgres)
+	_, err = updSubtasksStmt.Exec(s.postgres)
 	if err != nil {
 		log.Printf("failed to update evaluation subtasks: %v", err)
 	}
 
+	// Update EvaluationTestGroups table
+	var updTestGroupsStmt postgres.UpdateStatement
+	if accepted {
+		updTestGroupsStmt = table.EvaluationTestgroups.
+			UPDATE(table.EvaluationTestgroups.Accepted, table.EvaluationTestgroups.Untested)
+		updTestGroupsStmt = updTestGroupsStmt.SET(
+			table.EvaluationTestgroups.Accepted.ADD(postgres.Int(1)),
+			table.EvaluationTestgroups.Untested.SUB(postgres.Int(1)),
+		)
+	} else {
+		updTestGroupsStmt = table.EvaluationTestgroups.
+			UPDATE(table.EvaluationTestgroups.Untested, table.EvaluationTestgroups.Wrong)
+		updTestGroupsStmt = updTestGroupsStmt.SET(
+			table.EvaluationTestgroups.Untested.SUB(postgres.Int(1)),
+			table.EvaluationTestgroups.Wrong.ADD(postgres.Int(1)),
+		)
+	}
+
+	updTestGroupsStmt = updTestGroupsStmt.
+		WHERE(table.EvaluationTestgroups.EvalUUID.EQ(postgres.UUID(evalUuid)).
+			AND(
+				table.EvaluationTestgroups.TestgroupID.IN(
+					postgres.SELECT(postgres.Raw(fmt.Sprintf("unnest(%s)",
+						table.EvaluationTests.Testgroups.Name()))).
+						FROM(table.EvaluationTests).
+						WHERE(
+							table.EvaluationTests.EvalUUID.EQ(postgres.UUID(evalUuid)).
+								AND(table.EvaluationTests.TestID.EQ(postgres.Int32(int32(x.TestId)))),
+						),
+				),
+			))
+	_, err = updTestGroupsStmt.Exec(s.postgres)
+	if err != nil {
+		log.Printf("failed to update evaluation test groups: %v", err)
+	}
+
+	var updTestSetStmt postgres.UpdateStatement
+	if accepted {
+		updTestSetStmt = table.EvaluationTestset.
+			UPDATE(table.EvaluationTestset.Accepted, table.EvaluationTestset.Untested)
+		updTestSetStmt = updTestSetStmt.SET(
+			table.EvaluationTestset.Accepted.ADD(postgres.Int(1)),
+			table.EvaluationTestset.Untested.SUB(postgres.Int(1)),
+		)
+	} else {
+		updTestSetStmt = table.EvaluationTestset.
+			UPDATE(table.EvaluationTestset.Untested, table.EvaluationTestset.Wrong)
+		updTestSetStmt = updTestSetStmt.SET(
+			table.EvaluationTestset.Untested.SUB(postgres.Int(1)),
+			table.EvaluationTestset.Wrong.ADD(postgres.Int(1)),
+		)
+	}
+
+	updTestSetStmt = updTestSetStmt.
+		WHERE(table.EvaluationTestset.EvalUUID.EQ(postgres.UUID(evalUuid)))
+	_, err = updTestSetStmt.Exec(s.postgres)
+	if err != nil {
+		log.Printf("failed to update evaluation test set: %v", err)
+	}
 }
 
 func logFinishedTest(x *sqsgath.FinishedTest) {
