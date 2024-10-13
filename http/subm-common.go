@@ -60,7 +60,7 @@ type ExecutionInfo struct {
 	ExitCode      int     `json:"exit_code"`
 	StdoutTrimmed *string `json:"stdout_trimmed"`
 	StderrTrimmed *string `json:"stderr_trimmed"`
-	ExitSignal    *int    `json:"exit_signal"`
+	ExitSignal    *int64  `json:"exit_signal"`
 }
 
 type EvalTest struct {
@@ -73,11 +73,11 @@ type EvalTest struct {
 	InputTrimmed  *string `json:"input_trimmed"`
 	AnswerTrimmed *string `json:"answer_trimmed"`
 
-	TimeExceeded   *bool `json:"time_exceeded"`
-	MemoryExceeded *bool `json:"memory_exceeded"`
+	TimeExceeded   bool `json:"time_exceeded"`
+	MemoryExceeded bool `json:"memory_exceeded"`
 
 	Subtasks  []int `json:"subtasks"`
-	TestGroup *int  `json:"test_group"`
+	TestGroup []int `json:"test_groups"`
 
 	SubmExecInfo    *ExecutionInfo `json:"subm_exec_info"`
 	CheckerExecInfo *ExecutionInfo `json:"checker_exec_info"`
@@ -183,9 +183,42 @@ func mapEvalDetails(x *submsrvc.EvalDetails) *EvalDetails {
 	if x == nil {
 		return nil
 	}
-	// TODO: implement
 	return &EvalDetails{
-		EvalUuid: x.EvalUuid,
+		EvalUuid:             x.EvalUuid,
+		CreatedAtRfc3339:     x.CreatedAt.Format(time.RFC3339),
+		ErrorMsg:             x.ErrorMsg,
+		EvalStage:            x.EvalStage,
+		CpuTimeLimitMillis:   &x.CpuTimeLimitMillis,
+		MemoryLimitKibiBytes: &x.MemoryLimitKiB,
+		ProgrLang: ProgrammingLang{
+			ID:               x.ProgrammingLang.ID,
+			FullName:         x.ProgrammingLang.FullName,
+			CodeFilename:     x.ProgrammingLang.CodeFilename,
+			CompileCmd:       x.ProgrammingLang.CompileCmd,
+			ExecuteCmd:       x.ProgrammingLang.ExecuteCmd,
+			EnvVersionCmd:    x.ProgrammingLang.EnvVersionCmd,
+			HelloWorldCode:   x.ProgrammingLang.HelloWorldCode,
+			MonacoID:         x.ProgrammingLang.MonacoId,
+			CompiledFilename: x.ProgrammingLang.CompiledFilename,
+			Enabled:          x.ProgrammingLang.Enabled,
+		},
+		SystemInfo:      x.SystemInformation,
+		CompileExecInfo: mapExecInfo(x.CompileRuntime),
+	}
+}
+
+func mapExecInfo(x *submsrvc.RuntimeData) *ExecutionInfo {
+	if x == nil {
+		return nil
+	}
+	return &ExecutionInfo{
+		CpuTimeMillis: x.CpuMillis,
+		MemKibiBytes:  x.MemoryKiB,
+		WallTime:      x.WallTime,
+		ExitCode:      x.ExitCode,
+		StdoutTrimmed: x.Stdout,
+		StderrTrimmed: x.Stderr,
+		ExitSignal:    x.ExitSignal,
 	}
 }
 
@@ -193,12 +226,26 @@ func mapTestResults(x []submsrvc.EvalTestResult) []EvalTest {
 	if x == nil {
 		return nil
 	}
-	// TODO: implement
 	res := make([]EvalTest, len(x))
 	for i, v := range x {
-		res[i] = EvalTest{
-			TestId: v.TestId,
-		}
+		res[i] = mapEvalTest(v)
 	}
 	return res
+}
+
+func mapEvalTest(x submsrvc.EvalTestResult) EvalTest {
+	return EvalTest{
+		TestId:          x.TestId,
+		Reached:         x.Reached,
+		Ignored:         x.Ignored,
+		Finished:        x.Finished,
+		InputTrimmed:    x.InputTrimmed,
+		AnswerTrimmed:   x.AnswerTrimmed,
+		TimeExceeded:    x.TimeExceeded,
+		MemoryExceeded:  x.MemoryExceeded,
+		Subtasks:        x.Subtasks,
+		TestGroup:       x.TestGroups,
+		SubmExecInfo:    mapExecInfo(x.SubmRuntime),
+		CheckerExecInfo: mapExecInfo(x.CheckerRuntime),
+	}
 }

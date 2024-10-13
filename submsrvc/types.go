@@ -49,11 +49,11 @@ type EvalTestResult struct {
 	InputTrimmed  *string
 	AnswerTrimmed *string
 
-	TimeExceeded   *bool
-	MemoryExceeded *bool
+	TimeExceeded   bool
+	MemoryExceeded bool
 
-	Subtasks  []int
-	TestGroup *int
+	Subtasks   []int
+	TestGroups []int
 
 	SubmRuntime    *RuntimeData
 	CheckerRuntime *RuntimeData
@@ -66,7 +66,7 @@ type RuntimeData struct {
 	ExitCode   int
 	Stdout     *string
 	Stderr     *string
-	ExitSignal *int
+	ExitSignal *int64
 }
 
 type EvalDetails struct {
