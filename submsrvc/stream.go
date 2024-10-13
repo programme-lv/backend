@@ -16,13 +16,13 @@ func (s *SubmissionSrvc) StartStreamingSubmListUpdates(ctx context.Context) {
 
 	for {
 		select {
-		case created := <-s.createNewSubmChan:
+		case created := <-s.submCreated:
 			// notify all listeners about the new submission
 			update := &SubmissionListUpdate{
 				SubmCreated: created,
 			}
 			sendUpdate(update)
-		case stateUpdate := <-s.updateSubmEvalStageChan:
+		case stateUpdate := <-s.evalStageUpd:
 			// notify all listeners about the state update
 			update := &SubmissionListUpdate{
 				StateUpdate: &SubmEvalStageUpdate{
@@ -32,7 +32,7 @@ func (s *SubmissionSrvc) StartStreamingSubmListUpdates(ctx context.Context) {
 				},
 			}
 			sendUpdate(update)
-		case testgroupScoringResUpdate := <-s.updateTestGroupScoreChan:
+		case testgroupScoringResUpdate := <-s.testGroupScoreUpd:
 			// notify all listeners about the testgroup result update
 			update := &SubmissionListUpdate{
 				TestgroupResUpdate: &TestGroupScoringUpdate{
@@ -46,7 +46,7 @@ func (s *SubmissionSrvc) StartStreamingSubmListUpdates(ctx context.Context) {
 			}
 
 			sendUpdate(update)
-		case atomicTestsScoringResUpdate := <-s.updateTestScoreChan:
+		case atomicTestsScoringResUpdate := <-s.testSetScoreUpd:
 			update := &SubmissionListUpdate{
 				TestsResUpdate: atomicTestsScoringResUpdate,
 			}

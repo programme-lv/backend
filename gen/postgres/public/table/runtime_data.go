@@ -18,8 +18,6 @@ type runtimeDataTable struct {
 
 	// Columns
 	ID                postgres.ColumnInteger
-	EvalUUID          postgres.ColumnString
-	TestID            postgres.ColumnInteger
 	Stdout            postgres.ColumnString
 	Stderr            postgres.ColumnString
 	ExitCode          postgres.ColumnInteger
@@ -71,8 +69,6 @@ func newRuntimeDataTable(schemaName, tableName, alias string) *RuntimeDataTable 
 func newRuntimeDataTableImpl(schemaName, tableName, alias string) runtimeDataTable {
 	var (
 		IDColumn                = postgres.IntegerColumn("id")
-		EvalUUIDColumn          = postgres.StringColumn("eval_uuid")
-		TestIDColumn            = postgres.IntegerColumn("test_id")
 		StdoutColumn            = postgres.StringColumn("stdout")
 		StderrColumn            = postgres.StringColumn("stderr")
 		ExitCodeColumn          = postgres.IntegerColumn("exit_code")
@@ -83,8 +79,8 @@ func newRuntimeDataTableImpl(schemaName, tableName, alias string) runtimeDataTab
 		ExitSignalColumn        = postgres.IntegerColumn("exit_signal")
 		IsolateStatusColumn     = postgres.StringColumn("isolate_status")
 		CreatedAtColumn         = postgres.TimestampzColumn("created_at")
-		allColumns              = postgres.ColumnList{IDColumn, EvalUUIDColumn, TestIDColumn, StdoutColumn, StderrColumn, ExitCodeColumn, CPUTimeMillisColumn, WallTimeMillisColumn, MemoryKibiBytesColumn, CtxSwitchesForcedColumn, ExitSignalColumn, IsolateStatusColumn, CreatedAtColumn}
-		mutableColumns          = postgres.ColumnList{EvalUUIDColumn, TestIDColumn, StdoutColumn, StderrColumn, ExitCodeColumn, CPUTimeMillisColumn, WallTimeMillisColumn, MemoryKibiBytesColumn, CtxSwitchesForcedColumn, ExitSignalColumn, IsolateStatusColumn, CreatedAtColumn}
+		allColumns              = postgres.ColumnList{IDColumn, StdoutColumn, StderrColumn, ExitCodeColumn, CPUTimeMillisColumn, WallTimeMillisColumn, MemoryKibiBytesColumn, CtxSwitchesForcedColumn, ExitSignalColumn, IsolateStatusColumn, CreatedAtColumn}
+		mutableColumns          = postgres.ColumnList{StdoutColumn, StderrColumn, ExitCodeColumn, CPUTimeMillisColumn, WallTimeMillisColumn, MemoryKibiBytesColumn, CtxSwitchesForcedColumn, ExitSignalColumn, IsolateStatusColumn, CreatedAtColumn}
 	)
 
 	return runtimeDataTable{
@@ -92,8 +88,6 @@ func newRuntimeDataTableImpl(schemaName, tableName, alias string) runtimeDataTab
 
 		//Columns
 		ID:                IDColumn,
-		EvalUUID:          EvalUUIDColumn,
-		TestID:            TestIDColumn,
 		Stdout:            StdoutColumn,
 		Stderr:            StderrColumn,
 		ExitCode:          ExitCodeColumn,

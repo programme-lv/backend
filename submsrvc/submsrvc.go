@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log/slog"
+	"log"
 	"os"
 	"sync"
 	"time"
@@ -16,6 +16,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/programme-lv/backend/tasksrvc"
 	"github.com/programme-lv/backend/user"
+	"github.com/programme-lv/tester/sqsgath"
 
 	_ "github.com/lib/pq"
 )
@@ -31,12 +32,13 @@ type SubmissionSrvc struct {
 	resSqsUrl  string
 
 	// real-time updates
-	createNewSubmChan        chan *Submission
-	updateSubmEvalStageChan  chan *SubmEvalStageUpdate
-	updateTestGroupScoreChan chan *TestGroupScoringUpdate
-	updateTestScoreChan      chan *TestSetScoringUpdate
-	listenerLock             sync.Mutex
-	listeners                []chan *SubmissionListUpdate
+	submCreated       chan *Submission
+	evalStageUpd      chan *SubmEvalStageUpdate
+	testGroupScoreUpd chan *TestGroupScoringUpdate
+	testSetScoreUpd   chan *TestSetScoringUpdate
+
+	listenerLock sync.Mutex
+	listeners    []chan *SubmissionListUpdate
 
 	evalUuidToSubmUuid sync.Map
 }
@@ -70,19 +72,19 @@ func NewSubmissions(taskSrvc *tasksrvc.TaskService) *SubmissionSrvc {
 	}
 
 	srvc := &SubmissionSrvc{
-		userSrvc:                 user.NewUsers(),
-		taskSrvc:                 taskSrvc,
-		postgres:                 db,
-		sqsClient:                sqsClient,
-		submSqsUrl:               submQueueUrl,
-		createNewSubmChan:        make(chan *Submission, 1000),
-		updateSubmEvalStageChan:  make(chan *SubmEvalStageUpdate, 1000),
-		updateTestGroupScoreChan: make(chan *TestGroupScoringUpdate, 1000),
-		updateTestScoreChan:      make(chan *TestSetScoringUpdate, 1000),
-		listenerLock:             sync.Mutex{},
-		listeners:                make([]chan *SubmissionListUpdate, 0, 100),
-		evalUuidToSubmUuid:       sync.Map{},
-		resSqsUrl:                responseSQSURL,
+		userSrvc:           user.NewUsers(),
+		taskSrvc:           taskSrvc,
+		postgres:           db,
+		sqsClient:          sqsClient,
+		submSqsUrl:         submQueueUrl,
+		submCreated:        make(chan *Submission, 1000),
+		evalStageUpd:       make(chan *SubmEvalStageUpdate, 1000),
+		testGroupScoreUpd:  make(chan *TestGroupScoringUpdate, 1000),
+		testSetScoreUpd:    make(chan *TestSetScoringUpdate, 1000),
+		listenerLock:       sync.Mutex{},
+		listeners:          make([]chan *SubmissionListUpdate, 0, 100),
+		evalUuidToSubmUuid: sync.Map{},
+		resSqsUrl:          responseSQSURL,
 	}
 
 	go srvc.StartProcessingSubmEvalResults(context.TODO())
@@ -104,7 +106,7 @@ func (s *SubmissionSrvc) StartProcessingSubmEvalResults(ctx context.Context) (er
 			WaitTimeSeconds:     5,
 		})
 		if err != nil {
-			fmt.Printf("failed to receive messages, %v\n", err)
+			log.Printf("failed to receive messages, %v\n", err)
 			time.Sleep(1 * time.Second)
 			continue
 		}
@@ -115,33 +117,92 @@ func (s *SubmissionSrvc) StartProcessingSubmEvalResults(ctx context.Context) (er
 				ReceiptHandle: message.ReceiptHandle,
 			})
 			if err != nil {
-				fmt.Printf("failed to delete message, %v\n", err)
+				log.Printf("failed to delete message, %v\n", err)
 			}
 
-			slog.Info("received eval message", "body", (*message.Body)[:min(200, len(*message.Body))])
-
-			var qMsg struct {
-				EvalUuid string           `json:"eval_uuid"`
-				Data     *json.RawMessage `json:"data"`
-			}
-			err := json.Unmarshal([]byte(*message.Body), &qMsg)
+			var header sqsgath.Header
+			err = json.Unmarshal([]byte(*message.Body), &header)
 			if err != nil {
-				fmt.Printf("failed to unmarshal message: %v\n", err)
+				log.Printf("failed to unmarshal message: %v\n", err)
 				continue
 			}
 
-			msgType := struct {
-				MsgType string `json:"msg_type"`
-			}{}
-			err = json.Unmarshal(*qMsg.Data, &msgType)
-			if err != nil {
-				fmt.Printf("failed to unmarshal message: %v\n", err)
-				continue
+			switch header.MsgType {
+			case sqsgath.MsgTypeStartedEvaluation:
+				startedEvaluation := sqsgath.StartedEvaluation{}
+				err = json.Unmarshal([]byte(*message.Body), &startedEvaluation)
+				if err != nil {
+					log.Printf("failed to unmarshal StartedEvaluation message: %v\n", err)
+				} else {
+					s.handleStartedEvaluation(&startedEvaluation)
+				}
+			case sqsgath.MsgTypeStartedCompilation:
+				startedCompilation := sqsgath.StartedCompilation{}
+				err = json.Unmarshal([]byte(*message.Body), &startedCompilation)
+				if err != nil {
+					log.Printf("failed to unmarshal StartedCompilation message: %v\n", err)
+				} else {
+					s.handleStartedCompilation(&startedCompilation)
+				}
+			case sqsgath.MsgTypeFinishedCompilation:
+				finishedCompilation := sqsgath.FinishedCompilation{}
+				err = json.Unmarshal([]byte(*message.Body), &finishedCompilation)
+				if err != nil {
+					log.Printf("failed to unmarshal FinishedCompilation message: %v\n", err)
+				} else {
+					s.handleFinishedCompilation(&finishedCompilation)
+				}
+			case sqsgath.MsgTypeStartedTesting:
+				startedTesting := sqsgath.StartedTesting{}
+				err = json.Unmarshal([]byte(*message.Body), &startedTesting)
+				if err != nil {
+					log.Printf("failed to unmarshal StartedTesting message: %v\n", err)
+				} else {
+					s.handleStartedTesting(&startedTesting)
+				}
+			case sqsgath.MsgTypeReachedTest:
+				reachedTest := sqsgath.ReachedTest{}
+				err = json.Unmarshal([]byte(*message.Body), &reachedTest)
+				if err != nil {
+					log.Printf("failed to unmarshal ReachedTest message: %v\n", err)
+				} else {
+					s.handleReachedTest(&reachedTest)
+				}
+			case sqsgath.MsgTypeIgnoredTest:
+				ignoredTest := sqsgath.IgnoredTest{}
+				err = json.Unmarshal([]byte(*message.Body), &ignoredTest)
+				if err != nil {
+					log.Printf("failed to unmarshal IgnoredTest message: %v\n", err)
+				} else {
+					s.handleIgnoredTest(&ignoredTest)
+				}
+			case sqsgath.MsgTypeFinishedTest:
+				finishedTest := sqsgath.FinishedTest{}
+				err = json.Unmarshal([]byte(*message.Body), &finishedTest)
+				if err != nil {
+					log.Printf("failed to unmarshal FinishedTest message: %v\n", err)
+				} else {
+					s.handleFinishedTest(&finishedTest)
+				}
+			case sqsgath.MsgTypeFinishedTesting:
+				finishedTesting := sqsgath.FinishedTesting{}
+				err = json.Unmarshal([]byte(*message.Body), &finishedTesting)
+				if err != nil {
+					log.Printf("failed to unmarshal FinishedTesting message: %v\n", err)
+				} else {
+					s.handleFinishedTesting(&finishedTesting)
+				}
+			case sqsgath.MsgTypeFinishedEvaluation:
+				finishedEvaluation := sqsgath.FinishedEvaluation{}
+				err = json.Unmarshal([]byte(*message.Body), &finishedEvaluation)
+				if err != nil {
+					log.Printf("failed to unmarshal FinishedEvaluation message: %v\n", err)
+				} else {
+					s.handleFinishedEvaluation(&finishedEvaluation)
+				}
 			}
 
-			// TODO throttle for each eval uuid individually
 			<-throtleChan
-			s.processEvalResult(qMsg.EvalUuid, msgType.MsgType, qMsg.Data)
 			throtleChan <- struct{}{}
 		}
 	}

@@ -182,7 +182,7 @@ func (s *SubmissionSrvc) CreateSubmission(ctx context.Context,
 	}
 	req := EvalRequest{
 		EvalUuid:  evalUuid.String(),
-		ResSqsUrl: &s.resSqsUrl,
+		ResSqsUrl: s.resSqsUrl,
 		Code:      params.Submission,
 		Language: Language{
 			LangID:        language.ID,
@@ -237,7 +237,7 @@ func (s *SubmissionSrvc) CreateSubmission(ctx context.Context,
 		},
 	}
 
-	s.createNewSubmChan <- res
+	s.submCreated <- res
 
 	return res, nil
 }

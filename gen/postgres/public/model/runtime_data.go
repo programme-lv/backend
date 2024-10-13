@@ -8,20 +8,17 @@
 package model
 
 import (
-	"github.com/google/uuid"
 	"time"
 )
 
 type RuntimeData struct {
 	ID                int32 `sql:"primary_key"`
-	EvalUUID          uuid.UUID
-	TestID            int32
 	Stdout            *string
 	Stderr            *string
-	ExitCode          *int32
-	CPUTimeMillis     *int32
-	WallTimeMillis    *int32
-	MemoryKibiBytes   *int32
+	ExitCode          int64
+	CPUTimeMillis     int64
+	WallTimeMillis    int64
+	MemoryKibiBytes   int64
 	CtxSwitchesForced *int64
 	ExitSignal        *int64
 	IsolateStatus     *string
