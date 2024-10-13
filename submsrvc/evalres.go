@@ -30,6 +30,39 @@ func (s *SubmissionSrvc) handleStartedEvaluation(x *sqsgath.StartedEvaluation) {
 	if err != nil {
 		log.Printf("failed to update evaluation stage: %v", err)
 	}
+
+	submUuid, err := s.getSubmUuidFromEvalUuid(evalUuid)
+	if err != nil {
+		log.Printf("failed to get subm_uuid from eval_uuid: %v", err)
+		return
+	}
+	s.evalStageUpd <- &SubmEvalStageUpdate{
+		SubmUuid: submUuid.String(),
+		EvalUuid: evalUuid.String(),
+		NewStage: "received",
+	}
+}
+
+func (s *SubmissionSrvc) getSubmUuidFromEvalUuid(evalUuid uuid.UUID) (uuid.UUID, error) {
+	// Check if evalUuid exists in s.evalUuidToSubmUuid sync.Map
+	if submUuid, ok := s.evalUuidToSubmUuid.Load(evalUuid); ok {
+		return submUuid.(uuid.UUID), nil
+	}
+
+	// If not found, perform a database select
+	var subm model.Submissions
+	err := table.Submissions.
+		SELECT(table.Submissions.SubmUUID).
+		WHERE(table.Submissions.CurrentEvalUUID.EQ(postgres.UUID(evalUuid))).
+		Query(s.postgres, &subm)
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("failed to get subm_uuid from database: %v", err)
+	}
+
+	// Store the result in s.evalUuidToSubmUuid sync.Map
+	s.evalUuidToSubmUuid.Store(evalUuid, subm.SubmUUID)
+
+	return subm.SubmUUID, nil
 }
 
 func logStartedEvaluation(x *sqsgath.StartedEvaluation) {
@@ -56,6 +89,18 @@ func (s *SubmissionSrvc) handleStartedCompilation(x *sqsgath.StartedCompilation)
 	_, err = updStmt.Exec(s.postgres)
 	if err != nil {
 		log.Printf("failed to update evaluation stage: %v", err)
+	}
+
+	submUuid, err := s.getSubmUuidFromEvalUuid(evalUuid)
+	if err != nil {
+		log.Printf("failed to get subm_uuid from eval_uuid: %v", err)
+		return
+	}
+
+	s.evalStageUpd <- &SubmEvalStageUpdate{
+		SubmUuid: submUuid.String(),
+		EvalUuid: evalUuid.String(),
+		NewStage: "compiling",
 	}
 }
 
@@ -150,6 +195,18 @@ func (s *SubmissionSrvc) handleStartedTesting(x *sqsgath.StartedTesting) {
 	_, err = updStmt.Exec(s.postgres)
 	if err != nil {
 		log.Printf("failed to update evaluation stage: %v", err)
+	}
+
+	submUuid, err := s.getSubmUuidFromEvalUuid(evalUuid)
+	if err != nil {
+		log.Printf("failed to get subm_uuid from eval_uuid: %v", err)
+		return
+	}
+
+	s.evalStageUpd <- &SubmEvalStageUpdate{
+		SubmUuid: submUuid.String(),
+		EvalUuid: evalUuid.String(),
+		NewStage: "testing",
 	}
 }
 
@@ -378,11 +435,23 @@ func (s *SubmissionSrvc) handleFinishedTest(x *sqsgath.FinishedTest) {
 								AND(table.EvaluationTests.TestID.EQ(postgres.Int32(int32(x.TestId)))),
 						),
 				),
-			))
-	_, err = updSubtasksStmt.Exec(s.postgres)
+			)).RETURNING(table.EvaluationSubtasks.AllColumns)
+	var subtasks []model.EvaluationSubtasks
+	err = updSubtasksStmt.Query(s.postgres, &subtasks)
 	if err != nil {
 		log.Printf("failed to update evaluation subtasks: %v", err)
 	}
+
+	// for _, subtask := range subtasks {
+	// 	s. <- &SubtaskScoringUpdate{
+	// 		SubmUUID:      submUuid.String(),
+	// 		EvalUUID:      evalUuid.String(),
+	// 		SubtaskID:     int(subtask.SubtaskID),
+	// 		AcceptedTests: int(subtask.Accepted),
+	// 		WrongTests:    int(subtask.Wrong),
+	// 		UntestedTests: int(subtask.Untested),
+	// 	}
+	// }
 
 	// Update EvaluationTestGroups table
 	var updTestGroupsStmt postgres.UpdateStatement
@@ -414,10 +483,28 @@ func (s *SubmissionSrvc) handleFinishedTest(x *sqsgath.FinishedTest) {
 								AND(table.EvaluationTests.TestID.EQ(postgres.Int32(int32(x.TestId)))),
 						),
 				),
-			))
-	_, err = updTestGroupsStmt.Exec(s.postgres)
+			)).RETURNING(table.EvaluationTestgroups.AllColumns)
+	var testGroups []model.EvaluationTestgroups
+	err = updTestGroupsStmt.Query(s.postgres, &testGroups)
 	if err != nil {
 		log.Printf("failed to update evaluation test groups: %v", err)
+	}
+
+	submUuid, err := s.getSubmUuidFromEvalUuid(evalUuid)
+	if err != nil {
+		log.Printf("failed to get subm_uuid from eval_uuid: %v", err)
+		return
+	}
+
+	for _, testGroup := range testGroups {
+		s.testGroupScoreUpd <- &TestGroupScoringUpdate{
+			SubmUUID:      submUuid.String(),
+			EvalUUID:      evalUuid.String(),
+			TestGroupID:   int(testGroup.TestgroupID),
+			AcceptedTests: int(testGroup.Accepted),
+			WrongTests:    int(testGroup.Wrong),
+			UntestedTests: int(testGroup.Untested),
+		}
 	}
 
 	var updTestSetStmt postgres.UpdateStatement
@@ -438,10 +525,20 @@ func (s *SubmissionSrvc) handleFinishedTest(x *sqsgath.FinishedTest) {
 	}
 
 	updTestSetStmt = updTestSetStmt.
-		WHERE(table.EvaluationTestset.EvalUUID.EQ(postgres.UUID(evalUuid)))
-	_, err = updTestSetStmt.Exec(s.postgres)
+		WHERE(table.EvaluationTestset.EvalUUID.EQ(postgres.UUID(evalUuid))).
+		RETURNING(table.EvaluationTestset.AllColumns)
+	var testSet model.EvaluationTestset
+	err = updTestSetStmt.Query(s.postgres, &testSet)
 	if err != nil {
 		log.Printf("failed to update evaluation test set: %v", err)
+	}
+
+	s.testSetScoreUpd <- &TestSetScoringUpdate{
+		SubmUuid: submUuid.String(),
+		EvalUuid: evalUuid.String(),
+		Accepted: int(testSet.Accepted),
+		Wrong:    int(testSet.Wrong),
+		Untested: int(testSet.Untested),
 	}
 }
 
@@ -502,6 +599,18 @@ func (s *SubmissionSrvc) handleFinishedEvaluation(x *sqsgath.FinishedEvaluation)
 		if err != nil {
 			log.Printf("failed to update evaluation stage: %v", err)
 		}
+
+		submUuid, err := s.getSubmUuidFromEvalUuid(evalUuid)
+		if err != nil {
+			log.Printf("failed to get subm_uuid from eval_uuid: %v", err)
+			return
+		}
+
+		s.evalStageUpd <- &SubmEvalStageUpdate{
+			SubmUuid: submUuid.String(),
+			EvalUuid: evalUuid.String(),
+			NewStage: "compile_error",
+		}
 	} else if x.InternalError || (x.ErrorMessage != nil && *x.ErrorMessage != "") {
 		var updateStmt postgres.UpdateStatement
 		if x.ErrorMessage != nil {
@@ -519,6 +628,18 @@ func (s *SubmissionSrvc) handleFinishedEvaluation(x *sqsgath.FinishedEvaluation)
 		if err != nil {
 			log.Printf("failed to update evaluation stage: %v", err)
 		}
+
+		submUuid, err := s.getSubmUuidFromEvalUuid(evalUuid)
+		if err != nil {
+			log.Printf("failed to get subm_uuid from eval_uuid: %v", err)
+			return
+		}
+
+		s.evalStageUpd <- &SubmEvalStageUpdate{
+			SubmUuid: submUuid.String(),
+			EvalUuid: evalUuid.String(),
+			NewStage: "internal_error",
+		}
 	} else {
 		updateStmt := table.Evaluations.
 			UPDATE(table.Evaluations.EvaluationStage).
@@ -527,6 +648,18 @@ func (s *SubmissionSrvc) handleFinishedEvaluation(x *sqsgath.FinishedEvaluation)
 		_, err = updateStmt.Exec(s.postgres)
 		if err != nil {
 			log.Printf("failed to update evaluation stage: %v", err)
+		}
+
+		submUuid, err := s.getSubmUuidFromEvalUuid(evalUuid)
+		if err != nil {
+			log.Printf("failed to get subm_uuid from eval_uuid: %v", err)
+			return
+		}
+
+		s.evalStageUpd <- &SubmEvalStageUpdate{
+			SubmUuid: submUuid.String(),
+			EvalUuid: evalUuid.String(),
+			NewStage: "finished",
 		}
 	}
 }

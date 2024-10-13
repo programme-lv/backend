@@ -95,8 +95,8 @@ func NewSubmissions(taskSrvc *tasksrvc.TaskService) *SubmissionSrvc {
 
 func (s *SubmissionSrvc) StartProcessingSubmEvalResults(ctx context.Context) (err error) {
 	submEvalResQueueUrl := s.resSqsUrl
-	throtleChan := make(chan struct{}, 20)
-	for i := 0; i < 20; i++ {
+	throtleChan := make(chan struct{}, 100)
+	for i := 0; i < 100; i++ {
 		throtleChan <- struct{}{}
 	}
 	for {

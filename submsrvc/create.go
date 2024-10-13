@@ -238,6 +238,7 @@ func (s *SubmissionSrvc) CreateSubmission(ctx context.Context,
 	}
 
 	s.submCreated <- res
+	s.evalUuidToSubmUuid.Store(evalUuid, submUuid)
 
 	return res, nil
 }
