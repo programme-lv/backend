@@ -25,4 +25,5 @@ type EvaluationTests struct {
 	Testgroups       *string
 	CheckerRuntimeID *int32
 	SubmRuntimeID    *int32
+	Accepted         *bool
 }

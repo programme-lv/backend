@@ -1,6 +1,7 @@
 package submsrvc
 
 import (
+	"fmt"
 	"log"
 	"strings"
 	"time"
@@ -25,7 +26,6 @@ func (s *SubmissionSrvc) handleStartedEvaluation(x *sqsgath.StartedEvaluation) {
 		UPDATE(table.Evaluations.EvaluationStage, table.Evaluations.SystemInformation).
 		SET(postgres.String("received"), postgres.String(x.SystemInfo)).
 		WHERE(table.Evaluations.EvalUUID.EQ(postgres.UUID(evalUuid)))
-	log.Printf("update statement: %s", updStmt.DebugSql())
 	_, err = updStmt.Exec(s.postgres)
 	if err != nil {
 		log.Printf("failed to update evaluation stage: %v", err)
@@ -53,7 +53,6 @@ func (s *SubmissionSrvc) handleStartedCompilation(x *sqsgath.StartedCompilation)
 		UPDATE(table.Evaluations.EvaluationStage).
 		SET(postgres.String("compiling")).
 		WHERE(table.Evaluations.EvalUUID.EQ(postgres.UUID(evalUuid)))
-	log.Printf("update statement: %s", updStmt.DebugSql())
 	_, err = updStmt.Exec(s.postgres)
 	if err != nil {
 		log.Printf("failed to update evaluation stage: %v", err)
@@ -137,6 +136,21 @@ func logFinishedCompilation(x *sqsgath.FinishedCompilation) {
 
 func (s *SubmissionSrvc) handleStartedTesting(x *sqsgath.StartedTesting) {
 	logStartedTesting(x)
+
+	evalUuid, err := uuid.Parse(x.EvalUuid)
+	if err != nil {
+		log.Printf("failed to parse eval_uuid: %v", err)
+		return
+	}
+
+	updStmt := table.Evaluations.
+		UPDATE(table.Evaluations.EvaluationStage).
+		SET(postgres.String("testing")).
+		WHERE(table.Evaluations.EvalUUID.EQ(postgres.UUID(evalUuid)))
+	_, err = updStmt.Exec(s.postgres)
+	if err != nil {
+		log.Printf("failed to update evaluation stage: %v", err)
+	}
 }
 
 func logStartedTesting(x *sqsgath.StartedTesting) {
@@ -147,6 +161,28 @@ func logStartedTesting(x *sqsgath.StartedTesting) {
 
 func (s *SubmissionSrvc) handleReachedTest(x *sqsgath.ReachedTest) {
 	logReachedTest(x)
+
+	evalUuid, err := uuid.Parse(x.EvalUuid)
+	if err != nil {
+		log.Printf("failed to parse eval_uuid: %v", err)
+		return
+	}
+
+	if x.Input != nil && x.Answer != nil {
+		updateStmt := table.EvaluationTests.
+			UPDATE(table.EvaluationTests.Reached, table.EvaluationTests.InputTrimmed, table.EvaluationTests.AnswerTrimmed).
+			SET(postgres.Bool(true), postgres.String(*x.Input), postgres.String(*x.Answer)).
+			WHERE(
+				table.EvaluationTests.EvalUUID.EQ(postgres.UUID(evalUuid)).
+					AND(table.EvaluationTests.TestID.EQ(postgres.Int32(int32(x.TestId)))),
+			)
+		_, err = updateStmt.Exec(s.postgres)
+		if err != nil {
+			log.Printf("failed to update evaluation test reached: %v", err)
+		}
+	} else {
+		log.Printf("reached test with nil input or answer")
+	}
 }
 
 func logReachedTest(x *sqsgath.ReachedTest) {
@@ -168,6 +204,23 @@ func logReachedTest(x *sqsgath.ReachedTest) {
 
 func (s *SubmissionSrvc) handleIgnoredTest(x *sqsgath.IgnoredTest) {
 	logIgnoredTest(x)
+	evalUuid, err := uuid.Parse(x.EvalUuid)
+	if err != nil {
+		log.Printf("failed to parse eval_uuid: %v", err)
+		return
+	}
+
+	updateStmt := table.EvaluationTests.
+		UPDATE(table.EvaluationTests.Ignored).
+		SET(postgres.Bool(true)).
+		WHERE(
+			table.EvaluationTests.EvalUUID.EQ(postgres.UUID(evalUuid)).
+				AND(table.EvaluationTests.TestID.EQ(postgres.Int32(int32(x.TestId)))),
+		)
+	_, err = updateStmt.Exec(s.postgres)
+	if err != nil {
+		log.Printf("failed to update evaluation test ignored: %v", err)
+	}
 }
 
 func logIgnoredTest(x *sqsgath.IgnoredTest) {
@@ -179,6 +232,161 @@ func logIgnoredTest(x *sqsgath.IgnoredTest) {
 
 func (s *SubmissionSrvc) handleFinishedTest(x *sqsgath.FinishedTest) {
 	logFinishedTest(x)
+	evalUuid, err := uuid.Parse(x.EvalUuid)
+	if err != nil {
+		log.Printf("failed to parse eval_uuid: %v", err)
+		return
+	}
+
+	if x.Submission == nil {
+		log.Printf("finished test with nil submission")
+		return
+	}
+
+	now := time.Now()
+
+	// Create and insert submission runtime data
+	submRuntimeData := model.RuntimeData{
+		Stdout:            x.Submission.Stdout,
+		Stderr:            x.Submission.Stderr,
+		ExitCode:          x.Submission.ExitCode,
+		CPUTimeMillis:     x.Submission.CpuTimeMillis,
+		WallTimeMillis:    x.Submission.WallTimeMillis,
+		MemoryKibiBytes:   x.Submission.MemoryKibiBytes,
+		CtxSwitchesForced: &x.Submission.ContextSwitchesForced,
+		ExitSignal:        x.Submission.ExitSignal,
+		IsolateStatus:     &x.Submission.IsolateStatus,
+		CreatedAt:         &now,
+	}
+
+	insertSubmissionStmt := table.RuntimeData.
+		INSERT(table.RuntimeData.MutableColumns).
+		MODEL(submRuntimeData).
+		RETURNING(table.RuntimeData.ID)
+
+	err = insertSubmissionStmt.Query(s.postgres, &submRuntimeData)
+	if err != nil {
+		log.Printf("failed to insert submission runtime data: %v", err)
+		return
+	}
+
+	var accepted bool
+
+	if x.Checker == nil {
+		accepted = false
+		updateStmt := table.EvaluationTests.
+			UPDATE(
+				table.EvaluationTests.SubmRuntimeID,
+				table.EvaluationTests.Finished,
+				table.EvaluationTests.Accepted,
+			).
+			SET(
+				postgres.Int32(submRuntimeData.ID),
+				postgres.Bool(true),
+				postgres.Bool(accepted),
+			).
+			WHERE(
+				table.EvaluationTests.EvalUUID.EQ(postgres.UUID(evalUuid)).
+					AND(table.EvaluationTests.TestID.EQ(postgres.Int32(int32(x.TestId)))),
+			)
+
+		_, err = updateStmt.Exec(s.postgres)
+		if err != nil {
+			log.Printf("failed to update evaluation test: %v", err)
+		}
+	} else {
+		checkerRuntimeData := model.RuntimeData{
+			Stdout:            x.Checker.Stdout,
+			Stderr:            x.Checker.Stderr,
+			ExitCode:          x.Checker.ExitCode,
+			CPUTimeMillis:     x.Checker.CpuTimeMillis,
+			WallTimeMillis:    x.Checker.WallTimeMillis,
+			MemoryKibiBytes:   x.Checker.MemoryKibiBytes,
+			CtxSwitchesForced: &x.Checker.ContextSwitchesForced,
+			ExitSignal:        x.Checker.ExitSignal,
+			IsolateStatus:     &x.Checker.IsolateStatus,
+			CreatedAt:         &now,
+		}
+
+		insertCheckerStmt := table.RuntimeData.
+			INSERT(table.RuntimeData.MutableColumns).
+			MODEL(checkerRuntimeData).
+			RETURNING(table.RuntimeData.ID)
+
+		err = insertCheckerStmt.Query(s.postgres, &checkerRuntimeData)
+		if err != nil {
+			log.Printf("failed to insert checker runtime data: %v", err)
+			return
+		}
+
+		accepted = true
+		if x.Checker.ExitCode != 0 {
+			accepted = false
+		}
+		if x.Checker.Stderr != nil && *x.Checker.Stderr != "" {
+			accepted = false
+		}
+
+		// Update EvaluationTests table
+		updateStmt := table.EvaluationTests.
+			UPDATE(
+				table.EvaluationTests.SubmRuntimeID,
+				table.EvaluationTests.CheckerRuntimeID,
+				table.EvaluationTests.Finished,
+				table.EvaluationTests.Accepted,
+			).
+			SET(
+				postgres.Int32(submRuntimeData.ID),
+				postgres.Int32(checkerRuntimeData.ID),
+				postgres.Bool(true),
+				postgres.Bool(accepted),
+			).
+			WHERE(
+				table.EvaluationTests.EvalUUID.EQ(postgres.UUID(evalUuid)).
+					AND(table.EvaluationTests.TestID.EQ(postgres.Int32(int32(x.TestId)))),
+			)
+
+		_, err = updateStmt.Exec(s.postgres)
+		if err != nil {
+			log.Printf("failed to update evaluation test: %v", err)
+		}
+	}
+
+	var updStmt postgres.UpdateStatement
+	if accepted {
+		updStmt = table.EvaluationSubtasks.
+			UPDATE(table.EvaluationSubtasks.Accepted, table.EvaluationSubtasks.Untested)
+		updStmt = updStmt.SET(
+			table.EvaluationSubtasks.Accepted.ADD(postgres.Int(1)),
+			table.EvaluationSubtasks.Untested.SUB(postgres.Int(1)),
+		)
+	} else {
+		updStmt = table.EvaluationSubtasks.
+			UPDATE(table.EvaluationSubtasks.Untested, table.EvaluationSubtasks.Wrong)
+		updStmt = updStmt.SET(
+			table.EvaluationSubtasks.Untested.SUB(postgres.Int(1)),
+			table.EvaluationSubtasks.Wrong.ADD(postgres.Int(1)),
+		)
+	}
+
+	updStmt = updStmt.
+		WHERE(table.EvaluationSubtasks.EvalUUID.EQ(postgres.UUID(evalUuid)).
+			AND(
+				table.EvaluationSubtasks.SubtaskID.IN(
+					postgres.SELECT(postgres.Raw(fmt.Sprintf("unnest(%s)",
+						table.EvaluationTests.Subtasks.Name()))).
+						FROM(table.EvaluationTests).
+						WHERE(
+							table.EvaluationTests.EvalUUID.EQ(postgres.UUID(evalUuid)).
+								AND(table.EvaluationTests.TestID.EQ(postgres.Int32(int32(x.TestId)))),
+						),
+				),
+			))
+	_, err = updStmt.Exec(s.postgres)
+	if err != nil {
+		log.Printf("failed to update evaluation subtasks: %v", err)
+	}
+
 }
 
 func logFinishedTest(x *sqsgath.FinishedTest) {
@@ -214,15 +422,68 @@ func logFinishedTesting(x *sqsgath.FinishedTesting) {
 
 func (s *SubmissionSrvc) handleFinishedEvaluation(x *sqsgath.FinishedEvaluation) {
 	logFinishedEvaluation(x)
+
+	evalUuid, err := uuid.Parse(x.EvalUuid)
+	if err != nil {
+		log.Printf("failed to parse eval_uuid: %v", err)
+		return
+	}
+
+	if x.CompileError {
+		var updateStmt postgres.UpdateStatement
+		if x.ErrorMessage != nil {
+			updateStmt = table.Evaluations.
+				UPDATE(table.Evaluations.EvaluationStage, table.Evaluations.ErrorMessage).
+				SET(postgres.String("compile_error"), postgres.String(*x.ErrorMessage)).
+				WHERE(table.Evaluations.EvalUUID.EQ(postgres.UUID(evalUuid)))
+		} else {
+			updateStmt = table.Evaluations.
+				UPDATE(table.Evaluations.EvaluationStage).
+				SET(postgres.String("compile_error")).
+				WHERE(table.Evaluations.EvalUUID.EQ(postgres.UUID(evalUuid)))
+		}
+		_, err = updateStmt.Exec(s.postgres)
+		if err != nil {
+			log.Printf("failed to update evaluation stage: %v", err)
+		}
+	} else if x.InternalError || (x.ErrorMessage != nil && *x.ErrorMessage != "") {
+		var updateStmt postgres.UpdateStatement
+		if x.ErrorMessage != nil {
+			updateStmt = table.Evaluations.
+				UPDATE(table.Evaluations.EvaluationStage, table.Evaluations.ErrorMessage).
+				SET(postgres.String("internal_error"), postgres.String(*x.ErrorMessage)).
+				WHERE(table.Evaluations.EvalUUID.EQ(postgres.UUID(evalUuid)))
+		} else {
+			updateStmt = table.Evaluations.
+				UPDATE(table.Evaluations.EvaluationStage, table.Evaluations.ErrorMessage).
+				SET(postgres.String("internal_error"), postgres.String("unknown error")).
+				WHERE(table.Evaluations.EvalUUID.EQ(postgres.UUID(evalUuid)))
+		}
+		_, err = updateStmt.Exec(s.postgres)
+		if err != nil {
+			log.Printf("failed to update evaluation stage: %v", err)
+		}
+	} else {
+		updateStmt := table.Evaluations.
+			UPDATE(table.Evaluations.EvaluationStage).
+			SET(postgres.String("finished")).
+			WHERE(table.Evaluations.EvalUUID.EQ(postgres.UUID(evalUuid)))
+		_, err = updateStmt.Exec(s.postgres)
+		if err != nil {
+			log.Printf("failed to update evaluation stage: %v", err)
+		}
+	}
 }
 
 func logFinishedEvaluation(x *sqsgath.FinishedEvaluation) {
 	log.Printf("EvalUuid: %.6s...", x.EvalUuid)
 	log.Printf("MsgType: %s", x.MsgType)
-	if x.Error != nil {
-		log.Printf("Error: %s", *x.Error)
+	if x.ErrorMessage != nil {
+		log.Printf("ErrorMessage: %s", *x.ErrorMessage)
 	} else {
-		log.Printf("Error: nil")
+		log.Printf("ErrorMessage: nil")
 	}
+	log.Printf("CompileError: %t", x.CompileError)
+	log.Printf("InternalError: %t", x.InternalError)
 	log.Printf("--------------------------------")
 }

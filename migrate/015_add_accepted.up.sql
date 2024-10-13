@@ -1,0 +1,1 @@
+alter table evaluation_tests add column accepted boolean;

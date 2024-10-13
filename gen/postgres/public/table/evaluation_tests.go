@@ -30,6 +30,7 @@ type evaluationTestsTable struct {
 	Testgroups       postgres.ColumnString
 	CheckerRuntimeID postgres.ColumnInteger
 	SubmRuntimeID    postgres.ColumnInteger
+	Accepted         postgres.ColumnBool
 
 	AllColumns     postgres.ColumnList
 	MutableColumns postgres.ColumnList
@@ -83,8 +84,9 @@ func newEvaluationTestsTableImpl(schemaName, tableName, alias string) evaluation
 		TestgroupsColumn       = postgres.StringColumn("testgroups")
 		CheckerRuntimeIDColumn = postgres.IntegerColumn("checker_runtime_id")
 		SubmRuntimeIDColumn    = postgres.IntegerColumn("subm_runtime_id")
-		allColumns             = postgres.ColumnList{EvalUUIDColumn, TestIDColumn, FullInputS3URLColumn, FullAnswerS3URLColumn, ReachedColumn, IgnoredColumn, FinishedColumn, InputTrimmedColumn, AnswerTrimmedColumn, SubtasksColumn, TestgroupsColumn, CheckerRuntimeIDColumn, SubmRuntimeIDColumn}
-		mutableColumns         = postgres.ColumnList{FullInputS3URLColumn, FullAnswerS3URLColumn, ReachedColumn, IgnoredColumn, FinishedColumn, InputTrimmedColumn, AnswerTrimmedColumn, SubtasksColumn, TestgroupsColumn, CheckerRuntimeIDColumn, SubmRuntimeIDColumn}
+		AcceptedColumn         = postgres.BoolColumn("accepted")
+		allColumns             = postgres.ColumnList{EvalUUIDColumn, TestIDColumn, FullInputS3URLColumn, FullAnswerS3URLColumn, ReachedColumn, IgnoredColumn, FinishedColumn, InputTrimmedColumn, AnswerTrimmedColumn, SubtasksColumn, TestgroupsColumn, CheckerRuntimeIDColumn, SubmRuntimeIDColumn, AcceptedColumn}
+		mutableColumns         = postgres.ColumnList{FullInputS3URLColumn, FullAnswerS3URLColumn, ReachedColumn, IgnoredColumn, FinishedColumn, InputTrimmedColumn, AnswerTrimmedColumn, SubtasksColumn, TestgroupsColumn, CheckerRuntimeIDColumn, SubmRuntimeIDColumn, AcceptedColumn}
 	)
 
 	return evaluationTestsTable{
@@ -104,6 +106,7 @@ func newEvaluationTestsTableImpl(schemaName, tableName, alias string) evaluation
 		Testgroups:       TestgroupsColumn,
 		CheckerRuntimeID: CheckerRuntimeIDColumn,
 		SubmRuntimeID:    SubmRuntimeIDColumn,
+		Accepted:         AcceptedColumn,
 
 		AllColumns:     allColumns,
 		MutableColumns: mutableColumns,
