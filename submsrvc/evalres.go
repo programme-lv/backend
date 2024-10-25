@@ -1,17 +1,136 @@
 package submsrvc
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"strings"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/go-jet/jet/v2/postgres"
 	"github.com/google/uuid"
 	"github.com/programme-lv/backend/gen/postgres/public/model"
 	"github.com/programme-lv/backend/gen/postgres/public/table"
 	"github.com/programme-lv/tester/sqsgath"
 )
+
+func (s *SubmissionSrvc) StartProcessingSubmEvalResults(ctx context.Context) (err error) {
+	submEvalResQueueUrl := s.resSqsUrl
+	throtleChan := make(chan struct{}, 100)
+	for i := 0; i < 100; i++ {
+		throtleChan <- struct{}{}
+	}
+	for {
+		output, err := s.sqsClient.ReceiveMessage(context.TODO(), &sqs.ReceiveMessageInput{
+			QueueUrl:            aws.String(submEvalResQueueUrl),
+			MaxNumberOfMessages: 10,
+			WaitTimeSeconds:     5,
+		})
+		if err != nil {
+			log.Printf("failed to receive messages, %v\n", err)
+			time.Sleep(1 * time.Second)
+			continue
+		}
+
+		for _, message := range output.Messages {
+			_, err = s.sqsClient.DeleteMessage(context.TODO(), &sqs.DeleteMessageInput{
+				QueueUrl:      aws.String(submEvalResQueueUrl),
+				ReceiptHandle: message.ReceiptHandle,
+			})
+			if err != nil {
+				log.Printf("failed to delete message, %v\n", err)
+			}
+
+			var header sqsgath.Header
+			err = json.Unmarshal([]byte(*message.Body), &header)
+			if err != nil {
+				log.Printf("failed to unmarshal message: %v\n", err)
+				continue
+			}
+
+			switch header.MsgType {
+			case sqsgath.MsgTypeStartedEvaluation:
+				startedEvaluation := sqsgath.StartedEvaluation{}
+				err = json.Unmarshal([]byte(*message.Body), &startedEvaluation)
+				if err != nil {
+					log.Printf("failed to unmarshal StartedEvaluation message: %v\n", err)
+				} else {
+					s.handleStartedEvaluation(&startedEvaluation)
+				}
+			case sqsgath.MsgTypeStartedCompilation:
+				startedCompilation := sqsgath.StartedCompilation{}
+				err = json.Unmarshal([]byte(*message.Body), &startedCompilation)
+				if err != nil {
+					log.Printf("failed to unmarshal StartedCompilation message: %v\n", err)
+				} else {
+					s.handleStartedCompilation(&startedCompilation)
+				}
+			case sqsgath.MsgTypeFinishedCompilation:
+				finishedCompilation := sqsgath.FinishedCompilation{}
+				err = json.Unmarshal([]byte(*message.Body), &finishedCompilation)
+				if err != nil {
+					log.Printf("failed to unmarshal FinishedCompilation message: %v\n", err)
+				} else {
+					s.handleFinishedCompilation(&finishedCompilation)
+				}
+			case sqsgath.MsgTypeStartedTesting:
+				startedTesting := sqsgath.StartedTesting{}
+				err = json.Unmarshal([]byte(*message.Body), &startedTesting)
+				if err != nil {
+					log.Printf("failed to unmarshal StartedTesting message: %v\n", err)
+				} else {
+					s.handleStartedTesting(&startedTesting)
+				}
+			case sqsgath.MsgTypeReachedTest:
+				reachedTest := sqsgath.ReachedTest{}
+				err = json.Unmarshal([]byte(*message.Body), &reachedTest)
+				if err != nil {
+					log.Printf("failed to unmarshal ReachedTest message: %v\n", err)
+				} else {
+					s.handleReachedTest(&reachedTest)
+				}
+			case sqsgath.MsgTypeIgnoredTest:
+				ignoredTest := sqsgath.IgnoredTest{}
+				err = json.Unmarshal([]byte(*message.Body), &ignoredTest)
+				if err != nil {
+					log.Printf("failed to unmarshal IgnoredTest message: %v\n", err)
+				} else {
+					s.handleIgnoredTest(&ignoredTest)
+				}
+			case sqsgath.MsgTypeFinishedTest:
+				finishedTest := sqsgath.FinishedTest{}
+				err = json.Unmarshal([]byte(*message.Body), &finishedTest)
+				if err != nil {
+					log.Printf("failed to unmarshal FinishedTest message: %v\n", err)
+				} else {
+					s.handleFinishedTest(&finishedTest)
+				}
+			case sqsgath.MsgTypeFinishedTesting:
+				finishedTesting := sqsgath.FinishedTesting{}
+				err = json.Unmarshal([]byte(*message.Body), &finishedTesting)
+				if err != nil {
+					log.Printf("failed to unmarshal FinishedTesting message: %v\n", err)
+				} else {
+					s.handleFinishedTesting(&finishedTesting)
+				}
+			case sqsgath.MsgTypeFinishedEvaluation:
+				finishedEvaluation := sqsgath.FinishedEvaluation{}
+				err = json.Unmarshal([]byte(*message.Body), &finishedEvaluation)
+				if err != nil {
+					log.Printf("failed to unmarshal FinishedEvaluation message: %v\n", err)
+				} else {
+					s.handleFinishedEvaluation(&finishedEvaluation)
+				}
+			}
+
+			<-throtleChan
+			throtleChan <- struct{}{}
+		}
+	}
+}
 
 func (s *SubmissionSrvc) handleStartedEvaluation(x *sqsgath.StartedEvaluation) {
 	logStartedEvaluation(x)
