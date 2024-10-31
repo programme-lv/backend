@@ -26,7 +26,6 @@ type Task struct {
 	PdfStatements  []PdfStatement
 	VisInpSubtasks []VisibleInputSubtask
 	Examples       []Example
-	AssetUuidToUrl map[string]string
 
 	// evaluation
 	Tests      []Test
@@ -62,6 +61,17 @@ type MarkdownStatement struct {
 	Output  string
 	Notes   string
 	Scoring string
+
+	Images []MdImgInfo
+}
+
+type MdImgInfo struct {
+	Uuid  string
+	S3Url string
+
+	WidthPx  int
+	HeightPx int
+	WidthEm  int
 }
 
 type Subtask struct {

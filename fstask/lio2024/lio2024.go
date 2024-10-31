@@ -2,7 +2,7 @@ package lio2024
 
 import (
 	"fmt"
-	"log"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"sort"
@@ -24,10 +24,17 @@ func ParseLio2024TaskDir(dirPath string) (*fstask.Task, error) {
 		return nil, fmt.Errorf("failed to parse task.yaml: %v", err)
 	}
 
+	task := &fstask.Task{}
+	task.FullName = parsedYaml.FullTaskName
+
 	if parsedYaml.CheckerPathRelToYaml != nil {
-		// TODO: implement
-		log.Fatalf("found checker %s", *parsedYaml.CheckerPathRelToYaml)
-		return nil, fmt.Errorf("checkers are not implemented yet")
+		relativePath := *parsedYaml.CheckerPathRelToYaml
+		checkerPath := filepath.Join(dirPath, relativePath)
+		checkerBytes, err := os.ReadFile(checkerPath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read checker file: %v", err)
+		}
+		task.TestlibChecker = string(checkerBytes)
 	}
 
 	if parsedYaml.InteractorPathRelToYaml != nil {
@@ -35,12 +42,9 @@ func ParseLio2024TaskDir(dirPath string) (*fstask.Task, error) {
 		return nil, fmt.Errorf("interactors are not implemented yet")
 	}
 
-	task := &fstask.Task{}
-	task.FullName = parsedYaml.FullTaskName
-
-	testZipAbsolutePath := filepath.Join(dirPath, parsedYaml.TestZipPathRelToYaml)
-
-	tests, err := lio.ReadLioTestsFromZip(testZipAbsolutePath)
+	testZipRelPath := parsedYaml.TestZipPathRelToYaml
+	testZipAbsPath := filepath.Join(dirPath, testZipRelPath)
+	tests, err := lio.ReadLioTestsFromZip(testZipAbsPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read tests from zip: %v", err)
 	}
@@ -94,25 +98,76 @@ func ParseLio2024TaskDir(dirPath string) (*fstask.Task, error) {
 	if len(pdfFiles) == 0 {
 		return nil, fmt.Errorf("no PDF files found in the directory %s", pdfFilePath)
 	}
-
 	if len(pdfFiles) > 1 {
 		return nil, fmt.Errorf("more than one PDF file found in the directory (%d)", len(pdfFiles))
 	}
 
 	pdfStatementPath := pdfFiles[0]
-
 	pdfBytes, err := os.ReadFile(pdfStatementPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read PDF file: %w", err)
 	}
-
 	task.PdfStatements = append(task.PdfStatements,
 		fstask.PdfStatement{Language: "lv", Content: pdfBytes})
 
 	task.VisibleInputSubtasks = append(task.VisibleInputSubtasks, 1)
 	task.OriginOlympiad = "LIO"
 
-	// TODO: implement adding checker and interactor if present
+	solutionsDirPath := filepath.Join(dirPath, "risin")
+	if _, err := os.Stat(solutionsDirPath); err == nil {
+		filepath.WalkDir(solutionsDirPath, func(path string, d fs.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
+			if d.IsDir() {
+				return nil
+			}
+			fileBytes, err := os.ReadFile(path)
+			if err != nil {
+				return fmt.Errorf("failed to read file %s: %w", path, err)
+			}
+			task.Solutions = append(task.Solutions, fstask.Solution{
+				Filename: filepath.Base(path),
+				Content:  fileBytes,
+			})
+			return nil
+		})
+	}
+
+	ignore := []string{"testi/tests.zip", "risin/*"}
+
+	// get all files recursively
+	filepath.WalkDir(dirPath, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			return nil
+		}
+		// make the path relative to the task directory
+		relativePath, err := filepath.Rel(dirPath, path)
+		if err != nil {
+			return fmt.Errorf("failed to make path relative to task directory: %w", err)
+		}
+		for _, ignore := range ignore {
+			matched, err := filepath.Match(ignore, relativePath)
+			if err != nil {
+				return fmt.Errorf("failed to match ignore pattern %s: %w", ignore, err)
+			}
+			if matched {
+				return nil
+			}
+		}
+		fileBytes, err := os.ReadFile(path)
+		if err != nil {
+			return fmt.Errorf("failed to read file %s: %w", path, err)
+		}
+		task.ArchiveFiles = append(task.ArchiveFiles, fstask.ArchiveFile{
+			RelativePath: relativePath,
+			Content:      fileBytes,
+		})
+		return nil
+	})
 
 	return task, nil
 }

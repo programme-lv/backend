@@ -5,6 +5,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/pelletier/go-toml/v2"
 )
 
 type MarkdownStatement struct {
@@ -14,6 +16,12 @@ type MarkdownStatement struct {
 	Output   string
 	Notes    string
 	Scoring  string
+	ImgSizes []MdImgSize
+}
+
+type MdImgSize struct {
+	ImgPath string `toml:"img_path"`
+	WidthEm int    `toml:"width_em"`
 }
 
 func ReadMarkdownStatementsFromTaskDir(dir TaskDir) ([]MarkdownStatement, error) {
@@ -22,6 +30,16 @@ func ReadMarkdownStatementsFromTaskDir(dir TaskDir) ([]MarkdownStatement, error)
 		format := "specification version %s is not supported, required at least %s"
 		return nil, fmt.Errorf(format, dir.Specification.String(), requiredSpec.String())
 	}
+
+	// read img sizes from toml
+	var tomlStruct struct {
+		MdImgSizes []MdImgSize `toml:"md_img_sizes"`
+	}
+	err := toml.Unmarshal(dir.ProblemToml, &tomlStruct)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal toml: %w", err)
+	}
+	mdImgSizes := tomlStruct.MdImgSizes
 
 	var markdownStatements []MarkdownStatement
 
@@ -49,6 +67,7 @@ func ReadMarkdownStatementsFromTaskDir(dir TaskDir) ([]MarkdownStatement, error)
 				Story:    strings.TrimSpace(sections[0]),
 				Input:    strings.TrimSpace(sections[1]),
 				Output:   strings.TrimSpace(sections[2]),
+				ImgSizes: mdImgSizes,
 			}
 
 			markdownStatements = append(markdownStatements, statement)
@@ -86,6 +105,7 @@ func ReadMarkdownStatementsFromTaskDir(dir TaskDir) ([]MarkdownStatement, error)
 				Story:    sections[0],
 				Input:    sections[1],
 				Output:   sections[2],
+				ImgSizes: mdImgSizes,
 			}
 
 			markdownStatements = append(markdownStatements, statement)
@@ -100,6 +120,7 @@ func ReadMarkdownStatementsFromTaskDir(dir TaskDir) ([]MarkdownStatement, error)
 
 		statement := MarkdownStatement{
 			Language: lang.Name(),
+			ImgSizes: mdImgSizes,
 		}
 
 		for _, file := range files {

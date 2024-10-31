@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"image"
 	"mime"
 	"path/filepath"
 	"regexp"
@@ -16,36 +18,6 @@ import (
 	"github.com/wailsapp/mimetype"
 	"golang.org/x/sync/errgroup"
 )
-
-// Helper function to replace image URLs with UUIDs
-func replaceImages(content string, uuidToAsset map[string]string) (string, error) {
-	// Define regex to match markdown image syntax: ![alt text](image_url)
-	imgRegex := regexp.MustCompile(`!\[.*?\]\((.*?)\)`)
-
-	// Replace function
-	modifiedContent := imgRegex.ReplaceAllStringFunc(content, func(match string) string {
-		// Extract the URL from the match
-		submatches := imgRegex.FindStringSubmatch(match)
-		if len(submatches) < 2 {
-			// If no URL is found, return the match as is
-			return match
-		}
-		originalURL := submatches[1]
-
-		// Generate a new UUID
-		newUUID := uuid.New().String()
-
-		// Replace the original URL with the UUID in the markdown
-		newMatch := strings.Replace(match, originalURL, newUUID, 1)
-
-		// Store the UUID and original URL in the map
-		uuidToAsset[newUUID] = originalURL
-
-		return newMatch
-	})
-
-	return modifiedContent, nil
-}
 
 func uploadTask(fsTask *fstask.Task, shortId string) error {
 	log.Info().Str("shortId", shortId).Str("taskName", fsTask.FullName).Msg("Starting uploadTask")
@@ -109,149 +81,21 @@ func uploadTask(fsTask *fstask.Task, shortId string) error {
 		Int("count", len(originNotes)).
 		Msg("Processed origin notes")
 
-	// Initialize the UUID to Asset mapping
-	uuidToUrl := make(map[string]string)
-
 	// Process Markdown Statements
 	mdStatements := make([]tasksrvc.MarkdownStatement, 0)
 	for _, mdStatement := range fsTask.MarkdownStatements {
-		// Replace images in all relevant markdown fields
-		modifiedStory, err := replaceImages(mdStatement.Story, uuidToUrl)
+		processedMdStatement, err := processMdStatement(taskSrvc, fsTask, &mdStatement)
 		if err != nil {
 			log.Error().
 				Err(err).
-				Msg("Failed to replace images in Story")
-			return fmt.Errorf("failed to replace images in Story: %w", err)
+				Msg("Failed to process markdown statement")
+			return fmt.Errorf("failed to process markdown statement: %w", err)
 		}
-		modifiedInput, err := replaceImages(mdStatement.Input, uuidToUrl)
-		if err != nil {
-			log.Error().
-				Err(err).
-				Msg("Failed to replace images in Input")
-			return fmt.Errorf("failed to replace images in Input: %w", err)
-		}
-		modifiedOutput, err := replaceImages(mdStatement.Output, uuidToUrl)
-		if err != nil {
-			log.Error().
-				Err(err).
-				Msg("Failed to replace images in Output")
-			return fmt.Errorf("failed to replace images in Output: %w", err)
-		}
-		modifiedNotes, err := replaceImages(mdStatement.Notes, uuidToUrl)
-		if err != nil {
-			log.Error().
-				Err(err).
-				Msg("Failed to replace images in Notes")
-			return fmt.Errorf("failed to replace images in Notes: %w", err)
-		}
-		modifiedScoring, err := replaceImages(mdStatement.Scoring, uuidToUrl)
-		if err != nil {
-			log.Error().
-				Err(err).
-				Msg("Failed to replace images in Scoring")
-			return fmt.Errorf("failed to replace images in Scoring: %w", err)
-		}
-
-		// Append the modified MarkdownStatement
-		mdStatements = append(mdStatements, tasksrvc.MarkdownStatement{
-			LangIso639: mdStatement.Language,
-			Story:      modifiedStory,
-			Input:      modifiedInput,
-			Output:     modifiedOutput,
-			Notes:      modifiedNotes,
-			Scoring:    modifiedScoring,
-		})
+		mdStatements = append(mdStatements, *processedMdStatement)
 	}
 	log.Debug().
 		Int("count", len(mdStatements)).
 		Msg("Processed markdown statements")
-
-	// At this point, uuidToAsset contains all (UUID, original URL) pairs.
-	// Now, upload each image and map UUID to S3 key.
-
-	// Create a wait group and mutex for concurrent uploads
-	var wg sync.WaitGroup
-	var mu sync.Mutex
-	var uploadErr error
-
-	// Iterate through the uuidToAsset map
-	for uuidKey, originalURL := range uuidToUrl {
-		wg.Add(1)
-		go func(uKey, oURL string) {
-			defer wg.Done()
-
-			// Find the asset in fsTask.Assets with RelativePath == originalURL
-			var assetFound *fstask.AssetFile
-			for _, asset := range fsTask.Assets {
-				if asset.RelativePath == oURL {
-					assetFound = &asset
-					break
-				}
-			}
-
-			if assetFound == nil {
-				log.Error().
-					Str("uuid", uKey).
-					Str("originalURL", oURL).
-					Msg("Asset not found for the original URL")
-				mu.Lock()
-				uploadErr = fmt.Errorf("asset not found for URL: %s", oURL)
-				mu.Unlock()
-				return
-			}
-
-			// Determine MIME type
-			mType := mime.TypeByExtension(filepath.Ext(assetFound.RelativePath))
-			if mType == "" {
-				detectedType := mimetype.Detect(assetFound.Content)
-				if detectedType == nil {
-					log.Error().
-						Str("uuid", uKey).
-						Str("relativePath", assetFound.RelativePath).
-						Msg("Failed to detect MIME type for asset")
-					mu.Lock()
-					uploadErr = fmt.Errorf("failed to detect MIME type for asset: %s", assetFound.RelativePath)
-					mu.Unlock()
-					return
-				}
-				mType = detectedType.String()
-				log.Debug().
-					Str("uuid", uKey).
-					Str("mimeType", mType).
-					Msg("Detected MIME type for asset")
-			}
-
-			// Upload the image using UploadMarkdownImage
-			s3Url, err := taskSrvc.UploadMarkdownImage(mType, assetFound.Content)
-			if err != nil {
-				log.Error().
-					Str("uuid", uKey).
-					Str("s3Key", s3Url).
-					Err(err).
-					Msg("Failed to upload markdown image")
-				mu.Lock()
-				uploadErr = fmt.Errorf("failed to upload markdown image for UUID %s: %w", uKey, err)
-				mu.Unlock()
-				return
-			}
-			log.Info().
-				Str("uuid", uKey).
-				Str("s3Key", s3Url).
-				Msg("Uploaded markdown image")
-
-			mu.Lock()
-			uuidToUrl[uKey] = s3Url
-			mu.Unlock()
-		}(uuidKey, originalURL)
-	}
-
-	// Wait for all uploads to finish
-	wg.Wait()
-
-	// Check if any upload errors occurred
-	if uploadErr != nil {
-		return uploadErr
-	}
 
 	// Process PDF Statements
 	pdfStatements := make([]tasksrvc.PdfStatement, 0)
@@ -450,13 +294,11 @@ func uploadTask(fsTask *fstask.Task, shortId string) error {
 		Interactor:       fsTask.TestlibInteractor,
 		Subtasks:         subtasks,
 		TestGroups:       testGroups,
-		AssetUuidToUrl:   uuidToUrl,
 	}
 	log.Debug().
 		Str("shortId", shortId).
 		Msg("Task struct assembled")
 
-	// Upload the Task
 	err = taskSrvc.PutTask(task)
 	if err != nil {
 		log.Error().
@@ -466,8 +308,197 @@ func uploadTask(fsTask *fstask.Task, shortId string) error {
 		return fmt.Errorf("failed to upload task: %w", err)
 	}
 
-	// Optionally, handle the UUID to S3 key mapping further here
-	// For example, storing the mapping in a database or another service
-
 	return nil
+}
+
+// Helper function to replace image URLs with UUIDs in markdown content
+func replaceImages(content string, uuidToAsset map[string]string) (string, error) {
+	imgRegex := regexp.MustCompile(`!\[.*?\]\((.*?)\)`)
+	modifiedContent := imgRegex.ReplaceAllStringFunc(content, func(match string) string {
+		submatches := imgRegex.FindStringSubmatch(match)
+		if len(submatches) < 2 {
+			return match
+		}
+		originalURL := submatches[1]
+		newUUID := uuid.New().String()
+		newMatch := strings.Replace(match, originalURL, newUUID, 1)
+		uuidToAsset[newUUID] = originalURL
+
+		return newMatch
+	})
+
+	return modifiedContent, nil
+}
+
+// getImageDimensions decodes the image and returns its width and height in pixels.
+func getImageDimensions(imgData []byte) (int, int, error) {
+	reader := bytes.NewReader(imgData)
+	img, _, err := image.DecodeConfig(reader)
+	if err != nil {
+		return 0, 0, fmt.Errorf("failed to decode image config: %w", err)
+	}
+	return img.Width, img.Height, nil
+}
+
+func processMdStatement(taskSrvc *tasksrvc.TaskService, fsTask *fstask.Task, mdStatement *fstask.MarkdownStatement) (*tasksrvc.MarkdownStatement, error) {
+	sttmntImgUuidToUrl := make(map[string]string)
+	// Replace images in all relevant markdown fields
+	modifiedStory, err := replaceImages(mdStatement.Story, sttmntImgUuidToUrl)
+	if err != nil {
+		log.Error().
+			Err(err).
+			Msg("Failed to replace images in Story")
+		return nil, fmt.Errorf("failed to replace images in Story: %w", err)
+	}
+	modifiedInput, err := replaceImages(mdStatement.Input, sttmntImgUuidToUrl)
+	if err != nil {
+		log.Error().
+			Err(err).
+			Msg("Failed to replace images in Input")
+		return nil, fmt.Errorf("failed to replace images in Input: %w", err)
+	}
+	modifiedOutput, err := replaceImages(mdStatement.Output, sttmntImgUuidToUrl)
+	if err != nil {
+		log.Error().
+			Err(err).
+			Msg("Failed to replace images in Output")
+		return nil, fmt.Errorf("failed to replace images in Output: %w", err)
+	}
+	modifiedNotes, err := replaceImages(mdStatement.Notes, sttmntImgUuidToUrl)
+	if err != nil {
+		log.Error().
+			Err(err).
+			Msg("Failed to replace images in Notes")
+		return nil, fmt.Errorf("failed to replace images in Notes: %w", err)
+	}
+	modifiedScoring, err := replaceImages(mdStatement.Scoring, sttmntImgUuidToUrl)
+	if err != nil {
+		log.Error().
+			Err(err).
+			Msg("Failed to replace images in Scoring")
+		return nil, fmt.Errorf("failed to replace images in Scoring: %w", err)
+	}
+
+	// Create a wait group and mutex for concurrent uploads
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+	var uploadErr error
+
+	images := make([]tasksrvc.MdImgInfo, 0)
+
+	// Iterate through the uuidToAsset map
+	for uuidKey, originalURL := range sttmntImgUuidToUrl {
+		wg.Add(1)
+		go func(uKey, oURL string) {
+			defer wg.Done()
+
+			// Find the asset in fsTask.Assets with RelativePath == originalURL
+			var assetFound *fstask.AssetFile
+			for _, asset := range fsTask.Assets {
+				if asset.RelativePath == oURL {
+					assetFound = &asset
+					break
+				}
+			}
+
+			if assetFound == nil {
+				log.Error().
+					Str("uuid", uKey).
+					Str("originalURL", oURL).
+					Msg("Asset not found for the original URL")
+				mu.Lock()
+				uploadErr = fmt.Errorf("asset not found for URL: %s", oURL)
+				mu.Unlock()
+				return
+			}
+
+			// Determine MIME type
+			mType := mime.TypeByExtension(filepath.Ext(assetFound.RelativePath))
+			if mType == "" {
+				detectedType := mimetype.Detect(assetFound.Content)
+				if detectedType == nil {
+					log.Error().
+						Str("uuid", uKey).
+						Str("relativePath", assetFound.RelativePath).
+						Msg("Failed to detect MIME type for asset")
+					mu.Lock()
+					uploadErr = fmt.Errorf("failed to detect MIME type for asset: %s", assetFound.RelativePath)
+					mu.Unlock()
+					return
+				}
+				mType = detectedType.String()
+				log.Debug().
+					Str("uuid", uKey).
+					Str("mimeType", mType).
+					Msg("Detected MIME type for asset")
+			}
+
+			// Detect image width and height
+			width, height, err := getImageDimensions(assetFound.Content)
+			if err != nil {
+				log.Error().
+					Str("uuid", uKey).
+					Err(err).
+					Msg("Failed to get image dimensions")
+				mu.Lock()
+				uploadErr = fmt.Errorf("failed to get image dimensions for asset: %s", assetFound.RelativePath)
+				mu.Unlock()
+				return
+			}
+
+			// Upload the image using UploadMarkdownImage
+			s3Url, err := taskSrvc.UploadMarkdownImage(mType, assetFound.Content)
+			if err != nil {
+				log.Error().
+					Str("uuid", uKey).
+					Str("s3Key", s3Url).
+					Err(err).
+					Msg("Failed to upload markdown image")
+				mu.Lock()
+				uploadErr = fmt.Errorf("failed to upload markdown image for UUID %s: %w", uKey, err)
+				mu.Unlock()
+				return
+			}
+			log.Info().
+				Str("uuid", uKey).
+				Str("s3Key", s3Url).
+				Msg("Uploaded markdown image")
+
+			widthEm := 0
+			for _, imgInfo := range mdStatement.ImgSizes {
+				if imgInfo.ImgPath == oURL {
+					widthEm = imgInfo.WidthEm
+					break
+				}
+			}
+
+			mu.Lock()
+			images = append(images, tasksrvc.MdImgInfo{
+				Uuid:     uKey,
+				WidthPx:  width,
+				HeightPx: height,
+				WidthEm:  widthEm,
+				S3Url:    s3Url,
+			})
+			mu.Unlock()
+		}(uuidKey, originalURL)
+	}
+
+	// Wait for all uploads to finish
+	wg.Wait()
+
+	// Check if any upload errors occurred
+	if uploadErr != nil {
+		return nil, uploadErr
+	}
+	// Append the modified MarkdownStatement
+	return &tasksrvc.MarkdownStatement{
+		LangIso639: mdStatement.Language,
+		Story:      modifiedStory,
+		Input:      modifiedInput,
+		Output:     modifiedOutput,
+		Notes:      modifiedNotes,
+		Scoring:    modifiedScoring,
+		Images:     images,
+	}, nil
 }

@@ -50,7 +50,11 @@ func (ts *TaskService) GetTaskFullNames(ctx context.Context, shortIDs []string) 
 func replaceUuidsWithValidUrls(task *Task) {
 	for i, statement := range task.MdStatements {
 		f := func(s string) string {
-			return replaceUuids(task.AssetUuidToUrl, s)
+			for _, img := range statement.Images {
+				s = strings.ReplaceAll(s, img.Uuid, img.S3Url)
+			}
+			s = strings.ReplaceAll(s, "https://proglv-public.s3.eu-central-1.amazonaws.com/", PublicCloudfrontEndpoint)
+			return s
 		}
 		task.MdStatements[i].Story = f(statement.Story)
 		task.MdStatements[i].Input = f(statement.Input)
@@ -58,12 +62,4 @@ func replaceUuidsWithValidUrls(task *Task) {
 		task.MdStatements[i].Notes = f(statement.Notes)
 		task.MdStatements[i].Scoring = f(statement.Scoring)
 	}
-}
-
-func replaceUuids(uuidToUrl map[string]string, text string) string {
-	for k, v := range uuidToUrl {
-		text = strings.ReplaceAll(text, k, v)
-	}
-	text = strings.ReplaceAll(text, "https://proglv-public.s3.eu-central-1.amazonaws.com/", PublicCloudfrontEndpoint)
-	return text
 }
