@@ -117,8 +117,6 @@ github.com/pelletier/go-toml/v2 v2.2.3/go.mod h1:MfCQTFTvCcUyyvvwm1+G6H/jORL20Xl
 github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
-github.com/programme-lv/tester v0.2.1-0.20241013082302-510fdb36ea34 h1:13uBjX0R5SNxbmA1YezKXL25Qcn8PB7SgFJBpgyUyYs=
-github.com/programme-lv/tester v0.2.1-0.20241013082302-510fdb36ea34/go.mod h1:1SHSKNYF8yR4pAiWRTYuqf61B54tgaRRGAOQIBfwyQs=
 github.com/programme-lv/tester v0.2.1-0.20241013095812-05e3076f88ab h1:ZYiwUbbX/IViTNRuG4eioOv7E459cG22E25uzM/S3II=
 github.com/programme-lv/tester v0.2.1-0.20241013095812-05e3076f88ab/go.mod h1:1SHSKNYF8yR4pAiWRTYuqf61B54tgaRRGAOQIBfwyQs=
 github.com/rs/xid v1.5.0/go.mod h1:trrq9SKmegXys3aeAKXMUTdJsYXVwGY3RLcfgqegfbg=

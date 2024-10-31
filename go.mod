@@ -25,6 +25,7 @@ require (
 	github.com/lib/pq v1.10.9
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
 	github.com/pelletier/go-toml/v2 v2.2.3
+	github.com/programme-lv/tester v0.2.1-0.20241013095812-05e3076f88ab
 	github.com/rs/zerolog v1.33.0
 	github.com/spf13/cobra v1.8.1
 	github.com/stretchr/testify v1.9.0
@@ -66,7 +67,6 @@ require (
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.19 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/programme-lv/tester v0.2.1-0.20241013095812-05e3076f88ab // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	go.opentelemetry.io/otel v1.28.0 // indirect
 	go.opentelemetry.io/otel/trace v1.28.0 // indirect
