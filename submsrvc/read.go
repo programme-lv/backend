@@ -137,8 +137,8 @@ func (s *SubmissionSrvc) GetSubmission(ctx context.Context, submUuid string) (*F
 	selectEvalTests := postgres.SELECT(table.EvaluationTests.AllColumns, table.RuntimeData.AS("subm_runtime").AllColumns, table.RuntimeData.AS("checker_runtime").AllColumns).
 		FROM(
 			table.EvaluationTests.
-				INNER_JOIN(table.RuntimeData.AS("subm_runtime"), table.EvaluationTests.SubmRuntimeID.EQ(table.RuntimeData.AS("subm_runtime").ID)).
-				INNER_JOIN(table.RuntimeData.AS("checker_runtime"), table.EvaluationTests.CheckerRuntimeID.EQ(table.RuntimeData.AS("checker_runtime").ID)),
+				LEFT_JOIN(table.RuntimeData.AS("subm_runtime"), table.EvaluationTests.SubmRuntimeID.EQ(table.RuntimeData.AS("subm_runtime").ID)).
+				LEFT_JOIN(table.RuntimeData.AS("checker_runtime"), table.EvaluationTests.CheckerRuntimeID.EQ(table.RuntimeData.AS("checker_runtime").ID)),
 		).
 		WHERE(table.EvaluationTests.EvalUUID.EQ(postgres.UUID(submJoinEval.Evaluations.EvalUUID)))
 
