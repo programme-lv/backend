@@ -1,6 +1,8 @@
 package http
 
 import (
+	"strings"
+
 	"github.com/programme-lv/backend/tasksrvc"
 )
 
@@ -11,11 +13,20 @@ type Example struct {
 }
 
 type MdStatement struct {
-	Story   string `json:"story"`
-	Input   string `json:"input"`
-	Output  string `json:"output"`
-	Notes   string `json:"notes,omitempty"`
-	Scoring string `json:"scoring,omitempty"`
+	Story   string  `json:"story"`
+	Input   string  `json:"input"`
+	Output  string  `json:"output"`
+	Notes   string  `json:"notes"`
+	Scoring string  `json:"scoring"`
+	Images  []MdImg `json:"images"`
+}
+
+type MdImg struct {
+	ImgUuid  string `json:"img_uuid"`
+	HttpUrl  string `json:"http_url"`
+	WidthEm  int    `json:"width_em"`
+	WidthPx  int    `json:"width_px"`
+	HeightPx int    `json:"height_px"`
 }
 
 type VisInputSubtask struct {
@@ -50,9 +61,24 @@ type SubtaskOverview struct {
 	Descriptions map[string]string `json:"descriptions"`
 }
 
+const PublicCloudfrontEndpoint = "https://dvhk4hiwp1rmf.cloudfront.net/"
+
 func mapTaskMdStatement(md *tasksrvc.MarkdownStatement) MdStatement {
 	if md == nil {
 		return MdStatement{}
+	}
+	imgSizes := make([]MdImg, len(md.Images))
+	for i, img := range md.Images {
+		oldPrefix := "https://proglv-public.s3.eu-central-1.amazonaws.com/"
+		newPrefix := PublicCloudfrontEndpoint
+		httpUrl := strings.Replace(img.S3Url, oldPrefix, newPrefix, 1)
+		imgSizes[i] = MdImg{
+			ImgUuid:  img.Uuid,
+			HttpUrl:  httpUrl,
+			WidthEm:  img.WidthEm,
+			WidthPx:  img.WidthPx,
+			HeightPx: img.HeightPx,
+		}
 	}
 	return MdStatement{
 		Story:   md.Story,
@@ -60,6 +86,7 @@ func mapTaskMdStatement(md *tasksrvc.MarkdownStatement) MdStatement {
 		Output:  md.Output,
 		Notes:   md.Notes,
 		Scoring: md.Scoring,
+		Images:  imgSizes,
 	}
 }
 
