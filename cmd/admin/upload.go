@@ -5,6 +5,8 @@ import (
 	"context"
 	"fmt"
 	"image"
+	"image/jpeg"
+	"image/png"
 	"mime"
 	"path/filepath"
 	"regexp"
@@ -12,6 +14,7 @@ import (
 	"sync"
 
 	"github.com/google/uuid" // Import UUID package
+	"github.com/nfnt/resize"
 	"github.com/programme-lv/backend/fstask"
 	"github.com/programme-lv/backend/tasksrvc"
 	"github.com/rs/zerolog/log"
@@ -340,6 +343,50 @@ func getImageDimensions(imgData []byte) (int, int, error) {
 	return img.Width, img.Height, nil
 }
 
+// resizeImage resizes the image to ensure the width does not exceed maxWidth.
+// It maintains the aspect ratio and returns the resized image data along with new dimensions.
+func resizeImage(imgData []byte, maxWidth uint) ([]byte, int, int, error) {
+	// Decode the image
+	reader := bytes.NewReader(imgData)
+	img, format, err := image.Decode(reader)
+	if err != nil {
+		return nil, 0, 0, fmt.Errorf("failed to decode image: %w", err)
+	}
+
+	// Get original dimensions
+	originalBounds := img.Bounds()
+	originalWidth := originalBounds.Dx()
+	originalHeight := originalBounds.Dy()
+
+	// If the width is already less than or equal to maxWidth, no resizing needed
+	if originalWidth <= int(maxWidth) {
+		return imgData, originalWidth, originalHeight, nil
+	}
+
+	// Calculate new dimensions while maintaining aspect ratio
+	newImg := resize.Resize(maxWidth, 0, img, resize.Lanczos3)
+	newBounds := newImg.Bounds()
+	newWidth := newBounds.Dx()
+	newHeight := newBounds.Dy()
+
+	// Encode the resized image back to its original format
+	var buf bytes.Buffer
+	switch strings.ToLower(format) {
+	case "jpeg", "jpg":
+		err = jpeg.Encode(&buf, newImg, &jpeg.Options{Quality: 80}) // Adjust quality as needed
+	case "png":
+		err = png.Encode(&buf, newImg)
+	default:
+		return nil, 0, 0, fmt.Errorf("unsupported image format: %s", format)
+	}
+
+	if err != nil {
+		return nil, 0, 0, fmt.Errorf("failed to encode resized image: %w", err)
+	}
+
+	return buf.Bytes(), newWidth, newHeight, nil
+}
+
 func processMdStatement(taskSrvc *tasksrvc.TaskService, fsTask *fstask.Task, mdStatement *fstask.MarkdownStatement) (*tasksrvc.MarkdownStatement, error) {
 	sttmntImgUuidToUrl := make(map[string]string)
 	// Replace images in all relevant markdown fields
@@ -434,7 +481,7 @@ func processMdStatement(taskSrvc *tasksrvc.TaskService, fsTask *fstask.Task, mdS
 			}
 
 			// Detect image width and height
-			width, height, err := getImageDimensions(assetFound.Content)
+			_, _, err := getImageDimensions(assetFound.Content)
 			if err != nil {
 				log.Error().
 					Str("uuid", uKey).
@@ -446,8 +493,22 @@ func processMdStatement(taskSrvc *tasksrvc.TaskService, fsTask *fstask.Task, mdS
 				return
 			}
 
-			// Upload the image using UploadMarkdownImage
-			s3Url, err := taskSrvc.UploadMarkdownImage(mType, assetFound.Content)
+			// Compress the image if necessary
+			const maxWidth = 800
+			resizedContent, newWidth, newHeight, err := resizeImage(assetFound.Content, maxWidth)
+			if err != nil {
+				log.Error().
+					Str("uuid", uKey).
+					Err(err).
+					Msg("Failed to resize image")
+				mu.Lock()
+				uploadErr = fmt.Errorf("failed to resize image for asset: %s", assetFound.RelativePath)
+				mu.Unlock()
+				return
+			}
+
+			// Upload the resized image using UploadMarkdownImage
+			s3Url, err := taskSrvc.UploadMarkdownImage(mType, resizedContent)
 			if err != nil {
 				log.Error().
 					Str("uuid", uKey).
@@ -464,6 +525,7 @@ func processMdStatement(taskSrvc *tasksrvc.TaskService, fsTask *fstask.Task, mdS
 				Str("s3Key", s3Url).
 				Msg("Uploaded markdown image")
 
+			// Optionally, update widthEm based on some logic or markdown parsing
 			widthEm := 0
 			for _, imgInfo := range mdStatement.ImgSizes {
 				if imgInfo.ImgPath == oURL {
@@ -475,8 +537,8 @@ func processMdStatement(taskSrvc *tasksrvc.TaskService, fsTask *fstask.Task, mdS
 			mu.Lock()
 			images = append(images, tasksrvc.MdImgInfo{
 				Uuid:     uKey,
-				WidthPx:  width,
-				HeightPx: height,
+				WidthPx:  newWidth,
+				HeightPx: newHeight,
 				WidthEm:  widthEm,
 				S3Url:    s3Url,
 			})
