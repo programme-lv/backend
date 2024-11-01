@@ -245,6 +245,9 @@ func (s *SubmissionSrvc) CreateSubmission(ctx context.Context,
 
 // InsertEvaluation inserts the prepared evaluation into the database within a transaction.
 func (s *SubmissionSrvc) insertEvaluation(tx *sql.Tx, eval *model.Evaluations) error {
+	if eval == nil {
+		return nil
+	}
 	evalInsertStmt := table.Evaluations.
 		INSERT(table.Evaluations.AllColumns).
 		MODEL(eval)
@@ -254,6 +257,9 @@ func (s *SubmissionSrvc) insertEvaluation(tx *sql.Tx, eval *model.Evaluations) e
 
 // InsertEvaluationTests inserts the prepared evaluation tests into the database within a transaction.
 func (s *SubmissionSrvc) insertEvaluationTests(tx *sql.Tx, tests []model.EvaluationTests) error {
+	if len(tests) == 0 {
+		return nil
+	}
 	insertStmt := table.EvaluationTests.
 		INSERT(table.EvaluationTests.AllColumns)
 	for _, test := range tests {
@@ -268,6 +274,9 @@ func (s *SubmissionSrvc) insertEvaluationTests(tx *sql.Tx, tests []model.Evaluat
 
 // InsertSubtasks inserts the prepared evaluation subtasks into the database within a transaction.
 func (s *SubmissionSrvc) insertSubtasks(tx *sql.Tx, evalSubtasks []model.EvaluationSubtasks) error {
+	if len(evalSubtasks) == 0 {
+		return nil
+	}
 	insertStmt := table.EvaluationSubtasks.
 		INSERT(table.EvaluationSubtasks.AllColumns)
 	for _, subtask := range evalSubtasks {
@@ -282,6 +291,9 @@ func (s *SubmissionSrvc) insertSubtasks(tx *sql.Tx, evalSubtasks []model.Evaluat
 
 // InsertTestGroups inserts the prepared evaluation test groups into the database within a transaction.
 func (s *SubmissionSrvc) insertTestGroups(tx *sql.Tx, evalTestGroups []model.EvaluationTestgroups) error {
+	if len(evalTestGroups) == 0 {
+		return nil
+	}
 	insertStmt := table.EvaluationTestgroups.
 		INSERT(table.EvaluationTestgroups.AllColumns)
 	for _, testGroup := range evalTestGroups {
@@ -296,6 +308,9 @@ func (s *SubmissionSrvc) insertTestGroups(tx *sql.Tx, evalTestGroups []model.Eva
 
 // InsertTestSet inserts the prepared evaluation test set into the database within a transaction.
 func (s *SubmissionSrvc) insertTestSet(tx *sql.Tx, evalTestSet *model.EvaluationTestset) error {
+	if evalTestSet == nil {
+		return nil
+	}
 	insertStmt := table.EvaluationTestset.
 		INSERT(table.EvaluationTestset.AllColumns).
 		MODEL(evalTestSet)
@@ -308,6 +323,9 @@ func (s *SubmissionSrvc) insertTestSet(tx *sql.Tx, evalTestSet *model.Evaluation
 
 // InsertSubmission inserts the prepared submission into the database within a transaction.
 func (s *SubmissionSrvc) insertSubmission(tx *sql.Tx, submission *model.Submissions) error {
+	if submission == nil {
+		return nil
+	}
 	insertStmt := table.Submissions.
 		INSERT(table.Submissions.AllColumns).
 		MODEL(submission)
