@@ -22,9 +22,9 @@ func (s *SubmissionSrvc) GetSubmission(ctx context.Context, submUuid string) (*F
 	selectSubmStmt := postgres.SELECT(table.Submissions.AllColumns, table.Evaluations.AllColumns, table.EvaluationTestset.AllColumns, table.RuntimeData.AllColumns).
 		FROM(
 			table.Submissions.
-				INNER_JOIN(table.Evaluations, table.Submissions.CurrentEvalUUID.EQ(table.Evaluations.EvalUUID)).
-				INNER_JOIN(table.EvaluationTestset, table.Evaluations.EvalUUID.EQ(table.EvaluationTestset.EvalUUID)).
-				INNER_JOIN(table.RuntimeData, table.Evaluations.CompileRuntimeID.EQ(table.RuntimeData.ID)),
+				LEFT_JOIN(table.Evaluations, table.Submissions.CurrentEvalUUID.EQ(table.Evaluations.EvalUUID)).
+				LEFT_JOIN(table.EvaluationTestset, table.Evaluations.EvalUUID.EQ(table.EvaluationTestset.EvalUUID)).
+				LEFT_JOIN(table.RuntimeData, table.Evaluations.CompileRuntimeID.EQ(table.RuntimeData.ID)),
 		).
 		WHERE(table.Submissions.SubmUUID.EQ(postgres.UUID(submUUID)))
 
@@ -278,12 +278,12 @@ func (s *SubmissionSrvc) GetSubmission(ctx context.Context, submUuid string) (*F
 
 func (s *SubmissionSrvc) ListSubmissions(ctx context.Context) ([]*Submission, error) {
 	// get all submissions ever
-	selectSubmStmt := postgres.SELECT(table.Submissions.AllColumns, table.Evaluations.AllColumns).
+	selectSubmStmt := postgres.SELECT(table.Submissions.AllColumns, table.Evaluations.AllColumns, table.EvaluationTestset.AllColumns).
 		FROM(
 			table.Submissions.
-				INNER_JOIN(table.Evaluations, table.Submissions.CurrentEvalUUID.EQ(table.Evaluations.EvalUUID)).
-				INNER_JOIN(table.EvaluationTestset, table.Evaluations.EvalUUID.EQ(table.EvaluationTestset.EvalUUID)),
-		)
+				LEFT_JOIN(table.Evaluations, table.Submissions.CurrentEvalUUID.EQ(table.Evaluations.EvalUUID)).
+				LEFT_JOIN(table.EvaluationTestset, table.Submissions.CurrentEvalUUID.EQ(table.EvaluationTestset.EvalUUID)),
+		).ORDER_BY(table.Submissions.CreatedAt.DESC())
 
 	type SubmJoinEvalModel struct {
 		model.Submissions
