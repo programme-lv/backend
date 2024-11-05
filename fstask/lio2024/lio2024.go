@@ -38,8 +38,13 @@ func ParseLio2024TaskDir(dirPath string) (*fstask.Task, error) {
 	}
 
 	if parsedYaml.InteractorPathRelToYaml != nil {
-		// TODO: implement
-		return nil, fmt.Errorf("interactors are not implemented yet")
+		relativePath := *parsedYaml.InteractorPathRelToYaml
+		interactorPath := filepath.Join(dirPath, relativePath)
+		interactorBytes, err := os.ReadFile(interactorPath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read interactor file: %v", err)
+		}
+		task.TestlibInteractor = string(interactorBytes)
 	}
 
 	testZipRelPath := parsedYaml.TestZipPathRelToYaml

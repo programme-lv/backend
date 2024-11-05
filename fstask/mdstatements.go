@@ -11,11 +11,15 @@ import (
 
 type MarkdownStatement struct {
 	Language string
-	Story    string
-	Input    string
-	Output   string
-	Notes    string
-	Scoring  string
+
+	Story   string
+	Input   string
+	Output  string
+	Notes   string
+	Scoring string
+	Example string
+	Commun  string // communication (interactive tasks)
+
 	ImgSizes []MdImgSize
 }
 
