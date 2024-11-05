@@ -214,6 +214,19 @@ func (s *SubmissionSrvc) GetSubmission(ctx context.Context, submUuid string) (*F
 		})
 	}
 
+	var compileRuntime *RuntimeData
+	if submJoinEval.RuntimeData.ID != 0 {
+		compileRuntime = &RuntimeData{
+			CpuMillis:  int(submJoinEval.RuntimeData.CPUTimeMillis),
+			MemoryKiB:  int(submJoinEval.RuntimeData.MemoryKibiBytes),
+			WallTime:   int(submJoinEval.RuntimeData.WallTimeMillis),
+			ExitCode:   int(submJoinEval.RuntimeData.ExitCode),
+			Stdout:     submJoinEval.RuntimeData.Stdout,
+			Stderr:     submJoinEval.RuntimeData.Stderr,
+			ExitSignal: submJoinEval.RuntimeData.ExitSignal,
+		}
+	}
+
 	// Construct the FullSubmission
 	fullSubmission := &FullSubmission{
 		Submission: Submission{
@@ -261,15 +274,7 @@ func (s *SubmissionSrvc) GetSubmission(ctx context.Context, submUuid string) (*F
 				Enabled:          langMap[submJoinEval.Evaluations.LangID].Enabled,
 			},
 			SystemInformation: submJoinEval.Evaluations.SystemInformation,
-			CompileRuntime: &RuntimeData{
-				CpuMillis:  int(submJoinEval.RuntimeData.CPUTimeMillis),
-				MemoryKiB:  int(submJoinEval.RuntimeData.MemoryKibiBytes),
-				WallTime:   int(submJoinEval.RuntimeData.WallTimeMillis),
-				ExitCode:   int(submJoinEval.RuntimeData.ExitCode),
-				Stdout:     submJoinEval.RuntimeData.Stdout,
-				Stderr:     submJoinEval.RuntimeData.Stderr,
-				ExitSignal: submJoinEval.RuntimeData.ExitSignal,
-			},
+			CompileRuntime:    compileRuntime,
 		},
 	}
 
