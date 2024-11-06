@@ -180,6 +180,9 @@ func (s *SubmissionSrvc) CreateSubmission(ctx context.Context,
 			AnswerHttpUrl: nil,
 		}
 	}
+
+	checker, interactor := getCheckerInteractor(task)
+
 	req := EvalRequest{
 		EvalUuid:  evalUuid.String(),
 		ResSqsUrl: s.resSqsUrl,
@@ -192,10 +195,11 @@ func (s *SubmissionSrvc) CreateSubmission(ctx context.Context,
 			CompiledFname: language.CompiledFilename,
 			ExecCmd:       language.ExecuteCmd,
 		},
-		Tests:     evalReqTests,
-		Checker:   *getChecker(task),
-		CpuMillis: int(task.CpuTimeLimSecs * 1000),
-		MemoryKiB: int(float64(task.MemLimMegabytes) * 976.5625),
+		Tests:      evalReqTests,
+		Checker:    checker,
+		Interactor: interactor,
+		CpuMillis:  int(task.CpuTimeLimSecs * 1000),
+		MemoryKiB:  int(float64(task.MemLimMegabytes) * 976.5625),
 	}
 	jsonReq, err := json.Marshal(req)
 	if err != nil {
@@ -336,10 +340,24 @@ func (s *SubmissionSrvc) insertSubmission(tx *sql.Tx, submission *model.Submissi
 	return nil
 }
 
+func getCheckerInteractor(task *tasksrvc.Task) (*string, *string) {
+	var interactor, checker *string
+	if task.Interactor != "" {
+		interactor = &task.Interactor
+	} else if task.Checker != "" {
+		checker = &task.Checker
+	} else {
+		checker = new(string)
+		*checker = TestlibDefaultChecker
+	}
+	return checker, interactor
+}
+
 func (s *SubmissionSrvc) prepareEvaluation(
 	evalUuid uuid.UUID,
 	task *tasksrvc.Task,
 	language *ProgrammingLang) *model.Evaluations {
+	checker, interactor := getCheckerInteractor(task)
 
 	eval := model.Evaluations{
 		EvalUUID:           evalUuid,
@@ -347,7 +365,8 @@ func (s *SubmissionSrvc) prepareEvaluation(
 		ScoringMethod:      determineScoringMethod(task),
 		CPUTimeLimitMillis: int32(task.CpuTimeLimSecs * 1000),
 		MemLimitKibiBytes:  int32(float64(task.MemLimMegabytes) * 976.5625),
-		TestlibCheckerCode: getChecker(task),
+		TestlibCheckerCode: checker,
+		TestlibInteractor:  interactor,
 		LangID:             language.ID,
 		LangName:           language.FullName,
 		LangCodeFname:      language.CodeFilename,
@@ -374,15 +393,6 @@ func determineScoringMethod(task *tasksrvc.Task) string {
 		return ScoringMethodSubtask
 	}
 	return ScoringMethodTests
-}
-
-func getChecker(task *tasksrvc.Task) *string {
-	if task.Checker != "" {
-		checker := task.Checker
-		return &checker
-	}
-	res := TestlibDefaultChecker
-	return &res
 }
 
 func (s *SubmissionSrvc) prepareEvaluationTests(evalUuid uuid.UUID, task *tasksrvc.Task) []model.EvaluationTests {

@@ -29,4 +29,5 @@ type Evaluations struct {
 	CreatedAt          time.Time
 	CompileRuntimeID   *int32
 	TestlibCheckerCode *string
+	TestlibInteractor  *string
 }

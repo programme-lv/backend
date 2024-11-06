@@ -33,6 +33,7 @@ type evaluationsTable struct {
 	CreatedAt          postgres.ColumnTimestampz
 	CompileRuntimeID   postgres.ColumnInteger
 	TestlibCheckerCode postgres.ColumnString
+	TestlibInteractor  postgres.ColumnString
 
 	AllColumns     postgres.ColumnList
 	MutableColumns postgres.ColumnList
@@ -89,8 +90,9 @@ func newEvaluationsTableImpl(schemaName, tableName, alias string) evaluationsTab
 		CreatedAtColumn          = postgres.TimestampzColumn("created_at")
 		CompileRuntimeIDColumn   = postgres.IntegerColumn("compile_runtime_id")
 		TestlibCheckerCodeColumn = postgres.StringColumn("testlib_checker_code")
-		allColumns               = postgres.ColumnList{EvalUUIDColumn, EvaluationStageColumn, ScoringMethodColumn, CPUTimeLimitMillisColumn, MemLimitKibiBytesColumn, ErrorMessageColumn, SystemInformationColumn, LangIDColumn, LangNameColumn, LangCodeFnameColumn, LangCompCmdColumn, LangCompFnameColumn, LangExecCmdColumn, CreatedAtColumn, CompileRuntimeIDColumn, TestlibCheckerCodeColumn}
-		mutableColumns           = postgres.ColumnList{EvaluationStageColumn, ScoringMethodColumn, CPUTimeLimitMillisColumn, MemLimitKibiBytesColumn, ErrorMessageColumn, SystemInformationColumn, LangIDColumn, LangNameColumn, LangCodeFnameColumn, LangCompCmdColumn, LangCompFnameColumn, LangExecCmdColumn, CreatedAtColumn, CompileRuntimeIDColumn, TestlibCheckerCodeColumn}
+		TestlibInteractorColumn  = postgres.StringColumn("testlib_interactor")
+		allColumns               = postgres.ColumnList{EvalUUIDColumn, EvaluationStageColumn, ScoringMethodColumn, CPUTimeLimitMillisColumn, MemLimitKibiBytesColumn, ErrorMessageColumn, SystemInformationColumn, LangIDColumn, LangNameColumn, LangCodeFnameColumn, LangCompCmdColumn, LangCompFnameColumn, LangExecCmdColumn, CreatedAtColumn, CompileRuntimeIDColumn, TestlibCheckerCodeColumn, TestlibInteractorColumn}
+		mutableColumns           = postgres.ColumnList{EvaluationStageColumn, ScoringMethodColumn, CPUTimeLimitMillisColumn, MemLimitKibiBytesColumn, ErrorMessageColumn, SystemInformationColumn, LangIDColumn, LangNameColumn, LangCodeFnameColumn, LangCompCmdColumn, LangCompFnameColumn, LangExecCmdColumn, CreatedAtColumn, CompileRuntimeIDColumn, TestlibCheckerCodeColumn, TestlibInteractorColumn}
 	)
 
 	return evaluationsTable{
@@ -113,6 +115,7 @@ func newEvaluationsTableImpl(schemaName, tableName, alias string) evaluationsTab
 		CreatedAt:          CreatedAtColumn,
 		CompileRuntimeID:   CompileRuntimeIDColumn,
 		TestlibCheckerCode: TestlibCheckerCodeColumn,
+		TestlibInteractor:  TestlibInteractorColumn,
 
 		AllColumns:     allColumns,
 		MutableColumns: mutableColumns,
