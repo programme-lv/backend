@@ -302,8 +302,71 @@ func (task *Task) storeMdStatementsShallow(statementsDir string) error {
 	for _, v := range task.MarkdownStatements {
 		filename := fmt.Sprintf("%s.md", v.Language)
 		filePath := filepath.Join(statementsDir, filename)
-		sections := []string{v.Story, v.Input, v.Output}
-		contentStr := strings.Join(sections, "\n\n---\n\n")
+		contentStr := ""
+		if v.Story != "" {
+			if v.Language == "lv" {
+				contentStr += "Stāsts\n------\n\n"
+			} else {
+				contentStr += "Story\n-----\n\n"
+			}
+			contentStr += v.Story
+		}
+		if v.Input != "" {
+			if contentStr != "" {
+				contentStr += "\n\n"
+			}
+			if v.Language == "lv" {
+				contentStr += "Ievaddati\n---------\n\n"
+			} else {
+				contentStr += "Input\n-----\n\n"
+			}
+			contentStr += v.Input
+		}
+		if v.Output != "" {
+			if contentStr != "" {
+				contentStr += "\n\n"
+			}
+			if v.Language == "lv" {
+				contentStr += "Izvaddati\n---------\n\n"
+			} else {
+				contentStr += "Output\n------\n\n"
+			}
+			contentStr += v.Output
+		}
+		if v.Talk != "" {
+			if contentStr != "" {
+				contentStr += "\n\n"
+			}
+			if v.Language == "lv" {
+				contentStr += "Komunikācija\n------------\n\n"
+			} else {
+				contentStr += "Interaction\n-----------\n\n"
+			}
+			contentStr += v.Talk
+		}
+		if v.Example != "" {
+			if contentStr != "" {
+				contentStr += "\n\n"
+			}
+			if v.Language == "lv" {
+				contentStr += "Piemērs\n-------\n\n"
+			} else {
+				contentStr += "Example\n-------\n\n"
+			}
+			contentStr += v.Example
+		}
+		if v.Scoring != "" {
+			if contentStr != "" {
+				contentStr += "\n\n"
+			}
+			if v.Language == "lv" {
+				contentStr += "Vērtēšana\n---------\n\n"
+			} else {
+				contentStr += "Scoring\n-------\n\n"
+			}
+			contentStr += v.Scoring
+		}
+
 		err = os.WriteFile(filePath, []byte(contentStr), 0644)
 		if err != nil {
 			return fmt.Errorf("error writing Markdown statement: %w", err)

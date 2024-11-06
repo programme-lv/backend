@@ -61,6 +61,8 @@ type MarkdownStatement struct {
 	Output  string
 	Notes   string
 	Scoring string
+	Talk    string // communication in interactive tasks
+	Example string // example in interactive tasks
 
 	Images []MdImgInfo
 }

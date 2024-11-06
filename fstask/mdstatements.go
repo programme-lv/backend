@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/pelletier/go-toml/v2"
@@ -18,7 +19,7 @@ type MarkdownStatement struct {
 	Notes   string
 	Scoring string
 	Example string
-	Commun  string // communication (interactive tasks)
+	Talk    string // communication (interactive tasks)
 
 	ImgSizes []MdImgSize
 }
@@ -61,18 +62,13 @@ func ReadMarkdownStatementsFromTaskDir(dir TaskDir) ([]MarkdownStatement, error)
 				return nil, fmt.Errorf("error reading markdown file '%s': %w", file, err)
 			}
 
-			sections := strings.Split(string(content), "\n\n---\n")
-			if len(sections) < 3 {
-				return nil, fmt.Errorf("invalid markdown file '%s': not enough sections", file)
+			statement, err := parseMdFile(string(content))
+			if err != nil {
+				return nil, fmt.Errorf("error parsing markdown file '%s': %w", file, err)
 			}
 
-			statement := MarkdownStatement{
-				Language: strings.TrimSuffix(filepath.Base(file), ".md"),
-				Story:    strings.TrimSpace(sections[0]),
-				Input:    strings.TrimSpace(sections[1]),
-				Output:   strings.TrimSpace(sections[2]),
-				ImgSizes: mdImgSizes,
-			}
+			statement.Language = strings.TrimSuffix(filepath.Base(file), ".md")
+			statement.ImgSizes = mdImgSizes
 
 			markdownStatements = append(markdownStatements, statement)
 		}
@@ -80,96 +76,67 @@ func ReadMarkdownStatementsFromTaskDir(dir TaskDir) ([]MarkdownStatement, error)
 		return nil, fmt.Errorf("error accessing statements directory: %w", err)
 	}
 
-	mdDirPath := filepath.Join(dir.AbsPath, "statements", "md")
-	if _, err := os.Stat(mdDirPath); os.IsNotExist(err) {
-		return markdownStatements, nil
-	}
-
-	langs, err := os.ReadDir(mdDirPath)
-	if err != nil {
-		return nil, fmt.Errorf("error reading markdown directory: %w", err)
-	}
-
-	for _, lang := range langs {
-		if !lang.IsDir() {
-			// check if has suffix .md
-			// if it has, read it, divide into sections by ---\n
-			if !strings.HasSuffix(lang.Name(), ".md") {
-				continue
-			}
-
-			content, err := os.ReadFile(filepath.Join(mdDirPath, lang.Name()))
-			if err != nil {
-				return nil, fmt.Errorf("error reading markdown file '%s': %w", lang.Name(), err)
-			}
-
-			sections := strings.Split(string(content), "\n\n---\n\n")
-			statement := MarkdownStatement{
-				Language: strings.TrimSuffix(lang.Name(), ".md"),
-				Story:    sections[0],
-				Input:    sections[1],
-				Output:   sections[2],
-				ImgSizes: mdImgSizes,
-			}
-
-			markdownStatements = append(markdownStatements, statement)
-			continue
-		}
-
-		langPath := filepath.Join(mdDirPath, lang.Name())
-		files, err := os.ReadDir(langPath)
-		if err != nil {
-			return nil, fmt.Errorf("error reading language directory '%s': %w", lang.Name(), err)
-		}
-
-		statement := MarkdownStatement{
-			Language: lang.Name(),
-			ImgSizes: mdImgSizes,
-		}
-
-		for _, file := range files {
-			if !strings.HasSuffix(file.Name(), ".md") {
-				continue
-			}
-
-			filePath := filepath.Join(langPath, file.Name())
-			content, err := os.ReadFile(filePath)
-			if err != nil {
-				return nil, fmt.Errorf("error reading markdown file '%s': %w", file.Name(), err)
-			}
-
-			switch file.Name() {
-			case "story.md":
-				statement.Story = string(content)
-			case "input.md":
-				statement.Input = string(content)
-			case "output.md":
-				statement.Output = string(content)
-			case "notes.md":
-				statement.Notes = string(content)
-			case "scoring.md":
-				statement.Scoring = string(content)
-			}
-		}
-
-		// Validate mandatory fields
-		if statement.Story == "" || statement.Input == "" || statement.Output == "" {
-			return nil, fmt.Errorf("invalid markdown statement for language '%s': missing mandatory fields", statement.Language)
-		}
-
-		markdownStatements = append(markdownStatements, statement)
-	}
-
 	// check if duplicate language
 	seen := make(map[string]bool)
 	for _, statement := range markdownStatements {
 		if seen[statement.Language] {
-			return nil, fmt.Errorf("duplicate language '%s' in markdown statements", statement.Language)
+			format := "duplicate language '%s' in md statements"
+			return nil, fmt.Errorf(format, statement.Language)
 		}
 		seen[statement.Language] = true
 	}
 
 	return markdownStatements, nil
+}
+
+func parseMdFile(content string) (MarkdownStatement, error) {
+	alphabet := "Aa,Āā,Bb,Cc,Čč,Dd,Ee,Ēē,Ff,Gg,Ģģ,Hh,Ii,Īī,Jj,Kk,Ķķ,Ll,Ļļ,Mm,Nn,Ņņ,Oo,Pp,Rr,Ss,Šš,Tt,Uu,Ūū,Vv,Zz,Žž"
+	statement := MarkdownStatement{}
+	re := regexp.MustCompile(fmt.Sprintf(`[%s]+\n-+\n`, alphabet))
+	found := re.FindAllStringIndex(content, -1)
+	for i, match := range found {
+		var end int
+		if i == len(found)-1 {
+			end = len(content)
+		} else {
+			end = found[i+1][0]
+		}
+		section := content[match[1]+1 : end]
+
+		header := content[match[0]:match[1]]
+
+		// returns a function that assign the section content to statement field
+		f := func(x *string) func(string) {
+			return func(section string) {
+				*x = section
+			}
+		}
+
+		prefix := map[string]func(string){
+			"Stāsts":       f(&statement.Story),
+			"Ievaddati":    f(&statement.Input),
+			"Izvaddati":    f(&statement.Output),
+			"Piezīmes":     f(&statement.Notes),
+			"Vērtēšana":    f(&statement.Scoring),
+			"Piemērs":      f(&statement.Example),
+			"Komunikācija": f(&statement.Talk),
+			"Story":        f(&statement.Story),
+			"Input":        f(&statement.Input),
+			"Output":       f(&statement.Output),
+			"Notes":        f(&statement.Notes),
+			"Scoring":      f(&statement.Scoring),
+			"Example":      f(&statement.Example),
+			"Interaction":  f(&statement.Talk),
+		}
+
+		for k, v := range prefix {
+			if strings.HasPrefix(header, k) {
+				v(strings.TrimSpace(section))
+			}
+		}
+
+	}
+	return statement, nil
 }
 
 func (task *Task) LoadMarkdownStatements(dir TaskDir) error {

@@ -17,14 +17,14 @@ func TestKvadrputeklTask(t *testing.T) {
 	task, err := fstask.Read(kvadrputeklPath)
 	require.NoError(t, err)
 
-	requireKvadrputekl(t, task)
+	compareKvadrputeklToManualInterpretation(t, task)
 
 	task2 := writeAndReReadTask(t, task)
 
-	requireKvadrputekl(t, task2)
+	compareKvadrputeklToManualInterpretation(t, task2)
 }
 
-func requireKvadrputekl(t *testing.T, task *fstask.Task) {
+func compareKvadrputeklToManualInterpretation(t *testing.T, task *fstask.Task) {
 	// ARCHIVE
 	require.Len(t, task.ArchiveFiles, 4)
 	require.Contains(t, task.ArchiveFiles, fstask.ArchiveFile{
@@ -65,18 +65,11 @@ func requireKvadrputekl(t *testing.T, task *fstask.Task) {
 	require.Contains(t, task.MarkdownStatements, fstask.MarkdownStatement{
 		Language: "lv",
 		Story:    "![1. attēls: Laukuma piemērs](kp1.png)",
-		Input:    "Ievaddati",
-		Output:   "Izvaddati",
+		Input:    "Ievaddatu piemērs",
+		Output:   "Izvaddatu piemērs",
 		Notes:    "",
 		Scoring:  "",
-	})
-	require.Contains(t, task.MarkdownStatements, fstask.MarkdownStatement{
-		Language: "en",
-		Story:    "story",
-		Input:    "input",
-		Output:   "output",
-		Notes:    "",
-		Scoring:  "",
+		Talk:     "Šis ir interaktīvs uzdevums.",
 	})
 	require.Len(t, task.PdfStatements, 1)
 	require.Equal(t, "lv", task.PdfStatements[0].Language)

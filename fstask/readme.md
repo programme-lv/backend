@@ -1,5 +1,17 @@
 ## version history
 
+### version "v4.0.0"
+
+breaking change:
+- markdown sections do be divided by second level underlined headings
+
+### version "v3.0.0"
+
+well i don't remember xd
+
+- image sizing through problem.toml
+- listing subtasks in problem.toml
+
 ### version "v2.5.0"
 
 - added solutions directory

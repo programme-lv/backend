@@ -425,6 +425,20 @@ func processMdStatement(taskSrvc *tasksrvc.TaskService, fsTask *fstask.Task, mdS
 			Msg("Failed to replace images in Scoring")
 		return nil, fmt.Errorf("failed to replace images in Scoring: %w", err)
 	}
+	modifiedTalk, err := replaceImages(mdStatement.Talk, sttmntImgUuidToUrl)
+	if err != nil {
+		log.Error().
+			Err(err).
+			Msg("Failed to replace images in Talk")
+		return nil, fmt.Errorf("failed to replace images in Talk: %w", err)
+	}
+	modifiedExample, err := replaceImages(mdStatement.Example, sttmntImgUuidToUrl)
+	if err != nil {
+		log.Error().
+			Err(err).
+			Msg("Failed to replace images in Example")
+		return nil, fmt.Errorf("failed to replace images in Example: %w", err)
+	}
 
 	// Create a wait group and mutex for concurrent uploads
 	var wg sync.WaitGroup
@@ -561,6 +575,8 @@ func processMdStatement(taskSrvc *tasksrvc.TaskService, fsTask *fstask.Task, mdS
 		Output:     modifiedOutput,
 		Notes:      modifiedNotes,
 		Scoring:    modifiedScoring,
+		Talk:       modifiedTalk,
+		Example:    modifiedExample,
 		Images:     images,
 	}, nil
 }

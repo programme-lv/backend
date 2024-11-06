@@ -18,6 +18,8 @@ type MdStatement struct {
 	Output  string  `json:"output"`
 	Notes   string  `json:"notes"`
 	Scoring string  `json:"scoring"`
+	Talk    string  `json:"talk"`
+	Example string  `json:"example"`
 	Images  []MdImg `json:"images"`
 }
 
@@ -86,7 +88,10 @@ func mapTaskMdStatement(md *tasksrvc.MarkdownStatement) MdStatement {
 		Output:  md.Output,
 		Notes:   md.Notes,
 		Scoring: md.Scoring,
-		Images:  imgSizes,
+		Talk:    md.Talk,
+		Example: md.Example,
+
+		Images: imgSizes,
 	}
 }
 
