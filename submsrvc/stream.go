@@ -25,17 +25,17 @@ func (s *SubmissionSrvc) StartStreamingSubmListUpdates(ctx context.Context) {
 		case stateUpdate := <-s.evalStageUpd:
 			// notify all listeners about the state update
 			update := &SubmissionListUpdate{
-				StateUpdate: &SubmEvalStageUpdate{
+				StateUpdate: &EvalStageUpd{
 					SubmUuid: stateUpdate.SubmUuid,
 					EvalUuid: stateUpdate.EvalUuid,
 					NewStage: stateUpdate.NewStage,
 				},
 			}
 			sendUpdate(update)
-		case testgroupScoringResUpdate := <-s.testGroupScoreUpd:
+		case testgroupScoringResUpdate := <-s.tGroupScoreUpd:
 			// notify all listeners about the testgroup result update
 			update := &SubmissionListUpdate{
-				TestgroupResUpdate: &TestGroupScoringUpdate{
+				TestgroupResUpdate: &TGroupScoreUpd{
 					SubmUUID:      testgroupScoringResUpdate.SubmUUID,
 					EvalUUID:      testgroupScoringResUpdate.EvalUUID,
 					TestGroupID:   testgroupScoringResUpdate.TestGroupID,
@@ -46,7 +46,7 @@ func (s *SubmissionSrvc) StartStreamingSubmListUpdates(ctx context.Context) {
 			}
 
 			sendUpdate(update)
-		case atomicTestsScoringResUpdate := <-s.testSetScoreUpd:
+		case atomicTestsScoringResUpdate := <-s.tSetScoreUpd:
 			update := &SubmissionListUpdate{
 				TestsResUpdate: atomicTestsScoringResUpdate,
 			}

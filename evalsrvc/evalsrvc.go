@@ -13,6 +13,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/google/uuid"
+	"github.com/programme-lv/tester/sqsgath"
 )
 
 func (e *EvalSrvc) Enqueue(req Request) (uuid.UUID, error) {
@@ -48,13 +49,122 @@ func (e *EvalSrvc) Receive() ([]Msg, error) {
 	}
 	msgs := make([]Msg, len(output.Messages))
 	for i, msg := range output.Messages {
-		msgs[i] = &EvalMsg{msg}
+		if msg.Body == nil {
+			return nil, fmt.Errorf("message body is nil")
+		}
+
+		var header sqsgath.Header
+		err = json.Unmarshal([]byte(*msg.Body), &header)
+		if err != nil {
+			log.Printf("failed to unmarshal message: %v\n", err)
+			continue
+		}
+
+		if msg.ReceiptHandle == nil {
+			return nil, fmt.Errorf("receipt handle is nil")
+		}
+		msgs[i].Handle = *msg.ReceiptHandle
+		msgs[i].EvalId, err = uuid.Parse(header.EvalUuid)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse eval_uuid: %w", err)
+		}
+
+		switch header.MsgType {
+		case sqsgath.MsgTypeStartedEvaluation:
+			startedEvaluation := sqsgath.StartedEvaluation{}
+			err = json.Unmarshal([]byte(*msg.Body), &startedEvaluation)
+			msgs[i].Data = StartedEvaluation{}
+		case sqsgath.MsgTypeStartedCompilation:
+			startedCompilation := sqsgath.StartedCompilation{}
+			err = json.Unmarshal([]byte(*msg.Body), &startedCompilation)
+			msgs[i].Data = StartedCompiling{}
+		case sqsgath.MsgTypeFinishedCompilation:
+			finishedCompilation := sqsgath.FinishedCompilation{}
+			err = json.Unmarshal([]byte(*msg.Body), &finishedCompilation)
+			msgs[i].Data = FinishedCompiling{
+				RuntimeData: mapRunData(finishedCompilation.RuntimeData),
+			}
+		case sqsgath.MsgTypeStartedTesting:
+			startedTesting := sqsgath.StartedTesting{}
+			err = json.Unmarshal([]byte(*msg.Body), &startedTesting)
+			msgs[i].Data = StartedTesting{}
+		case sqsgath.MsgTypeReachedTest:
+			reachedTest := sqsgath.ReachedTest{}
+			err = json.Unmarshal([]byte(*msg.Body), &reachedTest)
+			msgs[i].Data = ReachedTest{
+				TestId: reachedTest.TestId,
+				In:     reachedTest.Input,
+				Ans:    reachedTest.Answer,
+			}
+		case sqsgath.MsgTypeIgnoredTest:
+			ignoredTest := sqsgath.IgnoredTest{}
+			err = json.Unmarshal([]byte(*msg.Body), &ignoredTest)
+			msgs[i].Data = IgnoredTest{
+				TestId: ignoredTest.TestId,
+			}
+		case sqsgath.MsgTypeFinishedTest:
+			finishTest := sqsgath.FinishedTest{}
+			err = json.Unmarshal([]byte(*msg.Body), &finishTest)
+			msgs[i].Data = FinishedTest{
+				TestID:  finishTest.TestId,
+				Subm:    mapRunData(finishTest.Submission),
+				Checker: mapRunData(finishTest.Checker),
+			}
+		case sqsgath.MsgTypeFinishedTesting:
+			finishTesting := sqsgath.FinishedTesting{}
+			err = json.Unmarshal([]byte(*msg.Body), &finishTesting)
+			msgs[i].Data = FinishedTesting{}
+		case sqsgath.MsgTypeFinishedEvaluation:
+			finishEval := sqsgath.FinishedEvaluation{}
+			err = json.Unmarshal([]byte(*msg.Body), &finishEval)
+			msgs[i].Data = FinishedEvaluation{
+				CompileError:  finishEval.CompileError,
+				InternalError: finishEval.InternalError,
+				ErrorMsg:      finishEval.ErrorMessage,
+			}
+		}
+
+		if err != nil {
+			return nil, fmt.Errorf("failed to unmarshal %s message: %w", header.MsgType, err)
+		}
 	}
 	return msgs, nil
 }
 
-type Msg interface {
-	GetId() string
+func mapRunData(rd *sqsgath.RuntimeData) *RunData {
+	if rd != nil {
+		return &RunData{
+			StdIn:    rd.Stdin,
+			StdOut:   rd.Stdout,
+			StdErr:   rd.Stderr,
+			CpuMs:    rd.CpuMillis,
+			WallMs:   rd.WallMillis,
+			MemKiB:   rd.MemoryKiBytes,
+			ExitCode: rd.ExitCode,
+			CtxSwV:   rd.CtxSwF,
+			CtxSwF:   rd.CtxSwF,
+			Signal:   rd.ExitSignal,
+		}
+	}
+	return nil
+}
+
+func (e *EvalSrvc) Ack(handle string) error {
+	_, err := e.sqsClient.DeleteMessage(context.TODO(), &sqs.DeleteMessageInput{
+		QueueUrl:      aws.String(e.resSqsUrl),
+		ReceiptHandle: aws.String(handle),
+	})
+	return err
+}
+
+type Event interface {
+	Type() string
+}
+
+type Msg struct {
+	EvalId uuid.UUID
+	Handle string // receipt handle for acknowledgment / delete
+	Data   Event  // data specific to the message / event type
 }
 
 type EvalSrvc struct {

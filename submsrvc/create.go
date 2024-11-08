@@ -154,9 +154,9 @@ func (s *SubmissionSrvc) CreateSubmission(ctx context.Context,
 
 func evalReqLang(lang *ProgrammingLang) evalsrvc.Language {
 	return evalsrvc.Language{
-		LangID:        lang.ID,
-		LangName:      lang.FullName,
-		CodeFname:     lang.CodeFilename,
+		Id:            lang.ID,
+		FullName:      lang.FullName,
+		SrcCodeFname:  lang.CodeFilename,
 		CompileCmd:    lang.CompileCmd,
 		CompiledFname: lang.CompiledFilename,
 		ExecCmd:       lang.ExecuteCmd,

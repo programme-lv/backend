@@ -1,20 +1,22 @@
 package evalsrvc
 
 type Request struct {
-	Code       string   `json:"code"`
-	Language   Language `json:"language"`
-	Tests      []Test   `json:"tests"`
-	Checker    *string  `json:"checker"`
-	Interactor *string  `json:"interactor"`
+	Code     string   `json:"code"`
+	Language Language `json:"language"`
+
+	Tests []Test `json:"tests"`
 
 	CpuMillis int `json:"cpu_millis"`
 	MemoryKiB int `json:"memory_kib"`
+
+	Checker    *string `json:"checker"`
+	Interactor *string `json:"interactor"`
 }
 
 type Language struct {
-	LangID        string  `json:"lang_id"`
-	LangName      string  `json:"lang_name"`
-	CodeFname     string  `json:"code_fname"`
+	Id            string  `json:"lang_id"`
+	FullName      string  `json:"lang_name"`
+	SrcCodeFname  string  `json:"code_fname"`
 	CompileCmd    *string `json:"compile_cmd"`
 	CompiledFname *string `json:"compiled_fname"`
 	ExecCmd       string  `json:"exec_cmd"`

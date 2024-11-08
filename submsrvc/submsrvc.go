@@ -24,10 +24,10 @@ type SubmissionSrvc struct {
 	evalSrvc *evalsrvc.EvalSrvc
 
 	// real-time updates
-	submCreated       chan *Submission
-	evalStageUpd      chan *SubmEvalStageUpdate
-	testGroupScoreUpd chan *TestGroupScoringUpdate
-	testSetScoreUpd   chan *TestSetScoringUpdate
+	submCreated    chan *Submission
+	evalStageUpd   chan *EvalStageUpd
+	tGroupScoreUpd chan *TGroupScoreUpd
+	tSetScoreUpd   chan *TSetScoreUpd
 
 	listenerLock sync.Mutex
 	listeners    []chan *SubmissionListUpdate
@@ -49,9 +49,9 @@ func NewSubmissions(taskSrvc *tasksrvc.TaskService, evalSrvc *evalsrvc.EvalSrvc)
 		postgres:           db,
 		evalSrvc:           evalSrvc,
 		submCreated:        make(chan *Submission, 1000),
-		evalStageUpd:       make(chan *SubmEvalStageUpdate, 1000),
-		testGroupScoreUpd:  make(chan *TestGroupScoringUpdate, 1000),
-		testSetScoreUpd:    make(chan *TestSetScoringUpdate, 1000),
+		evalStageUpd:       make(chan *EvalStageUpd, 1000),
+		tGroupScoreUpd:     make(chan *TGroupScoreUpd, 1000),
+		tSetScoreUpd:       make(chan *TSetScoreUpd, 1000),
 		listenerLock:       sync.Mutex{},
 		listeners:          make([]chan *SubmissionListUpdate, 0, 100),
 		evalUuidToSubmUuid: sync.Map{},

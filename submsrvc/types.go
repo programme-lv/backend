@@ -57,18 +57,18 @@ type FullSubmission struct {
 
 type SubmissionListUpdate struct {
 	SubmCreated        *Submission
-	StateUpdate        *SubmEvalStageUpdate
-	TestgroupResUpdate *TestGroupScoringUpdate
-	TestsResUpdate     *TestSetScoringUpdate
+	StateUpdate        *EvalStageUpd
+	TestgroupResUpdate *TGroupScoreUpd
+	TestsResUpdate     *TSetScoreUpd
 }
 
-type SubmEvalStageUpdate struct {
+type EvalStageUpd struct {
 	SubmUuid string
 	EvalUuid string
 	NewStage string
 }
 
-type TestGroupScoringUpdate struct {
+type TGroupScoreUpd struct {
 	SubmUUID      string
 	EvalUUID      string
 	TestGroupID   int
@@ -77,7 +77,7 @@ type TestGroupScoringUpdate struct {
 	UntestedTests int
 }
 
-type TestSetScoringUpdate struct {
+type TSetScoreUpd struct {
 	SubmUuid string
 	EvalUuid string
 	Accepted int
