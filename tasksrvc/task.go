@@ -37,6 +37,29 @@ type Task struct {
 	TestGroups []TestGroup
 }
 
+func (t *Task) CpuMillis() int {
+	return int(t.CpuTimeLimSecs * 1000)
+}
+
+func (t *Task) MemoryKiB() int {
+	// 1 MB = 976.5625 KiB
+	return int(float64(t.MemLimMegabytes) * 976.5625)
+}
+
+func (t *Task) CheckerPtr() *string {
+	if t.Checker != "" {
+		return &t.Checker
+	}
+	return nil
+}
+
+func (t *Task) InteractorPtr() *string {
+	if t.Interactor != "" {
+		return &t.Interactor
+	}
+	return nil
+}
+
 type Example struct {
 	Input  string
 	Output string

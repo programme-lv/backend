@@ -48,7 +48,7 @@ func (s *UserService) Login(ctx context.Context, p *LoginPayload) (res *User, er
 			err = bcrypt.CompareHashAndPassword([]byte(user.BcryptPwd), []byte(p.Password))
 			if err == nil {
 				return &User{
-					UUID:      user.Uuid,
+					UUID:      uuid.MustParse(user.Uuid),
 					Username:  user.Username,
 					Email:     user.Email,
 					Firstname: user.Firstname,
@@ -75,7 +75,7 @@ func (s *UserService) GetUserByUsername(ctx context.Context, p *GetUserByUsernam
 			}
 
 			genUser := User{
-				UUID:      user.Uuid,
+				UUID:      uuid.MustParse(user.Uuid),
 				Username:  user.Username,
 				Email:     user.Email,
 				Firstname: user.Firstname,

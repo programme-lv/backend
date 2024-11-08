@@ -79,5 +79,7 @@ func (httpserver *HttpServer) routes() {
 	r.Get("/tasks", httpserver.listTasks)
 	r.Get("/tasks/{taskId}", httpserver.getTask)
 	r.Get("/programming-languages", httpserver.listProgrammingLangs)
+	r.Get("/langs", httpserver.listProgrammingLangs)
 	r.Get("/subm-updates", httpserver.listenToSubmUpdates)
+	r.Post("/tester/run", httpserver.testerRun)
 }

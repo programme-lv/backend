@@ -2,6 +2,8 @@ package user
 
 import (
 	"context"
+
+	"github.com/google/uuid"
 )
 
 // ListUsers implements users.Service.
@@ -14,7 +16,7 @@ func (s *UserService) ListUsers(ctx context.Context) (res []*User, err error) {
 	res = make([]*User, 0)
 	for _, user := range users {
 		res = append(res, &User{
-			UUID:      user.Uuid,
+			UUID:      uuid.MustParse(user.Uuid),
 			Username:  user.Username,
 			Email:     user.Email,
 			Firstname: user.Firstname,

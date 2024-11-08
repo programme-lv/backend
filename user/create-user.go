@@ -172,7 +172,7 @@ func (s *UserService) CreateUser(ctx context.Context, p *UserPayload) (res *User
 	}
 
 	res = &User{
-		UUID:      uuid.String(),
+		UUID:      uuid,
 		Username:  p.Username,
 		Email:     p.Email,
 		Firstname: p.Firstname,

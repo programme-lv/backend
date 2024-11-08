@@ -3,18 +3,16 @@ package submsrvc
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/google/uuid"
+	"github.com/programme-lv/backend/evalsrvc"
 	"github.com/programme-lv/backend/gen/postgres/public/model"
 	"github.com/programme-lv/backend/gen/postgres/public/table"
 	"github.com/programme-lv/backend/tasksrvc"
-	"github.com/programme-lv/backend/user"
+	usersrvc "github.com/programme-lv/backend/user"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -29,77 +27,33 @@ func (s *SubmissionSrvc) CreateSubmission(ctx context.Context,
 	params *CreateSubmissionParams) (*Submission, error) {
 
 	if len(params.Submission) > 64*1024 { // 64 KB
-		return nil, NewErrSubmissionTooLong(64)
+		return nil, ErrSubmissionTooLong(64)
 	}
 
-	// Use errgroup to manage concurrent tasks
-	var errCtx context.Context
-	g, errCtx := errgroup.WithContext(ctx)
-
-	var (
-		userResult *user.User
-		languages  []ProgrammingLang
-		task       *tasksrvc.Task
-	)
-
-	// Parallelize fetching user, languages, and task
-	g.Go(func() error {
-		u, err := s.userSrvc.GetUserByUsername(errCtx,
-			&user.GetUserByUsernamePayload{Username: params.Username})
-		if err != nil {
-			return fmt.Errorf("failed to get user: %w", err)
-		}
-		userResult = u
-		return nil
-	})
-
-	g.Go(func() error {
-		langs, err := s.ListProgrammingLanguages(errCtx)
-		if err != nil {
-			return fmt.Errorf("failed to list programming languages: %w", err)
-		}
-		languages = langs
-		return nil
-	})
-
-	g.Go(func() error {
-		t, err := s.taskSrvc.GetTask(errCtx, params.TaskCodeID)
-		if err != nil {
-			return fmt.Errorf("failed to get task: %w", err)
-		}
-		task = &t
-		return nil
-	})
-
-	// Wait for all initial fetches to complete
-	if err := g.Wait(); err != nil {
+	user, lang, task, err := fetchUserLangTask(ctx, s, params)
+	if err != nil {
 		return nil, err
 	}
 
-	// Parse User UUID
-	userUuid, err := uuid.Parse(userResult.UUID)
+	req := evalsrvc.Request{
+		Code:       params.Submission,
+		Language:   evalReqLang(lang),
+		Tests:      evalReqTests(task),
+		Checker:    task.CheckerPtr(),
+		Interactor: task.InteractorPtr(),
+		CpuMillis:  task.CpuMillis(),
+		MemoryKiB:  task.MemoryKiB(),
+	}
+
+	evalUuid, err := s.evalSrvc.Enqueue(req)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse user UUID: %w", err)
+		return nil, fmt.Errorf("failed to enqueue evaluation: %w", err)
 	}
 
-	// Find the programming language
-	var language *ProgrammingLang
-	for _, l := range languages {
-		if l.ID == params.ProgLangID {
-			language = &l
-			break
-		}
-	}
-	if language == nil {
-		return nil, NewErrInvalidProgLang()
-	}
-
-	// Generate UUIDs for evaluation and submission
-	evalUuid := uuid.New()
 	submUuid := uuid.New()
 
 	// Prepare Evaluation
-	eval := s.prepareEvaluation(evalUuid, task, language)
+	eval := s.prepareEvaluation(evalUuid, task, lang)
 
 	// Begin a database transaction
 	tx, err := s.postgres.BeginTx(ctx, &sql.TxOptions{
@@ -126,7 +80,7 @@ func (s *SubmissionSrvc) CreateSubmission(ctx context.Context,
 		return nil, fmt.Errorf("failed to prepare test groups: %w", err)
 	}
 	testSet, evalTestSet := s.prepareTestSet(evalUuid, task)
-	submission := s.prepareSubmission(submUuid, params, userUuid, task, language, evalUuid)
+	submission := s.prepareSubmission(submUuid, params, user.UUID, task, lang, evalUuid)
 
 	// Use another errgroup for concurrent insertions
 	g2 := errgroup.Group{}
@@ -164,71 +118,22 @@ func (s *SubmissionSrvc) CreateSubmission(ctx context.Context,
 		return nil, fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
-	evalReqTests := make([]ReqTest, len(task.Tests))
-	for i, test := range task.Tests {
-		inputS3Url := test.FullInputS3URL()
-		answerS3Url := test.FullAnswerS3URL()
-		evalReqTests[i] = ReqTest{
-			ID:            i + 1,
-			InputSha256:   test.InpSha2,
-			InputS3Url:    &inputS3Url,
-			InputContent:  nil,
-			InputHttpUrl:  nil,
-			AnswerSha256:  test.AnsSha2,
-			AnswerS3Url:   &answerS3Url,
-			AnswerContent: nil,
-			AnswerHttpUrl: nil,
-		}
-	}
-
-	checker, interactor := getCheckerInteractor(task)
-
-	req := EvalRequest{
-		EvalUuid:  evalUuid.String(),
-		ResSqsUrl: s.resSqsUrl,
-		Code:      params.Submission,
-		Language: Language{
-			LangID:        language.ID,
-			LangName:      language.FullName,
-			CodeFname:     language.CodeFilename,
-			CompileCmd:    language.CompileCmd,
-			CompiledFname: language.CompiledFilename,
-			ExecCmd:       language.ExecuteCmd,
-		},
-		Tests:      evalReqTests,
-		Checker:    checker,
-		Interactor: interactor,
-		CpuMillis:  int(task.CpuTimeLimSecs * 1000),
-		MemoryKiB:  int(float64(task.MemLimMegabytes) * 976.5625),
-	}
-	jsonReq, err := json.Marshal(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal evaluation request: %w", err)
-	}
-	_, err = s.sqsClient.SendMessage(ctx, &sqs.SendMessageInput{
-		QueueUrl:    &s.submSqsUrl,
-		MessageBody: aws.String(string(jsonReq)),
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to send message to evaluation queue: %w", err)
-	}
-
 	// Assemble the Submission response
 	res := &Submission{
 		UUID:    submUuid,
 		Content: params.Submission,
 		Author: Author{
-			UUID:     userUuid,
-			Username: userResult.Username,
+			UUID:     user.UUID,
+			Username: user.Username,
 		},
 		Task: Task{
 			ShortID:  task.ShortId,
 			FullName: task.FullName,
 		},
 		Lang: Lang{
-			ShortID:  language.ID,
-			Display:  language.FullName,
-			MonacoID: language.MonacoId,
+			ShortID:  lang.ID,
+			Display:  lang.FullName,
+			MonacoID: lang.MonacoId,
 		},
 		CreatedAt: submission.CreatedAt,
 		CurrEval: Evaluation{
@@ -245,6 +150,90 @@ func (s *SubmissionSrvc) CreateSubmission(ctx context.Context,
 	s.evalUuidToSubmUuid.Store(evalUuid, submUuid)
 
 	return res, nil
+}
+
+func evalReqLang(lang *ProgrammingLang) evalsrvc.Language {
+	return evalsrvc.Language{
+		LangID:        lang.ID,
+		LangName:      lang.FullName,
+		CodeFname:     lang.CodeFilename,
+		CompileCmd:    lang.CompileCmd,
+		CompiledFname: lang.CompiledFilename,
+		ExecCmd:       lang.ExecuteCmd,
+	}
+}
+
+func evalReqTests(task *tasksrvc.Task) []evalsrvc.Test {
+	evalReqTests := make([]evalsrvc.Test, len(task.Tests))
+	for i, test := range task.Tests {
+		inputS3Url := test.FullInputS3URL()
+		answerS3Url := test.FullAnswerS3URL()
+		evalReqTests[i] = evalsrvc.Test{
+			ID:        i + 1,
+			InSha256:  &test.InpSha2,
+			AnsSha256: &test.AnsSha2,
+			InUrl:     &inputS3Url,
+			AnsUrl:    &answerS3Url,
+		}
+	}
+	return evalReqTests
+}
+
+func fetchUserLangTask(ctx context.Context, s *SubmissionSrvc,
+	params *CreateSubmissionParams) (
+	*usersrvc.User, *ProgrammingLang, *tasksrvc.Task, error) {
+
+	var errCtx context.Context
+	g, errCtx := errgroup.WithContext(ctx)
+
+	var (
+		user *usersrvc.User
+		lang *ProgrammingLang
+		task *tasksrvc.Task
+	)
+	// Parallelize fetching user, languages, and task
+	g.Go(func() error {
+		u, err := s.userSrvc.GetUserByUsername(errCtx,
+			&usersrvc.GetUserByUsernamePayload{Username: params.Username})
+		if err != nil {
+			return fmt.Errorf("failed to get user: %w", err)
+		}
+		user = u
+		return nil
+	})
+
+	g.Go(func() error {
+		langs, err := s.ListProgrammingLanguages(errCtx)
+		if err != nil {
+			return fmt.Errorf("failed to list programming languages: %w", err)
+		}
+		for _, l := range langs {
+			if l.ID == params.ProgLangID {
+				lang = &l
+				break
+			}
+		}
+		if lang == nil {
+			return ErrInvalidProgLang()
+		}
+		return nil
+	})
+
+	g.Go(func() error {
+		t, err := s.taskSrvc.GetTask(errCtx, params.TaskCodeID)
+		if err != nil {
+			return fmt.Errorf("failed to get task: %w", err)
+		}
+		task = &t
+		return nil
+	})
+
+	// Wait for all initial fetches to complete
+	if err := g.Wait(); err != nil {
+		return nil, nil, nil, err
+	}
+
+	return user, lang, task, nil
 }
 
 // InsertEvaluation inserts the prepared evaluation into the database within a transaction.
@@ -340,24 +329,10 @@ func (s *SubmissionSrvc) insertSubmission(tx *sql.Tx, submission *model.Submissi
 	return nil
 }
 
-func getCheckerInteractor(task *tasksrvc.Task) (*string, *string) {
-	var interactor, checker *string
-	if task.Interactor != "" {
-		interactor = &task.Interactor
-	} else if task.Checker != "" {
-		checker = &task.Checker
-	} else {
-		checker = new(string)
-		*checker = TestlibDefaultChecker
-	}
-	return checker, interactor
-}
-
 func (s *SubmissionSrvc) prepareEvaluation(
 	evalUuid uuid.UUID,
 	task *tasksrvc.Task,
 	language *ProgrammingLang) *model.Evaluations {
-	checker, interactor := getCheckerInteractor(task)
 
 	eval := model.Evaluations{
 		EvalUUID:           evalUuid,
@@ -365,8 +340,8 @@ func (s *SubmissionSrvc) prepareEvaluation(
 		ScoringMethod:      determineScoringMethod(task),
 		CPUTimeLimitMillis: int32(task.CpuTimeLimSecs * 1000),
 		MemLimitKibiBytes:  int32(float64(task.MemLimMegabytes) * 976.5625),
-		TestlibCheckerCode: checker,
-		TestlibInteractor:  interactor,
+		TestlibCheckerCode: task.CheckerPtr(),
+		TestlibInteractor:  task.InteractorPtr(),
 		LangID:             language.ID,
 		LangName:           language.FullName,
 		LangCodeFname:      language.CodeFilename,

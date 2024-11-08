@@ -8,6 +8,20 @@ import (
 	"github.com/programme-lv/backend/submsrvc"
 )
 
+// ProgrammingLang represents a programming language.
+type ProgrammingLang struct {
+	ID               string  `json:"id"`
+	FullName         string  `json:"fullName"`
+	CodeFilename     string  `json:"codeFilename"`
+	CompileCmd       *string `json:"compileCmd"`
+	ExecuteCmd       string  `json:"executeCmd"`
+	EnvVersionCmd    string  `json:"envVersionCmd"`
+	HelloWorldCode   string  `json:"helloWorldCode"`
+	MonacoID         string  `json:"monacoId"`
+	CompiledFilename *string `json:"compiledFilename"`
+	Enabled          bool    `json:"enabled"`
+}
+
 func (httpserver *HttpServer) listProgrammingLangs(w http.ResponseWriter, r *http.Request) {
 	logger := httplog.LogEntry(r.Context())
 

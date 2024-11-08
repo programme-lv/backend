@@ -48,7 +48,7 @@ func (httpserver *HttpServer) authRegister(w http.ResponseWriter, r *http.Reques
 	}
 
 	response := registerResponse{
-		UUID:      user.UUID,
+		UUID:      user.UUID.String(),
 		Username:  user.Username,
 		Email:     user.Email,
 		Firstname: user.Firstname,

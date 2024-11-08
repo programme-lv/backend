@@ -7,11 +7,8 @@ import (
 	"os"
 	"sync"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/aws/retry"
-	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/jmoiron/sqlx"
+	"github.com/programme-lv/backend/evalsrvc"
 	"github.com/programme-lv/backend/tasksrvc"
 	"github.com/programme-lv/backend/user"
 
@@ -24,9 +21,7 @@ type SubmissionSrvc struct {
 
 	postgres *sqlx.DB
 
-	sqsClient  *sqs.Client
-	submSqsUrl string
-	resSqsUrl  string
+	evalSrvc *evalsrvc.EvalSrvc
 
 	// real-time updates
 	submCreated       chan *Submission
@@ -40,43 +35,7 @@ type SubmissionSrvc struct {
 	evalUuidToSubmUuid sync.Map
 }
 
-func getPostgresConnStr() string {
-	postgresUser := os.Getenv("POSTGRES_USER")
-	postgresPassword := os.Getenv("POSTGRES_PASSWORD")
-	postgresHost := os.Getenv("POSTGRES_HOST")
-	postgresPort := os.Getenv("POSTGRES_PORT")
-	postgresDbName := os.Getenv("POSTGRES_DB")
-	postgresSslmode := os.Getenv("POSTGRES_SSLMODE")
-
-	// encodedPassword := url.PathEscape(postgresPassword)
-
-	return fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
-		postgresHost, postgresPort, postgresUser, postgresPassword, postgresDbName, postgresSslmode)
-}
-
-func NewSubmissions(taskSrvc *tasksrvc.TaskService) *SubmissionSrvc {
-	cfg, err := config.LoadDefaultConfig(context.TODO(),
-		config.WithRegion("eu-central-1"),
-		config.WithRetryer(func() aws.Retryer {
-			return retry.AddWithMaxAttempts(retry.NewStandard(), 10)
-		}),
-	)
-	if err != nil {
-		panic(fmt.Sprintf("unable to load SDK config, %v", err))
-	}
-
-	sqsClient := sqs.NewFromConfig(cfg)
-
-	submQueueUrl := os.Getenv("SUBM_SQS_QUEUE_URL")
-	if submQueueUrl == "" {
-		panic("SUBM_SQS_QUEUE_URL not set in .env file")
-	}
-
-	responseSQSURL := os.Getenv("RESPONSE_SQS_URL")
-	if responseSQSURL == "" {
-		panic("RESPONSE_SQS_URL not set in .env file")
-	}
-
+func NewSubmissions(taskSrvc *tasksrvc.TaskService, evalSrvc *evalsrvc.EvalSrvc) *SubmissionSrvc {
 	postgresConnStr := getPostgresConnStr()
 	log.Printf("postgresConnStr: %s\n", postgresConnStr)
 	db, err := sqlx.Connect("postgres", postgresConnStr)
@@ -88,8 +47,7 @@ func NewSubmissions(taskSrvc *tasksrvc.TaskService) *SubmissionSrvc {
 		userSrvc:           user.NewUsers(),
 		taskSrvc:           taskSrvc,
 		postgres:           db,
-		sqsClient:          sqsClient,
-		submSqsUrl:         submQueueUrl,
+		evalSrvc:           evalSrvc,
 		submCreated:        make(chan *Submission, 1000),
 		evalStageUpd:       make(chan *SubmEvalStageUpdate, 1000),
 		testGroupScoreUpd:  make(chan *TestGroupScoringUpdate, 1000),
@@ -97,11 +55,23 @@ func NewSubmissions(taskSrvc *tasksrvc.TaskService) *SubmissionSrvc {
 		listenerLock:       sync.Mutex{},
 		listeners:          make([]chan *SubmissionListUpdate, 0, 100),
 		evalUuidToSubmUuid: sync.Map{},
-		resSqsUrl:          responseSQSURL,
 	}
 
 	go srvc.StartProcessingSubmEvalResults(context.TODO())
 	go srvc.StartStreamingSubmListUpdates(context.TODO())
 
 	return srvc
+}
+
+func getPostgresConnStr() string {
+	user := os.Getenv("POSTGRES_USER")
+	pw := os.Getenv("POSTGRES_PASSWORD")
+	host := os.Getenv("POSTGRES_HOST")
+	port := os.Getenv("POSTGRES_PORT")
+	db := os.Getenv("POSTGRES_DB")
+	ssl := os.Getenv("POSTGRES_SSLMODE")
+
+	return fmt.Sprintf(
+		"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
+		host, port, user, pw, db, ssl)
 }

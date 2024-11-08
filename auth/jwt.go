@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 )
 
 type JwtClaims struct {
@@ -21,14 +22,14 @@ type ClaimsKeyType string
 
 var CtxJwtClaimsKey ClaimsKeyType = "jwtClaims"
 
-func GenerateJWT(username, email, uuid string, firstname, lastname *string, jwtKey []byte) (string, error) {
+func GenerateJWT(username, email string, uuid uuid.UUID, firstname, lastname *string, jwtKey []byte) (string, error) {
 	expirationTime := time.Now().Add(24 * time.Hour)
 	claims := &JwtClaims{
 		Username:         username,
 		Firstname:        firstname,
 		Lastname:         lastname,
 		Email:            email,
-		UUID:             uuid,
+		UUID:             uuid.String(),
 		RegisteredClaims: jwt.RegisteredClaims{ExpiresAt: jwt.NewNumericDate(expirationTime)},
 	}
 
