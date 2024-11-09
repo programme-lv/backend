@@ -22,7 +22,7 @@ func (e *Error) DebugInfo() error {
 	return e.dbgInfoErr
 }
 
-func (e *Error) SetDebugInfo(err error) *Error {
+func (e *Error) SetDebug(err error) *Error {
 	e.dbgInfoErr = err
 	return e
 }

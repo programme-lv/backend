@@ -9,12 +9,12 @@ import (
 	"github.com/go-chi/httplog/v2"
 	"github.com/programme-lv/backend/submsrvc"
 	"github.com/programme-lv/backend/tasksrvc"
-	"github.com/programme-lv/backend/user"
+	"github.com/programme-lv/backend/usersrvc"
 )
 
 type HttpServer struct {
 	submSrvc *submsrvc.SubmissionSrvc
-	userSrvc *user.UserService
+	userSrvc *usersrvc.UserService
 	taskSrvc *tasksrvc.TaskService
 	router   *chi.Mux
 	JwtKey   []byte
@@ -22,7 +22,7 @@ type HttpServer struct {
 
 func NewHttpServer(
 	submSrvc *submsrvc.SubmissionSrvc,
-	userSrvc *user.UserService,
+	userSrvc *usersrvc.UserService,
 	taskSrvc *tasksrvc.TaskService,
 	jwtKey []byte,
 ) *HttpServer {

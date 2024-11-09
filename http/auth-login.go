@@ -7,7 +7,7 @@ import (
 
 	"github.com/go-chi/httplog/v2"
 	"github.com/programme-lv/backend/auth"
-	"github.com/programme-lv/backend/user"
+	"github.com/programme-lv/backend/usersrvc"
 )
 
 func (httpserver *HttpServer) authLogin(w http.ResponseWriter, r *http.Request) {
@@ -26,7 +26,7 @@ func (httpserver *HttpServer) authLogin(w http.ResponseWriter, r *http.Request) 
 
 	logger.Info("received login request", "username", request.Username)
 
-	user, err := httpserver.userSrvc.Login(context.TODO(), &user.LoginPayload{
+	user, err := httpserver.userSrvc.Login(context.TODO(), &usersrvc.LoginParams{
 		Username: request.Username,
 		Password: request.Password,
 	})

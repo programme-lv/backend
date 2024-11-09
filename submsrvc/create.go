@@ -12,7 +12,7 @@ import (
 	"github.com/programme-lv/backend/gen/postgres/public/model"
 	"github.com/programme-lv/backend/gen/postgres/public/table"
 	"github.com/programme-lv/backend/tasksrvc"
-	usersrvc "github.com/programme-lv/backend/user"
+	usersrvc "github.com/programme-lv/backend/usersrvc"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -193,8 +193,7 @@ func fetchUserLangTask(ctx context.Context, s *SubmissionSrvc,
 	)
 	// Parallelize fetching user, languages, and task
 	g.Go(func() error {
-		u, err := s.userSrvc.GetUserByUsername(errCtx,
-			&usersrvc.GetUserByUsernamePayload{Username: params.Username})
+		u, err := s.userSrvc.GetUserByUsername(errCtx, params.Username)
 		if err != nil {
 			return fmt.Errorf("failed to get user: %w", err)
 		}

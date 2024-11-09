@@ -3,20 +3,19 @@ package submsrvc
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"sync"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/programme-lv/backend/evalsrvc"
 	"github.com/programme-lv/backend/tasksrvc"
-	"github.com/programme-lv/backend/user"
+	"github.com/programme-lv/backend/usersrvc"
 
 	_ "github.com/lib/pq"
 )
 
 type SubmissionSrvc struct {
-	userSrvc *user.UserService
+	userSrvc *usersrvc.UserService
 	taskSrvc *tasksrvc.TaskService
 
 	postgres *sqlx.DB
@@ -37,14 +36,13 @@ type SubmissionSrvc struct {
 
 func NewSubmissions(taskSrvc *tasksrvc.TaskService, evalSrvc *evalsrvc.EvalSrvc) *SubmissionSrvc {
 	postgresConnStr := getPostgresConnStr()
-	log.Printf("postgresConnStr: %s\n", postgresConnStr)
 	db, err := sqlx.Connect("postgres", postgresConnStr)
 	if err != nil {
 		panic(fmt.Sprintf("failed to connect to postgres: %v", err))
 	}
 
 	srvc := &SubmissionSrvc{
-		userSrvc:           user.NewUsers(),
+		userSrvc:           usersrvc.NewUsers(),
 		taskSrvc:           taskSrvc,
 		postgres:           db,
 		evalSrvc:           evalSrvc,

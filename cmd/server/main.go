@@ -10,7 +10,7 @@ import (
 	"github.com/programme-lv/backend/http"
 	"github.com/programme-lv/backend/submsrvc"
 	"github.com/programme-lv/backend/tasksrvc"
-	"github.com/programme-lv/backend/user"
+	"github.com/programme-lv/backend/usersrvc"
 )
 
 func main() {
@@ -32,7 +32,7 @@ func main() {
 		log.Fatalf("error creating task service: %v", err)
 	}
 	submSrvc := submsrvc.NewSubmissions(taskSrvc, evalSrvc)
-	userSrvc := user.NewUsers()
+	userSrvc := usersrvc.NewUsers()
 	httpServer := http.NewHttpServer(submSrvc, userSrvc, taskSrvc,
 		[]byte(jwtKey))
 

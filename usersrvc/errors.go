@@ -1,4 +1,4 @@
-package user
+package usersrvc
 
 import (
 	"fmt"
@@ -45,7 +45,7 @@ func newErrEmailExists() *srvcerror.Error {
 
 const ErrCodeInternalServerError = "internal_server_error"
 
-func newErrInternalServerError() *srvcerror.Error {
+func newErrInternalSE() *srvcerror.Error {
 	return srvcerror.New(
 		ErrCodeInternalServerError,
 		"iekšēja servera kļūda",

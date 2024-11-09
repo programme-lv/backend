@@ -18,4 +18,5 @@ func UseSchema(schema string) {
 	RuntimeData = RuntimeData.FromSchema(schema)
 	SchemaMigrations = SchemaMigrations.FromSchema(schema)
 	Submissions = Submissions.FromSchema(schema)
+	Users = Users.FromSchema(schema)
 }

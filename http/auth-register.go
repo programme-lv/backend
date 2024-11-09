@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/go-chi/httplog/v2"
-	"github.com/programme-lv/backend/user"
+	"github.com/programme-lv/backend/usersrvc"
 )
 
 func (httpserver *HttpServer) authRegister(w http.ResponseWriter, r *http.Request) {
@@ -34,7 +34,7 @@ func (httpserver *HttpServer) authRegister(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	user, err := httpserver.userSrvc.CreateUser(context.TODO(), &user.UserPayload{
+	user, err := httpserver.userSrvc.CreateUser(context.TODO(), usersrvc.CreateUserParams{
 		Username:  request.Username,
 		Email:     request.Email,
 		Firstname: request.Firstname,
