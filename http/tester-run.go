@@ -18,7 +18,6 @@ func (httpserver *HttpServer) testerRun(w http.ResponseWriter, r *http.Request) 
 	logger := httplog.LogEntry(r.Context())
 
 	type test struct {
-		Id         int32   `json:"id"`
 		InSha256   *string `json:"in_sha256"`
 		InUrl      *string `json:"in_url"`
 		InContent  *string `json:"in_content"`
@@ -47,7 +46,7 @@ func (httpserver *HttpServer) testerRun(w http.ResponseWriter, r *http.Request) 
 	tests := make([]evalsrvc.Test, len(req.Tests))
 	for i, test := range req.Tests {
 		tests[i] = evalsrvc.Test{
-			ID:         int(test.Id),
+			ID:         i + 1,
 			InSha256:   test.InSha256,
 			InUrl:      test.InUrl,
 			InContent:  test.InContent,

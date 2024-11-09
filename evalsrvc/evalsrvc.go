@@ -6,12 +6,15 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/aws/retry"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
+	"github.com/emirpasic/gods/v2/queues"
+	"github.com/emirpasic/gods/v2/queues/linkedlistqueue"
 	"github.com/google/uuid"
 	"github.com/programme-lv/backend/planglist"
 	"github.com/programme-lv/tester"
@@ -60,7 +63,7 @@ func (e *EvalSrvc) enqueueCommon(req *Request,
 	tests := make([]tester.ReqTest, len(req.Tests))
 	for i, test := range req.Tests {
 		tests[i] = tester.ReqTest{
-			ID:         i,
+			ID:         int(test.ID),
 			InSha256:   test.InSha256,
 			InUrl:      test.InUrl,
 			InContent:  test.InContent,
@@ -103,24 +106,56 @@ func (e *EvalSrvc) enqueueCommon(req *Request,
 
 func (e *EvalSrvc) ReceiveFrom(evalUuid uuid.UUID) ([]Msg, error) {
 	// this is long polling. we retrieve channel for evalUuid
-	newCh := make(chan Msg, 1024)
-	ch, _ := e.accumulated.LoadOrStore(evalUuid, newCh)
+	nq := linkedlistqueue.New[Pair[Msg, time.Time]]()
+	nc := sync.NewCond(&sync.Mutex{})
+	p, _ := e.accumulated.LoadOrStore(evalUuid, Pair[*sync.Cond, queues.Queue[Pair[Msg, time.Time]]]{First: nc, Second: nq})
 
-	res := make([]Msg, 0)
-	for len(ch) > 0 {
-		res = append(res, <-ch)
+	cond := p.First
+	q := p.Second
+
+	cond.L.Lock()
+
+	vals := q.Values()
+	q.Clear()
+
+	if len(vals) > 0 {
+		msgs := make([]Msg, len(vals))
+		for i, val := range vals {
+			msgs[i] = val.First
+		}
+		cond.L.Unlock()
+		return msgs, nil
 	}
 
-	if len(res) > 0 {
-		return res, nil
-	}
+	cond.L.Unlock()
 
 	// if the channel is empty, wait at most 5 seconds for a message
-	select {
-	case msg := <-ch:
-		return []Msg{msg}, nil
-	case <-time.After(5 * time.Second):
-		return nil, nil
+	// check every 50ms
+	timer := time.NewTimer(5 * time.Second)
+	defer timer.Stop()
+
+	ticker := time.NewTicker(50 * time.Millisecond)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			// check if there are any messages in the queue and if so, return them
+			cond.L.Lock()
+			vals := q.Values()
+			q.Clear()
+			if len(vals) > 0 {
+				msgs := make([]Msg, len(vals))
+				for i, val := range vals {
+					msgs[i] = val.First
+				}
+				cond.L.Unlock()
+				return msgs, nil
+			}
+			cond.L.Unlock()
+		case <-timer.C:
+			return []Msg{}, nil
+		}
 	}
 }
 
@@ -146,6 +181,11 @@ type Msg struct {
 	Data   Event  // data specific to the message / event type
 }
 
+type Pair[T1 any, T2 any] struct {
+	First  T1
+	Second T2
+}
+
 type EvalSrvc struct {
 	sqsClient *sqs.Client
 
@@ -155,7 +195,7 @@ type EvalSrvc struct {
 
 	extEvalKey string // api key for external evaluation requests
 
-	accumulated *xsync.MapOf[uuid.UUID, chan Msg]
+	accumulated *xsync.MapOf[uuid.UUID, Pair[*sync.Cond, queues.Queue[Pair[Msg, time.Time]]]]
 }
 
 func NewEvalSrvc() *EvalSrvc {
@@ -197,7 +237,7 @@ func NewEvalSrvc() *EvalSrvc {
 		resSqsUrl:     responseSQSURL,
 		extEvalKey:    extEvalKey,
 		extEvalSqsUrl: extEvalSqsUrl,
-		accumulated:   xsync.NewMapOf[uuid.UUID, chan Msg](),
+		accumulated:   xsync.NewMapOf[uuid.UUID, Pair[*sync.Cond, queues.Queue[Pair[Msg, time.Time]]]](),
 	}
 
 	return esrvc
@@ -211,8 +251,42 @@ func (e *EvalSrvc) StartReceivingFromExternalEvalQueue() {
 			log.Printf("error receiving from external eval queue: %v", err)
 		}
 		for _, msg := range msgs {
-			ch, _ := e.accumulated.LoadOrStore(msg.EvalId, make(chan Msg, 1024))
-			ch <- msg
+			nq := linkedlistqueue.New[Pair[Msg, time.Time]]() // new queue
+			nc := sync.NewCond(&sync.Mutex{})                 // new condition variable
+			p, _ := e.accumulated.LoadOrStore(msg.EvalId, Pair[*sync.Cond, queues.Queue[Pair[Msg, time.Time]]]{First: nc, Second: nq})
+			cond := p.First
+			cond.L.Lock()
+			q := p.Second
+			q.Enqueue(Pair[Msg, time.Time]{First: msg, Second: time.Now()})
+			cond.L.Unlock()
+			// cond.Broadcast()
 		}
+	}
+}
+
+func (e *EvalSrvc) StartDeletingOldMessages() {
+	for {
+		time.Sleep(1 * time.Minute)
+		e.accumulated.Range(func(key uuid.UUID, value Pair[*sync.Cond, queues.Queue[Pair[Msg, time.Time]]]) bool {
+			cond := value.First
+			cond.L.Lock()
+			defer cond.L.Unlock()
+
+			q := value.Second
+
+			for q.Size() > 0 {
+				msg, ok := q.Peek()
+				if !ok {
+					return true
+				}
+				t := msg.Second
+				if t.Before(time.Now().Add(-2 * time.Minute)) {
+					q.Dequeue()
+				} else {
+					break
+				}
+			}
+			return true
+		})
 	}
 }
