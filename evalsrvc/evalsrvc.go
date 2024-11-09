@@ -23,7 +23,7 @@ func (e *EvalSrvc) Enqueue(req Request) (uuid.UUID, error) {
 	if err != nil {
 		return uuid.Nil, fmt.Errorf("failed to generate UUID: %w", err)
 	}
-	lang, err := planglist.GetProgrammingLanguage(req.LangId)
+	lang, err := planglist.GetProgrammingLanguageById(req.LangId)
 	if err != nil {
 		return uuid.Nil, err
 	}
@@ -39,7 +39,7 @@ func (e *EvalSrvc) EnqueueExternal(apiKey string, req Request) (uuid.UUID, error
 	}
 
 	// check validity of programming language before creating a new queue
-	lang, err := planglist.GetProgrammingLanguage(req.LangId)
+	lang, err := planglist.GetProgrammingLanguageById(req.LangId)
 	if err != nil {
 		return uuid.Nil, err
 	}
@@ -106,12 +106,28 @@ func (e *EvalSrvc) enqueueCommon(req *Request,
 	}
 
 	return evalUuid, nil
+}
 
+func (e *EvalSrvc) ReceiveFrom(evalUuid uuid.UUID) ([]Msg, error) {
+	queueUrl, err := e.sqsClient.GetQueueUrl(context.TODO(), &sqs.GetQueueUrlInput{
+		QueueName: aws.String(evalUuid.String()),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get queue URL: %w", err)
+	}
+	if queueUrl.QueueUrl == nil {
+		return nil, fmt.Errorf("queue URL is nil")
+	}
+	return e.receive(*queueUrl.QueueUrl)
 }
 
 func (e *EvalSrvc) Receive() ([]Msg, error) {
+	return e.receive(e.resSqsUrl)
+}
+
+func (e *EvalSrvc) receive(queueUrl string) ([]Msg, error) {
 	output, err := e.sqsClient.ReceiveMessage(context.TODO(), &sqs.ReceiveMessageInput{
-		QueueUrl:            aws.String(e.resSqsUrl),
+		QueueUrl:            aws.String(queueUrl),
 		MaxNumberOfMessages: 10,
 		WaitTimeSeconds:     5,
 	})

@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/httplog/v2"
+	"github.com/google/uuid"
 	"github.com/programme-lv/backend/evalsrvc"
 )
 
@@ -28,7 +30,7 @@ func (httpserver *HttpServer) testerRun(w http.ResponseWriter, r *http.Request) 
 	type request struct {
 		ApiKey     string  `json:"api_key"`
 		SrcCode    string  `json:"src_code"`
-		ProgLangId string  `json:"prog_lang_id"`
+		ProgLangId string  `json:"lang_id"`
 		CpuMs      int     `json:"cpu_ms"`
 		MemKib     int     `json:"mem_kib"`
 		Tests      []test  `json:"tests"`
@@ -57,6 +59,7 @@ func (httpserver *HttpServer) testerRun(w http.ResponseWriter, r *http.Request) 
 
 	uuid, err := httpserver.evalSrvc.EnqueueExternal(req.ApiKey, evalsrvc.Request{
 		Code:       req.SrcCode,
+		LangId:     req.ProgLangId,
 		Tests:      tests,
 		CpuMs:      req.CpuMs,
 		MemKiB:     req.MemKib,
@@ -73,4 +76,26 @@ func (httpserver *HttpServer) testerRun(w http.ResponseWriter, r *http.Request) 
 	}
 
 	writeJsonSuccessResponse(w, res)
+}
+
+func (httpserver *HttpServer) testerRunLongPoll(w http.ResponseWriter, r *http.Request) {
+	logger := httplog.LogEntry(r.Context())
+
+	evalUuidStr := chi.URLParam(r, "evalUuid")
+	evalUuid, err := uuid.Parse(evalUuidStr)
+	if err != nil {
+		writeJsonErrorResponse(w,
+			"Nederīgs UUID",
+			http.StatusBadRequest,
+			"invalid_eval_uuid")
+		return
+	}
+
+	msgs, err := httpserver.evalSrvc.ReceiveFrom(evalUuid)
+	if err != nil {
+		handleJsonSrvcError(logger, w, err)
+		return
+	}
+
+	writeJsonSuccessResponse(w, msgs)
 }

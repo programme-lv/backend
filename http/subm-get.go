@@ -9,11 +9,11 @@ import (
 )
 
 func (httpserver *HttpServer) getSubmission(w http.ResponseWriter, r *http.Request) {
-	taskId := chi.URLParam(r, "submUuid")
-
 	logger := httplog.LogEntry(r.Context())
 
-	subm, err := httpserver.submSrvc.GetSubmission(context.TODO(), taskId)
+	submUuid := chi.URLParam(r, "submUuid")
+
+	subm, err := httpserver.submSrvc.GetSubmission(context.TODO(), submUuid)
 	if err != nil {
 		handleJsonSrvcError(logger, w, err)
 		return

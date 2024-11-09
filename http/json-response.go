@@ -38,7 +38,10 @@ func writeJsonErrorResponse(w http.ResponseWriter, errMsg string, statusCode int
 }
 
 func writeJsonInternalServerError(w http.ResponseWriter) {
-	writeJsonErrorResponse(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError, "internal_server_error")
+	writeJsonErrorResponse(w,
+		http.StatusText(http.StatusInternalServerError),
+		http.StatusInternalServerError,
+		"internal_server_error")
 }
 
 func handleJsonSrvcError(logger *slog.Logger, w http.ResponseWriter, err error) {

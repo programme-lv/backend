@@ -21,7 +21,7 @@ func ListProgrammingLanguages() (res []ProgrammingLang, err error) {
 	return res, nil
 }
 
-func GetProgrammingLanguage(langId string) (*ProgrammingLang, error) {
+func GetProgrammingLanguageById(langId string) (*ProgrammingLang, error) {
 	langs := getHardcodedLanguageList()
 	for _, lang := range langs {
 		if lang.ID == langId {
