@@ -13,20 +13,50 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/google/uuid"
+	"github.com/programme-lv/tester"
 	"github.com/programme-lv/tester/sqsgath"
 )
 
 func (e *EvalSrvc) Enqueue(req Request) (uuid.UUID, error) {
-	jsonReq, err := json.Marshal(req)
-	if err != nil {
-		return uuid.Nil, fmt.Errorf("failed to marshal evaluation request: %w", err)
-	}
 	evalUuid, err := uuid.NewV7()
 	if err != nil {
 		return uuid.Nil, fmt.Errorf("failed to generate UUID: %w", err)
 	}
+	tests := make([]tester.ReqTest, len(req.Tests))
+	for i, test := range req.Tests {
+		tests[i] = tester.ReqTest{
+			ID:         i,
+			InSha256:   test.InSha256,
+			InUrl:      test.InUrl,
+			InContent:  test.InContent,
+			AnsSha256:  test.AnsSha256,
+			AnsUrl:     test.AnsUrl,
+			AnsContent: test.AnsContent,
+		}
+	}
+	jsonReq, err := json.Marshal(tester.EvalReq{
+		EvalUuid:  evalUuid.String(),
+		ResSqsUrl: e.resSqsUrl,
+		Code:      req.Code,
+		Language: tester.Language{
+			LangID:        req.Language.Id,
+			LangName:      req.Language.FullName,
+			CodeFname:     req.Language.SrcCodeFname,
+			CompileCmd:    req.Language.CompileCmd,
+			CompiledFname: req.Language.CompiledFname,
+			ExecCmd:       req.Language.ExecCmd,
+		},
+		Tests:      tests,
+		Checker:    req.Checker,
+		Interactor: req.Interactor,
+		CpuMillis:  req.CpuMillis,
+		MemoryKiB:  req.MemoryKiB,
+	})
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("failed to marshal evaluation request: %w", err)
+	}
 	_, err = e.sqsClient.SendMessage(context.TODO(), &sqs.SendMessageInput{
-		QueueUrl:    &e.submSqsUrl,
+		QueueUrl:    aws.String(e.submSqsUrl),
 		MessageBody: aws.String(string(jsonReq)),
 	})
 	if err != nil {
