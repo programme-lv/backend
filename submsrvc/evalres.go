@@ -39,6 +39,9 @@ func (s *SubmissionSrvc) StartProcessingSubmEvalResults(ctx context.Context) (er
 					postgres: s.postgres,
 					evalUuid: msg.EvalId,
 					submUuid: submUuid,
+					stageUpd: s.evalStageUpd,
+					groupUpd: s.tGroupScoreUpd,
+					tSetUpd:  s.tSetScoreUpd,
 				}
 				evalHandlers[msg.EvalId] = handler
 			}

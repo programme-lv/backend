@@ -1,4 +1,4 @@
-package srvcerr
+package srvcerror
 
 import "net/http"
 

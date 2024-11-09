@@ -3,8 +3,10 @@ package submsrvc
 import (
 	"context"
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/go-jet/jet/v2/postgres"
 	"github.com/google/uuid"
@@ -281,15 +283,21 @@ func (s *SubmissionSrvc) GetSubmission(ctx context.Context, submUuid string) (*F
 	return fullSubmission, nil
 }
 
+// Start of Selection
 func (s *SubmissionSrvc) ListSubmissions(ctx context.Context) ([]*Submission, error) {
-	// get all submissions ever
+	startTotal := time.Now()
+
+	// Fetch submissions
+	start := time.Now()
 	selectSubmStmt := postgres.SELECT(table.Submissions.AllColumns, table.Evaluations.AllColumns, table.EvaluationTestset.AllColumns).
 		FROM(
 			table.Submissions.
 				LEFT_JOIN(table.Evaluations, table.Submissions.CurrentEvalUUID.EQ(table.Evaluations.EvalUUID)).
 				LEFT_JOIN(table.EvaluationTestset, table.Submissions.CurrentEvalUUID.EQ(table.EvaluationTestset.EvalUUID)),
 		).ORDER_BY(table.Submissions.CreatedAt.DESC())
+	log.Printf("SELECT statement for submissions prepared in %v", time.Since(start))
 
+	start = time.Now()
 	type SubmJoinEvalModel struct {
 		model.Submissions
 		model.Evaluations
@@ -298,14 +306,20 @@ func (s *SubmissionSrvc) ListSubmissions(ctx context.Context) ([]*Submission, er
 
 	var submJoinEval []SubmJoinEvalModel
 	if err := selectSubmStmt.QueryContext(ctx, s.postgres, &submJoinEval); err != nil {
+		log.Printf("Error fetching submissions: %v (took %v)", err, time.Since(startTotal))
 		return nil, fmt.Errorf("failed to get submissions: %w", err)
 	}
+	log.Printf("Fetched submissions in %v", time.Since(start))
 
+	// Fetch subtasks
+	start = time.Now()
 	selectSubtasks := postgres.SELECT(table.Submissions.SubmUUID, table.EvaluationSubtasks.AllColumns).
 		FROM(table.Submissions.
 			INNER_JOIN(table.EvaluationSubtasks, table.Submissions.CurrentEvalUUID.EQ(table.EvaluationSubtasks.EvalUUID)),
 		)
+	log.Printf("SELECT statement for subtasks prepared in %v", time.Since(start))
 
+	start = time.Now()
 	type SubmSubtaskModel struct {
 		model.Submissions
 		model.EvaluationSubtasks
@@ -313,19 +327,28 @@ func (s *SubmissionSrvc) ListSubmissions(ctx context.Context) ([]*Submission, er
 
 	var subtasks []SubmSubtaskModel
 	if err := selectSubtasks.QueryContext(ctx, s.postgres, &subtasks); err != nil {
+		log.Printf("Error fetching subtasks: %v (took %v)", err, time.Since(startTotal))
 		return nil, fmt.Errorf("failed to get subtasks: %w", err)
 	}
+	log.Printf("Fetched subtasks in %v", time.Since(start))
 
+	// Map submissions to subtasks
+	start = time.Now()
 	submUUIDToSubtask := make(map[uuid.UUID][]SubmSubtaskModel)
 	for _, subtask := range subtasks {
 		submUUIDToSubtask[subtask.SubmUUID] = append(submUUIDToSubtask[subtask.SubmUUID], subtask)
 	}
+	log.Printf("Mapped submissions to subtasks in %v", time.Since(start))
 
+	// Fetch test groups
+	start = time.Now()
 	selectTestGroups := postgres.SELECT(table.Submissions.SubmUUID, table.EvaluationTestgroups.AllColumns).
 		FROM(table.Submissions.
 			INNER_JOIN(table.EvaluationTestgroups, table.Submissions.CurrentEvalUUID.EQ(table.EvaluationTestgroups.EvalUUID)),
 		)
+	log.Printf("SELECT statement for test groups prepared in %v", time.Since(start))
 
+	start = time.Now()
 	type SubmTestGroupModel struct {
 		model.Submissions
 		model.EvaluationTestgroups
@@ -333,49 +356,73 @@ func (s *SubmissionSrvc) ListSubmissions(ctx context.Context) ([]*Submission, er
 
 	var submTestGroups []SubmTestGroupModel
 	if err := selectTestGroups.QueryContext(ctx, s.postgres, &submTestGroups); err != nil {
+		log.Printf("Error fetching test groups: %v (took %v)", err, time.Since(startTotal))
 		return nil, fmt.Errorf("failed to get test groups: %w", err)
 	}
+	log.Printf("Fetched test groups in %v", time.Since(start))
 
+	// Map submissions to test groups
+	start = time.Now()
 	submUUIDToTestGroups := make(map[uuid.UUID][]SubmTestGroupModel)
 	for _, testGroup := range submTestGroups {
 		submUUIDToTestGroups[testGroup.SubmUUID] = append(submUUIDToTestGroups[testGroup.SubmUUID], testGroup)
 	}
+	log.Printf("Mapped submissions to test groups in %v", time.Since(start))
 
+	// Fetch author UUIDs
+	start = time.Now()
 	authorUUIDs := make([]uuid.UUID, len(submJoinEval))
 	for i, subm := range submJoinEval {
 		authorUUIDs[i] = subm.Submissions.AuthorUUID
 	}
-	// request usernames for authors from user service
+	log.Printf("Collected author UUIDs in %v", time.Since(start))
+
+	// Fetch usernames
+	start = time.Now()
 	usernames, err := s.userSrvc.GetUsernames(ctx, authorUUIDs)
 	if err != nil {
+		log.Printf("Error fetching usernames: %v (took %v)", err, time.Since(startTotal))
 		return nil, err
 	}
+	log.Printf("Fetched usernames in %v", time.Since(start))
 
+	// Fetch task full names
+	start = time.Now()
 	taskShortIDs := make([]string, len(submJoinEval))
 	for i, subm := range submJoinEval {
 		taskShortIDs[i] = subm.Submissions.TaskID
 	}
-
 	taskFullNames, err := s.taskSrvc.GetTaskFullNames(ctx, taskShortIDs)
 	if err != nil {
+		log.Printf("Error fetching task full names: %v (took %v)", err, time.Since(startTotal))
 		return nil, err
 	}
+	log.Printf("Fetched task full names in %v", time.Since(start))
 
+	// Fetch programming languages
+	start = time.Now()
 	languages, err := s.ListProgrammingLanguages(ctx)
 	if err != nil {
+		log.Printf("Error fetching programming languages: %v (took %v)", err, time.Since(startTotal))
 		return nil, err
 	}
+	log.Printf("Fetched programming languages in %v", time.Since(start))
+
+	// Map language IDs to names and Monaco IDs
+	start = time.Now()
 	langIDToFullName := make(map[string]string)
-	for _, lang := range languages {
-		langIDToFullName[lang.ID] = lang.FullName
-	}
 	langIDToMonacoID := make(map[string]string)
 	for _, lang := range languages {
+		langIDToFullName[lang.ID] = lang.FullName
 		langIDToMonacoID[lang.ID] = lang.MonacoId
 	}
+	log.Printf("Mapped language IDs to names and Monaco IDs in %v", time.Since(start))
 
+	// Process submissions
+	start = time.Now()
 	submissions := make([]*Submission, len(submJoinEval))
 	for i, subm := range submJoinEval {
+		// Process subtasks
 		subtasks := make([]Subtask, 0)
 		subtaskModels, hasSubtasks := submUUIDToSubtask[subm.Submissions.SubmUUID]
 		if hasSubtasks {
@@ -394,6 +441,8 @@ func (s *SubmissionSrvc) ListSubmissions(ctx context.Context) ([]*Submission, er
 				})
 			}
 		}
+
+		// Process test groups
 		testGroups := make([]TestGroup, 0)
 		testGroupModels, hasTestGroups := submUUIDToTestGroups[subm.Submissions.SubmUUID]
 		if hasTestGroups {
@@ -407,6 +456,7 @@ func (s *SubmissionSrvc) ListSubmissions(ctx context.Context) ([]*Submission, er
 					for _, subtaskStr := range subtaskArrayStrs {
 						subtask, err := strconv.Atoi(subtaskStr)
 						if err != nil {
+							log.Printf("Error converting subtask string to int: %v (took %v)", err, time.Since(startTotal))
 							return nil, fmt.Errorf("failed to convert subtask string to int: %w", err)
 						}
 						subtaskArray = append(subtaskArray, subtask)
@@ -422,6 +472,7 @@ func (s *SubmissionSrvc) ListSubmissions(ctx context.Context) ([]*Submission, er
 				})
 			}
 		}
+
 		submissions[i] = &Submission{
 			UUID:    subm.Submissions.SubmUUID,
 			Content: subm.Submissions.Content,
@@ -453,6 +504,8 @@ func (s *SubmissionSrvc) ListSubmissions(ctx context.Context) ([]*Submission, er
 			CreatedAt: subm.Submissions.CreatedAt,
 		}
 	}
+	log.Printf("Processed submissions in %v", time.Since(start))
 
+	log.Printf("Total ListSubmissions execution time: %v", time.Since(startTotal))
 	return submissions, nil
 }

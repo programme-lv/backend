@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/programme-lv/backend/srvcerr"
+	"github.com/programme-lv/backend/srvcerror"
 )
 
 const ErrCodeSubmissionTooLong = "submission_too_long"
 
-func ErrSubmissionTooLong(maxSubmLengthKB int) *srvcerr.Error {
-	return srvcerr.New(
+func ErrSubmissionTooLong(maxSubmLengthKB int) *srvcerror.Error {
+	return srvcerror.New(
 		ErrCodeSubmissionTooLong,
 		fmt.Sprintf("Iesūtījuma kods ir pārāk garš, maksimālais garums ir %d KB", maxSubmLengthKB),
 	).SetHttpStatusCode(http.StatusBadRequest)
@@ -18,8 +18,8 @@ func ErrSubmissionTooLong(maxSubmLengthKB int) *srvcerr.Error {
 
 const ErrCodeTaskNotFound = "task_not_found"
 
-func ErrTaskNotFound() *srvcerr.Error {
-	return srvcerr.New(
+func ErrTaskNotFound() *srvcerror.Error {
+	return srvcerror.New(
 		ErrCodeTaskNotFound,
 		"Atbilstošais uzdevums netika atrasts",
 	).SetHttpStatusCode(http.StatusNotFound)
@@ -27,8 +27,8 @@ func ErrTaskNotFound() *srvcerr.Error {
 
 const ErrCodeUserNotFound = "user_not_found"
 
-func ErrUserNotFound() *srvcerr.Error {
-	return srvcerr.New(
+func ErrUserNotFound() *srvcerror.Error {
+	return srvcerror.New(
 		ErrCodeUserNotFound,
 		"Norādītais lietotājs netika atrasts",
 	).SetHttpStatusCode(http.StatusNotFound)
@@ -36,8 +36,8 @@ func ErrUserNotFound() *srvcerr.Error {
 
 const ErrCodeInvalidProgLang = "invalid_programming_language"
 
-func ErrInvalidProgLang() *srvcerr.Error {
-	return srvcerr.New(
+func ErrInvalidProgLang() *srvcerror.Error {
+	return srvcerror.New(
 		ErrCodeInvalidProgLang,
 		"Nederīga programmēšanas valoda",
 	).SetHttpStatusCode(http.StatusBadRequest)
@@ -45,15 +45,15 @@ func ErrInvalidProgLang() *srvcerr.Error {
 
 const ErrCodeUnauthorized = "unauthorized_access"
 
-func ErrUnauthorizedUsernameMismatch() *srvcerr.Error {
-	return srvcerr.New(
+func ErrUnauthorizedUsernameMismatch() *srvcerror.Error {
+	return srvcerror.New(
 		ErrCodeUnauthorized,
 		"JWT norādītais lietotājvārds nesakrīt ar pieprasīto lietotājvārdu",
 	).SetHttpStatusCode(http.StatusUnauthorized)
 }
 
-func ErrJwtTokenMissing() *srvcerr.Error {
-	return srvcerr.New(
+func ErrJwtTokenMissing() *srvcerror.Error {
+	return srvcerror.New(
 		ErrCodeUnauthorized,
 		"JWT netika atrasts",
 	).SetHttpStatusCode(http.StatusUnauthorized)
@@ -61,8 +61,8 @@ func ErrJwtTokenMissing() *srvcerr.Error {
 
 const ErrCodeSubmissionNotFound = "submission_not_found"
 
-func ErrSubmissionNotFound() *srvcerr.Error {
-	return srvcerr.New(
+func ErrSubmissionNotFound() *srvcerror.Error {
+	return srvcerror.New(
 		ErrCodeSubmissionNotFound,
 		"Atbilstošais iesūtījums netika atrasts",
 	).SetHttpStatusCode(http.StatusNotFound)
