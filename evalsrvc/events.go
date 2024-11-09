@@ -15,8 +15,8 @@ const (
 )
 
 type StartedEvaluation struct {
-	SysInfo   string
-	StartedAt time.Time
+	SysInfo   string    `json:"sys_info"`
+	StartedAt time.Time `json:"started_at"`
 }
 
 func (s StartedEvaluation) Type() string {
@@ -30,7 +30,7 @@ func (s StartedCompiling) Type() string {
 }
 
 type FinishedCompiling struct {
-	RuntimeData *RunData
+	RuntimeData *RunData `json:"runtime_data"`
 }
 
 func (s FinishedCompiling) Type() string {
@@ -39,11 +39,16 @@ func (s FinishedCompiling) Type() string {
 
 // Runtime Data
 type RunData struct {
-	StdIn, StdOut, StdErr string
-	CpuMs, WallMs, MemKiB int64
-	ExitCode              int64
-	CtxSwV, CtxSwF        int64
-	Signal                *int64
+	StdIn    string `json:"in"`
+	StdOut   string `json:"out"`
+	StdErr   string `json:"err"`
+	CpuMs    int64  `json:"cpu_ms"`
+	WallMs   int64  `json:"wall_ms"`
+	MemKiB   int64  `json:"mem_kib"`
+	ExitCode int64  `json:"exit"`
+	CtxSwV   int64  `json:"ctx_sw_v"`
+	CtxSwF   int64  `json:"ctx_sw_f"`
+	Signal   *int64 `json:"signal"`
 }
 
 type StartedTesting struct{}
@@ -53,8 +58,9 @@ func (s StartedTesting) Type() string {
 }
 
 type ReachedTest struct {
-	TestId  int64
-	In, Ans *string
+	TestId int64   `json:"test_id"`
+	In     *string `json:"in"`
+	Ans    *string `json:"ans"`
 }
 
 func (s ReachedTest) Type() string {
@@ -62,7 +68,7 @@ func (s ReachedTest) Type() string {
 }
 
 type IgnoredTest struct {
-	TestId int64
+	TestId int64 `json:"test_id"`
 }
 
 func (s IgnoredTest) Type() string {
@@ -70,9 +76,9 @@ func (s IgnoredTest) Type() string {
 }
 
 type FinishedTest struct {
-	TestID  int64
-	Subm    *RunData
-	Checker *RunData
+	TestID  int64    `json:"test_id"`
+	Subm    *RunData `json:"submission"`
+	Checker *RunData `json:"checker"`
 }
 
 func (s FinishedTest) Type() string {
@@ -86,9 +92,9 @@ func (s FinishedTesting) Type() string {
 }
 
 type FinishedEvaluation struct {
-	CompileError  bool
-	InternalError bool
-	ErrorMsg      *string
+	CompileError  bool    `json:"compile_error"`
+	InternalError bool    `json:"internal_error"`
+	ErrorMsg      *string `json:"error_msg"`
 }
 
 func (s FinishedEvaluation) Type() string {

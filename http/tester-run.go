@@ -91,11 +91,21 @@ func (httpserver *HttpServer) testerRunLongPoll(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	msgs, err := httpserver.evalSrvc.ReceiveFrom(evalUuid)
+	received, err := httpserver.evalSrvc.ReceiveFrom(evalUuid)
 	if err != nil {
 		handleJsonSrvcError(logger, w, err)
 		return
 	}
 
-	writeJsonSuccessResponse(w, msgs)
+	data := make([]interface{}, len(received))
+	for i, msg := range received {
+		marshalled, _ := json.Marshal(msg.Data)
+		values := make(map[string]interface{})
+		json.Unmarshal(marshalled, &values)
+		values["msg_type"] = msg.Data.Type()
+		delete(values, "sys_info")
+		data[i] = values
+	}
+
+	writeJsonSuccessResponse(w, data)
 }

@@ -15,7 +15,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/programme-lv/backend/planglist"
 	"github.com/programme-lv/tester"
-	"github.com/programme-lv/tester/sqsgath"
+	"github.com/puzpuzpuz/xsync/v3"
 )
 
 func (e *EvalSrvc) Enqueue(req Request) (uuid.UUID, error) {
@@ -49,14 +49,7 @@ func (e *EvalSrvc) EnqueueExternal(apiKey string, req Request) (uuid.UUID, error
 		return uuid.Nil, fmt.Errorf("failed to generate UUID: %w", err)
 	}
 
-	queue, err := e.sqsClient.CreateQueue(context.TODO(), &sqs.CreateQueueInput{
-		QueueName: aws.String(evalUuid.String()),
-	})
-	if err != nil {
-		return uuid.Nil, fmt.Errorf("failed to create queue: %w", err)
-	}
-
-	return e.enqueueCommon(&req, evalUuid, *queue.QueueUrl, lang)
+	return e.enqueueCommon(&req, evalUuid, e.extEvalSqsUrl, lang)
 }
 
 func (e *EvalSrvc) enqueueCommon(req *Request,
@@ -109,133 +102,30 @@ func (e *EvalSrvc) enqueueCommon(req *Request,
 }
 
 func (e *EvalSrvc) ReceiveFrom(evalUuid uuid.UUID) ([]Msg, error) {
-	queueUrl, err := e.sqsClient.GetQueueUrl(context.TODO(), &sqs.GetQueueUrlInput{
-		QueueName: aws.String(evalUuid.String()),
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to get queue URL: %w", err)
+	// this is long polling. we retrieve channel for evalUuid
+	newCh := make(chan Msg, 1024)
+	ch, _ := e.accumulated.LoadOrStore(evalUuid, newCh)
+
+	res := make([]Msg, 0)
+	for len(ch) > 0 {
+		res = append(res, <-ch)
 	}
-	if queueUrl.QueueUrl == nil {
-		return nil, fmt.Errorf("queue URL is nil")
+
+	if len(res) > 0 {
+		return res, nil
 	}
-	return e.receive(*queueUrl.QueueUrl)
+
+	// if the channel is empty, wait at most 5 seconds for a message
+	select {
+	case msg := <-ch:
+		return []Msg{msg}, nil
+	case <-time.After(5 * time.Second):
+		return nil, nil
+	}
 }
 
 func (e *EvalSrvc) Receive() ([]Msg, error) {
 	return e.receive(e.resSqsUrl)
-}
-
-func (e *EvalSrvc) receive(queueUrl string) ([]Msg, error) {
-	output, err := e.sqsClient.ReceiveMessage(context.TODO(), &sqs.ReceiveMessageInput{
-		QueueUrl:            aws.String(queueUrl),
-		MaxNumberOfMessages: 10,
-		WaitTimeSeconds:     5,
-	})
-	if err != nil {
-		log.Printf("failed to receive messages, %v\n", err)
-		time.Sleep(1 * time.Second)
-		return nil, err
-	}
-	msgs := make([]Msg, len(output.Messages))
-	for i, msg := range output.Messages {
-		if msg.Body == nil {
-			return nil, fmt.Errorf("message body is nil")
-		}
-
-		var header sqsgath.Header
-		err = json.Unmarshal([]byte(*msg.Body), &header)
-		if err != nil {
-			log.Printf("failed to unmarshal message: %v\n", err)
-			continue
-		}
-
-		if msg.ReceiptHandle == nil {
-			return nil, fmt.Errorf("receipt handle is nil")
-		}
-		msgs[i].Handle = *msg.ReceiptHandle
-		msgs[i].EvalId, err = uuid.Parse(header.EvalUuid)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse eval_uuid: %w", err)
-		}
-
-		switch header.MsgType {
-		case sqsgath.MsgTypeStartedEvaluation:
-			startedEvaluation := sqsgath.StartedEvaluation{}
-			err = json.Unmarshal([]byte(*msg.Body), &startedEvaluation)
-			msgs[i].Data = StartedEvaluation{}
-		case sqsgath.MsgTypeStartedCompilation:
-			startedCompilation := sqsgath.StartedCompilation{}
-			err = json.Unmarshal([]byte(*msg.Body), &startedCompilation)
-			msgs[i].Data = StartedCompiling{}
-		case sqsgath.MsgTypeFinishedCompilation:
-			finishedCompilation := sqsgath.FinishedCompilation{}
-			err = json.Unmarshal([]byte(*msg.Body), &finishedCompilation)
-			msgs[i].Data = FinishedCompiling{
-				RuntimeData: mapRunData(finishedCompilation.RuntimeData),
-			}
-		case sqsgath.MsgTypeStartedTesting:
-			startedTesting := sqsgath.StartedTesting{}
-			err = json.Unmarshal([]byte(*msg.Body), &startedTesting)
-			msgs[i].Data = StartedTesting{}
-		case sqsgath.MsgTypeReachedTest:
-			reachedTest := sqsgath.ReachedTest{}
-			err = json.Unmarshal([]byte(*msg.Body), &reachedTest)
-			msgs[i].Data = ReachedTest{
-				TestId: reachedTest.TestId,
-				In:     reachedTest.Input,
-				Ans:    reachedTest.Answer,
-			}
-		case sqsgath.MsgTypeIgnoredTest:
-			ignoredTest := sqsgath.IgnoredTest{}
-			err = json.Unmarshal([]byte(*msg.Body), &ignoredTest)
-			msgs[i].Data = IgnoredTest{
-				TestId: ignoredTest.TestId,
-			}
-		case sqsgath.MsgTypeFinishedTest:
-			finishTest := sqsgath.FinishedTest{}
-			err = json.Unmarshal([]byte(*msg.Body), &finishTest)
-			msgs[i].Data = FinishedTest{
-				TestID:  finishTest.TestId,
-				Subm:    mapRunData(finishTest.Submission),
-				Checker: mapRunData(finishTest.Checker),
-			}
-		case sqsgath.MsgTypeFinishedTesting:
-			finishTesting := sqsgath.FinishedTesting{}
-			err = json.Unmarshal([]byte(*msg.Body), &finishTesting)
-			msgs[i].Data = FinishedTesting{}
-		case sqsgath.MsgTypeFinishedEvaluation:
-			finishEval := sqsgath.FinishedEvaluation{}
-			err = json.Unmarshal([]byte(*msg.Body), &finishEval)
-			msgs[i].Data = FinishedEvaluation{
-				CompileError:  finishEval.CompileError,
-				InternalError: finishEval.InternalError,
-				ErrorMsg:      finishEval.ErrorMessage,
-			}
-		}
-
-		if err != nil {
-			return nil, fmt.Errorf("failed to unmarshal %s message: %w", header.MsgType, err)
-		}
-	}
-	return msgs, nil
-}
-
-func mapRunData(rd *sqsgath.RuntimeData) *RunData {
-	if rd != nil {
-		return &RunData{
-			StdIn:    rd.Stdin,
-			StdOut:   rd.Stdout,
-			StdErr:   rd.Stderr,
-			CpuMs:    rd.CpuMillis,
-			WallMs:   rd.WallMillis,
-			MemKiB:   rd.MemoryKiBytes,
-			ExitCode: rd.ExitCode,
-			CtxSwV:   rd.CtxSwF,
-			CtxSwF:   rd.CtxSwF,
-			Signal:   rd.ExitSignal,
-		}
-	}
-	return nil
 }
 
 func (e *EvalSrvc) Ack(handle string) error {
@@ -259,10 +149,13 @@ type Msg struct {
 type EvalSrvc struct {
 	sqsClient *sqs.Client
 
-	submSqsUrl string
-	resSqsUrl  string
+	submSqsUrl    string
+	resSqsUrl     string
+	extEvalSqsUrl string
 
 	extEvalKey string // api key for external evaluation requests
+
+	accumulated *xsync.MapOf[uuid.UUID, chan Msg]
 }
 
 func NewEvalSrvc() *EvalSrvc {
@@ -293,10 +186,33 @@ func NewEvalSrvc() *EvalSrvc {
 		panic("EXTERNAL_EVAL_KEY not set in .env file")
 	}
 
-	return &EvalSrvc{
-		sqsClient:  sqsClient,
-		submSqsUrl: submQueueUrl,
-		resSqsUrl:  responseSQSURL,
-		extEvalKey: extEvalKey,
+	extEvalSqsUrl := os.Getenv("EXT_EVAL_SQS_URL")
+	if extEvalSqsUrl == "" {
+		panic("EXT_EVAL_SQS_URL not set in .env file")
+	}
+
+	esrvc := &EvalSrvc{
+		sqsClient:     sqsClient,
+		submSqsUrl:    submQueueUrl,
+		resSqsUrl:     responseSQSURL,
+		extEvalKey:    extEvalKey,
+		extEvalSqsUrl: extEvalSqsUrl,
+		accumulated:   xsync.NewMapOf[uuid.UUID, chan Msg](),
+	}
+
+	return esrvc
+}
+
+// this may not be pretty but'll work
+func (e *EvalSrvc) StartReceivingFromExternalEvalQueue() {
+	for {
+		msgs, err := e.receive(e.extEvalSqsUrl)
+		if err != nil {
+			log.Printf("error receiving from external eval queue: %v", err)
+		}
+		for _, msg := range msgs {
+			ch, _ := e.accumulated.LoadOrStore(msg.EvalId, make(chan Msg, 1024))
+			ch <- msg
+		}
 	}
 }
