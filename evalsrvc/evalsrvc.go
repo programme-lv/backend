@@ -13,6 +13,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/google/uuid"
+	"github.com/programme-lv/backend/planglist"
 	"github.com/programme-lv/tester"
 	"github.com/programme-lv/tester/sqsgath"
 )
@@ -22,6 +23,47 @@ func (e *EvalSrvc) Enqueue(req Request) (uuid.UUID, error) {
 	if err != nil {
 		return uuid.Nil, fmt.Errorf("failed to generate UUID: %w", err)
 	}
+	lang, err := planglist.GetProgrammingLanguage(req.LangId)
+	if err != nil {
+		return uuid.Nil, err
+	}
+	return e.enqueueCommon(&req, evalUuid, e.resSqsUrl, lang)
+}
+
+// EnqueueExternal is used for evaluation requests from external services
+// such as CleverCode.lv. The difference is that it creates a new response queue
+// for each evaluation request.
+func (e *EvalSrvc) EnqueueExternal(apiKey string, req Request) (uuid.UUID, error) {
+	if apiKey != e.extEvalKey {
+		return uuid.Nil, ErrInvalidApiKey()
+	}
+
+	// check validity of programming language before creating a new queue
+	lang, err := planglist.GetProgrammingLanguage(req.LangId)
+	if err != nil {
+		return uuid.Nil, err
+	}
+
+	evalUuid, err := uuid.NewV7()
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("failed to generate UUID: %w", err)
+	}
+
+	queue, err := e.sqsClient.CreateQueue(context.TODO(), &sqs.CreateQueueInput{
+		QueueName: aws.String(evalUuid.String()),
+	})
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("failed to create queue: %w", err)
+	}
+
+	return e.enqueueCommon(&req, evalUuid, *queue.QueueUrl, lang)
+}
+
+func (e *EvalSrvc) enqueueCommon(req *Request,
+	evalUuid uuid.UUID,
+	resSqsUrl string,
+	lang *planglist.ProgrammingLang,
+) (uuid.UUID, error) {
 	tests := make([]tester.ReqTest, len(req.Tests))
 	for i, test := range req.Tests {
 		tests[i] = tester.ReqTest{
@@ -36,21 +78,21 @@ func (e *EvalSrvc) Enqueue(req Request) (uuid.UUID, error) {
 	}
 	jsonReq, err := json.Marshal(tester.EvalReq{
 		EvalUuid:  evalUuid.String(),
-		ResSqsUrl: e.resSqsUrl,
+		ResSqsUrl: resSqsUrl,
 		Code:      req.Code,
 		Language: tester.Language{
-			LangID:        req.Language.Id,
-			LangName:      req.Language.FullName,
-			CodeFname:     req.Language.SrcCodeFname,
-			CompileCmd:    req.Language.CompileCmd,
-			CompiledFname: req.Language.CompiledFname,
-			ExecCmd:       req.Language.ExecCmd,
+			LangID:        lang.ID,
+			LangName:      lang.FullName,
+			CodeFname:     lang.CodeFilename,
+			CompileCmd:    lang.CompileCmd,
+			CompiledFname: lang.CompiledFilename,
+			ExecCmd:       lang.ExecuteCmd,
 		},
 		Tests:      tests,
 		Checker:    req.Checker,
 		Interactor: req.Interactor,
-		CpuMillis:  req.CpuMillis,
-		MemoryKiB:  req.MemoryKiB,
+		CpuMillis:  req.CpuMs,
+		MemoryKiB:  req.MemKiB,
 	})
 	if err != nil {
 		return uuid.Nil, fmt.Errorf("failed to marshal evaluation request: %w", err)
@@ -64,6 +106,7 @@ func (e *EvalSrvc) Enqueue(req Request) (uuid.UUID, error) {
 	}
 
 	return evalUuid, nil
+
 }
 
 func (e *EvalSrvc) Receive() ([]Msg, error) {
@@ -202,6 +245,8 @@ type EvalSrvc struct {
 
 	submSqsUrl string
 	resSqsUrl  string
+
+	extEvalKey string // api key for external evaluation requests
 }
 
 func NewEvalSrvc() *EvalSrvc {
@@ -227,9 +272,15 @@ func NewEvalSrvc() *EvalSrvc {
 		panic("RESPONSE_SQS_URL not set in .env file")
 	}
 
+	extEvalKey := os.Getenv("EXTERNAL_EVAL_KEY")
+	if extEvalKey == "" {
+		panic("EXTERNAL_EVAL_KEY not set in .env file")
+	}
+
 	return &EvalSrvc{
 		sqsClient:  sqsClient,
 		submSqsUrl: submQueueUrl,
 		resSqsUrl:  responseSQSURL,
+		extEvalKey: extEvalKey,
 	}
 }

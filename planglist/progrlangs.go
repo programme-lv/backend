@@ -1,11 +1,7 @@
-package submsrvc
-
-import (
-	"context"
-)
+package planglist
 
 // ListProgrammingLanguages implements submissions.Service.
-func (s *SubmissionSrvc) ListProgrammingLanguages(context.Context) (res []ProgrammingLang, err error) {
+func ListProgrammingLanguages() (res []ProgrammingLang, err error) {
 	res = make([]ProgrammingLang, 0)
 	langs := getHardcodedLanguageList()
 	for _, lang := range langs {
@@ -23,6 +19,16 @@ func (s *SubmissionSrvc) ListProgrammingLanguages(context.Context) (res []Progra
 		})
 	}
 	return res, nil
+}
+
+func GetProgrammingLanguage(langId string) (*ProgrammingLang, error) {
+	langs := getHardcodedLanguageList()
+	for _, lang := range langs {
+		if lang.ID == langId {
+			return &lang, nil
+		}
+	}
+	return nil, ErrInvalidProgLang()
 }
 
 // ProgrammingLang represents the structure of a programming language.

@@ -2,6 +2,8 @@ package submsrvc
 
 import (
 	"time"
+
+	"github.com/programme-lv/backend/planglist"
 )
 
 type EvalTestResult struct {
@@ -43,7 +45,7 @@ type EvalDetails struct {
 	CpuTimeLimitMillis int
 	MemoryLimitKiB     int
 
-	ProgrammingLang   ProgrammingLang
+	ProgrammingLang   planglist.ProgrammingLang
 	SystemInformation *string
 
 	CompileRuntime *RuntimeData

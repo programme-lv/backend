@@ -12,6 +12,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/programme-lv/backend/gen/postgres/public/model"
 	"github.com/programme-lv/backend/gen/postgres/public/table"
+	"github.com/programme-lv/backend/planglist"
 )
 
 func (s *SubmissionSrvc) GetSubmission(ctx context.Context, submUuid string) (*FullSubmission, error) {
@@ -84,11 +85,11 @@ func (s *SubmissionSrvc) GetSubmission(ctx context.Context, submUuid string) (*F
 	}
 
 	// Get languages
-	languages, err := s.ListProgrammingLanguages(ctx)
+	languages, err := planglist.ListProgrammingLanguages()
 	if err != nil {
 		return nil, err
 	}
-	langMap := make(map[string]ProgrammingLang)
+	langMap := make(map[string]planglist.ProgrammingLang)
 	for _, lang := range languages {
 		langMap[lang.ID] = lang
 	}
@@ -263,7 +264,7 @@ func (s *SubmissionSrvc) GetSubmission(ctx context.Context, submUuid string) (*F
 			EvalStage:          submJoinEval.Evaluations.EvaluationStage,
 			CpuTimeLimitMillis: int(submJoinEval.Evaluations.CPUTimeLimitMillis),
 			MemoryLimitKiB:     int(submJoinEval.Evaluations.MemLimitKibiBytes),
-			ProgrammingLang: ProgrammingLang{
+			ProgrammingLang: planglist.ProgrammingLang{
 				ID:               submJoinEval.Evaluations.LangID,
 				FullName:         langMap[submJoinEval.Evaluations.LangID].FullName,
 				CodeFilename:     submJoinEval.Evaluations.LangCodeFname,
@@ -401,7 +402,7 @@ func (s *SubmissionSrvc) ListSubmissions(ctx context.Context) ([]*Submission, er
 
 	// Fetch programming languages
 	start = time.Now()
-	languages, err := s.ListProgrammingLanguages(ctx)
+	languages, err := planglist.ListProgrammingLanguages()
 	if err != nil {
 		log.Printf("Error fetching programming languages: %v (took %v)", err, time.Since(startTotal))
 		return nil, err

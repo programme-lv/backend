@@ -1,35 +1,26 @@
 package evalsrvc
 
 type Request struct {
-	Code     string   `json:"code"`
-	Language Language `json:"language"`
+	Code   string
+	LangId string
 
-	Tests []Test `json:"tests"`
+	Tests []Test
 
-	CpuMillis int `json:"cpu_millis"`
-	MemoryKiB int `json:"memory_kib"`
+	CpuMs  int
+	MemKiB int
 
-	Checker    *string `json:"checker"`
-	Interactor *string `json:"interactor"`
-}
-
-type Language struct {
-	Id            string  `json:"lang_id"`
-	FullName      string  `json:"lang_name"`
-	SrcCodeFname  string  `json:"code_fname"`
-	CompileCmd    *string `json:"compile_cmd"`
-	CompiledFname *string `json:"compiled_fname"`
-	ExecCmd       string  `json:"exec_cmd"`
+	Checker    *string
+	Interactor *string
 }
 
 type Test struct {
-	ID int `json:"id"`
+	ID int
 
-	InSha256  *string `json:"in_sha256"`
-	InUrl     *string `json:"in_url"`
-	InContent *string `json:"in_content"`
+	InSha256  *string
+	InUrl     *string
+	InContent *string
 
-	AnsSha256  *string `json:"ans_sha256"`
-	AnsUrl     *string `json:"ans_url"`
-	AnsContent *string `json:"ans_content"`
+	AnsSha256  *string
+	AnsUrl     *string
+	AnsContent *string
 }

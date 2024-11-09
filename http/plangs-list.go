@@ -1,11 +1,10 @@
 package http
 
 import (
-	"context"
 	"net/http"
 
 	"github.com/go-chi/httplog/v2"
-	"github.com/programme-lv/backend/submsrvc"
+	"github.com/programme-lv/backend/planglist"
 )
 
 // ProgrammingLang represents a programming language.
@@ -27,13 +26,13 @@ func (httpserver *HttpServer) listProgrammingLangs(w http.ResponseWriter, r *htt
 
 	type listProgLangsResponse []*ProgrammingLang
 
-	langs, err := httpserver.submSrvc.ListProgrammingLanguages(context.TODO())
+	langs, err := planglist.ListProgrammingLanguages()
 	if err != nil {
 		handleJsonSrvcError(logger, w, err)
 		return
 	}
 
-	mapProgrammingLangResponse := func(lang *submsrvc.ProgrammingLang) *ProgrammingLang {
+	mapProgrammingLangResponse := func(lang *planglist.ProgrammingLang) *ProgrammingLang {
 		return &ProgrammingLang{
 			ID:               lang.ID,
 			FullName:         lang.FullName,
@@ -48,7 +47,7 @@ func (httpserver *HttpServer) listProgrammingLangs(w http.ResponseWriter, r *htt
 		}
 	}
 
-	mapProgLangsResponse := func(langs []submsrvc.ProgrammingLang) listProgLangsResponse {
+	mapProgLangsResponse := func(langs []planglist.ProgrammingLang) listProgLangsResponse {
 		response := make(listProgLangsResponse, len(langs))
 		for i, lang := range langs {
 			response[i] = mapProgrammingLangResponse(&lang)

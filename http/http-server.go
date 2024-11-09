@@ -7,6 +7,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
 	"github.com/go-chi/httplog/v2"
+	"github.com/programme-lv/backend/evalsrvc"
 	"github.com/programme-lv/backend/submsrvc"
 	"github.com/programme-lv/backend/tasksrvc"
 	"github.com/programme-lv/backend/usersrvc"
@@ -16,6 +17,7 @@ type HttpServer struct {
 	submSrvc *submsrvc.SubmissionSrvc
 	userSrvc *usersrvc.UserService
 	taskSrvc *tasksrvc.TaskService
+	evalSrvc *evalsrvc.EvalSrvc
 	router   *chi.Mux
 	JwtKey   []byte
 }
@@ -24,6 +26,7 @@ func NewHttpServer(
 	submSrvc *submsrvc.SubmissionSrvc,
 	userSrvc *usersrvc.UserService,
 	taskSrvc *tasksrvc.TaskService,
+	evalSrvc *evalsrvc.EvalSrvc,
 	jwtKey []byte,
 ) *HttpServer {
 	router := chi.NewRouter()
@@ -56,6 +59,7 @@ func NewHttpServer(
 		submSrvc: submSrvc,
 		userSrvc: userSrvc,
 		taskSrvc: taskSrvc,
+		evalSrvc: evalSrvc,
 		router:   router,
 		JwtKey:   jwtKey,
 	}

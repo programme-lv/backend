@@ -33,7 +33,7 @@ func main() {
 	}
 	submSrvc := submsrvc.NewSubmissions(taskSrvc, evalSrvc)
 	userSrvc := usersrvc.NewUsers()
-	httpServer := http.NewHttpServer(submSrvc, userSrvc, taskSrvc,
+	httpServer := http.NewHttpServer(submSrvc, userSrvc, taskSrvc, evalSrvc,
 		[]byte(jwtKey))
 
 	address := ":8080"

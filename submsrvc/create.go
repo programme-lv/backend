@@ -11,6 +11,7 @@ import (
 	"github.com/programme-lv/backend/evalsrvc"
 	"github.com/programme-lv/backend/gen/postgres/public/model"
 	"github.com/programme-lv/backend/gen/postgres/public/table"
+	"github.com/programme-lv/backend/planglist"
 	"github.com/programme-lv/backend/tasksrvc"
 	usersrvc "github.com/programme-lv/backend/usersrvc"
 	"golang.org/x/sync/errgroup"
@@ -37,12 +38,11 @@ func (s *SubmissionSrvc) CreateSubmission(ctx context.Context,
 
 	req := evalsrvc.Request{
 		Code:       params.Submission,
-		Language:   evalReqLang(lang),
 		Tests:      evalReqTests(task),
 		Checker:    task.CheckerPtr(),
 		Interactor: task.InteractorPtr(),
-		CpuMillis:  task.CpuMillis(),
-		MemoryKiB:  task.MemoryKiB(),
+		CpuMs:      task.CpuMillis(),
+		MemKiB:     task.MemoryKiB(),
 	}
 
 	evalUuid, err := s.evalSrvc.Enqueue(req)
@@ -152,17 +152,6 @@ func (s *SubmissionSrvc) CreateSubmission(ctx context.Context,
 	return res, nil
 }
 
-func evalReqLang(lang *ProgrammingLang) evalsrvc.Language {
-	return evalsrvc.Language{
-		Id:            lang.ID,
-		FullName:      lang.FullName,
-		SrcCodeFname:  lang.CodeFilename,
-		CompileCmd:    lang.CompileCmd,
-		CompiledFname: lang.CompiledFilename,
-		ExecCmd:       lang.ExecuteCmd,
-	}
-}
-
 func evalReqTests(task *tasksrvc.Task) []evalsrvc.Test {
 	evalReqTests := make([]evalsrvc.Test, len(task.Tests))
 	for i, test := range task.Tests {
@@ -181,14 +170,14 @@ func evalReqTests(task *tasksrvc.Task) []evalsrvc.Test {
 
 func fetchUserLangTask(ctx context.Context, s *SubmissionSrvc,
 	params *CreateSubmissionParams) (
-	*usersrvc.User, *ProgrammingLang, *tasksrvc.Task, error) {
+	*usersrvc.User, *planglist.ProgrammingLang, *tasksrvc.Task, error) {
 
 	var errCtx context.Context
 	g, errCtx := errgroup.WithContext(ctx)
 
 	var (
 		user *usersrvc.User
-		lang *ProgrammingLang
+		lang *planglist.ProgrammingLang
 		task *tasksrvc.Task
 	)
 	// Parallelize fetching user, languages, and task
@@ -202,7 +191,7 @@ func fetchUserLangTask(ctx context.Context, s *SubmissionSrvc,
 	})
 
 	g.Go(func() error {
-		langs, err := s.ListProgrammingLanguages(errCtx)
+		langs, err := planglist.ListProgrammingLanguages()
 		if err != nil {
 			return fmt.Errorf("failed to list programming languages: %w", err)
 		}
@@ -331,7 +320,7 @@ func (s *SubmissionSrvc) insertSubmission(tx *sql.Tx, submission *model.Submissi
 func (s *SubmissionSrvc) prepareEvaluation(
 	evalUuid uuid.UUID,
 	task *tasksrvc.Task,
-	language *ProgrammingLang) *model.Evaluations {
+	language *planglist.ProgrammingLang) *model.Evaluations {
 
 	eval := model.Evaluations{
 		EvalUUID:           evalUuid,
@@ -504,7 +493,7 @@ func (s *SubmissionSrvc) prepareSubmission(
 	params *CreateSubmissionParams,
 	userUuid uuid.UUID,
 	task *tasksrvc.Task,
-	language *ProgrammingLang,
+	language *planglist.ProgrammingLang,
 	evalUuid uuid.UUID,
 ) *model.Submissions {
 	return &model.Submissions{
