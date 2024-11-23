@@ -43,13 +43,8 @@ func newErrEmailExists() *srvcerror.Error {
 	).SetHttpStatusCode(http.StatusConflict)
 }
 
-const ErrCodeInternalServerError = "internal_server_error"
-
 func newErrInternalSE() *srvcerror.Error {
-	return srvcerror.New(
-		ErrCodeInternalServerError,
-		"iekšēja servera kļūda",
-	).SetHttpStatusCode(http.StatusInternalServerError)
+	return srvcerror.ErrInternalSE()
 }
 
 const ErrCodeEmailTooLong = "email_too_long"

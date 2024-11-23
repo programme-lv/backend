@@ -21,11 +21,7 @@ import (
 	"github.com/puzpuzpuz/xsync/v3"
 )
 
-func (e *EvalSrvc) Enqueue(req Request) (uuid.UUID, error) {
-	evalUuid, err := uuid.NewV7()
-	if err != nil {
-		return uuid.Nil, fmt.Errorf("failed to generate UUID: %w", err)
-	}
+func (e *EvalSrvc) Enqueue(req Request, evalUuid uuid.UUID) (uuid.UUID, error) {
 	lang, err := planglist.GetProgrammingLanguageById(req.LangId)
 	if err != nil {
 		return uuid.Nil, err

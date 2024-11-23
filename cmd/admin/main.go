@@ -2,20 +2,14 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
-	"image"
-	"image/jpeg"
-	"image/png"
 	"os"
 	"path/filepath"
 
-	"github.com/nfnt/resize"
 	"github.com/programme-lv/backend/fstask" // Assuming fstask is defined here
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
-	"github.com/wailsapp/mimetype"
 )
 
 var (
@@ -191,67 +185,4 @@ func initLogger() {
 		fmt.Printf("Failed to initialize logger: %v\n", err)
 		os.Exit(1)
 	}
-}
-
-// downscaleImage resizes and compresses the image to the specified maximum width.
-// It returns the compressed image bytes or an error if the process fails.
-func downscaleImage(imgContent []byte, maxWidth uint) ([]byte, error) {
-	log.Debug().
-		Int("originalSize", len(imgContent)).
-		Uint("maxWidth", maxWidth).
-		Msg("Starting image downscaling")
-
-	mType := mimetype.Detect(imgContent)
-	if mType == nil {
-		log.Error().Msg("Unknown image type")
-		return nil, fmt.Errorf("unknown image type")
-	}
-	log.Debug().
-		Str("mimeType", mType.String()).
-		Msg("Detected MIME type")
-
-	var img image.Image
-	var err error
-
-	switch mType.String() {
-	case "image/jpeg":
-		img, err = jpeg.Decode(bytes.NewReader(imgContent))
-	case "image/png":
-		img, err = png.Decode(bytes.NewReader(imgContent))
-	default:
-		log.Error().
-			Str("mimeType", mType.String()).
-			Msg("Unsupported image format")
-		return nil, fmt.Errorf("unsupported image format: %s", mType.String())
-	}
-
-	if err != nil {
-		log.Error().
-			Err(err).
-			Msg("Failed to decode image")
-		return nil, fmt.Errorf("failed to decode image: %w", err)
-	}
-
-	// Resize the image while maintaining aspect ratio
-	width := uint(img.Bounds().Dx())
-	if width > maxWidth {
-		width = maxWidth
-	}
-	resizedImg := resize.Resize(width, 0, img, resize.Lanczos3)
-	log.Debug().
-		Int("newWidth", resizedImg.Bounds().Dx()).
-		Msg("Image resized")
-
-	var compressedImg bytes.Buffer
-	// Encode the resized image to JPEG format with quality 85
-	err = jpeg.Encode(&compressedImg, resizedImg, &jpeg.Options{Quality: 85})
-	if err != nil {
-		log.Error().
-			Err(err).
-			Msg("Failed to encode image to JPEG")
-		return nil, fmt.Errorf("failed to encode image to JPEG: %w", err)
-	}
-
-	log.Debug().Msg("Image downscaled and compressed successfully")
-	return compressedImg.Bytes(), nil
 }

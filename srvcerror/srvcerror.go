@@ -45,3 +45,12 @@ func New(errorCode string, msgToUser string) *Error {
 		msgToUser: msgToUser,
 	}
 }
+
+const ErrCodeInternalServerError = "internal_server_error"
+
+func ErrInternalSE() *Error {
+	return New(
+		ErrCodeInternalServerError,
+		"iekšēja servera kļūda",
+	).SetHttpStatusCode(http.StatusInternalServerError)
+}

@@ -36,21 +36,11 @@ func (s *SubmissionSrvc) CreateSubmission(ctx context.Context,
 		return nil, err
 	}
 
-	req := evalsrvc.Request{
-		Code:       params.Submission,
-		Tests:      evalReqTests(task),
-		Checker:    task.CheckerPtr(),
-		Interactor: task.InteractorPtr(),
-		CpuMs:      task.CpuMillis(),
-		MemKiB:     task.MemoryKiB(),
-	}
-
-	evalUuid, err := s.evalSrvc.Enqueue(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to enqueue evaluation: %w", err)
-	}
-
 	submUuid := uuid.New()
+	evalUuid, err := uuid.NewV7()
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate UUID: %w", err)
+	}
 
 	// Prepare Evaluation
 	eval := s.prepareEvaluation(evalUuid, task, lang)
@@ -116,6 +106,20 @@ func (s *SubmissionSrvc) CreateSubmission(ctx context.Context,
 	}
 	if err := tx.Commit(); err != nil {
 		return nil, fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	req := evalsrvc.Request{
+		Code:       params.Submission,
+		Tests:      evalReqTests(task),
+		Checker:    task.CheckerPtr(),
+		Interactor: task.InteractorPtr(),
+		CpuMs:      task.CpuMillis(),
+		MemKiB:     task.MemoryKiB(),
+	}
+
+	_, err = s.evalSrvc.Enqueue(req, evalUuid)
+	if err != nil {
+		return nil, fmt.Errorf("failed to enqueue evaluation: %w", err)
 	}
 
 	// Assemble the Submission response

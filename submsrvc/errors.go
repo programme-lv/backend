@@ -67,3 +67,7 @@ func ErrSubmissionNotFound() *srvcerror.Error {
 		"Atbilstošais iesūtījums netika atrasts",
 	).SetHttpStatusCode(http.StatusNotFound)
 }
+
+func ErrInternalSE() *srvcerror.Error {
+	return srvcerror.ErrInternalSE()
+}
