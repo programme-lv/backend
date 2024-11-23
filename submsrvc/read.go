@@ -295,7 +295,7 @@ func (s *SubmissionSrvc) ListSubmissions(ctx context.Context) ([]*Submission, er
 			table.Submissions.
 				LEFT_JOIN(table.Evaluations, table.Submissions.CurrentEvalUUID.EQ(table.Evaluations.EvalUUID)).
 				LEFT_JOIN(table.EvaluationTestset, table.Submissions.CurrentEvalUUID.EQ(table.EvaluationTestset.EvalUUID)),
-		).ORDER_BY(table.Submissions.CreatedAt.DESC())
+		).ORDER_BY(table.Submissions.CreatedAt.DESC()).LIMIT(30)
 	log.Printf("SELECT statement for submissions prepared in %v", time.Since(start))
 
 	start = time.Now()
