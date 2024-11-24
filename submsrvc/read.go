@@ -511,9 +511,10 @@ func (s *SubmissionSrvc) ListSubmissions(ctx context.Context) ([]*Submission, er
 	return submissions, nil
 }
 
-func (s *SubmissionSrvc) GetSubmission(ctx context.Context, submUuid string) (*Submission, error) {
+func (s *SubmissionSrvc) GetSubmission(ctx context.Context, submUuid uuid.UUID) (*Submission, error) {
 	selectStmt := postgres.SELECT(table.Submissions.AllColumns).
-		WHERE(table.Submissions.SubmUUID.EQ(postgres.String(submUuid)))
+		FROM(table.Submissions).
+		WHERE(table.Submissions.SubmUUID.EQ(postgres.UUID(submUuid)))
 
 	var subms []model.Submissions
 	if err := selectStmt.QueryContext(ctx, s.postgres, &subms); err != nil {
@@ -598,6 +599,7 @@ func (s *SubmissionSrvc) GetSubmission(ctx context.Context, submUuid string) (*S
 
 func (s *SubmissionSrvc) getEvaluation(ctx context.Context, evalUUID uuid.UUID) (*Evaluation, error) {
 	selectStmt := postgres.SELECT(table.Evaluations.AllColumns).
+		FROM(table.Evaluations).
 		WHERE(table.Evaluations.EvalUUID.EQ(postgres.UUID(evalUUID)))
 
 	var eval model.Evaluations

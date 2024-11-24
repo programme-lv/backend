@@ -5,13 +5,14 @@ import (
 	"net/http"
 
 	"github.com/go-chi/httplog/v2"
+	"github.com/programme-lv/backend/submsrvc"
 )
 
 func (httpserver *HttpServer) reevaluateSubmission(w http.ResponseWriter, r *http.Request) {
 	logger := httplog.LogEntry(r.Context())
 
 	type reevaluateSubmissionRequest struct {
-		SubmUUID string `json:"subm_uuid"`
+		SubmUUIDs []string `json:"subm_uuids"`
 	}
 
 	var request reevaluateSubmissionRequest
@@ -20,14 +21,21 @@ func (httpserver *HttpServer) reevaluateSubmission(w http.ResponseWriter, r *htt
 		return
 	}
 
-	subm, err := httpserver.submSrvc.ReevaluateSubmission(r.Context(), request.SubmUUID)
-
-	if err != nil {
-		handleJsonSrvcError(logger, w, err)
-		return
+	subms := []*submsrvc.Submission{}
+	for _, submUuid := range request.SubmUUIDs {
+		subm, err := httpserver.submSrvc.ReevaluateSubmission(r.Context(), submUuid)
+		if err != nil {
+			handleJsonSrvcError(logger, w, err)
+			return
+		}
+		subms = append(subms, subm)
 	}
 
-	response := mapBriefSubm(subm)
+	briefSubms := make([]*BriefSubmission, len(subms))
+	for i, subm := range subms {
+		briefSubms[i] = mapBriefSubm(subm)
+	}
+	response := briefSubms
 
 	w.WriteHeader(http.StatusCreated)
 	w.Header().Set("Content-Type", "application/json")

@@ -10,6 +10,7 @@ import (
 	"github.com/programme-lv/backend/evalsrvc"
 	"github.com/programme-lv/backend/gen/postgres/public/model"
 	"github.com/programme-lv/backend/gen/postgres/public/table"
+	"github.com/programme-lv/backend/planglist"
 )
 
 func (s *SubmissionSrvc) ReevaluateSubmission(ctx context.Context, submUuidStr string) (*Submission, error) {
@@ -52,9 +53,16 @@ func (s *SubmissionSrvc) ReevaluateSubmission(ctx context.Context, submUuidStr s
 		return nil, ErrTaskNotFound().SetDebug(errMsg)
 	}
 
-	evalUuid, err := uuid.NewV7()
+	lang, err := planglist.GetProgrammingLanguageById(subm.ProgLangID)
 	if err != nil {
-		format := "failed to generate UUID: %w"
+		format := "failed to get programming language: %w"
+		errMsg := fmt.Errorf(format, err)
+		return nil, ErrInternalSE().SetDebug(errMsg)
+	}
+
+	evalUuid, err := s.InsertNewEvaluation(ctx, &task, lang)
+	if err != nil {
+		format := "failed to insert new evaluation: %w"
 		errMsg := fmt.Errorf(format, err)
 		return nil, ErrInternalSE().SetDebug(errMsg)
 	}
@@ -90,5 +98,5 @@ func (s *SubmissionSrvc) ReevaluateSubmission(ctx context.Context, submUuidStr s
 		return nil, ErrInternalSE().SetDebug(errMsg)
 	}
 
-	return s.GetSubmission(ctx, submUuidStr)
+	return s.GetSubmission(ctx, submUuid)
 }
