@@ -73,6 +73,43 @@ func (s *UserService) GetUserByUsername(ctx context.Context, username string) (r
 	return &resSlice[0], nil
 }
 
+func (s *UserService) GetUserByUUID(ctx context.Context, uuid uuid.UUID) (res *User, err error) {
+	// Start Generation Here
+	allUsers, err := selectAllUsers(s.postgres)
+	if err != nil {
+		errMsg := fmt.Errorf("error listing users: %w", err)
+		return nil, newErrInternalSE().SetDebug(errMsg)
+	}
+
+	var resSlice []User
+	for _, user := range allUsers {
+		if user.UUID == uuid {
+			if len(resSlice) == 1 {
+				format := "multiple users with the same UUID: %s"
+				errMsg := fmt.Errorf(format, uuid)
+				return nil, newErrInternalSE().SetDebug(errMsg)
+			}
+
+			genUser := User{
+				UUID:      user.UUID,
+				Username:  user.Username,
+				Email:     user.Email,
+				Firstname: &user.Firstname,
+				Lastname:  &user.Lastname,
+			}
+			resSlice = append(resSlice, genUser)
+		}
+	}
+	if len(resSlice) == 0 {
+		format := "user with UUID %s not found"
+		errMsg := fmt.Errorf(format, uuid)
+		errRes := newErrUserNotFound().SetDebug(errMsg)
+		return nil, errRes
+	}
+
+	return &resSlice[0], nil
+}
+
 func (s *UserService) GetUsernames(ctx context.Context,
 	uuids []uuid.UUID) ([]string, error) {
 

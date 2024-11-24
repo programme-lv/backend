@@ -13,7 +13,7 @@ func (httpserver *HttpServer) getSubmission(w http.ResponseWriter, r *http.Reque
 
 	submUuid := chi.URLParam(r, "submUuid")
 
-	subm, err := httpserver.submSrvc.GetSubmission(context.TODO(), submUuid)
+	subm, err := httpserver.submSrvc.GetFullSubmission(context.TODO(), submUuid)
 	if err != nil {
 		handleJsonSrvcError(logger, w, err)
 		return

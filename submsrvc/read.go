@@ -15,7 +15,7 @@ import (
 	"github.com/programme-lv/backend/planglist"
 )
 
-func (s *SubmissionSrvc) GetSubmission(ctx context.Context, submUuid string) (*FullSubmission, error) {
+func (s *SubmissionSrvc) GetFullSubmission(ctx context.Context, submUuid string) (*FullSubmission, error) {
 	submUUID, err := uuid.Parse(submUuid)
 	if err != nil {
 		return nil, fmt.Errorf("invalid submission UUID: %w", err)
@@ -509,4 +509,194 @@ func (s *SubmissionSrvc) ListSubmissions(ctx context.Context) ([]*Submission, er
 
 	log.Printf("Total ListSubmissions execution time: %v", time.Since(startTotal))
 	return submissions, nil
+}
+
+func (s *SubmissionSrvc) GetSubmission(ctx context.Context, submUuid string) (*Submission, error) {
+	selectStmt := postgres.SELECT(table.Submissions.AllColumns).
+		WHERE(table.Submissions.SubmUUID.EQ(postgres.String(submUuid)))
+
+	var subms []model.Submissions
+	if err := selectStmt.QueryContext(ctx, s.postgres, &subms); err != nil {
+		format := "failed to get submission: %w"
+		errMsg := fmt.Errorf(format, err)
+		return nil, ErrInternalSE().SetDebug(errMsg)
+	}
+	if len(subms) == 0 {
+		return nil, ErrSubmissionNotFound()
+	}
+	if len(subms) > 1 {
+		format := "multiple submissions found with the same UUID: %s"
+		errMsg := fmt.Errorf(format, submUuid)
+		return nil, ErrInternalSE().SetDebug(errMsg)
+	}
+
+	submRow := subms[0]
+
+	user, err := s.userSrvc.GetUserByUUID(ctx, submRow.AuthorUUID)
+	if err != nil {
+		return nil, err
+	}
+
+	task, err := s.taskSrvc.GetTask(ctx, submRow.TaskID)
+	if err != nil {
+		return nil, err
+	}
+
+	langs, err := planglist.ListProgrammingLanguages()
+	if err != nil {
+		return nil, err
+	}
+
+	var lang planglist.ProgrammingLang
+	found := false
+	for _, l := range langs {
+		if l.ID == submRow.ProgLangID {
+			lang = l
+			found = true
+			break
+		}
+	}
+	if !found {
+		return nil, ErrInvalidProgLang()
+	}
+
+	if submRow.CurrentEvalUUID == nil {
+		return nil, ErrEvaluationNotSet()
+	}
+	eval, err := s.getEvaluation(ctx, *submRow.CurrentEvalUUID)
+	if err != nil {
+		return nil, err
+	}
+	if eval == nil {
+		format := "evaluation is nil for submission: %s"
+		errMsg := fmt.Errorf(format, submUuid)
+		return nil, ErrEvaluationNotSet().SetDebug(errMsg)
+	}
+
+	subm := Submission{
+		UUID:    submRow.SubmUUID,
+		Content: submRow.Content,
+		Author: Author{
+			UUID:     user.UUID,
+			Username: user.Username,
+		},
+		Task: Task{
+			ShortID:  task.ShortId,
+			FullName: task.FullName,
+		},
+		Lang: Lang{
+			ShortID:  submRow.ProgLangID,
+			Display:  lang.FullName,
+			MonacoID: lang.MonacoId,
+		},
+		CurrEval:  *eval,
+		CreatedAt: submRow.CreatedAt,
+	}
+
+	return &subm, nil
+}
+
+func (s *SubmissionSrvc) getEvaluation(ctx context.Context, evalUUID uuid.UUID) (*Evaluation, error) {
+	selectStmt := postgres.SELECT(table.Evaluations.AllColumns).
+		WHERE(table.Evaluations.EvalUUID.EQ(postgres.UUID(evalUUID)))
+
+	var eval model.Evaluations
+	if err := selectStmt.QueryContext(ctx, s.postgres, &eval); err != nil {
+		format := "failed to get evaluation: %w"
+		errMsg := fmt.Errorf(format, err)
+		return nil, ErrInternalSE().SetDebug(errMsg)
+	}
+
+	// Get subtasks
+	selectSubtasks := postgres.SELECT(table.EvaluationSubtasks.AllColumns).
+		FROM(table.EvaluationSubtasks).
+		WHERE(table.EvaluationSubtasks.EvalUUID.EQ(postgres.UUID(evalUUID)))
+
+	var subtasks []model.EvaluationSubtasks
+	if err := selectSubtasks.QueryContext(ctx, s.postgres, &subtasks); err != nil {
+		format := "failed to get subtasks: %w"
+		errMsg := fmt.Errorf(format, err)
+		return nil, ErrInternalSE().SetDebug(errMsg)
+	}
+
+	// Get test groups
+	selectTestGroups := postgres.SELECT(table.EvaluationTestgroups.AllColumns).
+		FROM(table.EvaluationTestgroups).
+		WHERE(table.EvaluationTestgroups.EvalUUID.EQ(postgres.UUID(evalUUID)))
+
+	var testGroups []model.EvaluationTestgroups
+	if err := selectTestGroups.QueryContext(ctx, s.postgres, &testGroups); err != nil {
+		format := "failed to get test groups: %w"
+		errMsg := fmt.Errorf(format, err)
+		return nil, ErrInternalSE().SetDebug(errMsg)
+	}
+
+	// Get test set
+	selectTestSet := postgres.SELECT(table.EvaluationTestset.AllColumns).
+		FROM(table.EvaluationTestset).
+		WHERE(table.EvaluationTestset.EvalUUID.EQ(postgres.UUID(evalUUID)))
+
+	var testSet model.EvaluationTestset
+	if err := selectTestSet.QueryContext(ctx, s.postgres, &testSet); err != nil {
+		format := "failed to get test set: %w"
+		errMsg := fmt.Errorf(format, err)
+		return nil, ErrInternalSE().SetDebug(errMsg)
+	}
+
+	// Process subtasks
+	subtasksList := make([]Subtask, 0, len(subtasks))
+	for _, subtask := range subtasks {
+		description := ""
+		if subtask.Description != nil {
+			description = *subtask.Description
+		}
+		subtasksList = append(subtasksList, Subtask{
+			SubtaskID:   int(subtask.SubtaskID),
+			Points:      int(subtask.SubtaskPoints),
+			Accepted:    int(subtask.Accepted),
+			Wrong:       int(subtask.Wrong),
+			Untested:    int(subtask.Untested),
+			Description: description,
+		})
+	}
+
+	// Process test groups
+	testGroupsList := make([]TestGroup, 0, len(testGroups))
+	for _, testGroup := range testGroups {
+		subtaskArray := []int{}
+		if testGroup.StatementSubtasks != nil {
+			subtaskArrayStr := strings.Trim(*testGroup.StatementSubtasks, "{}")
+			subtaskStrs := strings.Split(subtaskArrayStr, ",")
+			for _, subtaskStr := range subtaskStrs {
+				subtask, err := strconv.Atoi(subtaskStr)
+				if err != nil {
+					format := "failed to convert subtask string to int: %w"
+					errMsg := fmt.Errorf(format, err)
+					return nil, ErrInternalSE().SetDebug(errMsg)
+				}
+				subtaskArray = append(subtaskArray, subtask)
+			}
+		}
+		testGroupsList = append(testGroupsList, TestGroup{
+			TestGroupID: int(testGroup.TestgroupID),
+			Points:      int(testGroup.TestgroupPoints),
+			Accepted:    int(testGroup.Accepted),
+			Wrong:       int(testGroup.Wrong),
+			Untested:    int(testGroup.Untested),
+			Subtasks:    subtaskArray,
+		})
+	}
+
+	return &Evaluation{
+		UUID:       eval.EvalUUID,
+		Stage:      eval.EvaluationStage,
+		CreatedAt:  eval.CreatedAt,
+		Subtasks:   subtasksList,
+		TestGroups: testGroupsList,
+		TestSet: &TestSet{
+			Accepted: int(testSet.Accepted),
+			Wrong:    int(testSet.Wrong),
+			Untested: int(testSet.Untested),
+		},
+	}, nil
 }

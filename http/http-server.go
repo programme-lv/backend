@@ -76,6 +76,7 @@ func (httpserver *HttpServer) Start(address string) error {
 func (httpserver *HttpServer) routes() {
 	r := httpserver.router
 	r.Post("/submissions", httpserver.createSubmission)
+	r.Post("/reevaluate", httpserver.reevaluateSubmission)
 	r.Get("/submissions", httpserver.listSubmissions)
 	r.Get("/submissions/{submUuid}", httpserver.getSubmission)
 	r.Post("/auth/login", httpserver.authLogin)

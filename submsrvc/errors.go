@@ -71,3 +71,12 @@ func ErrSubmissionNotFound() *srvcerror.Error {
 func ErrInternalSE() *srvcerror.Error {
 	return srvcerror.ErrInternalSE()
 }
+
+const ErrCodeEvaluationNotSet = "evaluation_not_set"
+
+func ErrEvaluationNotSet() *srvcerror.Error {
+	return srvcerror.New(
+		ErrCodeEvaluationNotSet,
+		"Iesūtījumam nav iestatīts izvērtējums",
+	).SetHttpStatusCode(http.StatusInternalServerError)
+}

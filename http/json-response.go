@@ -47,6 +47,11 @@ func writeJsonInternalServerError(w http.ResponseWriter) {
 func handleJsonSrvcError(logger *slog.Logger, w http.ResponseWriter, err error) {
 	srvcErr := &srvcerror.Error{}
 	if errors.As(err, &srvcErr) {
+		if srvcErr.DebugInfo() != nil {
+			logger.Error("service error", "error", err, "debug", srvcErr.DebugInfo())
+		} else {
+			logger.Error("service error", "error", err)
+		}
 		if srvcErr.HttpStatusCode() == http.StatusInternalServerError {
 			logger.Error("internal server error", "error", err)
 		}

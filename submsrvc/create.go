@@ -70,6 +70,7 @@ func (s *SubmissionSrvc) CreateSubmission(ctx context.Context,
 		return nil, fmt.Errorf("failed to prepare test groups: %w", err)
 	}
 	testSet, evalTestSet := s.prepareTestSet(evalUuid, task)
+
 	submission := s.prepareSubmission(submUuid, params, user.UUID, task, lang, evalUuid)
 
 	// Use another errgroup for concurrent insertions
@@ -107,6 +108,8 @@ func (s *SubmissionSrvc) CreateSubmission(ctx context.Context,
 	if err := tx.Commit(); err != nil {
 		return nil, fmt.Errorf("failed to commit transaction: %w", err)
 	}
+
+	s.evalUuidToSubmUuid.Store(evalUuid, submUuid)
 
 	req := evalsrvc.Request{
 		Code:       params.Submission,
@@ -151,7 +154,6 @@ func (s *SubmissionSrvc) CreateSubmission(ctx context.Context,
 	}
 
 	s.submCreated <- res
-	s.evalUuidToSubmUuid.Store(evalUuid, submUuid)
 
 	return res, nil
 }
