@@ -13,7 +13,7 @@ import (
 	"github.com/programme-lv/tester/sqsgath"
 )
 
-func (e *EvalSrvc) receive(queueUrl string) ([]Msg, error) {
+func (e *EvalSrvc) receive10MsgsFrom(queueUrl string) ([]Msg, error) {
 	output, err := e.sqsClient.ReceiveMessage(context.TODO(), &sqs.ReceiveMessageInput{
 		QueueUrl:            aws.String(queueUrl),
 		MaxNumberOfMessages: 10,
@@ -41,6 +41,7 @@ func (e *EvalSrvc) receive(queueUrl string) ([]Msg, error) {
 			return nil, fmt.Errorf("receipt handle is nil")
 		}
 		msgs[i].Handle = *msg.ReceiptHandle
+		msgs[i].Queue = queueUrl
 		msgs[i].EvalId, err = uuid.Parse(header.EvalUuid)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse eval_uuid: %w", err)

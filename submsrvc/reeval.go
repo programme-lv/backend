@@ -13,7 +13,13 @@ import (
 	"github.com/programme-lv/backend/planglist"
 )
 
-func (s *SubmissionSrvc) ReevaluateSubmission(ctx context.Context, submUuidStr string) (*Submission, error) {
+type ReevaluateResponse struct {
+	SubmUuid    uuid.UUID
+	OldEvalUuid uuid.UUID
+	NewEvalUuid uuid.UUID
+}
+
+func (s *SubmissionSrvc) ReevaluateSubmission(ctx context.Context, submUuidStr string) (*ReevaluateResponse, error) {
 	submUuid, err := uuid.Parse(submUuidStr)
 	if err != nil {
 		format := "failed to parse submission UUID: %w"
@@ -98,5 +104,14 @@ func (s *SubmissionSrvc) ReevaluateSubmission(ctx context.Context, submUuidStr s
 		return nil, ErrInternalSE().SetDebug(errMsg)
 	}
 
-	return s.GetSubmission(ctx, submUuid)
+	oldEvalUuid := uuid.Nil
+	if subm.CurrentEvalUUID != nil {
+		oldEvalUuid = *subm.CurrentEvalUUID
+	}
+
+	return &ReevaluateResponse{
+		SubmUuid:    submUuid,
+		OldEvalUuid: oldEvalUuid,
+		NewEvalUuid: evalUuid,
+	}, nil
 }

@@ -156,12 +156,12 @@ func (e *EvalSrvc) ReceiveFrom(evalUuid uuid.UUID) ([]Msg, error) {
 }
 
 func (e *EvalSrvc) Receive() ([]Msg, error) {
-	return e.receive(e.resSqsUrl)
+	return e.receive10MsgsFrom(e.resSqsUrl)
 }
 
-func (e *EvalSrvc) Ack(handle string) error {
+func (e *EvalSrvc) Ack(queueUrl string, handle string) error {
 	_, err := e.sqsClient.DeleteMessage(context.TODO(), &sqs.DeleteMessageInput{
-		QueueUrl:      aws.String(e.resSqsUrl),
+		QueueUrl:      aws.String(queueUrl),
 		ReceiptHandle: aws.String(handle),
 	})
 	return err
@@ -173,6 +173,7 @@ type Event interface {
 
 type Msg struct {
 	EvalId uuid.UUID
+	Queue  string // url of queue it was received from
 	Handle string // receipt handle for acknowledgment / delete
 	Data   Event  // data specific to the message / event type
 }
@@ -242,7 +243,7 @@ func NewEvalSrvc() *EvalSrvc {
 // this may not be pretty but'll work
 func (e *EvalSrvc) StartReceivingFromExternalEvalQueue() {
 	for {
-		msgs, err := e.receive(e.extEvalSqsUrl)
+		msgs, err := e.receive10MsgsFrom(e.extEvalSqsUrl)
 		if err != nil {
 			log.Printf("error receiving from external eval queue: %v", err)
 		}

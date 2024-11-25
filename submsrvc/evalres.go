@@ -27,6 +27,11 @@ func (s *SubmissionSrvc) StartProcessingSubmEvalResults(ctx context.Context) (er
 		// map events by evaluation uuids into handlers
 		handlerEvents := make(map[*evalHandler][]evalsrvc.Msg)
 		for _, msg := range msgs {
+			err := s.evalSrvc.Ack(msg.Queue, msg.Handle)
+			if err != nil {
+				log.Printf("failed to ack message: %v", err)
+			}
+
 			submUuid, err := s.getSubmUuidFromEvalUuid(msg.EvalId)
 			if err != nil {
 				log.Printf("failed to get subm_uuid from eval_uuid: %v", err)
@@ -529,11 +534,12 @@ func (s *SubmissionSrvc) getSubmUuidFromEvalUuid(evalUuid uuid.UUID) (uuid.UUID,
 
 	// If not found, perform a database select
 	var subm model.Submissions
-	err := table.Submissions.
+	selectStmt := table.Submissions.
 		SELECT(table.Submissions.SubmUUID).
-		WHERE(table.Submissions.CurrentEvalUUID.EQ(postgres.UUID(evalUuid))).
-		Query(s.postgres, &subm)
+		WHERE(table.Submissions.CurrentEvalUUID.EQ(postgres.UUID(evalUuid)))
+	err := selectStmt.Query(s.postgres, &subm)
 	if err != nil {
+		log.Println(selectStmt.DebugSql())
 		return uuid.Nil, fmt.Errorf("failed to get subm_uuid from database: %v", err)
 	}
 

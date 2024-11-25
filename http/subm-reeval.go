@@ -5,8 +5,13 @@ import (
 	"net/http"
 
 	"github.com/go-chi/httplog/v2"
-	"github.com/programme-lv/backend/submsrvc"
 )
+
+type SubmReeval struct {
+	SubmUUID    string `json:"subm_uuid"`
+	OldEvalUUID string `json:"old_eval_uuid"`
+	NewEvalUUID string `json:"new_eval_uuid"`
+}
 
 func (httpserver *HttpServer) reevaluateSubmission(w http.ResponseWriter, r *http.Request) {
 	logger := httplog.LogEntry(r.Context())
@@ -21,21 +26,21 @@ func (httpserver *HttpServer) reevaluateSubmission(w http.ResponseWriter, r *htt
 		return
 	}
 
-	subms := []*submsrvc.Submission{}
+	subms := []*SubmReeval{}
 	for _, submUuid := range request.SubmUUIDs {
 		subm, err := httpserver.submSrvc.ReevaluateSubmission(r.Context(), submUuid)
 		if err != nil {
 			handleJsonSrvcError(logger, w, err)
 			return
 		}
-		subms = append(subms, subm)
+		subms = append(subms, &SubmReeval{
+			SubmUUID:    subm.SubmUuid.String(),
+			OldEvalUUID: subm.OldEvalUuid.String(),
+			NewEvalUUID: subm.NewEvalUuid.String(),
+		})
 	}
 
-	briefSubms := make([]*BriefSubmission, len(subms))
-	for i, subm := range subms {
-		briefSubms[i] = mapBriefSubm(subm)
-	}
-	response := briefSubms
+	response := subms
 
 	w.WriteHeader(http.StatusCreated)
 	w.Header().Set("Content-Type", "application/json")
