@@ -36,10 +36,10 @@ func ErrUserNotFound() *srvcerror.Error {
 
 const ErrCodeInvalidProgLang = "invalid_programming_language"
 
-func ErrInvalidProgLang() *srvcerror.Error {
+func ErrInvalidProgLang(lang string) *srvcerror.Error {
 	return srvcerror.New(
 		ErrCodeInvalidProgLang,
-		"Nederīga programmēšanas valoda",
+		fmt.Sprintf("Nederīga programmēšanas valoda: %s", lang),
 	).SetHttpStatusCode(http.StatusBadRequest)
 }
 

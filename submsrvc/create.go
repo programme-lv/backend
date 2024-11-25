@@ -118,6 +118,7 @@ func (s *SubmissionSrvc) CreateSubmission(ctx context.Context,
 		Interactor: task.InteractorPtr(),
 		CpuMs:      task.CpuMillis(),
 		MemKiB:     task.MemoryKiB(),
+		LangId:     params.ProgLangID,
 	}
 
 	_, err = s.evalSrvc.Enqueue(req, evalUuid)
@@ -208,7 +209,7 @@ func fetchUserLangTask(ctx context.Context, s *SubmissionSrvc,
 			}
 		}
 		if lang == nil {
-			return ErrInvalidProgLang()
+			return ErrInvalidProgLang(params.ProgLangID)
 		}
 		return nil
 	})

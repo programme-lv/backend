@@ -558,7 +558,7 @@ func (s *SubmissionSrvc) GetSubmission(ctx context.Context, submUuid uuid.UUID) 
 		}
 	}
 	if !found {
-		return nil, ErrInvalidProgLang()
+		return nil, ErrInvalidProgLang(submRow.ProgLangID)
 	}
 
 	if submRow.CurrentEvalUUID == nil {
