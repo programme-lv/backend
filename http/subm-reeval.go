@@ -2,16 +2,13 @@ package http
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/go-chi/httplog/v2"
+	"github.com/google/uuid"
+	"github.com/programme-lv/backend/srvcerror"
 )
-
-type SubmReeval struct {
-	SubmUUID    string `json:"subm_uuid"`
-	OldEvalUUID string `json:"old_eval_uuid"`
-	NewEvalUUID string `json:"new_eval_uuid"`
-}
 
 func (httpserver *HttpServer) reevaluateSubmission(w http.ResponseWriter, r *http.Request) {
 	logger := httplog.LogEntry(r.Context())
@@ -26,23 +23,21 @@ func (httpserver *HttpServer) reevaluateSubmission(w http.ResponseWriter, r *htt
 		return
 	}
 
-	subms := []*SubmReeval{}
 	for _, submUuid := range request.SubmUUIDs {
-		subm, err := httpserver.submSrvc.ReevaluateSubmission(r.Context(), submUuid)
+		submUuid, err := uuid.Parse(submUuid)
+		if err != nil {
+			format := "failed to parse submission UUID: %w"
+			errMsg := fmt.Errorf(format, err)
+			handleJsonSrvcError(logger, w, srvcerror.ErrInternalSE().SetDebug(errMsg))
+			return
+		}
+		err = httpserver.submSrvc.ReevaluateSubmission(r.Context(), submUuid)
 		if err != nil {
 			handleJsonSrvcError(logger, w, err)
 			return
 		}
-		subms = append(subms, &SubmReeval{
-			SubmUUID:    subm.SubmUuid.String(),
-			OldEvalUUID: subm.OldEvalUuid.String(),
-			NewEvalUUID: subm.NewEvalUuid.String(),
-		})
 	}
-
-	response := subms
 
 	w.WriteHeader(http.StatusCreated)
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
 }

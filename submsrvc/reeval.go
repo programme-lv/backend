@@ -11,6 +11,7 @@ import (
 	"github.com/programme-lv/backend/gen/postgres/public/model"
 	"github.com/programme-lv/backend/gen/postgres/public/table"
 	"github.com/programme-lv/backend/planglist"
+	"github.com/programme-lv/backend/tasksrvc"
 )
 
 type ReevaluateResponse struct {
@@ -19,14 +20,7 @@ type ReevaluateResponse struct {
 	NewEvalUuid uuid.UUID
 }
 
-func (s *SubmissionSrvc) ReevaluateSubmission(ctx context.Context, submUuidStr string) (*ReevaluateResponse, error) {
-	submUuid, err := uuid.Parse(submUuidStr)
-	if err != nil {
-		format := "failed to parse submission UUID: %w"
-		errMsg := fmt.Errorf(format, err)
-		return nil, ErrInternalSE().SetDebug(errMsg)
-	}
-
+func (s *SubmissionSrvc) ReevaluateSubmission(ctx context.Context, submUuid uuid.UUID) error {
 	log.Println("reevaluating submission", submUuid)
 	// check if the submission exists
 	selectSubmStmt := postgres.SELECT(table.Submissions.AllColumns).FROM(
@@ -39,15 +33,15 @@ func (s *SubmissionSrvc) ReevaluateSubmission(ctx context.Context, submUuidStr s
 	if err := selectSubmStmt.Query(s.postgres, &subms); err != nil {
 		format := "failed to query submissions: %w"
 		errMsg := fmt.Errorf(format, err)
-		return nil, ErrSubmissionNotFound().SetDebug(errMsg)
+		return ErrSubmissionNotFound().SetDebug(errMsg)
 	}
 	if len(subms) == 0 {
-		return nil, ErrSubmissionNotFound()
+		return ErrSubmissionNotFound()
 	}
 	if len(subms) > 1 {
 		format := "multiple submissions found with the same UUID: %s"
 		errMsg := fmt.Errorf(format, submUuid)
-		return nil, ErrInternalSE().SetDebug(errMsg)
+		return ErrInternalSE().SetDebug(errMsg)
 	}
 
 	subm := subms[0]
@@ -56,21 +50,21 @@ func (s *SubmissionSrvc) ReevaluateSubmission(ctx context.Context, submUuidStr s
 	if err != nil {
 		format := "failed to get task: %w"
 		errMsg := fmt.Errorf(format, err)
-		return nil, ErrTaskNotFound().SetDebug(errMsg)
+		return ErrTaskNotFound().SetDebug(errMsg)
 	}
 
 	lang, err := planglist.GetProgrammingLanguageById(subm.ProgLangID)
 	if err != nil {
 		format := "failed to get programming language: %w"
 		errMsg := fmt.Errorf(format, err)
-		return nil, ErrInternalSE().SetDebug(errMsg)
+		return ErrInternalSE().SetDebug(errMsg)
 	}
 
 	evalUuid, err := s.InsertNewEvaluation(ctx, &task, lang)
 	if err != nil {
 		format := "failed to insert new evaluation: %w"
 		errMsg := fmt.Errorf(format, err)
-		return nil, ErrInternalSE().SetDebug(errMsg)
+		return ErrInternalSE().SetDebug(errMsg)
 	}
 
 	// update submission with new eval UUID
@@ -82,36 +76,36 @@ func (s *SubmissionSrvc) ReevaluateSubmission(ctx context.Context, submUuidStr s
 	if _, err := updateStmt.Exec(s.postgres); err != nil {
 		format := "failed to update submission: %w"
 		errMsg := fmt.Errorf(format, err)
-		return nil, ErrInternalSE().SetDebug(errMsg)
+		return ErrInternalSE().SetDebug(errMsg)
 	}
 
 	s.evalUuidToSubmUuid.Store(evalUuid, submUuid)
 
+	err = s.enqueue(subm.Content, &task, lang, evalUuid)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *SubmissionSrvc) enqueue(content string, task *tasksrvc.Task, lang *planglist.ProgrammingLang, evalUuid uuid.UUID) error {
 	req := evalsrvc.Request{
-		Code:       subm.Content,
-		Tests:      evalReqTests(&task),
+		Code:       content,
+		Tests:      evalReqTests(task),
 		Checker:    task.CheckerPtr(),
 		Interactor: task.InteractorPtr(),
 		CpuMs:      task.CpuMillis(),
 		MemKiB:     task.MemoryKiB(),
-		LangId:     subm.ProgLangID,
+		LangId:     lang.ID,
 	}
 
-	// enqueue evaluation
-	if _, err := s.evalSrvc.Enqueue(req, evalUuid); err != nil {
+	_, err := s.evalSrvc.Enqueue(req, evalUuid)
+	if err != nil {
 		format := "failed to enqueue evaluation: %w"
 		errMsg := fmt.Errorf(format, err)
-		return nil, ErrInternalSE().SetDebug(errMsg)
+		return ErrInternalSE().SetDebug(errMsg)
 	}
 
-	oldEvalUuid := uuid.Nil
-	if subm.CurrentEvalUUID != nil {
-		oldEvalUuid = *subm.CurrentEvalUUID
-	}
-
-	return &ReevaluateResponse{
-		SubmUuid:    submUuid,
-		OldEvalUuid: oldEvalUuid,
-		NewEvalUuid: evalUuid,
-	}, nil
+	return nil
 }

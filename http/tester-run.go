@@ -90,7 +90,7 @@ func (httpserver *HttpServer) testerRunLongPoll(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	received, err := httpserver.evalSrvc.ReceiveFrom(evalUuid)
+	received, err := httpserver.evalSrvc.ReceiveFor(evalUuid)
 	if err != nil {
 		handleJsonSrvcError(logger, w, err)
 		return

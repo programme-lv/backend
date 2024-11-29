@@ -71,7 +71,15 @@ func (s *SubmissionSrvc) CreateSubmission(ctx context.Context,
 	}
 	testSet, evalTestSet := s.prepareTestSet(evalUuid, task)
 
-	submission := s.prepareSubmission(submUuid, params, user.UUID, task, lang, evalUuid)
+	submission := &model.Submissions{
+		SubmUUID:        submUuid,
+		Content:         params.Submission,
+		AuthorUUID:      user.UUID,
+		TaskID:          task.ShortId,
+		ProgLangID:      lang.ID,
+		CurrentEvalUUID: &evalUuid,
+		CreatedAt:       time.Now(),
+	}
 
 	// Use another errgroup for concurrent insertions
 	g2 := errgroup.Group{}
@@ -493,23 +501,4 @@ func (s *SubmissionSrvc) prepareTestSet(evalUuid uuid.UUID, task *tasksrvc.Task)
 	}
 
 	return testSet, evalTestSet
-}
-
-func (s *SubmissionSrvc) prepareSubmission(
-	submUuid uuid.UUID,
-	params *CreateSubmissionParams,
-	userUuid uuid.UUID,
-	task *tasksrvc.Task,
-	language *planglist.ProgrammingLang,
-	evalUuid uuid.UUID,
-) *model.Submissions {
-	return &model.Submissions{
-		SubmUUID:        submUuid,
-		Content:         params.Submission,
-		AuthorUUID:      userUuid,
-		TaskID:          task.ShortId,
-		ProgLangID:      language.ID,
-		CurrentEvalUUID: &evalUuid,
-		CreatedAt:       time.Now(),
-	}
 }

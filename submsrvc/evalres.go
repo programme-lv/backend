@@ -27,7 +27,7 @@ func (s *SubmissionSrvc) StartProcessingSubmEvalResults(ctx context.Context) (er
 		// map events by evaluation uuids into handlers
 		handlerEvents := make(map[*evalHandler][]evalsrvc.Msg)
 		for _, msg := range msgs {
-			err := s.evalSrvc.Ack(msg.Queue, msg.Handle)
+			err := s.evalSrvc.Ack(msg.QueueUrl, msg.Handle)
 			if err != nil {
 				log.Printf("failed to ack message: %v", err)
 			}

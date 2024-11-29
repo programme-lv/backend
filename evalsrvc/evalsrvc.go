@@ -29,9 +29,6 @@ func (e *EvalSrvc) Enqueue(req Request, evalUuid uuid.UUID) (uuid.UUID, error) {
 	return e.enqueueCommon(&req, evalUuid, e.resSqsUrl, lang)
 }
 
-// EnqueueExternal is used for evaluation requests from external services
-// such as CleverCode.lv. The difference is that it creates a new response queue
-// for each evaluation request.
 func (e *EvalSrvc) EnqueueExternal(apiKey string, req Request) (uuid.UUID, error) {
 	if apiKey != e.extEvalKey {
 		return uuid.Nil, ErrInvalidApiKey()
@@ -87,20 +84,24 @@ func (e *EvalSrvc) enqueueCommon(req *Request,
 		MemoryKiB:  req.MemKiB,
 	})
 	if err != nil {
-		return uuid.Nil, fmt.Errorf("failed to marshal evaluation request: %w", err)
+		format := "failed to marshal evaluation request: %w"
+		errMsg := fmt.Errorf(format, err)
+		return uuid.Nil, errMsg
 	}
 	_, err = e.sqsClient.SendMessage(context.TODO(), &sqs.SendMessageInput{
 		QueueUrl:    aws.String(e.submSqsUrl),
 		MessageBody: aws.String(string(jsonReq)),
 	})
 	if err != nil {
-		return uuid.Nil, fmt.Errorf("failed to send message to evaluation queue: %w", err)
+		format := "failed to send message to evaluation queue: %w"
+		errMsg := fmt.Errorf(format, err)
+		return uuid.Nil, errMsg
 	}
 
 	return evalUuid, nil
 }
 
-func (e *EvalSrvc) ReceiveFrom(evalUuid uuid.UUID) ([]Msg, error) {
+func (e *EvalSrvc) ReceiveFor(evalUuid uuid.UUID) ([]Msg, error) {
 	// this is long polling. we retrieve channel for evalUuid
 	nq := linkedlistqueue.New[Pair[Msg, time.Time]]()
 	nc := sync.NewCond(&sync.Mutex{})
@@ -156,7 +157,7 @@ func (e *EvalSrvc) ReceiveFrom(evalUuid uuid.UUID) ([]Msg, error) {
 }
 
 func (e *EvalSrvc) Receive() ([]Msg, error) {
-	return e.receive10MsgsFrom(e.resSqsUrl)
+	return e.receiveFromSqs(e.resSqsUrl)
 }
 
 func (e *EvalSrvc) Ack(queueUrl string, handle string) error {
@@ -172,10 +173,10 @@ type Event interface {
 }
 
 type Msg struct {
-	EvalId uuid.UUID
-	Queue  string // url of queue it was received from
-	Handle string // receipt handle for acknowledgment / delete
-	Data   Event  // data specific to the message / event type
+	EvalId   uuid.UUID
+	QueueUrl string // url of queue it was received from
+	Handle   string // receipt handle for acknowledgment / delete
+	Data     Event  // data specific to the message / event type
 }
 
 type Pair[T1 any, T2 any] struct {
@@ -240,10 +241,9 @@ func NewEvalSrvc() *EvalSrvc {
 	return esrvc
 }
 
-// this may not be pretty but'll work
 func (e *EvalSrvc) StartReceivingFromExternalEvalQueue() {
 	for {
-		msgs, err := e.receive10MsgsFrom(e.extEvalSqsUrl)
+		msgs, err := e.receiveFromSqs(e.extEvalSqsUrl)
 		if err != nil {
 			log.Printf("error receiving from external eval queue: %v", err)
 		}
