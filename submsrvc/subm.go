@@ -25,9 +25,10 @@ type Evaluation struct {
 	Stage     string
 	CreatedAt time.Time
 
-	Subtasks   []Subtask
-	TestGroups []TestGroup
-	TestSet    *TestSet
+	Subtasks []Subtask
+	Groups   []TestGroup
+
+	TestSet *TestSet
 }
 
 type Author struct {
@@ -56,12 +57,12 @@ type Subtask struct {
 }
 
 type TestGroup struct {
-	TestGroupID int
-	Points      int
-	Accepted    int
-	Wrong       int
-	Untested    int
-	Subtasks    []int
+	GroupID  int
+	Points   int
+	Accepted int
+	Wrong    int
+	Untested int
+	Subtasks []int
 }
 
 type TestSet struct {

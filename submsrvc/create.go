@@ -153,12 +153,12 @@ func (s *SubmissionSrvc) CreateSubmission(ctx context.Context,
 		},
 		CreatedAt: submission.CreatedAt,
 		CurrEval: Evaluation{
-			UUID:       evalUuid,
-			Stage:      eval.EvaluationStage,
-			CreatedAt:  eval.CreatedAt,
-			Subtasks:   subtasks,
-			TestGroups: testGroups,
-			TestSet:    testSet,
+			UUID:      evalUuid,
+			Stage:     eval.EvaluationStage,
+			CreatedAt: eval.CreatedAt,
+			Subtasks:  subtasks,
+			Groups:    testGroups,
+			TestSet:   testSet,
 		},
 	}
 
@@ -474,12 +474,12 @@ func (s *SubmissionSrvc) prepareTestGroups(evalUuid uuid.UUID, task *tasksrvc.Ta
 		}
 
 		testGroups[i] = TestGroup{
-			TestGroupID: testGroupID,
-			Points:      testGroup.Points,
-			Accepted:    0,
-			Wrong:       0,
-			Untested:    int(len(testGroup.TestIDs)),
-			Subtasks:    subtasks,
+			GroupID:  testGroupID,
+			Points:   testGroup.Points,
+			Accepted: 0,
+			Wrong:    0,
+			Untested: int(len(testGroup.TestIDs)),
+			Subtasks: subtasks,
 		}
 	}
 

@@ -109,7 +109,7 @@ func mapBriefSubm(x *submsrvc.Submission) *BriefSubmission {
 		CreatedAt:         x.CreatedAt.Format(time.RFC3339),
 		EvalUUID:          x.CurrEval.UUID.String(),
 		EvalStatus:        x.CurrEval.Stage,
-		TestGroups:        mapTestGroupScoring(x.CurrEval.TestGroups),
+		TestGroups:        mapTestGroupScoring(x.CurrEval.Groups),
 		TestSet:           mapTestsScore(x.CurrEval.TestSet),
 		Subtasks:          mapSubtasksScore(x.CurrEval.Subtasks),
 		ProgrLangID:       x.Lang.ShortID,
@@ -127,7 +127,7 @@ func mapTestGroupScoring(x []submsrvc.TestGroup) []TestGroup {
 	res := make([]TestGroup, len(x))
 	for i, v := range x {
 		res[i] = TestGroup{
-			TestGroupID:    v.TestGroupID,
+			TestGroupID:    v.GroupID,
 			TestGroupScore: v.Points,
 			AcceptedTests:  v.Accepted,
 			WrongTests:     v.Wrong,

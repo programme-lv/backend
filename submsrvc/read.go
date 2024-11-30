@@ -128,12 +128,12 @@ func (s *SubmissionSrvc) GetFullSubmission(ctx context.Context, submUuid string)
 			}
 		}
 		testGroupsList = append(testGroupsList, TestGroup{
-			TestGroupID: int(testGroup.EvaluationTestgroups.TestgroupID),
-			Points:      int(testGroup.EvaluationTestgroups.TestgroupPoints),
-			Accepted:    int(testGroup.EvaluationTestgroups.Accepted),
-			Wrong:       int(testGroup.EvaluationTestgroups.Wrong),
-			Untested:    int(testGroup.EvaluationTestgroups.Untested),
-			Subtasks:    subtaskArray,
+			GroupID:  int(testGroup.EvaluationTestgroups.TestgroupID),
+			Points:   int(testGroup.EvaluationTestgroups.TestgroupPoints),
+			Accepted: int(testGroup.EvaluationTestgroups.Accepted),
+			Wrong:    int(testGroup.EvaluationTestgroups.Wrong),
+			Untested: int(testGroup.EvaluationTestgroups.Untested),
+			Subtasks: subtaskArray,
 		})
 	}
 
@@ -243,11 +243,11 @@ func (s *SubmissionSrvc) GetFullSubmission(ctx context.Context, submUuid string)
 				MonacoID: langMap[submJoinEval.Evaluations.LangID].MonacoId,
 			},
 			CurrEval: Evaluation{
-				UUID:       submJoinEval.Evaluations.EvalUUID,
-				Stage:      submJoinEval.Evaluations.EvaluationStage,
-				CreatedAt:  submJoinEval.Evaluations.CreatedAt,
-				Subtasks:   subtasksList,
-				TestGroups: testGroupsList,
+				UUID:      submJoinEval.Evaluations.EvalUUID,
+				Stage:     submJoinEval.Evaluations.EvaluationStage,
+				CreatedAt: submJoinEval.Evaluations.CreatedAt,
+				Subtasks:  subtasksList,
+				Groups:    testGroupsList,
 				TestSet: &TestSet{
 					Accepted: int(submJoinEval.EvaluationTestset.Accepted),
 					Wrong:    int(submJoinEval.EvaluationTestset.Wrong),
@@ -464,12 +464,12 @@ func (s *SubmissionSrvc) ListSubmissions(ctx context.Context) ([]*Submission, er
 					}
 				}
 				testGroups = append(testGroups, TestGroup{
-					TestGroupID: int(testGroup.EvaluationTestgroups.TestgroupID),
-					Points:      int(testGroup.EvaluationTestgroups.TestgroupPoints),
-					Accepted:    int(testGroup.EvaluationTestgroups.Accepted),
-					Wrong:       int(testGroup.EvaluationTestgroups.Wrong),
-					Untested:    int(testGroup.EvaluationTestgroups.Untested),
-					Subtasks:    subtaskArray,
+					GroupID:  int(testGroup.EvaluationTestgroups.TestgroupID),
+					Points:   int(testGroup.EvaluationTestgroups.TestgroupPoints),
+					Accepted: int(testGroup.EvaluationTestgroups.Accepted),
+					Wrong:    int(testGroup.EvaluationTestgroups.Wrong),
+					Untested: int(testGroup.EvaluationTestgroups.Untested),
+					Subtasks: subtaskArray,
 				})
 			}
 		}
@@ -491,11 +491,11 @@ func (s *SubmissionSrvc) ListSubmissions(ctx context.Context) ([]*Submission, er
 				MonacoID: langIDToMonacoID[subm.Evaluations.LangID],
 			},
 			CurrEval: Evaluation{
-				UUID:       subm.Evaluations.EvalUUID,
-				Stage:      subm.Evaluations.EvaluationStage,
-				CreatedAt:  subm.Evaluations.CreatedAt,
-				Subtasks:   subtasks,
-				TestGroups: testGroups,
+				UUID:      subm.Evaluations.EvalUUID,
+				Stage:     subm.Evaluations.EvaluationStage,
+				CreatedAt: subm.Evaluations.CreatedAt,
+				Subtasks:  subtasks,
+				Groups:    testGroups,
 				TestSet: &TestSet{
 					Accepted: int(subm.EvaluationTestset.Accepted),
 					Wrong:    int(subm.EvaluationTestset.Wrong),
@@ -680,21 +680,21 @@ func (s *SubmissionSrvc) getEvaluation(ctx context.Context, evalUUID uuid.UUID) 
 			}
 		}
 		testGroupsList = append(testGroupsList, TestGroup{
-			TestGroupID: int(testGroup.TestgroupID),
-			Points:      int(testGroup.TestgroupPoints),
-			Accepted:    int(testGroup.Accepted),
-			Wrong:       int(testGroup.Wrong),
-			Untested:    int(testGroup.Untested),
-			Subtasks:    subtaskArray,
+			GroupID:  int(testGroup.TestgroupID),
+			Points:   int(testGroup.TestgroupPoints),
+			Accepted: int(testGroup.Accepted),
+			Wrong:    int(testGroup.Wrong),
+			Untested: int(testGroup.Untested),
+			Subtasks: subtaskArray,
 		})
 	}
 
 	return &Evaluation{
-		UUID:       eval.EvalUUID,
-		Stage:      eval.EvaluationStage,
-		CreatedAt:  eval.CreatedAt,
-		Subtasks:   subtasksList,
-		TestGroups: testGroupsList,
+		UUID:      eval.EvalUUID,
+		Stage:     eval.EvaluationStage,
+		CreatedAt: eval.CreatedAt,
+		Subtasks:  subtasksList,
+		Groups:    testGroupsList,
 		TestSet: &TestSet{
 			Accepted: int(testSet.Accepted),
 			Wrong:    int(testSet.Wrong),
