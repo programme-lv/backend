@@ -119,7 +119,7 @@ func (s *SubmissionSrvc) CreateSubmission(ctx context.Context,
 
 	s.evalUuidToSubmUuid.Store(evalUuid, submUuid)
 
-	req := evalsrvc.Request{
+	req := evalsrvc.NewEvalParams{
 		Code:       params.Submission,
 		Tests:      evalReqTests(task),
 		Checker:    task.CheckerPtr(),

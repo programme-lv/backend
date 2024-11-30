@@ -5,13 +5,141 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"sync"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
+	"github.com/emirpasic/gods/v2/queues"
+	"github.com/emirpasic/gods/v2/queues/linkedlistqueue"
 	"github.com/google/uuid"
 	"github.com/programme-lv/tester/sqsgath"
 )
+
+func (e *EvalSrvc) ReceiveFor(evalUuid uuid.UUID) ([]Msg, error) {
+	// this is long polling. we retrieve channel for evalUuid
+	nq := linkedlistqueue.New[Pair[Msg, time.Time]]()
+	nc := sync.NewCond(&sync.Mutex{})
+	p, _ := e.accumulated.LoadOrStore(evalUuid, Pair[*sync.Cond, queues.Queue[Pair[Msg, time.Time]]]{First: nc, Second: nq})
+
+	cond := p.First
+	q := p.Second
+
+	cond.L.Lock()
+
+	vals := q.Values()
+	q.Clear()
+
+	if len(vals) > 0 {
+		msgs := make([]Msg, len(vals))
+		for i, val := range vals {
+			msgs[i] = val.First
+		}
+		cond.L.Unlock()
+		return msgs, nil
+	}
+
+	cond.L.Unlock()
+
+	// if the channel is empty, wait at most 5 seconds for a message
+	// check every 50ms
+	timer := time.NewTimer(5 * time.Second)
+	defer timer.Stop()
+
+	ticker := time.NewTicker(50 * time.Millisecond)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			// check if there are any messages in the queue and if so, return them
+			cond.L.Lock()
+			vals := q.Values()
+			q.Clear()
+			if len(vals) > 0 {
+				msgs := make([]Msg, len(vals))
+				for i, val := range vals {
+					msgs[i] = val.First
+				}
+				cond.L.Unlock()
+				return msgs, nil
+			}
+			cond.L.Unlock()
+		case <-timer.C:
+			return []Msg{}, nil
+		}
+	}
+}
+
+func (e *EvalSrvc) Receive() ([]Msg, error) {
+	return e.receiveFromSqs(e.resSqsUrl)
+}
+
+func (e *EvalSrvc) Ack(queueUrl string, handle string) error {
+	_, err := e.sqsClient.DeleteMessage(context.TODO(), &sqs.DeleteMessageInput{
+		QueueUrl:      aws.String(queueUrl),
+		ReceiptHandle: aws.String(handle),
+	})
+	return err
+}
+
+type Event interface {
+	Type() string
+}
+
+type Msg struct {
+	EvalId   uuid.UUID
+	QueueUrl string // url of queue it was received from
+	Handle   string // receipt handle for acknowledgment / delete
+	Data     Event  // data specific to the message / event type
+}
+
+func (e *EvalSrvc) StartReceivingFromExternalEvalQueue() {
+	for {
+		msgs, err := e.receiveFromSqs(e.extEvalSqsUrl)
+		if err != nil {
+			log.Printf("error receiving from external eval queue: %v", err)
+		}
+		for _, msg := range msgs {
+			nq := linkedlistqueue.New[Pair[Msg, time.Time]]() // new queue
+			nc := sync.NewCond(&sync.Mutex{})                 // new condition variable
+			p, _ := e.accumulated.LoadOrStore(msg.EvalId, Pair[*sync.Cond, queues.Queue[Pair[Msg, time.Time]]]{First: nc, Second: nq})
+			cond := p.First
+			cond.L.Lock()
+			q := p.Second
+			q.Enqueue(Pair[Msg, time.Time]{First: msg, Second: time.Now()})
+			cond.L.Unlock()
+			// cond.Broadcast()
+		}
+	}
+}
+
+func (e *EvalSrvc) StartDeletingOldMessages() {
+	for {
+		time.Sleep(1 * time.Minute)
+		e.accumulated.Range(func(key uuid.UUID, value Pair[*sync.Cond, queues.Queue[Pair[Msg, time.Time]]]) bool {
+			cond := value.First
+			cond.L.Lock()
+			defer cond.L.Unlock()
+
+			q := value.Second
+
+			for q.Size() > 0 {
+				msg, ok := q.Peek()
+				if !ok {
+					return true
+				}
+				t := msg.Second
+				if t.Before(time.Now().Add(-2 * time.Minute)) {
+					q.Dequeue()
+				} else {
+					break
+				}
+			}
+			return true
+		})
+	}
+}
 
 func (e *EvalSrvc) receiveFromSqs(queueUrl string) ([]Msg, error) {
 	output, err := e.sqsClient.ReceiveMessage(context.TODO(), &sqs.ReceiveMessageInput{

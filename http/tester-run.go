@@ -56,7 +56,7 @@ func (httpserver *HttpServer) testerRun(w http.ResponseWriter, r *http.Request) 
 		}
 	}
 
-	uuid, err := httpserver.evalSrvc.EnqueueExternal(req.ApiKey, evalsrvc.Request{
+	uuid, err := httpserver.evalSrvc.EnqueueExternal(req.ApiKey, evalsrvc.NewEvalParams{
 		Code:       req.SrcCode,
 		LangId:     req.ProgLangId,
 		Tests:      tests,

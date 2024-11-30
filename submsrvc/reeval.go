@@ -90,7 +90,7 @@ func (s *SubmissionSrvc) ReevaluateSubmission(ctx context.Context, submUuid uuid
 }
 
 func (s *SubmissionSrvc) enqueue(content string, task *tasksrvc.Task, lang *planglist.ProgrammingLang, evalUuid uuid.UUID) error {
-	req := evalsrvc.Request{
+	req := evalsrvc.NewEvalParams{
 		Code:       content,
 		Tests:      evalReqTests(task),
 		Checker:    task.CheckerPtr(),
