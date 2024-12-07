@@ -167,17 +167,16 @@ func (s *SubmissionSrvc) CreateSubmission(ctx context.Context,
 	return res, nil
 }
 
-func evalReqTests(task *tasksrvc.Task) []evalsrvc.Test {
-	evalReqTests := make([]evalsrvc.Test, len(task.Tests))
+func evalReqTests(task *tasksrvc.Task) []evalsrvc.TestFile {
+	evalReqTests := make([]evalsrvc.TestFile, len(task.Tests))
 	for i, test := range task.Tests {
 		inputS3Url := test.FullInputS3URL()
 		answerS3Url := test.FullAnswerS3URL()
-		evalReqTests[i] = evalsrvc.Test{
-			ID:        i + 1,
-			InSha256:  &test.InpSha2,
-			AnsSha256: &test.AnsSha2,
-			InUrl:     &inputS3Url,
-			AnsUrl:    &answerS3Url,
+		evalReqTests[i] = evalsrvc.TestFile{
+			InSha256:    &test.InpSha2,
+			AnsSha256:   &test.AnsSha2,
+			InDownlUrl:  &inputS3Url,
+			AnsDownlUrl: &answerS3Url,
 		}
 	}
 	return evalReqTests

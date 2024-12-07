@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
@@ -13,67 +12,23 @@ import (
 	"github.com/programme-lv/tester"
 )
 
-// NewEvaluation creates a new evaluation request with external API key validation.
-func (e *EvalSrvc) NewEvaluation(apiKey string, req NewEvalParams) (uuid.UUID, error) {
-	if apiKey != e.extEvalKey {
-		return uuid.Nil, ErrInvalidApiKey()
-	}
+// parameters needed to create a new evaluation request
+type NewEvalParams struct {
+	Code   string // user submitted solution source code
+	LangId string // short compiler, interpreter id
 
-	lang, err := planglist.GetProgrammingLanguageById(req.LangId)
-	if err != nil {
-		return uuid.Nil, err
-	}
+	Tests []TestFile // test cases to run against the code
 
-	evalUuid, err := uuid.NewV7()
-	if err != nil {
-		errMsg := fmt.Errorf("failed to generate UUID: %w", err)
-		return uuid.Nil, errMsg
-	}
+	CpuMs  int // maximum user-mode CPU time in milliseconds
+	MemKiB int // maximum resident set size in kibibytes
 
-	// Initialize test results array
-	tests := make([]TestRes, len(req.Tests))
-	for i, test := range req.Tests {
-		tests[i] = TestRes{
-			ID:     i,
-			InpUrl: test.InUrl,
-			AnsUrl: test.AnsUrl,
-		}
-	}
+	// optional testlib.h checker program. If not provided,
+	// only output of the user's solution is returned from tester
+	// and is not viable for grading. "run program" use case.
+	Checker *string
 
-	// Create initial evaluation record
-	eval := &Evaluation{
-		UUID:  evalUuid,
-		Stage: "waiting",
-		Tests: tests,
-		PrLang: PrLang{
-			ShortId:   lang.ID,
-			FullName:  lang.FullName,
-			CodeFname: lang.CodeFilename,
-			CompCmd:   lang.CompileCmd,
-			CompFname: lang.CompiledFilename,
-			ExecCmd:   lang.ExecuteCmd,
-		},
-		ErrorMsg:   nil,
-		Checker:    req.Checker,
-		Interactor: req.Interactor,
-		CpuMsLim:   req.CpuMs,
-		MemKiBLim:  req.MemKiB,
-		CreatedAt:  time.Now(),
-	}
-
-	// Save evaluation state
-	err = e.repo.Save(eval)
-	if err != nil {
-		return uuid.Nil, err
-	}
-
-	// Enqueue for processing
-	err = e.enqueue(&req, evalUuid, e.resSqsUrl, lang)
-	if err != nil {
-		return uuid.Nil, err
-	}
-
-	return evalUuid, nil
+	// optional testlib.h interactor program.
+	Interactor *string
 }
 
 // Enqueue adds an evaluation request to the processing queue using a pre-generated UUID
@@ -91,10 +46,6 @@ func (e *EvalSrvc) Enqueue(req NewEvalParams, evalUuid uuid.UUID) (uuid.UUID, er
 
 // EnqueueExternal adds an external evaluation request to a separate queue after API key validation
 func (e *EvalSrvc) EnqueueExternal(apiKey string, req NewEvalParams) (uuid.UUID, error) {
-	if apiKey != e.extEvalKey {
-		return uuid.Nil, ErrInvalidApiKey()
-	}
-
 	// check validity of programming language before creating a new queue
 	lang, err := planglist.GetProgrammingLanguageById(req.LangId)
 	if err != nil {
@@ -120,12 +71,12 @@ func (e *EvalSrvc) enqueue(req *NewEvalParams,
 	tests := make([]tester.ReqTest, len(req.Tests))
 	for i, test := range req.Tests {
 		tests[i] = tester.ReqTest{
-			ID:         int(test.ID),
+			ID:         i + 1,
 			InSha256:   test.InSha256,
-			InUrl:      test.InUrl,
+			InUrl:      test.InDownlUrl,
 			InContent:  test.InContent,
 			AnsSha256:  test.AnsSha256,
-			AnsUrl:     test.AnsUrl,
+			AnsUrl:     test.AnsDownlUrl,
 			AnsContent: test.AnsContent,
 		}
 	}

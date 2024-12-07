@@ -43,6 +43,8 @@ type Pair[T1 any, T2 any] struct {
 
 type EvalSrvc struct {
 	sqsClient *sqs.Client
+	evals     []Evaluation // later these will be only the ones being tested with a timeout
+	evalsLock sync.Mutex
 	repo      EvalRepo
 
 	submSqsUrl    string
@@ -90,6 +92,9 @@ func NewEvalSrvc() *EvalSrvc {
 	esrvc := &EvalSrvc{
 		sqsClient:     sqsClient,
 		submSqsUrl:    submQueueUrl,
+		evals:         []Evaluation{},
+		evalsLock:     sync.Mutex{},
+		repo:          nil,
 		resSqsUrl:     responseSQSURL,
 		extEvalKey:    extEvalKey,
 		extEvalSqsUrl: extEvalSqsUrl,

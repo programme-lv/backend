@@ -6,81 +6,103 @@ import (
 	"github.com/google/uuid"
 )
 
-// NewEvalParams contains parameters needed to create a new evaluation request
-type NewEvalParams struct {
-	Code   string // Source code to evaluate
-	LangId string // Programming language identifier
-
-	Tests []Test // Test cases to run against the code
-
-	CpuMs  int // CPU time limit in milliseconds
-	MemKiB int // Memory limit in KiB
-
-	Checker    *string // Optional custom checker program
-	Interactor *string // Optional interactive testing program
-}
-
-// Test represents a single test case with input and expected output
-type Test struct {
-	ID int // Test case identifier
-
-	InSha256  *string // SHA256 hash of input file for verification
-	InUrl     *string // URL to download input file
-	InContent *string // Raw input content if not using URL
-
-	AnsSha256  *string // SHA256 hash of answer file for verification
-	AnsUrl     *string // URL to download answer file
-	AnsContent *string // Raw answer content if not using URL
-}
+const (
+	EvalStageWaiting   = "waiting"
+	EvalStageCompiling = "compiling"
+	EvalStageTesting   = "testing"
+	EvalStageDone      = "done"
+	EvalStageFailed    = "failed"
+)
 
 type Evaluation struct {
-	UUID       uuid.UUID
-	Stage      string
-	Tests      []TestRes
-	PrLang     PrLang
-	ErrorMsg   *string
-	Checker    *string
+	UUID      uuid.UUID
+	Stage     string
+	TestRes   []TestRes
+	PrLang    PrLang
+	Params    TesterParams
+	ErrorMsg  *string
+	SysInfo   *string // testing hardware info
+	CreatedAt time.Time
+	SubmComp  *RuntimeData // submitted code compilation runtime data
+	// ChecComp   *RuntimeData // testlib checker compilation runtime data
+}
+
+// Tester machine parameters
+type TesterParams struct {
+	CpuMs  int // maximum user-mode CPU time in milliseconds
+	MemKiB int // maximum resident set size in kibibytes
+
+	// optional testlib.h checker program. If not provided,
+	// only output of the user's solution is returned from tester
+	// and is not viable for grading. "run program" use case.
+	Checker *string
+
+	// optional testlib.h interactor program.
 	Interactor *string
-	SysInfo    *string // testing hardware info
-	CpuMsLim   int
-	MemKiBLim  int
-	CreatedAt  time.Time
-	SubmComp   *RuntimeData // user submitted solution compile runtime data
-	ChecComp   *RuntimeData // testlib checker compile runtime data
+}
+
+func (p *TesterParams) IsValid() error {
+	if p.CpuMs <= 0 {
+		return ErrInvalidTesterParams()
+	}
+	if p.MemKiB <= 0 {
+		return ErrInvalidTesterParams()
+	}
+	if p.CpuMs > 10*1000 { // 10 seconds
+		return ErrCpuConstraintTooLose()
+	}
+	if p.MemKiB > 1024*1024 { // 1 GiB
+		return ErrMemConstraintTooLose()
+	}
+	if p.Checker != nil && len(*p.Checker) > 1024*1024 { // 1 MiB
+		return ErrCheckerTooLarge()
+	}
+	if p.Interactor != nil && len(*p.Interactor) > 1024*1024 { // 1 MiB
+		return ErrInteractorTooLarge()
+	}
+	return nil
 }
 
 type PrLang struct {
-	ShortId   string
-	FullName  string
-	CodeFname string
-	CompCmd   *string
-	CompFname *string
-	ExecCmd   string
+	CodeFname string  // source code filename for mv in to box
+	CompCmd   *string // compile command
+	CompFname *string // exe fname after comp for mv out of box
+	ExecCmd   string  // execution command
 }
 
 type TestRes struct {
 	ID       int
-	InpUrl   *string
-	AnsUrl   *string
-	InpShort *string // input preview
-	AnsShort *string // answer preview
+	Input    *Text // test input, as reported by the tester
+	Answer   *Text // test answer, as reported by the tester
 	Reached  bool
-	Ignored  bool
+	Ignored  bool // when score group has another failed test
 	Finished bool
-	Checker  *RuntimeData // testlib checker runtime data
-	Program  *RuntimeData // user submitted solution runtime data
+
+	CheckerReport *RuntimeData // testlib checker
+	ProgramReport *RuntimeData // user submitted solution
 }
 
 type RuntimeData struct {
-	StdoutShort *string
-	StderrShort *string
-	StdoutUrl   *string // full stdout, possibly in S3
-	StderrUrl   *string // full stderr, possibly in S3
+	StdIn  *Text
+	StdOut *Text
+	StdErr *Text
+
 	ExitCode    int64
-	CPUTime     int64
-	WallTime    int64
-	Memory      int64
-	CtxSwForced *int64
-	ExitSignal  *int64
+	CpuTimeMs   int64   // cpu user-mode time in milliseconds
+	WallTimeMs  int64   // wall clock time in milliseconds
+	MemoryKiB   int64   // memory usage in kibibytes
+	CtxSwForced *int64  // context switches forced by kernel
+	ExitSignal  *int64  // exit signal if any
 	IsolStatus  *string // isolate execution environment status
+}
+
+type Text struct {
+	PvRect  string // preview rectangle cutout
+	RectH   int    // rectangle max height
+	RectW   int    // rectangle max width
+	PvSeq   string // preview line cutout (sequential chars)
+	SeqCh   int    // sequential chars limit
+	FullUrl string // full text access URL, likely in S3
+	FullSz  int64  // full text size in bytes
+	Sha256  string // SHA256 hash of full text
 }

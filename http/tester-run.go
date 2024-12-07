@@ -43,16 +43,15 @@ func (httpserver *HttpServer) testerRun(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	tests := make([]evalsrvc.Test, len(req.Tests))
+	tests := make([]evalsrvc.TestFile, len(req.Tests))
 	for i, test := range req.Tests {
-		tests[i] = evalsrvc.Test{
-			ID:         i + 1,
-			InSha256:   test.InSha256,
-			InUrl:      test.InUrl,
-			InContent:  test.InContent,
-			AnsSha256:  test.AnsContent,
-			AnsUrl:     test.AnsUrl,
-			AnsContent: test.AnsContent,
+		tests[i] = evalsrvc.TestFile{
+			InSha256:    test.InSha256,
+			InDownlUrl:  test.InUrl,
+			InContent:   test.InContent,
+			AnsSha256:   test.AnsContent,
+			AnsDownlUrl: test.AnsUrl,
+			AnsContent:  test.AnsContent,
 		}
 	}
 
