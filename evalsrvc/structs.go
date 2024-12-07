@@ -64,6 +64,8 @@ func (p *TesterParams) IsValid() error {
 }
 
 type PrLang struct {
+	ShortId   string  // short lang/compiler/interpreter id
+	Display   string  // user-friendly programming lang name
 	CodeFname string  // source code filename for mv in to box
 	CompCmd   *string // compile command
 	CompFname *string // exe fname after comp for mv out of box
