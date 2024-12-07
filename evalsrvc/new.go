@@ -30,12 +30,12 @@ type TestFile struct {
 	AnsContent  *string // answer content as alternative to URL
 }
 
-// Enqueues code for evaluation by tester, returns eval uuid.
+// Enqueues code for evaluation by tester, returns eval uuid:
 // 1. validates programming language;
 // 2. validates cpu, mem constraints & checker, interactor size;
 // 3. new empty eval record, store in memory;
 // 4. convert tests to tester format, marshall request to json;
-// 5. send request to sqs queue
+// 5. enqueue request to sqs queue, return eval uuid.
 func (e *EvalSrvc) NewEvaluation(
 	code CodeWithLang,
 	tests []TestFile,
