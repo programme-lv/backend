@@ -43,7 +43,7 @@ func (e *EvalSrvc) Enqueue(req NewEvalParams, evalUuid uuid.UUID) (uuid.UUID, er
 	if err != nil {
 		return uuid.Nil, err
 	}
-	err = e.enqueue(&req, evalUuid, e.resSqsUrl, lang)
+	err = e.enqueue(&req, evalUuid, e.responseSqsUrl, lang)
 	if err != nil {
 		return uuid.Nil, err
 	}
@@ -182,7 +182,7 @@ func (e *EvalSrvc) ReceiveFor(evalUuid uuid.UUID) ([]Msg, error) {
 }
 
 func (e *EvalSrvc) Receive() ([]Msg, error) {
-	return e.receiveFromSqs(e.resSqsUrl)
+	return e.receiveFromSqs(e.responseSqsUrl)
 }
 
 func (e *EvalSrvc) Ack(queueUrl string, handle string) error {

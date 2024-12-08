@@ -47,9 +47,9 @@ type EvalSrvc struct {
 	evalsLock sync.Mutex
 	repo      EvalRepo
 
-	submSqsUrl    string
-	resSqsUrl     string
-	extEvalSqsUrl string
+	submSqsUrl     string
+	responseSqsUrl string
+	extEvalSqsUrl  string
 
 	extEvalKey string // api key for external evaluation requests
 
@@ -90,15 +90,15 @@ func NewEvalSrvc() *EvalSrvc {
 	}
 
 	esrvc := &EvalSrvc{
-		sqsClient:     sqsClient,
-		submSqsUrl:    submQueueUrl,
-		evals:         []Evaluation{},
-		evalsLock:     sync.Mutex{},
-		repo:          nil,
-		resSqsUrl:     responseSQSURL,
-		extEvalKey:    extEvalKey,
-		extEvalSqsUrl: extEvalSqsUrl,
-		accumulated:   xsync.NewMapOf[uuid.UUID, Pair[*sync.Cond, queues.Queue[Pair[Msg, time.Time]]]](),
+		sqsClient:      sqsClient,
+		submSqsUrl:     submQueueUrl,
+		evals:          []Evaluation{},
+		evalsLock:      sync.Mutex{},
+		repo:           nil,
+		responseSqsUrl: responseSQSURL,
+		extEvalKey:     extEvalKey,
+		extEvalSqsUrl:  extEvalSqsUrl,
+		accumulated:    xsync.NewMapOf[uuid.UUID, Pair[*sync.Cond, queues.Queue[Pair[Msg, time.Time]]]](),
 	}
 
 	return esrvc

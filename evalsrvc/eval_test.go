@@ -1,12 +1,13 @@
 package evalsrvc
 
 import (
+	"context"
 	"sync"
 	"testing"
-)
+	"time"
 
-type EvalEventBus struct {
-}
+	"github.com/stretchr/testify/require"
+)
 
 type MockProcessor struct {
 	lock sync.Mutex
@@ -20,15 +21,31 @@ func (m *MockProcessor) Handle(msg Msg) error {
 	return nil
 }
 
+func (m *MockProcessor) Get() <-chan Msg {
+	return m.msgs
+}
+
 func NewMockProcessor() *MockProcessor {
-	return &MockProcessor{}
+	return &MockProcessor{
+		msgs: []Msg{},
+	}
 }
 
 func TestEnqueueAndReceiveResults(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	esrvc := NewEvalSrvc()
-	processor := NewMockProcessor()
-	esrvc.ReceiveResultsFromSqs(esrvc.resSqsUrl, processor)
-	esrvc.NewEvaluation(CodeWithLang{
+
+	handler := NewMockProcessor()
+
+	go func() {
+		resSqsUrl := esrvc.responseSqsUrl
+		err := esrvc.ReceiveResultsFromSqs(ctx, resSqsUrl, handler)
+		require.NoError(t, err)
+	}()
+
+	_, err := esrvc.NewEvaluation(CodeWithLang{
 		SrcCode: "a=int(input());b=int(input());print(a+b)",
 		LangId:  "python3.11",
 	}, []TestFile{
@@ -40,12 +57,20 @@ func TestEnqueueAndReceiveResults(t *testing.T) {
 		Checker:    strPtr(checker),
 		Interactor: nil,
 	})
+	require.NoError(t, err)
 
-	// we want the testing to be finished withing 10 seconds
+	// expected
 
-	// we should listen to some kind of notifier,
-	// await a finished evaluation event
-
+	timeout := time.After(10 * time.Second)
+	for {
+		select {
+		case <-timeout:
+			t.Fatal("timeout")
+		case msg := <-handler.Get():
+			t.Logf("msg: %+v", msg)
+			return
+		}
+	}
 }
 
 func strPtr(s string) *string {

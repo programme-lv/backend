@@ -101,7 +101,7 @@ func (e *EvalSrvc) NewEvaluation(
 	// prepare evaluation request
 	jsonReq, err := json.Marshal(tester.EvalReq{
 		EvalUuid:  evalUuid.String(),
-		ResSqsUrl: e.resSqsUrl,
+		ResSqsUrl: e.responseSqsUrl,
 		Code:      code.SrcCode,
 		Language: tester.Language{
 			LangID:        lang.ShortId,
