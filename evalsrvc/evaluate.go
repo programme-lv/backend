@@ -30,16 +30,38 @@ type TestFile struct {
 	AnsContent  *string // answer content as alternative to URL
 }
 
-// Enqueues code for evaluation by tester, returns eval uuid:
-// 1. validates programming language;
-// 2. validates cpu, mem constraints & checker, interactor size;
-// 3. new empty eval record, store in memory;
-// 4. convert tests to tester format, marshall request to json;
-// 5. enqueue request to sqs queue, return eval uuid.
-func (e *EvalSrvc) NewEvaluation(
+func (e *EvalSrvc) Evaluate(
 	code CodeWithLang,
 	tests []TestFile,
 	params TesterParams,
+) (uuid.UUID, error) {
+	sqsClient := e.sqsClient
+	submSqsUrl := e.submSqsUrl
+	responseSqsUrl := e.responseSqsUrl
+
+	placeholderFunc := func(e Evaluation) error {
+		return nil
+	}
+
+	return evaluate(code, tests, params,
+		sqsClient, submSqsUrl, responseSqsUrl, placeholderFunc)
+}
+
+// Enqueues code for evaluation by tester, returns eval uuid:
+// 1. validates programming language;
+// 2. validates cpu, mem constraints & checker, interactor size;
+// 3. creates new empty eval record, stores in in-memory repo;
+// 4. converts tests to tester format, marshall request to json;
+// 5. enqueues request to sqs queue;
+// 6. returns newly created eval uuid.
+func evaluate(
+	code CodeWithLang,
+	tests []TestFile,
+	params TesterParams,
+	sqsClient *sqs.Client,
+	submSqsUrl string,
+	responseSqsUrl string,
+	preEnqueue func(e Evaluation) error,
 ) (uuid.UUID, error) {
 
 	lang, err := getPrLangById(code.LangId)
@@ -71,7 +93,7 @@ func (e *EvalSrvc) NewEvaluation(
 	// create an initial evaluation record
 	eval := Evaluation{
 		UUID:      evalUuid,
-		Stage:     "waiting",
+		Stage:     EvalStageWaiting,
 		TestRes:   testRes,
 		PrLang:    lang,
 		ErrorMsg:  nil,
@@ -79,9 +101,10 @@ func (e *EvalSrvc) NewEvaluation(
 		CreatedAt: time.Now(),
 	}
 
-	e.evalsLock.Lock()
-	e.evals = append(e.evals, eval)
-	e.evalsLock.Unlock()
+	err = preEnqueue(eval)
+	if err != nil {
+		return uuid.Nil, err
+	}
 
 	testsTester := make([]tester.ReqTest, len(tests))
 	for i, test := range tests {
@@ -101,7 +124,7 @@ func (e *EvalSrvc) NewEvaluation(
 	// prepare evaluation request
 	jsonReq, err := json.Marshal(tester.EvalReq{
 		EvalUuid:  evalUuid.String(),
-		ResSqsUrl: e.responseSqsUrl,
+		ResSqsUrl: responseSqsUrl,
 		Code:      code.SrcCode,
 		Language: tester.Language{
 			LangID:        lang.ShortId,
@@ -123,9 +146,9 @@ func (e *EvalSrvc) NewEvaluation(
 		return uuid.Nil, errMsg
 	}
 
-	_, err = e.sqsClient.SendMessage(context.TODO(),
+	_, err = sqsClient.SendMessage(context.TODO(),
 		&sqs.SendMessageInput{
-			QueueUrl:    aws.String(e.submSqsUrl),
+			QueueUrl:    aws.String(submSqsUrl),
 			MessageBody: aws.String(string(jsonReq)),
 		})
 	if err != nil {

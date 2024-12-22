@@ -13,21 +13,20 @@ import (
 	"github.com/programme-lv/tester/sqsgath"
 )
 
-type ResultProcessor interface {
-	Handle(msg Msg) error
-}
-
 // starts receiving msgs indefinitely and passes them to processor
-func (e *EvalSrvc) ReceiveResultsFromSqs(ctx context.Context, sqsUrl string, processor ResultProcessor) error {
+func receiveResultsFromSqs(ctx context.Context,
+	sqsUrl string, client *sqs.Client,
+	handleFunc func(msg Msg) error,
+) error {
 	for {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			output, err := e.sqsClient.ReceiveMessage(ctx, &sqs.ReceiveMessageInput{
+			output, err := client.ReceiveMessage(ctx, &sqs.ReceiveMessageInput{
 				QueueUrl:            aws.String(sqsUrl),
 				MaxNumberOfMessages: 10,
-				WaitTimeSeconds:     5,
+				WaitTimeSeconds:     1,
 			})
 			if err != nil {
 				log.Printf("failed to receive messages, %v\n", err)
@@ -128,18 +127,20 @@ func (e *EvalSrvc) ReceiveResultsFromSqs(ctx context.Context, sqsUrl string, pro
 				}
 
 				go func(msg Msg) {
-					err = processor.Handle(msg)
+					err = handleFunc(msg)
 					if err != nil {
 						log.Printf("failed to process tester result: %v", err)
 					} else { // there were no errors
-						err = e.Ack(sqsUrl, msg.Handle)
+						_, err := client.DeleteMessage(context.TODO(), &sqs.DeleteMessageInput{
+							QueueUrl:      aws.String(sqsUrl),
+							ReceiptHandle: aws.String(msg.Handle),
+						})
 						if err != nil {
 							log.Printf("failed to ack message: %v", err)
 						}
 					}
 				}(msgs[i])
 			}
-			return nil
 		}
 	}
 }

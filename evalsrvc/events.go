@@ -46,8 +46,8 @@ type RunData struct {
 	WallMs   int64  `json:"wall_ms"`
 	MemKiB   int64  `json:"mem_kib"`
 	ExitCode int64  `json:"exit"`
-	CtxSwV   int64  `json:"ctx_sw_v"`
-	CtxSwF   int64  `json:"ctx_sw_f"`
+	CtxSwV   *int64 `json:"ctx_sw_v"`
+	CtxSwF   *int64 `json:"ctx_sw_f"`
 	Signal   *int64 `json:"signal"`
 }
 

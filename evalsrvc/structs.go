@@ -27,7 +27,7 @@ type Evaluation struct {
 	// ChecComp   *RuntimeData // testlib checker compilation runtime data
 }
 
-// Tester machine parameters
+// Tester machine submitted solution runtime constraints
 type TesterParams struct {
 	CpuMs  int // maximum user-mode CPU time in milliseconds
 	MemKiB int // maximum resident set size in kibibytes
@@ -74,8 +74,8 @@ type PrLang struct {
 
 type TestRes struct {
 	ID       int
-	Input    *Text // test input, as reported by the tester
-	Answer   *Text // test answer, as reported by the tester
+	Input    *Text // test input
+	Answer   *Text // test answer
 	Reached  bool
 	Ignored  bool // when score group has another failed test
 	Finished bool
@@ -102,9 +102,7 @@ type Text struct {
 	PvRect  string // preview rectangle cutout
 	RectH   int    // rectangle max height
 	RectW   int    // rectangle max width
-	PvSeq   string // preview line cutout (sequential chars)
-	SeqCh   int    // sequential chars limit
-	FullUrl string // full text access URL, likely in S3
+	FullUrl string // full text access URL, likely stored in S3
 	FullSz  int64  // full text size in bytes
 	Sha256  string // SHA256 hash of full text
 }

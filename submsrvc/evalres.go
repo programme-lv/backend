@@ -152,7 +152,7 @@ func (h *evalHandler) finishedCompiling(x evalsrvc.FinishedCompiling) {
 		CPUTimeMillis:     x.RuntimeData.CpuMs,
 		WallTimeMillis:    x.RuntimeData.WallMs,
 		MemoryKibiBytes:   x.RuntimeData.MemKiB,
-		CtxSwitchesForced: &x.RuntimeData.CtxSwV,
+		CtxSwitchesForced: x.RuntimeData.CtxSwV,
 		ExitSignal:        &x.RuntimeData.ExitCode,
 		CreatedAt:         &now,
 	}
@@ -254,7 +254,7 @@ func insertRunData(pg *sqlx.DB, rd *evalsrvc.RunData) (int32, error) {
 		CPUTimeMillis:     rd.CpuMs,
 		WallTimeMillis:    rd.WallMs,
 		MemoryKibiBytes:   rd.MemKiB,
-		CtxSwitchesForced: &rd.CtxSwF,
+		CtxSwitchesForced: rd.CtxSwF,
 		ExitSignal:        rd.Signal,
 		CreatedAt:         &now,
 	}

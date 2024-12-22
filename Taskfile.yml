@@ -1,0 +1,10 @@
+version: '3'
+
+tasks:
+  integration-test-tester:
+    desc: Integration test evalsrvc+sqs+tester
+    cmds:
+      - go test ./evalsrvc -v -count=1
+
+dotenv:
+  - .env

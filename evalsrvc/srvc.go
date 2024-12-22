@@ -32,8 +32,9 @@ import (
 )
 
 type EvalRepo interface {
-	Save(eval *Evaluation) error
-	Get(evalUuid uuid.UUID) (*Evaluation, error)
+	Save(eval Evaluation) error
+	Get(evalUuid uuid.UUID) (Evaluation, error)
+	Delete(evalUuid uuid.UUID) error
 }
 
 type Pair[T1 any, T2 any] struct {
@@ -42,10 +43,9 @@ type Pair[T1 any, T2 any] struct {
 }
 
 type EvalSrvc struct {
-	sqsClient *sqs.Client
-	evals     []Evaluation // later these will be only the ones being tested with a timeout
-	evalsLock sync.Mutex
-	repo      EvalRepo
+	sqsClient   *sqs.Client
+	inmemRepo   EvalRepo
+	durableRepo EvalRepo // evaluation is persisted after fully tested
 
 	submSqsUrl     string
 	responseSqsUrl string
@@ -57,6 +57,28 @@ type EvalSrvc struct {
 }
 
 func NewEvalSrvc() *EvalSrvc {
+	sqsClient := getSqsClientFromEnv()
+	submSqsUrl := getSubmSqsUrlFromEnv()
+	responseSqsUrl := getResponseSqsUrlFromEnv()
+
+	extEvalKey := os.Getenv("EXTERNAL_EVAL_KEY")
+	extEvalSqsUrl := os.Getenv("EXT_EVAL_SQS_URL")
+
+	esrvc := &EvalSrvc{
+		sqsClient:      sqsClient,
+		submSqsUrl:     submSqsUrl,
+		inmemRepo:      NewInMemEvalRepo(),
+		durableRepo:    NewInMemEvalRepo(),
+		responseSqsUrl: responseSqsUrl,
+		extEvalKey:     extEvalKey,
+		extEvalSqsUrl:  extEvalSqsUrl,
+		accumulated:    xsync.NewMapOf[uuid.UUID, Pair[*sync.Cond, queues.Queue[Pair[Msg, time.Time]]]](),
+	}
+
+	return esrvc
+}
+
+func getSqsClientFromEnv() *sqs.Client {
 	cfg, err := config.LoadDefaultConfig(context.TODO(),
 		config.WithRegion("eu-central-1"),
 		config.WithRetryer(func() aws.Retryer {
@@ -66,40 +88,21 @@ func NewEvalSrvc() *EvalSrvc {
 	if err != nil {
 		panic(fmt.Sprintf("unable to load SDK config, %v", err))
 	}
+	return sqs.NewFromConfig(cfg)
+}
 
-	sqsClient := sqs.NewFromConfig(cfg)
-
-	submQueueUrl := os.Getenv("SUBM_SQS_QUEUE_URL")
-	if submQueueUrl == "" {
-		panic("SUBM_SQS_QUEUE_URL not set in .env file")
-	}
-
+func getResponseSqsUrlFromEnv() string {
 	responseSQSURL := os.Getenv("RESPONSE_SQS_URL")
 	if responseSQSURL == "" {
 		panic("RESPONSE_SQS_URL not set in .env file")
 	}
+	return responseSQSURL
+}
 
-	extEvalKey := os.Getenv("EXTERNAL_EVAL_KEY")
-	if extEvalKey == "" {
-		panic("EXTERNAL_EVAL_KEY not set in .env file")
+func getSubmSqsUrlFromEnv() string {
+	submQueueUrl := os.Getenv("SUBM_SQS_QUEUE_URL")
+	if submQueueUrl == "" {
+		panic("SUBM_SQS_QUEUE_URL not set in .env file")
 	}
-
-	extEvalSqsUrl := os.Getenv("EXT_EVAL_SQS_URL")
-	if extEvalSqsUrl == "" {
-		panic("EXT_EVAL_SQS_URL not set in .env file")
-	}
-
-	esrvc := &EvalSrvc{
-		sqsClient:      sqsClient,
-		submSqsUrl:     submQueueUrl,
-		evals:          []Evaluation{},
-		evalsLock:      sync.Mutex{},
-		repo:           nil,
-		responseSqsUrl: responseSQSURL,
-		extEvalKey:     extEvalKey,
-		extEvalSqsUrl:  extEvalSqsUrl,
-		accumulated:    xsync.NewMapOf[uuid.UUID, Pair[*sync.Cond, queues.Queue[Pair[Msg, time.Time]]]](),
-	}
-
-	return esrvc
+	return submQueueUrl
 }

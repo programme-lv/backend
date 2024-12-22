@@ -364,8 +364,8 @@ func mapRunData(rd *sqsgath.RuntimeData) *RunData {
 			WallMs:   rd.WallMillis,
 			MemKiB:   rd.MemoryKiBytes,
 			ExitCode: rd.ExitCode,
-			CtxSwV:   rd.CtxSwF,
-			CtxSwF:   rd.CtxSwF,
+			CtxSwV:   &rd.CtxSwV,
+			CtxSwF:   &rd.CtxSwF,
 			Signal:   rd.ExitSignal,
 		}
 	}

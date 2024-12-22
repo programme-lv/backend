@@ -50,3 +50,12 @@ func ErrInteractorTooLarge() *srvcerror.Error {
 		"Interactor program too large",
 	).SetHttpStatusCode(http.StatusBadRequest)
 }
+
+const ErrCodeEvalNotFound = "eval_not_found"
+
+func ErrEvalNotFound() *srvcerror.Error {
+	return srvcerror.New(
+		ErrCodeEvalNotFound,
+		"Evaluation not found",
+	).SetHttpStatusCode(http.StatusNotFound)
+}
