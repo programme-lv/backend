@@ -13,8 +13,8 @@ import (
 )
 
 // TestEnqueueAndReceiveResults verifies that submission is correctly enqueued
-// and that ALL corresponding evaluation results are received:
-// - started evaluation / received submission
+// and that ALL corresponding evaluation results are received from tester:
+// - started evaluation
 // - started compilation iff the lang needs compilation
 // - finished compilation iff the lang needs compilation
 // - started testing
@@ -40,7 +40,7 @@ func TestEnqueueAndReceiveResults(t *testing.T) {
 	}
 
 	lock := sync.Mutex{}
-	msgs := []Msg{}
+	msgs := []SqsResponseMsg{}
 	unreachedTestIDs := []int64{1, 2}
 	unfinishedTestIDs := []int64{1, 2}
 	receivedStartedEvaluation := false
@@ -67,14 +67,12 @@ func TestEnqueueAndReceiveResults(t *testing.T) {
 		}
 		return slice
 	}
-	var evalId uuid.UUID
-	preEnqueue := func(e Evaluation) error {
-		evalId = e.UUID
-		return nil
-	}
+	evalId, err := uuid.NewV7()
+	require.NoError(t, err)
+
 	everythingExceptTests := false
 	allTestsReceived := false
-	handle := func(msg Msg) error {
+	handle := func(msg SqsResponseMsg) error {
 		lock.Lock()
 		defer lock.Unlock()
 		if everythingExceptTests && allTestsReceived {
@@ -87,21 +85,21 @@ func TestEnqueueAndReceiveResults(t *testing.T) {
 		t.Logf("received message: %s", msg.Data.Type())
 		msgs = append(msgs, msg)
 		switch msg.Data.Type() {
-		case MsgTypeStartedEvaluation:
+		case StartedEvaluationType:
 			receivedStartedEvaluation = true
-		case MsgTypeStartedCompilation:
+		case StartedCompilationType:
 			receivedStartedCompilation = true
-		case MsgTypeFinishedCompilation:
+		case FinishedCompilationType:
 			receivedFinishedCompilation = true
-		case MsgTypeStartedTesting:
+		case StartedTestingType:
 			receivedStartedTesting = true
-		case MsgTypeReachedTest:
+		case ReachedTestType:
 			reachedTest := msg.Data.(ReachedTest)
 			receivedReachedTest = true
 			in := inSlice(reachedTest.TestId, unreachedTestIDs)
 			require.True(t, in)
 			unreachedTestIDs = removeFromSlice(unreachedTestIDs, reachedTest.TestId)
-		case MsgTypeFinishedTest:
+		case FinishedTestType:
 			finishedTest := msg.Data.(FinishedTest)
 			in := inSlice(finishedTest.TestID, unfinishedTestIDs)
 			require.True(t, in)
@@ -109,11 +107,11 @@ func TestEnqueueAndReceiveResults(t *testing.T) {
 			if len(unfinishedTestIDs) == 0 {
 				allTestsReceived = true
 			}
-		case MsgTypeFinishedTesting:
+		case FinishedTestingType:
 			receivedFinishedTesting = true
-		case MsgTypeFinishedEvaluation:
+		case FinishedEvaluationType:
 			receivedFinishedEvaluation = true
-		case MsgTypeIgnoredTest:
+		case IgnoredTestType:
 			ignoredTest := msg.Data.(IgnoredTest)
 			in := inSlice(ignoredTest.TestId, unfinishedTestIDs)
 			require.True(t, in)
@@ -140,15 +138,23 @@ func TestEnqueueAndReceiveResults(t *testing.T) {
 		require.NoError(t, err)
 	}()
 
-	evalId, err := evaluate(CodeWithLang{
-		SrcCode: "a=int(input());b=int(input());print(a+b)",
-		LangId:  "python3.11",
-	}, tests, TesterParams{
-		CpuMs:      100,
-		MemKiB:     1024 * 100,
-		Checker:    strPtr(checker),
-		Interactor: nil,
-	}, sqsClient, submSqsUrl, responseSqsUrl, preEnqueue)
+	lang, err := getPrLangById("python3.11")
+	require.NoError(t, err)
+
+	err = enqueue(evalId,
+		"a=int(input());b=int(input());print(a+b)",
+		lang,
+		tests,
+		TesterParams{
+			CpuMs:      100,
+			MemKiB:     1024 * 100,
+			Checker:    strPtr(checker),
+			Interactor: nil,
+		},
+		sqsClient,
+		submSqsUrl,
+		responseSqsUrl,
+	)
 	require.NoError(t, err)
 
 	timeout := time.After(30 * time.Second)

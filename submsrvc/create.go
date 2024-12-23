@@ -129,7 +129,7 @@ func (s *SubmissionSrvc) CreateSubmission(ctx context.Context,
 		LangId:     params.ProgLangID,
 	}
 
-	_, err = s.evalSrvc.Enqueue(req, evalUuid)
+	_, err = s.evalSrvc.EnqueueOld(req, evalUuid)
 	if err != nil {
 		return nil, fmt.Errorf("failed to enqueue evaluation: %w", err)
 	}

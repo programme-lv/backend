@@ -100,7 +100,7 @@ func (s *SubmissionSrvc) enqueue(content string, task *tasksrvc.Task, lang *plan
 		LangId:     lang.ID,
 	}
 
-	_, err := s.evalSrvc.Enqueue(req, evalUuid)
+	_, err := s.evalSrvc.EnqueueOld(req, evalUuid)
 	if err != nil {
 		format := "failed to enqueue evaluation: %w"
 		errMsg := fmt.Errorf(format, err)

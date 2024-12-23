@@ -59,3 +59,12 @@ func ErrEvalNotFound() *srvcerror.Error {
 		"Evaluation not found",
 	).SetHttpStatusCode(http.StatusNotFound)
 }
+
+const ErrCodeInvalidTestFile = "invalid_test_file"
+
+func ErrInvalidTestFile() *srvcerror.Error {
+	return srvcerror.New(
+		ErrCodeInvalidTestFile,
+		"Invalid test file",
+	).SetHttpStatusCode(http.StatusBadRequest)
+}

@@ -2,16 +2,20 @@ package evalsrvc
 
 import "time"
 
+type Event interface {
+	Type() string
+}
+
 const (
-	MsgTypeStartedEvaluation   = "started_evaluation"
-	MsgTypeStartedCompilation  = "started_compilation"
-	MsgTypeFinishedCompilation = "finished_compilation"
-	MsgTypeStartedTesting      = "started_testing"
-	MsgTypeReachedTest         = "reached_test"
-	MsgTypeFinishedTest        = "finished_test"
-	MsgTypeIgnoredTest         = "ignored_test"
-	MsgTypeFinishedTesting     = "finished_testing"
-	MsgTypeFinishedEvaluation  = "finished_evaluation"
+	StartedEvaluationType   = "started_evaluation"
+	StartedCompilationType  = "started_compilation"
+	FinishedCompilationType = "finished_compilation"
+	StartedTestingType      = "started_testing"
+	ReachedTestType         = "reached_test"
+	FinishedTestType        = "finished_test"
+	IgnoredTestType         = "ignored_test"
+	FinishedTestingType     = "finished_testing"
+	FinishedEvaluationType  = "finished_evaluation"
 )
 
 type StartedEvaluation struct {
@@ -20,13 +24,13 @@ type StartedEvaluation struct {
 }
 
 func (s StartedEvaluation) Type() string {
-	return MsgTypeStartedEvaluation
+	return StartedEvaluationType
 }
 
 type StartedCompiling struct{}
 
 func (s StartedCompiling) Type() string {
-	return MsgTypeStartedCompilation
+	return StartedCompilationType
 }
 
 type FinishedCompiling struct {
@@ -34,7 +38,7 @@ type FinishedCompiling struct {
 }
 
 func (s FinishedCompiling) Type() string {
-	return MsgTypeFinishedCompilation
+	return FinishedCompilationType
 }
 
 // Runtime Data
@@ -54,7 +58,7 @@ type RunData struct {
 type StartedTesting struct{}
 
 func (s StartedTesting) Type() string {
-	return MsgTypeStartedTesting
+	return StartedTestingType
 }
 
 type ReachedTest struct {
@@ -64,7 +68,7 @@ type ReachedTest struct {
 }
 
 func (s ReachedTest) Type() string {
-	return MsgTypeReachedTest
+	return ReachedTestType
 }
 
 type IgnoredTest struct {
@@ -72,7 +76,7 @@ type IgnoredTest struct {
 }
 
 func (s IgnoredTest) Type() string {
-	return MsgTypeIgnoredTest
+	return IgnoredTestType
 }
 
 type FinishedTest struct {
@@ -82,13 +86,13 @@ type FinishedTest struct {
 }
 
 func (s FinishedTest) Type() string {
-	return MsgTypeFinishedTest
+	return FinishedTestType
 }
 
 type FinishedTesting struct{}
 
 func (s FinishedTesting) Type() string {
-	return MsgTypeFinishedTesting
+	return FinishedTestingType
 }
 
 type FinishedEvaluation struct {
@@ -98,5 +102,5 @@ type FinishedEvaluation struct {
 }
 
 func (s FinishedEvaluation) Type() string {
-	return MsgTypeFinishedEvaluation
+	return FinishedEvaluationType
 }

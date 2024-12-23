@@ -1,34 +1,13 @@
-/*
-Evaluation service:
-asd
-1. picks **UUID** v7, stores an empty evaluation in-memory
-
-2. **enqueues** evaluation request into SQS *submission queue*
-
-3. **receives** events from the *tester* via SQS *response queue*
-
-4. **constructs** the full evaluation from events in-memory
-  - test full stdout / stderr are stored immediately to S3
-
-5. sends each evaluation event to listener at most once
-  - all evaluation related events are deleted after 5 minutes
-*/
 package evalsrvc
 
 import (
 	"context"
 	"fmt"
-	"os"
 	"sync"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/aws/retry"
-	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
-	"github.com/emirpasic/gods/v2/queues"
 	"github.com/google/uuid"
-	"github.com/puzpuzpuz/xsync/v3"
 )
 
 type EvalRepo interface {
@@ -37,72 +16,137 @@ type EvalRepo interface {
 	Delete(evalUuid uuid.UUID) error
 }
 
-type Pair[T1 any, T2 any] struct {
-	First  T1
-	Second T2
-}
-
 type EvalSrvc struct {
-	sqsClient   *sqs.Client
-	inmemRepo   EvalRepo
-	durableRepo EvalRepo // evaluation is persisted after fully tested
+	sqsClient *sqs.Client
+	evalRepo  EvalRepo // either in-mem or s3
 
-	submSqsUrl     string
-	responseSqsUrl string
-	extEvalSqsUrl  string
+	submQ string // submission sqs queue url
+	respQ string // response sqs queue url
 
-	extEvalKey string // api key for external evaluation requests
+	extEvalKey string // api key for external requests
 
-	accumulated *xsync.MapOf[uuid.UUID, Pair[*sync.Cond, queues.Queue[Pair[Msg, time.Time]]]]
+	mu         sync.Mutex
+	organizers map[uuid.UUID]chan Event
+	processors map[uuid.UUID]chan Event
+	notifiers  map[uuid.UUID]chan Event
 }
 
 func NewEvalSrvc() *EvalSrvc {
-	sqsClient := getSqsClientFromEnv()
-	submSqsUrl := getSubmSqsUrlFromEnv()
-	responseSqsUrl := getResponseSqsUrlFromEnv()
-
-	extEvalKey := os.Getenv("EXTERNAL_EVAL_KEY")
-	extEvalSqsUrl := os.Getenv("EXT_EVAL_SQS_URL")
-
 	esrvc := &EvalSrvc{
-		sqsClient:      sqsClient,
-		submSqsUrl:     submSqsUrl,
-		inmemRepo:      NewInMemEvalRepo(),
-		durableRepo:    NewInMemEvalRepo(),
-		responseSqsUrl: responseSqsUrl,
-		extEvalKey:     extEvalKey,
-		extEvalSqsUrl:  extEvalSqsUrl,
-		accumulated:    xsync.NewMapOf[uuid.UUID, Pair[*sync.Cond, queues.Queue[Pair[Msg, time.Time]]]](),
+		sqsClient:  getSqsClientFromEnv(),
+		submQ:      getSubmSqsUrlFromEnv(),
+		evalRepo:   NewInMemEvalRepo(),
+		respQ:      getResponseSqsUrlFromEnv(),
+		extEvalKey: getExtEvalKeyFromEnv(),
 	}
+
+	go receiveResultsFromSqs(context.Background(),
+		esrvc.respQ,
+		esrvc.sqsClient,
+		esrvc.handleSqsMsg,
+	)
 
 	return esrvc
 }
 
-func getSqsClientFromEnv() *sqs.Client {
-	cfg, err := config.LoadDefaultConfig(context.TODO(),
-		config.WithRegion("eu-central-1"),
-		config.WithRetryer(func() aws.Retryer {
-			return retry.AddWithMaxAttempts(retry.NewStandard(), 10)
-		}),
-	)
+// Enqueues code for evaluation by tester, returns eval uuid:
+// 1. validates programming language;
+// 2. validates cpu, mem constraints & checker, interactor size;
+// 3. validates test files;
+// 4. initializes response stream processor with evaluation;
+// 5. enqueues evaluation request to sqs
+func (e *EvalSrvc) Enqueue(
+	code CodeWithLang,
+	tests []TestFile,
+	params TesterParams,
+) (uuid.UUID, error) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+
+	lang, err := getPrLangById(code.LangId)
 	if err != nil {
-		panic(fmt.Sprintf("unable to load SDK config, %v", err))
+		return uuid.Nil, err
 	}
-	return sqs.NewFromConfig(cfg)
+
+	err = params.IsValid() // validate tester parameters
+	if err != nil {
+		return uuid.Nil, err
+	}
+
+	evalUuid, err := uuid.NewV7()
+	if err != nil {
+		return uuid.Nil, err
+	}
+
+	for _, test := range tests {
+		if err := test.IsValid(); err != nil {
+			return uuid.Nil, err
+		}
+	}
+
+	testRes := []TestRes{}
+	for i := range tests {
+		testRes = append(testRes, TestRes{ID: i + 1})
+	}
+
+	e.foo(Evaluation{
+		UUID:      evalUuid,
+		Stage:     EvalStageWaiting,
+		TestRes:   testRes,
+		PrLang:    lang,
+		Params:    params,
+		ErrorMsg:  nil,
+		SysInfo:   nil,
+		CreatedAt: time.Now(),
+		SubmComp:  nil,
+	})
+
+	err = enqueue(evalUuid, code.SrcCode, lang, tests, params,
+		e.sqsClient, e.submQ, e.respQ)
+	if err != nil {
+		return uuid.Nil, err
+	}
+
+	return evalUuid, nil
 }
 
-func getResponseSqsUrlFromEnv() string {
-	responseSQSURL := os.Getenv("RESPONSE_SQS_URL")
-	if responseSQSURL == "" {
-		panic("RESPONSE_SQS_URL not set in .env file")
+// Returns a channel to stream events to the client.
+// The same channel is returned for the same eval uuid.
+// Once evaluation is finished, the channel is closed.
+func (e *EvalSrvc) Listen(evalId uuid.UUID) (<-chan Event, error) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+
+	ch, ok := e.notifiers[evalId]
+	if !ok {
+		format := "no listener for eval %s"
+		errMsg := fmt.Errorf(format, evalId)
+		return nil, errMsg
 	}
-	return responseSQSURL
+	return ch, nil
 }
 
-func getSubmSqsUrlFromEnv() string {
-	submQueueUrl := os.Getenv("SUBM_SQS_QUEUE_URL")
-	if submQueueUrl == "" {
-		panic("SUBM_SQS_QUEUE_URL not set in .env file")
+func (e *EvalSrvc) handleSqsMsg(msg SqsResponseMsg) error {
+	e.mu.Lock()
+	ch, ok := e.processors[msg.EvalId]
+	e.mu.Unlock()
+	if !ok {
+		return nil // no listeners for this evaluation
 	}
-	return submQueueUrl
+	ch <- msg.Data
+	return nil
+}
+
+// initialize response stream reorderor
+func (e *EvalSrvc) foo(eval Evaluation) {
+	// initialize some kind of mysthical organizer that reorders events
+	// the organizer has to know the number of tests and whether the submission has a compilation step
+	// and so does the processor
+
+	e.mu.Lock()
+	defer e.mu.Unlock()
+
+	e.organizers[eval.UUID] = make(chan Event)
+	e.processors[eval.UUID] = make(chan Event)
+	e.notifiers[eval.UUID] = make(chan Event, 100)
 }

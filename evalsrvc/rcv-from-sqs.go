@@ -13,10 +13,10 @@ import (
 	"github.com/programme-lv/tester/sqsgath"
 )
 
-// starts receiving msgs indefinitely and passes them to processor
+// Starts receiving msgs until ctx is cancelled and passes them to handler function
 func receiveResultsFromSqs(ctx context.Context,
 	sqsUrl string, client *sqs.Client,
-	handleFunc func(msg Msg) error,
+	handleFunc func(msg SqsResponseMsg) error,
 ) error {
 	for {
 		select {
@@ -34,7 +34,7 @@ func receiveResultsFromSqs(ctx context.Context,
 				continue
 			}
 
-			msgs := make([]Msg, len(output.Messages))
+			msgs := make([]SqsResponseMsg, len(output.Messages))
 			for i, msg := range output.Messages {
 				if msg.Body == nil {
 					return fmt.Errorf("message body is nil")
@@ -126,7 +126,7 @@ func receiveResultsFromSqs(ctx context.Context,
 					return errMsg
 				}
 
-				go func(msg Msg) {
+				go func(msg SqsResponseMsg) {
 					err = handleFunc(msg)
 					if err != nil {
 						log.Printf("failed to process tester result: %v", err)
@@ -143,4 +143,29 @@ func receiveResultsFromSqs(ctx context.Context,
 			}
 		}
 	}
+}
+
+type SqsResponseMsg struct {
+	EvalId   uuid.UUID
+	QueueUrl string // url of queue it was received from
+	Handle   string // receipt handle for acknowledgment / delete
+	Data     Event  // data specific to the message / event type
+}
+
+func mapRunData(rd *sqsgath.RuntimeData) *RunData {
+	if rd != nil {
+		return &RunData{
+			StdIn:    rd.Stdin,
+			StdOut:   rd.Stdout,
+			StdErr:   rd.Stderr,
+			CpuMs:    rd.CpuMillis,
+			WallMs:   rd.WallMillis,
+			MemKiB:   rd.MemoryKiBytes,
+			ExitCode: rd.ExitCode,
+			CtxSwV:   &rd.CtxSwV,
+			CtxSwF:   &rd.CtxSwF,
+			Signal:   rd.ExitSignal,
+		}
+	}
+	return nil
 }

@@ -6,6 +6,33 @@ import (
 	"github.com/google/uuid"
 )
 
+// user submitted solution
+type CodeWithLang struct {
+	SrcCode string // user submitted solution source code
+	LangId  string // short compiler, interpreter id
+}
+
+// input and expected output
+type TestFile struct {
+	InSha256   *string // SHA256 hash of input for caching
+	InDownlUrl *string // URL to download input
+	InContent  *string // input content as alternative to URL
+
+	AnsSha256   *string // SHA256 hash of answer for caching
+	AnsDownlUrl *string // URL to download answer
+	AnsContent  *string // answer content as alternative to URL
+}
+
+func (t *TestFile) IsValid() error {
+	if t.InContent == nil && (t.InSha256 == nil || t.InDownlUrl == nil) {
+		return ErrInvalidTestFile()
+	}
+	if t.AnsContent == nil && (t.AnsSha256 == nil || t.AnsDownlUrl == nil) {
+		return ErrInvalidTestFile()
+	}
+	return nil
+}
+
 const (
 	EvalStageWaiting   = "waiting"
 	EvalStageCompiling = "compiling"
