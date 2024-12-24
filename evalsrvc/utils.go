@@ -40,6 +40,20 @@ func getSqsClientFromEnv() *sqs.Client {
 	return sqs.NewFromConfig(cfg)
 }
 
+func getSqsClientFromEnvNoLogging() *sqs.Client {
+	cfg, err := config.LoadDefaultConfig(context.TODO(),
+		config.WithRegion("eu-central-1"),
+		config.WithRetryer(func() aws.Retryer {
+			return retry.AddWithMaxAttempts(retry.NewStandard(), 10)
+		}),
+		config.WithLogger(nil),
+	)
+	if err != nil {
+		panic(fmt.Errorf("unable to load SDK config, %v", err))
+	}
+	return sqs.NewFromConfig(cfg)
+}
+
 func getResponseSqsUrlFromEnv() string {
 	responseSQSURL := os.Getenv("RESPONSE_SQS_URL")
 	if responseSQSURL == "" {

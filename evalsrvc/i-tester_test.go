@@ -3,7 +3,8 @@ package evalsrvc
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -25,14 +26,13 @@ import (
 // only that all of them are received.
 func TestEnqueueAndReceiveResults(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 
 	submSqsUrl, responseSqsUrl, sqsClient :=
 		getSubmSqsUrlFromEnv(), getResponseSqsUrlFromEnv(),
-		getSqsClientFromEnv()
+		getSqsClientFromEnvNoLogging()
 
-	t.Logf("submSqsUrl: %s", submSqsUrl)
-	t.Logf("responseSqsUrl: %s", responseSqsUrl)
+	t.Logf("subm queue: %s", strings.Split(submSqsUrl, "/")[4])
+	t.Logf("resp queue: %s", strings.Split(responseSqsUrl, "/")[4])
 
 	tests := []TestFile{
 		{InContent: strPtr("1 2"), AnsContent: strPtr("3")},
@@ -41,8 +41,8 @@ func TestEnqueueAndReceiveResults(t *testing.T) {
 
 	lock := sync.Mutex{}
 	msgs := []SqsResponseMsg{}
-	unreachedTestIDs := []int64{1, 2}
-	unfinishedTestIDs := []int64{1, 2}
+	unreachedTestIDs := []int{1, 2}
+	unfinishedTestIDs := []int{1, 2}
 	receivedStartedEvaluation := false
 	receivedStartedCompilation := false
 	receivedFinishedCompilation := false
@@ -51,7 +51,7 @@ func TestEnqueueAndReceiveResults(t *testing.T) {
 	receivedFinishedTesting := false
 	receivedFinishedEvaluation := false
 	receivedAll := make(chan uuid.UUID, 1)
-	inSlice := func(id int64, slice []int64) bool {
+	inSlice := func(id int, slice []int) bool {
 		for _, v := range slice {
 			if v == id {
 				return true
@@ -59,7 +59,7 @@ func TestEnqueueAndReceiveResults(t *testing.T) {
 		}
 		return false
 	}
-	removeFromSlice := func(slice []int64, id int64) []int64 {
+	removeFromSlice := func(slice []int, id int) []int {
 		for i, v := range slice {
 			if v == id {
 				return append(slice[:i], slice[i+1:]...)
@@ -79,10 +79,10 @@ func TestEnqueueAndReceiveResults(t *testing.T) {
 			return fmt.Errorf("received message after all tests received: %s", msg.Data.Type())
 		}
 		if msg.EvalId != evalId {
-			log.Printf("received message for wrong eval id: %s, expected: %s", msg.EvalId, evalId)
+			t.Logf("received msg for wrong eval: %s", msg.EvalId)
 			return nil
 		}
-		t.Logf("received message: %s", msg.Data.Type())
+		t.Logf("received msg: %s", msg.Data.Type())
 		msgs = append(msgs, msg)
 		switch msg.Data.Type() {
 		case StartedEvaluationType:
@@ -101,9 +101,9 @@ func TestEnqueueAndReceiveResults(t *testing.T) {
 			unreachedTestIDs = removeFromSlice(unreachedTestIDs, reachedTest.TestId)
 		case FinishedTestType:
 			finishedTest := msg.Data.(FinishedTest)
-			in := inSlice(finishedTest.TestID, unfinishedTestIDs)
+			in := inSlice(int(finishedTest.TestID), unfinishedTestIDs)
 			require.True(t, in)
-			unfinishedTestIDs = removeFromSlice(unfinishedTestIDs, finishedTest.TestID)
+			unfinishedTestIDs = removeFromSlice(unfinishedTestIDs, int(finishedTest.TestID))
 			if len(unfinishedTestIDs) == 0 {
 				allTestsReceived = true
 			}
@@ -113,9 +113,9 @@ func TestEnqueueAndReceiveResults(t *testing.T) {
 			receivedFinishedEvaluation = true
 		case IgnoredTestType:
 			ignoredTest := msg.Data.(IgnoredTest)
-			in := inSlice(ignoredTest.TestId, unfinishedTestIDs)
+			in := inSlice(int(ignoredTest.TestId), unfinishedTestIDs)
 			require.True(t, in)
-			unfinishedTestIDs = removeFromSlice(unfinishedTestIDs, ignoredTest.TestId)
+			unfinishedTestIDs = removeFromSlice(unfinishedTestIDs, int(ignoredTest.TestId))
 			if len(unfinishedTestIDs) == 0 {
 				allTestsReceived = true
 			}
@@ -125,8 +125,8 @@ func TestEnqueueAndReceiveResults(t *testing.T) {
 			everythingExceptTests = true
 		}
 		if everythingExceptTests && allTestsReceived {
-			cancel()
 			receivedAll <- evalId
+			cancel()
 		}
 		return nil
 	}
@@ -134,8 +134,12 @@ func TestEnqueueAndReceiveResults(t *testing.T) {
 	go func() {
 		err := receiveResultsFromSqs(ctx,
 			responseSqsUrl, sqsClient,
-			handle)
-		require.NoError(t, err)
+			handle,
+			slog.Default(),
+		)
+		if err != nil && err != context.Canceled {
+			require.NoError(t, err)
+		}
 	}()
 
 	lang, err := getPrLangById("python3.11")

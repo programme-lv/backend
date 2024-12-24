@@ -3,6 +3,7 @@ package evalsrvc
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"sync"
 	"time"
 
@@ -25,10 +26,9 @@ type EvalSrvc struct {
 
 	extEvalKey string // api key for external requests
 
-	mu         sync.Mutex
-	organizers map[uuid.UUID]chan Event
-	processors map[uuid.UUID]chan Event
-	notifiers  map[uuid.UUID]chan Event
+	mu        sync.Mutex
+	handlers  map[uuid.UUID]chan Event
+	notifiers map[uuid.UUID]chan Event
 }
 
 func NewEvalSrvc() *EvalSrvc {
@@ -44,6 +44,7 @@ func NewEvalSrvc() *EvalSrvc {
 		esrvc.respQ,
 		esrvc.sqsClient,
 		esrvc.handleSqsMsg,
+		slog.Default(),
 	)
 
 	return esrvc
@@ -52,9 +53,10 @@ func NewEvalSrvc() *EvalSrvc {
 // Enqueues code for evaluation by tester, returns eval uuid:
 // 1. validates programming language;
 // 2. validates cpu, mem constraints & checker, interactor size;
-// 3. validates test files;
-// 4. initializes response stream processor with evaluation;
-// 5. enqueues evaluation request to sqs
+// 3. validates test files (max 200 tests);
+// 4. constructs initial evaluation object;
+// 5. initializes response stream processor with evaluation;
+// 6. enqueues evaluation request to sqs
 func (e *EvalSrvc) Enqueue(
 	code CodeWithLang,
 	tests []TestFile,
@@ -63,33 +65,38 @@ func (e *EvalSrvc) Enqueue(
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
+	// 1. validate programming language
 	lang, err := getPrLangById(code.LangId)
 	if err != nil {
 		return uuid.Nil, err
 	}
 
+	// 2. validate tester execution constraints, checker
 	err = params.IsValid() // validate tester parameters
 	if err != nil {
 		return uuid.Nil, err
 	}
 
-	evalUuid, err := uuid.NewV7()
-	if err != nil {
-		return uuid.Nil, err
+	// 3. validate test files
+	if len(tests) > 200 {
+		return uuid.Nil, fmt.Errorf("too many tests")
 	}
-
 	for _, test := range tests {
 		if err := test.IsValid(); err != nil {
 			return uuid.Nil, err
 		}
 	}
 
+	// 4. construct evaluation object
+	evalUuid, err := uuid.NewV7()
+	if err != nil {
+		return uuid.Nil, err
+	}
 	testRes := []TestRes{}
 	for i := range tests {
 		testRes = append(testRes, TestRes{ID: i + 1})
 	}
-
-	e.foo(Evaluation{
+	eval := Evaluation{
 		UUID:      evalUuid,
 		Stage:     EvalStageWaiting,
 		TestRes:   testRes,
@@ -99,8 +106,12 @@ func (e *EvalSrvc) Enqueue(
 		SysInfo:   nil,
 		CreatedAt: time.Now(),
 		SubmComp:  nil,
-	})
+	}
 
+	// 5. initialize organizer, processor and notifier
+	e.prepareForResults(eval)
+
+	// 6. enqueue evaluation request to sqs
 	err = enqueue(evalUuid, code.SrcCode, lang, tests, params,
 		e.sqsClient, e.submQ, e.respQ)
 	if err != nil {
@@ -110,10 +121,10 @@ func (e *EvalSrvc) Enqueue(
 	return evalUuid, nil
 }
 
-// Returns a channel to stream events to the client.
+// Returns a channel to stream events to a singular client.
 // The same channel is returned for the same eval uuid.
 // Once evaluation is finished, the channel is closed.
-func (e *EvalSrvc) Listen(evalId uuid.UUID) (<-chan Event, error) {
+func (e *EvalSrvc) Listen(evalId uuid.UUID) (chan Event, error) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
@@ -128,25 +139,26 @@ func (e *EvalSrvc) Listen(evalId uuid.UUID) (<-chan Event, error) {
 
 func (e *EvalSrvc) handleSqsMsg(msg SqsResponseMsg) error {
 	e.mu.Lock()
-	ch, ok := e.processors[msg.EvalId]
+	ch, ok := e.handlers[msg.EvalId]
 	e.mu.Unlock()
 	if !ok {
-		return nil // no listeners for this evaluation
+		errMsg := fmt.Errorf("no handler for eval %s", msg.EvalId)
+		return errMsg // returning error to indicate that the message was not processed
 	}
 	ch <- msg.Data
 	return nil
 }
 
-// initialize response stream reorderor
-func (e *EvalSrvc) foo(eval Evaluation) {
+// Initialize response stream organizer, processor and notifier.
+func (e *EvalSrvc) prepareForResults(eval Evaluation) {
 	// initialize some kind of mysthical organizer that reorders events
 	// the organizer has to know the number of tests and whether the submission has a compilation step
-	// and so does the processor
+	e.handlers[eval.UUID] = make(chan Event)
+	e.notifiers[eval.UUID] = make(chan Event, 1000)
 
-	e.mu.Lock()
-	defer e.mu.Unlock()
-
-	e.organizers[eval.UUID] = make(chan Event)
-	e.processors[eval.UUID] = make(chan Event)
-	e.notifiers[eval.UUID] = make(chan Event, 100)
+	go func() {
+		for x := range e.handlers[eval.UUID] {
+			e.notifiers[eval.UUID] <- x
+		}
+	}()
 }

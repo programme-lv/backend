@@ -3,8 +3,9 @@ package evalsrvc
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -17,6 +18,7 @@ import (
 func receiveResultsFromSqs(ctx context.Context,
 	sqsUrl string, client *sqs.Client,
 	handleFunc func(msg SqsResponseMsg) error,
+	logger *slog.Logger,
 ) error {
 	for {
 		select {
@@ -29,8 +31,10 @@ func receiveResultsFromSqs(ctx context.Context,
 				WaitTimeSeconds:     1,
 			})
 			if err != nil {
-				log.Printf("failed to receive messages, %v\n", err)
-				time.Sleep(1 * time.Second)
+				if errors.Is(err, context.Canceled) {
+					return nil
+				}
+				logger.Error("failed to receive messages", "error", err)
 				continue
 			}
 
@@ -43,7 +47,7 @@ func receiveResultsFromSqs(ctx context.Context,
 				var header sqsgath.Header
 				err = json.Unmarshal([]byte(*msg.Body), &header)
 				if err != nil {
-					log.Printf("failed to unmarshal message: %v\n", err)
+					logger.Error("failed to unmarshal message", "error", err)
 					continue
 				}
 
@@ -87,7 +91,7 @@ func receiveResultsFromSqs(ctx context.Context,
 					reachedTest := sqsgath.ReachedTest{}
 					err = json.Unmarshal([]byte(*msg.Body), &reachedTest)
 					msgs[i].Data = ReachedTest{
-						TestId: reachedTest.TestId,
+						TestId: int(reachedTest.TestId),
 						In:     reachedTest.Input,
 						Ans:    reachedTest.Answer,
 					}
@@ -95,13 +99,13 @@ func receiveResultsFromSqs(ctx context.Context,
 					ignoredTest := sqsgath.IgnoredTest{}
 					err = json.Unmarshal([]byte(*msg.Body), &ignoredTest)
 					msgs[i].Data = IgnoredTest{
-						TestId: ignoredTest.TestId,
+						TestId: int(ignoredTest.TestId),
 					}
 				case sqsgath.MsgTypeFinishedTest:
 					finishTest := sqsgath.FinishedTest{}
 					err = json.Unmarshal([]byte(*msg.Body), &finishTest)
 					msgs[i].Data = FinishedTest{
-						TestID:  finishTest.TestId,
+						TestID:  int(finishTest.TestId),
 						Subm:    mapRunData(finishTest.Submission),
 						Checker: mapRunData(finishTest.Checker),
 					}
@@ -122,21 +126,23 @@ func receiveResultsFromSqs(ctx context.Context,
 				if err != nil {
 					format := "failed to unmarshal %s message: %v"
 					errMsg := fmt.Errorf(format, header.MsgType, err)
-					log.Print(errMsg)
+					logger.Error("message unmarshal failed",
+						"msgType", header.MsgType,
+						"error", err)
 					return errMsg
 				}
 
 				go func(msg SqsResponseMsg) {
 					err = handleFunc(msg)
 					if err != nil {
-						log.Printf("failed to process tester result: %v", err)
+						logger.Error("failed to process tester result", "error", err)
 					} else { // there were no errors
 						_, err := client.DeleteMessage(context.TODO(), &sqs.DeleteMessageInput{
 							QueueUrl:      aws.String(sqsUrl),
 							ReceiptHandle: aws.String(msg.Handle),
 						})
 						if err != nil {
-							log.Printf("failed to ack message: %v", err)
+							logger.Error("failed to ack message", "error", err)
 						}
 					}
 				}(msgs[i])

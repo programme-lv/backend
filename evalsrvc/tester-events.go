@@ -62,7 +62,7 @@ func (s StartedTesting) Type() string {
 }
 
 type ReachedTest struct {
-	TestId int64   `json:"test_id"`
+	TestId int     `json:"test_id"`
 	In     *string `json:"in"`
 	Ans    *string `json:"ans"`
 }
@@ -72,7 +72,7 @@ func (s ReachedTest) Type() string {
 }
 
 type IgnoredTest struct {
-	TestId int64 `json:"test_id"`
+	TestId int `json:"test_id"`
 }
 
 func (s IgnoredTest) Type() string {
@@ -80,7 +80,7 @@ func (s IgnoredTest) Type() string {
 }
 
 type FinishedTest struct {
-	TestID  int64    `json:"test_id"`
+	TestID  int      `json:"test_id"`
 	Subm    *RunData `json:"submission"`
 	Checker *RunData `json:"checker"`
 }

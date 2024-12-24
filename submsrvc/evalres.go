@@ -132,7 +132,7 @@ func (h *evalHandler) reachedTests(x []evalsrvc.ReachedTest) {
 					table.EvaluationTests.EvalUUID.EQ(
 						postgres.UUID(h.evalUuid),
 					).AND(table.EvaluationTests.TestID.EQ(
-						postgres.Int64(test.TestId),
+						postgres.Int64(int64(test.TestId)),
 					)),
 				)
 			_, err := updateStmt.Exec(h.postgres)
@@ -146,7 +146,7 @@ func (h *evalHandler) reachedTests(x []evalsrvc.ReachedTest) {
 func (h *evalHandler) ignoredTests(x []evalsrvc.IgnoredTest) {
 	ids := make([]postgres.Expression, len(x))
 	for i, test := range x {
-		ids[i] = postgres.Int(test.TestId)
+		ids[i] = postgres.Int64(int64(test.TestId))
 	}
 	updStmt := table.EvaluationTests.
 		UPDATE(table.EvaluationTests.Ignored).
@@ -247,7 +247,7 @@ func (h *evalHandler) finishedTest(x evalsrvc.FinishedTest) {
 
 	updateStmt = updateStmt.WHERE(
 		table.EvaluationTests.EvalUUID.EQ(postgres.UUID(h.evalUuid)).
-			AND(table.EvaluationTests.TestID.EQ(postgres.Int64(x.TestID))),
+			AND(table.EvaluationTests.TestID.EQ(postgres.Int64(int64(x.TestID)))),
 	)
 
 	_, err = updateStmt.Exec(h.postgres)
@@ -282,7 +282,7 @@ func (h *evalHandler) finishedTest(x evalsrvc.FinishedTest) {
 					FROM(table.EvaluationTests).
 					WHERE(
 						table.EvaluationTests.EvalUUID.EQ(postgres.UUID(h.evalUuid)).
-							AND(table.EvaluationTests.TestID.EQ(postgres.Int64(x.TestID))),
+							AND(table.EvaluationTests.TestID.EQ(postgres.Int64(int64(x.TestID)))),
 					),
 				),
 				)).RETURNING(table.EvaluationSubtasks.AllColumns)
@@ -321,7 +321,7 @@ func (h *evalHandler) finishedTest(x evalsrvc.FinishedTest) {
 							FROM(table.EvaluationTests).
 							WHERE(
 								table.EvaluationTests.EvalUUID.EQ(postgres.UUID(h.evalUuid)).
-									AND(table.EvaluationTests.TestID.EQ(postgres.Int64(x.TestID))),
+									AND(table.EvaluationTests.TestID.EQ(postgres.Int64(int64(x.TestID)))),
 							),
 					),
 				)).RETURNING(table.EvaluationTestgroups.AllColumns)
