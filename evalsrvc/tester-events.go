@@ -42,20 +42,6 @@ func (s FinishedCompiling) Type() string {
 	return FinishedCompilationType
 }
 
-// Runtime Data
-type RunData struct {
-	StdIn    string `json:"in"`
-	StdOut   string `json:"out"`
-	StdErr   string `json:"err"`
-	CpuMs    int64  `json:"cpu_ms"`
-	WallMs   int64  `json:"wall_ms"`
-	MemKiB   int64  `json:"mem_kib"`
-	ExitCode int64  `json:"exit"`
-	CtxSwV   *int64 `json:"ctx_sw_v"`
-	CtxSwF   *int64 `json:"ctx_sw_f"`
-	Signal   *int64 `json:"signal"`
-}
-
 type StartedTesting struct{}
 
 func (s StartedTesting) Type() string {

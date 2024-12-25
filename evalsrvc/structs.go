@@ -34,12 +34,12 @@ func (t *TestFile) IsValid() error {
 }
 
 const (
-	EvalStageWaiting   = "waiting"
-	EvalStageCompiling = "compiling"
-	EvalStageTesting   = "testing"
-	EvalStageFinished  = "finished"
-	EvalStageCompileE  = "compile_e"
-	EvalStageInternalE = "internal_e"
+	StageWaiting       = "waiting"
+	StageCompiling     = "compiling"
+	StageTesting       = "testing"
+	StageFinished      = "finished"
+	StageCompileError  = "compile_error"
+	StageInternalError = "internal_error"
 )
 
 type Evaluation struct {
@@ -51,8 +51,8 @@ type Evaluation struct {
 	ErrorMsg  *string
 	SysInfo   *string // testing hardware info
 	CreatedAt time.Time
-	SubmComp  *RuntimeData // submitted code compilation runtime data
-	// ChecComp   *RuntimeData // testlib checker compilation runtime data
+	SubmComp  *RunData // submitted code compilation runtime data
+	// ChecComp   *RunData // testlib checker compilation runtime data
 }
 
 // Tester machine submitted solution runtime constraints
@@ -102,35 +102,36 @@ type PrLang struct {
 
 type TestRes struct {
 	ID       int
-	Input    *Text // test input
-	Answer   *Text // test answer
+	Input    *string // test input
+	Answer   *string // test answer
 	Reached  bool
 	Ignored  bool // when score group has another failed test
 	Finished bool
 
-	CheckerReport *RuntimeData // testlib checker
-	ProgramReport *RuntimeData // user submitted solution
+	CheckerReport *RunData // testlib checker
+	ProgramReport *RunData // user submitted solution
 }
 
-type RuntimeData struct {
-	StdIn  *Text
-	StdOut *Text
-	StdErr *Text
-
-	ExitCode    int64
-	CpuTimeMs   int64   // cpu user-mode time in milliseconds
-	WallTimeMs  int64   // wall clock time in milliseconds
-	MemoryKiB   int64   // memory usage in kibibytes
-	CtxSwForced *int64  // context switches forced by kernel
-	ExitSignal  *int64  // exit signal if any
-	IsolStatus  *string // isolate execution environment status
+// Runtime Data
+type RunData struct {
+	StdIn    string `json:"in"`
+	StdOut   string `json:"out"`
+	StdErr   string `json:"err"`
+	CpuMs    int64  `json:"cpu_ms"`   // cpu user-mode time in milliseconds
+	WallMs   int64  `json:"wall_ms"`  // wall clock time in milliseconds
+	MemKiB   int64  `json:"mem_kib"`  // memory usage in kibibytes
+	ExitCode int64  `json:"exit"`     // exit code
+	CtxSwV   int64  `json:"ctx_sw_v"` // context switches forced by kernel
+	CtxSwF   int64  `json:"ctx_sw_f"` // context switches forced by kernel
+	Signal   *int64 `json:"signal"`   // exit signal if any
+	// IsolStatus *string `json:"isol_status"` // isolate execution environment status
 }
 
-type Text struct {
-	PvRect  string // preview rectangle cutout
-	RectH   int    // rectangle max height
-	RectW   int    // rectangle max width
-	FullUrl string // full text access URL, likely stored in S3
-	FullSz  int64  // full text size in bytes
-	Sha256  string // SHA256 hash of full text
-}
+// type Text struct {
+// 	PvRect  string // preview rectangle cutout
+// 	RectH   int    // rectangle max height
+// 	RectW   int    // rectangle max width
+// 	FullUrl string // full text access URL, likely stored in S3
+// 	FullSz  int64  // full text size in bytes
+// 	Sha256  string // SHA256 hash of full text
+// }

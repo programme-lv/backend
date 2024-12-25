@@ -122,8 +122,8 @@ func getExRunDataEv() *RunData {
 		WallMs:   2 + int64(rand.IntN(100)),
 		MemKiB:   3 + int64(rand.IntN(100)),
 		ExitCode: 4 + int64(rand.IntN(100)),
-		CtxSwV:   nil,
-		CtxSwF:   nil,
+		CtxSwV:   rand.Int64(),
+		CtxSwF:   rand.Int64(),
 		Signal:   nil,
 	}
 }

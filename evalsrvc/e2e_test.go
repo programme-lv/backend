@@ -140,7 +140,7 @@ func TestEvalServiceCmpGet(t *testing.T) {
 	defer cancel()
 	eval, err := srvc.Get(ctx, evalId)
 	require.NoError(t, err)
-	require.Equal(t, eval.Stage, evalsrvc.EvalStageFinished)
+	require.Equal(t, evalsrvc.StageFinished, eval.Stage)
 }
 
 func strPtr(s string) *string {

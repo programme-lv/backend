@@ -30,6 +30,7 @@ type EvalSrvc struct {
 	mu        sync.Mutex
 	handlers  map[uuid.UUID]chan Event
 	notifiers map[uuid.UUID]chan Event
+	evalWg    sync.Map // maps uuid.UUID to *sync.WaitGroup
 }
 
 func NewEvalSrvc() *EvalSrvc {
@@ -99,20 +100,17 @@ func (e *EvalSrvc) Enqueue(
 	for i := range tests {
 		testRes = append(testRes, TestRes{ID: i + 1})
 	}
-	eval := Evaluation{
-		UUID:      evalUuid,
-		Stage:     EvalStageWaiting,
-		TestRes:   testRes,
-		PrLang:    lang,
-		Params:    params,
-		ErrorMsg:  nil,
-		SysInfo:   nil,
-		CreatedAt: time.Now(),
-		SubmComp:  nil,
-	}
+
+	// Add WaitGroup before preparing results
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+	e.evalWg.Store(evalUuid, wg)
 
 	// 5. initialize organizer, processor and notifier
-	e.prepareForResults(eval)
+	err = e.prepareForResults(evalUuid, lang, params, len(tests))
+	if err != nil {
+		return uuid.Nil, err
+	}
 
 	// 6. enqueue evaluation request to sqs
 	err = enqueue(evalUuid, code.SrcCode, lang, tests, params,
@@ -141,9 +139,28 @@ func (e *EvalSrvc) Listen(evalId uuid.UUID) (chan Event, error) {
 }
 
 func (e *EvalSrvc) Get(ctx context.Context, evalId uuid.UUID) (Evaluation, error) {
-	// wait for the evaluation to finish and be uploaded to s3
-	// TODO: wait for the evaluation is done processing and uploaded to s3
-	return e.evalRepo.Get(ctx, evalId)
+	// Get the WaitGroup for this evaluation
+	wgVal, exists := e.evalWg.Load(evalId)
+	if !exists {
+		return Evaluation{}, fmt.Errorf("no evaluation found for id %s", evalId)
+	}
+
+	wg := wgVal.(*sync.WaitGroup)
+
+	// Wait for completion with context cancellation support
+	done := make(chan struct{})
+	go func() {
+		wg.Wait()
+		close(done)
+	}()
+
+	select {
+	case <-done:
+		e.evalWg.Delete(evalId) // Clean up the WaitGroup
+		return e.evalRepo.Get(evalId)
+	case <-ctx.Done():
+		return Evaluation{}, ctx.Err()
+	}
 }
 
 func (e *EvalSrvc) handleSqsMsg(msg SqsResponseMsg) error {
@@ -159,42 +176,100 @@ func (e *EvalSrvc) handleSqsMsg(msg SqsResponseMsg) error {
 }
 
 // Initialize response stream organizer, processor and notifier.
-func (e *EvalSrvc) prepareForResults(eval Evaluation) {
+func (e *EvalSrvc) prepareForResults(evalId uuid.UUID, lang PrLang, params TesterParams, numTests int) error {
 	// initialize some kind of mysthical organizer that reorders events
 	// the organizer has to know the number of tests and whether the submission has a compilation step
-	e.handlers[eval.UUID] = make(chan Event)
-	e.notifiers[eval.UUID] = make(chan Event, 1000)
+	e.handlers[evalId] = make(chan Event)
+	e.notifiers[evalId] = make(chan Event, 1000)
 
-	hasCompilation := eval.PrLang.CompCmd != nil
-	numTests := len(eval.TestRes)
-	organizer, err := NewEvalResOrganizer(hasCompilation, numTests)
+	organizer, err := NewEvalResOrganizer(lang.CompCmd != nil, numTests)
 	if err != nil {
-		log.Printf("failed to create organizer: %v", err)
-		return
+		return fmt.Errorf("failed to create organizer: %v", err)
 	}
 
-	go func() {
-		for ev := range e.handlers[eval.UUID] {
-			events, err := organizer.Add(ev)
+	go e.handleResults(evalId, lang, params, organizer)
+	return nil
+}
+
+func (e *EvalSrvc) handleResults(evalId uuid.UUID, lang PrLang, params TesterParams, org *EvalResOrganizer) {
+	eval := Evaluation{
+		UUID:      evalId,
+		Stage:     StageWaiting,
+		TestRes:   []TestRes{},
+		PrLang:    lang,
+		Params:    params,
+		ErrorMsg:  nil,
+		SysInfo:   nil,
+		CreatedAt: time.Now(),
+		SubmComp:  nil,
+	}
+	for ev := range e.handlers[evalId] {
+		events, err := org.Add(ev)
+		if err != nil {
+			log.Printf("failed to process event: %v", err)
+			return
+		}
+		for _, event := range events {
+			err := applyEventToEval(&eval, event)
 			if err != nil {
-				log.Printf("failed to process event: %v", err)
+				log.Printf("failed to apply event: %v", err)
 				return
 			}
-			for _, event := range events {
-				e.notifiers[eval.UUID] <- event
-			}
-			if organizer.Finished() {
-				break
-			}
+			e.notifiers[evalId] <- event
 		}
-		close(e.handlers[eval.UUID])
-		close(e.notifiers[eval.UUID])
-		delete(e.handlers, eval.UUID)
-		delete(e.notifiers, eval.UUID)
-		err := e.evalRepo.Save(eval)
-		if err != nil {
-			log.Printf("failed to save evaluation: %v", err)
+		if org.Finished() {
+			break
 		}
-		// TODO: somehow awake the Get() method now
-	}()
+	}
+	close(e.handlers[evalId])
+	close(e.notifiers[evalId])
+	delete(e.handlers, evalId)
+	delete(e.notifiers, evalId)
+	err := e.evalRepo.Save(eval)
+	if err != nil {
+		log.Printf("failed to save evaluation: %v", err)
+		return
+	}
+	if wgVal, exists := e.evalWg.Load(evalId); exists {
+		wg := wgVal.(*sync.WaitGroup)
+		wg.Done()
+	}
+}
+
+func applyEventToEval(eval *Evaluation, event Event) error {
+	switch event.Type() {
+	case ReceivedSubmissionType:
+		rcvSubm, ok := event.(ReceivedSubmission)
+		if !ok {
+			return fmt.Errorf("event is not a ReceivedSubmission")
+		}
+		eval.SysInfo = &rcvSubm.SysInfo
+	case StartedCompilationType:
+		eval.Stage = StageCompiling
+	case FinishedCompilationType:
+		finComp, ok := event.(FinishedCompiling)
+		if !ok {
+			return fmt.Errorf("event is not a FinishedCompiling")
+		}
+		eval.SubmComp = finComp.RuntimeData
+	case StartedTestingType:
+		eval.Stage = StageTesting
+	case FinishedTestingType:
+		eval.Stage = StageFinished
+	case InternalServerErrorType:
+		eval.Stage = StageInternalError
+		ise, ok := event.(InternalServerError)
+		if !ok {
+			return fmt.Errorf("event is not an InternalServerError")
+		}
+		eval.ErrorMsg = ise.ErrorMsg
+	case CompilationErrorType:
+		eval.Stage = StageCompileError
+		ce, ok := event.(CompilationError)
+		if !ok {
+			return fmt.Errorf("event is not a CompilationError")
+		}
+		eval.ErrorMsg = ce.ErrorMsg
+	}
+	return nil
 }
