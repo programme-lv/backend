@@ -116,10 +116,16 @@ func receiveResultsFromSqs(ctx context.Context,
 				case sqsgath.MsgTypeFinishedEvaluation:
 					finishEval := sqsgath.FinishedEvaluation{}
 					err = json.Unmarshal([]byte(*msg.Body), &finishEval)
-					msgs[i].Data = FinishedEvaluation{
-						CompileError:  finishEval.CompileError,
-						InternalError: finishEval.InternalError,
-						ErrorMsg:      finishEval.ErrorMessage,
+					if finishEval.CompileError {
+						msgs[i].Data = CompilationError{
+							ErrorMsg: finishEval.ErrorMessage,
+						}
+					} else if finishEval.InternalError {
+						msgs[i].Data = InternalServerError{
+							ErrorMsg: finishEval.ErrorMessage,
+						}
+					} else {
+						continue
 					}
 				}
 

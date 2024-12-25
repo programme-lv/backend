@@ -14,8 +14,26 @@ type EvalResOrganizer struct {
 	received map[string]bool    // whether KEY was already rcv
 	events   map[string][]Event // mapping from TYPE to events
 	returned map[string]bool    // KEY returned from Add method
+	finTests int                // finished or ignored tests
 
 	mu sync.Mutex
+}
+
+func NewEvalResOrganizer(hasCompilation bool, numTests int) (*EvalResOrganizer, error) {
+	if numTests < 0 {
+		return nil, fmt.Errorf("numTests must be non-negative")
+	}
+	if numTests > 1000 {
+		return nil, fmt.Errorf("numTests must be less than 1000")
+	}
+	return &EvalResOrganizer{
+		HasCompilation: hasCompilation,
+		NumTests:       numTests,
+		received:       make(map[string]bool),
+		events:         make(map[string][]Event),
+		returned:       make(map[string]bool),
+		finTests:       0,
+	}, nil
 }
 
 /*
@@ -41,7 +59,7 @@ func (o *EvalResOrganizer) Add(event Event) ([]Event, error) {
 	}
 	o.received[key] = true
 
-	o.events[key] = append(o.events[key], event)
+	o.events[event.Type()] = append(o.events[event.Type()], event)
 
 	switch event.Type() {
 	case StartedEvaluationType:
@@ -50,6 +68,30 @@ func (o *EvalResOrganizer) Add(event Event) ([]Event, error) {
 		return o.startCompile()
 	case FinishedCompilationType:
 		return o.finishCompile()
+	case StartedTestingType:
+		return o.startTesting()
+	case ReachedTestType:
+		reachedTest, ok := event.(ReachedTest)
+		if !ok {
+			return []Event{}, fmt.Errorf("event is not a ReachedTest")
+		}
+		return o.reachTest(reachedTest.TestId)
+	case IgnoredTestType:
+		ignoredTest, ok := event.(IgnoredTest)
+		if !ok {
+			return []Event{}, fmt.Errorf("event is not an IgnoredTest")
+		}
+		return o.ignoreTest(ignoredTest.TestId)
+	case FinishedTestType:
+		finishedTest, ok := event.(FinishedTest)
+		if !ok {
+			return []Event{}, fmt.Errorf("event is not a FinishedTest")
+		}
+		return o.finishTest(finishedTest.TestID)
+	case FinishedTestingType:
+		return o.finishTesting()
+	case CompilationErrorType:
+		return o.compileError()
 	}
 
 	return []Event{},
@@ -133,6 +175,11 @@ func (o *EvalResOrganizer) finishCompile() ([]Event, error) {
 		return []Event{}, fmt.Errorf("unexpected compile")
 	}
 
+	// if compilation has not been reached yet, return nothing
+	if !o.received[FinishedCompilationType] {
+		return []Event{}, nil
+	}
+
 	// break if compilation has already been returned
 	if o.returned[FinishedCompilationType] {
 		return []Event{}, nil
@@ -152,7 +199,13 @@ func (o *EvalResOrganizer) finishCompile() ([]Event, error) {
 	// return this value and check whether next is available
 	o.returned[FinishedCompilationType] = true
 	res := []Event{e}
-	nxt, err := o.startTesting()
+	var nxt []Event
+	nxt, err = o.compileError()
+	res = append(res, nxt...)
+	if err != nil {
+		return res, err
+	}
+	nxt, err = o.startTesting()
 	res = append(res, nxt...)
 	if err != nil {
 		return res, err
@@ -179,11 +232,11 @@ func (o *EvalResOrganizer) startTesting() ([]Event, error) {
 
 	// check whether the dependencies are satisfied
 	if o.HasCompilation {
-		if !o.received[FinishedCompilationType] {
+		if !o.returned[FinishedCompilationType] {
 			return []Event{}, nil
 		}
 	} else {
-		if !o.received[StartedEvaluationType] {
+		if !o.returned[StartedEvaluationType] {
 			return []Event{}, nil
 		}
 	}
@@ -232,19 +285,16 @@ func (o *EvalResOrganizer) reachTest(id int) ([]Event, error) {
 		if !o.returned[reachedKey] {
 			return []Event{}, nil
 		}
+		finishedKey := fmt.Sprintf("%s-%d", FinishedTestType, id-1)
+		if !o.returned[finishedKey] {
+			return []Event{}, nil
+		}
 	}
 
 	// return this value and check whether next is available
 	o.returned[key] = true
 	res := []Event{e}
 	var nxt []Event
-	if id < o.NumTests {
-		nxt, err = o.reachTest(id + 1)
-		res = append(res, nxt...)
-		if err != nil {
-			return res, err
-		}
-	}
 	nxt, err = o.finishTest(id)
 	res = append(res, nxt...)
 	if err != nil {
@@ -284,6 +334,7 @@ func (o *EvalResOrganizer) ignoreTest(id int) ([]Event, error) {
 
 	// return this value and check whether next is available
 	o.returned[key] = true
+	o.finTests++
 	res := []Event{e}
 	var nxt []Event
 	if id < o.NumTests {
@@ -307,6 +358,9 @@ func (o *EvalResOrganizer) ignoreTest(id int) ([]Event, error) {
 }
 
 func (o *EvalResOrganizer) finishTest(id int) ([]Event, error) {
+	if id < 1 || id > o.NumTests {
+		return []Event{}, fmt.Errorf("invalid test id: %d", id)
+	}
 	key := fmt.Sprintf("%s-%d", FinishedTestType, id)
 
 	// if the event has not been received yet, return nothing
@@ -325,10 +379,24 @@ func (o *EvalResOrganizer) finishTest(id int) ([]Event, error) {
 		return []Event{}, nil
 	}
 
+	e, err := o.getFinishedTestEvent(id)
+	if err != nil {
+		return []Event{}, err
+	}
+
 	// return this value and check whether next is available
 	o.returned[key] = true
-	res := []Event{}
-	nxt, err := o.finishTesting()
+	o.finTests++
+	res := []Event{e}
+	var nxt []Event
+	if id < o.NumTests {
+		nxt, err = o.reachTest(id + 1)
+		res = append(res, nxt...)
+		if err != nil {
+			return res, err
+		}
+	}
+	nxt, err = o.finishTesting()
 	res = append(res, nxt...)
 	if err != nil {
 		return res, err
@@ -337,16 +405,75 @@ func (o *EvalResOrganizer) finishTest(id int) ([]Event, error) {
 }
 
 func (o *EvalResOrganizer) finishTesting() ([]Event, error) {
-	return []Event{}, nil
+	key := FinishedTestingType
+
+	// if the event has not been received yet, return nothing
+	if !o.received[key] {
+		return []Event{}, nil
+	}
+
+	// if the event has already been returned, return nothing
+	if o.returned[key] {
+		return []Event{}, nil
+	}
+
+	// if not all tests have been finished, return nothing
+	if o.finTests < o.NumTests {
+		return []Event{}, nil
+	}
+
+	e, err := o.getSingleEvent(key)
+	if err != nil {
+		return []Event{}, err
+	}
+
+	// return this value and check whether next is available
+	o.returned[key] = true
+	res := []Event{e}
+	return res, nil
+}
+
+func (o *EvalResOrganizer) compileError() ([]Event, error) {
+	key := CompilationErrorType
+
+	// if the event has not been received yet, return nothing
+	if !o.received[key] {
+		return []Event{}, nil
+	}
+
+	// if the event has already been returned, return nothing
+	if o.returned[key] {
+		return []Event{}, nil
+	}
+
+	// check whether the dependencies are satisfied
+	if !o.returned[FinishedCompilationType] {
+		return []Event{}, nil
+	}
+
+	// get the compilation error event
+	e, err := o.getSingleEvent(key)
+	if err != nil {
+		return []Event{}, err
+	}
+
+	// return this value and check whether next is available
+	o.returned[key] = true
+	res := []Event{e}
+	return res, nil
 }
 
 func (o *EvalResOrganizer) getReachedTestEvent(id int) (Event, error) {
 	events, ok := o.events[ReachedTestType]
 	if !ok {
-		return nil, fmt.Errorf("no events for key: %s", ReachedTestType)
+		return nil, fmt.Errorf("no events for key: %s, id: %d", ReachedTestType, id)
 	}
 	for _, event := range events {
-		if event.(ReachedTest).TestId == id {
+		reachedTest, ok := event.(ReachedTest)
+		if !ok {
+			return nil, fmt.Errorf("event is not a ReachedTest")
+		}
+		if reachedTest.TestId == id {
 			return event, nil
 		}
 	}
@@ -359,20 +486,41 @@ func (o *EvalResOrganizer) getIgnoredTestEvent(id int) (Event, error) {
 		return nil, fmt.Errorf("no events for key: %s", IgnoredTestType)
 	}
 	for _, event := range events {
-		if event.(IgnoredTest).TestId == id {
+		ignoredTest, ok := event.(IgnoredTest)
+		if !ok {
+			return nil, fmt.Errorf("event is not an IgnoredTest")
+		}
+		if ignoredTest.TestId == id {
 			return event, nil
 		}
 	}
 	return nil, fmt.Errorf("no event for id: %d", id)
 }
 
-func (o *EvalResOrganizer) getSingleEvent(key string) (Event, error) {
-	events, ok := o.events[key]
+func (o *EvalResOrganizer) getFinishedTestEvent(id int) (Event, error) {
+	events, ok := o.events[FinishedTestType]
 	if !ok {
-		return nil, fmt.Errorf("no events for key: %s", key)
+		return nil, fmt.Errorf("no events for key: %s", FinishedTestType)
+	}
+	for _, event := range events {
+		finishedTest, ok := event.(FinishedTest)
+		if !ok {
+			return nil, fmt.Errorf("event is not a FinishedTest")
+		}
+		if finishedTest.TestID == id {
+			return event, nil
+		}
+	}
+	return nil, fmt.Errorf("no event for id: %d", id)
+}
+
+func (o *EvalResOrganizer) getSingleEvent(eventType string) (Event, error) {
+	events, ok := o.events[eventType]
+	if !ok {
+		return nil, fmt.Errorf("no events for key: %s", eventType)
 	}
 	if len(events) > 1 {
-		return nil, fmt.Errorf("multiple events for key: %s", key)
+		return nil, fmt.Errorf("multiple events for key: %s", eventType)
 	}
 	return events[0], nil
 }
@@ -380,14 +528,24 @@ func (o *EvalResOrganizer) getSingleEvent(key string) (Event, error) {
 func eventKey(event Event) string {
 	switch event.Type() {
 	case ReachedTestType:
-		reachedTest := event.(ReachedTest)
+		reachedTest, ok := event.(ReachedTest)
+		if !ok {
+			return ""
+		}
 		return fmt.Sprintf("%s-%d", ReachedTestType, reachedTest.TestId)
 	case IgnoredTestType:
-		ignoredTest := event.(IgnoredTest)
+		ignoredTest, ok := event.(IgnoredTest)
+		if !ok {
+			return ""
+		}
 		return fmt.Sprintf("%s-%d", IgnoredTestType, ignoredTest.TestId)
 	case FinishedTestType:
-		finishedTest := event.(FinishedTest)
+		finishedTest, ok := event.(FinishedTest)
+		if !ok {
+			return ""
+		}
 		return fmt.Sprintf("%s-%d", FinishedTestType, finishedTest.TestID)
+	default:
+		return event.Type()
 	}
-	return event.Type()
 }

@@ -49,7 +49,6 @@ func TestEnqueueAndReceiveResults(t *testing.T) {
 	receivedStartedTesting := false
 	receivedReachedTest := false
 	receivedFinishedTesting := false
-	receivedFinishedEvaluation := false
 	receivedAll := make(chan uuid.UUID, 1)
 	inSlice := func(id int, slice []int) bool {
 		for _, v := range slice {
@@ -109,8 +108,6 @@ func TestEnqueueAndReceiveResults(t *testing.T) {
 			}
 		case FinishedTestingType:
 			receivedFinishedTesting = true
-		case FinishedEvaluationType:
-			receivedFinishedEvaluation = true
 		case IgnoredTestType:
 			ignoredTest := msg.Data.(IgnoredTest)
 			in := inSlice(int(ignoredTest.TestId), unfinishedTestIDs)
@@ -121,7 +118,7 @@ func TestEnqueueAndReceiveResults(t *testing.T) {
 			}
 		}
 		if receivedStartedEvaluation &&
-			receivedStartedTesting && receivedFinishedTesting && receivedFinishedEvaluation {
+			receivedStartedTesting && receivedFinishedTesting {
 			everythingExceptTests = true
 		}
 		if everythingExceptTests && allTestsReceived {
@@ -175,7 +172,6 @@ func TestEnqueueAndReceiveResults(t *testing.T) {
 	require.True(t, receivedStartedTesting)
 	require.True(t, receivedReachedTest)
 	require.True(t, receivedFinishedTesting)
-	require.True(t, receivedFinishedEvaluation)
 	require.Empty(t, unreachedTestIDs)
 	require.Empty(t, unfinishedTestIDs)
 }

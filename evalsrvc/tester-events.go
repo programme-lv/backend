@@ -10,12 +10,13 @@ const (
 	StartedEvaluationType   = "started_evaluation"
 	StartedCompilationType  = "started_compilation"
 	FinishedCompilationType = "finished_compilation"
+	CompilationErrorType    = "compilation_error"
 	StartedTestingType      = "started_testing"
 	ReachedTestType         = "reached_test"
-	FinishedTestType        = "finished_test"
 	IgnoredTestType         = "ignored_test"
+	FinishedTestType        = "finished_test"
 	FinishedTestingType     = "finished_testing"
-	FinishedEvaluationType  = "finished_evaluation"
+	InternalServerErrorType = "internal_server_error"
 )
 
 type StartedEvaluation struct {
@@ -95,12 +96,18 @@ func (s FinishedTesting) Type() string {
 	return FinishedTestingType
 }
 
-type FinishedEvaluation struct {
-	CompileError  bool    `json:"compile_error"`
-	InternalError bool    `json:"internal_error"`
-	ErrorMsg      *string `json:"error_msg"`
+type CompilationError struct {
+	ErrorMsg *string `json:"error_msg"`
 }
 
-func (s FinishedEvaluation) Type() string {
-	return FinishedEvaluationType
+func (s CompilationError) Type() string {
+	return CompilationErrorType
+}
+
+type InternalServerError struct {
+	ErrorMsg *string `json:"error_msg"`
+}
+
+func (s InternalServerError) Type() string {
+	return InternalServerErrorType
 }
