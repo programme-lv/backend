@@ -37,8 +37,9 @@ const (
 	EvalStageWaiting   = "waiting"
 	EvalStageCompiling = "compiling"
 	EvalStageTesting   = "testing"
-	EvalStageDone      = "done"
-	EvalStageFailed    = "failed"
+	EvalStageFinished  = "finished"
+	EvalStageCompileE  = "compile_e"
+	EvalStageInternalE = "internal_e"
 )
 
 type Evaluation struct {

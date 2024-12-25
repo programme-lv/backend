@@ -140,6 +140,12 @@ func (e *EvalSrvc) Listen(evalId uuid.UUID) (chan Event, error) {
 	return ch, nil
 }
 
+func (e *EvalSrvc) Get(ctx context.Context, evalId uuid.UUID) (Evaluation, error) {
+	// wait for the evaluation to finish and be uploaded to s3
+	// TODO: wait for the evaluation is done processing and uploaded to s3
+	return e.evalRepo.Get(ctx, evalId)
+}
+
 func (e *EvalSrvc) handleSqsMsg(msg SqsResponseMsg) error {
 	e.mu.Lock()
 	ch, ok := e.handlers[msg.EvalId]
@@ -178,11 +184,17 @@ func (e *EvalSrvc) prepareForResults(eval Evaluation) {
 				e.notifiers[eval.UUID] <- event
 			}
 			if organizer.Finished() {
-				close(e.handlers[eval.UUID])
-				close(e.notifiers[eval.UUID])
-				delete(e.handlers, eval.UUID)
-				delete(e.notifiers, eval.UUID)
+				break
 			}
 		}
+		close(e.handlers[eval.UUID])
+		close(e.notifiers[eval.UUID])
+		delete(e.handlers, eval.UUID)
+		delete(e.notifiers, eval.UUID)
+		err := e.evalRepo.Save(eval)
+		if err != nil {
+			log.Printf("failed to save evaluation: %v", err)
+		}
+		// TODO: somehow awake the Get() method now
 	}()
 }

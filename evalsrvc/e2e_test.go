@@ -1,6 +1,7 @@
 package evalsrvc_test
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -73,8 +74,8 @@ func TestEvalServiceCmpListenWithCompile(t *testing.T) {
 	// 1. enqueue a submission
 	srvc := evalsrvc.NewEvalSrvc()
 	evalId, err := srvc.Enqueue(evalsrvc.CodeWithLang{
-		SrcCode: "a=int(input());b=int(input());print(a+b)",
-		LangId:  "python3.11",
+		SrcCode: "#include <iostream>\nint main() {int a,b;std::cin>>a>>b;std::cout<<a+b<<std::endl;}",
+		LangId:  "cpp17",
 	}, []evalsrvc.TestFile{
 		{InContent: strPtr("1 2"), AnsContent: strPtr("3")},
 		{InContent: strPtr("3 4"), AnsContent: strPtr("6")},
@@ -104,7 +105,7 @@ func TestEvalServiceCmpListenWithCompile(t *testing.T) {
 		}
 	}
 hello:
-	require.Len(t, events, 7)
+	require.Len(t, events, 9)
 	expectedEvents := []string{
 		evalsrvc.ReceivedSubmissionType,
 		evalsrvc.StartedCompilationType,
@@ -112,11 +113,34 @@ hello:
 		evalsrvc.StartedTestingType,
 		evalsrvc.ReachedTestType,
 		evalsrvc.FinishedTestType,
+		evalsrvc.ReachedTestType,
+		evalsrvc.FinishedTestType,
 		evalsrvc.FinishedTestingType,
 	}
 	for i, ev := range events {
 		require.Equal(t, expectedEvents[i], ev.Type())
 	}
+}
+
+func TestEvalServiceCmpGet(t *testing.T) {
+	srvc := evalsrvc.NewEvalSrvc()
+	evalId, err := srvc.Enqueue(evalsrvc.CodeWithLang{
+		SrcCode: "a=int(input());b=int(input());print(a+b)",
+		LangId:  "python3.11",
+	}, []evalsrvc.TestFile{
+		{InContent: strPtr("1 2"), AnsContent: strPtr("3")},
+		{InContent: strPtr("3 4"), AnsContent: strPtr("6")},
+	}, evalsrvc.TesterParams{
+		CpuMs:  1000,
+		MemKiB: 1024,
+	})
+	require.NoError(t, err)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
+	eval, err := srvc.Get(ctx, evalId)
+	require.NoError(t, err)
+	require.Equal(t, eval.Stage, evalsrvc.EvalStageFinished)
 }
 
 func strPtr(s string) *string {
