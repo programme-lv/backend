@@ -39,6 +39,8 @@ func NewEvalSrvc() *EvalSrvc {
 		evalRepo:   NewInMemEvalRepo(),
 		respQ:      getResponseSqsUrlFromEnv(),
 		extEvalKey: getExtEvalKeyFromEnv(),
+		handlers:   make(map[uuid.UUID]chan Event),
+		notifiers:  make(map[uuid.UUID]chan Event),
 	}
 
 	go receiveResultsFromSqs(context.Background(),

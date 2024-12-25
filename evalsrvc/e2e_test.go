@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestEvalServiceCmpListen tests the end-to-end evaluation flow:
+// TestEvalServiceCmpListenNoCompile tests the end-to-end evaluation flow:
 // 1. Enqueues a Python submission that reads two numbers and prints their sum;
 // 2. Listens for evaluation events via the Listen() channel;
 // 3. Verifies all expected events are received in order:
@@ -19,7 +19,7 @@ import (
 //   - Finished test
 //   - Finished testing
 //   - Finished evaluation
-func TestEvalServiceCmpListen(t *testing.T) {
+func TestEvalServiceCmpListenNoCompile(t *testing.T) {
 	// 1. enqueue a submission
 	// 2. start listening to eval uuid
 	// 3. receive all evaluation events
@@ -59,34 +59,64 @@ func TestEvalServiceCmpListen(t *testing.T) {
 		}
 	}
 hello:
-	// 4. compare to expected events:
-	// 4.1. Started evaluation
-	// 4.2. Started testing
-	// 4.3. For each test:
-	// 4.3.1. Reached test
-	// 4.3.2. Finished test
-	// 4.4. Finished testing
-	// 4.5. Finished evaluation
-	require.Len(t, events, 8)
-	t.Logf("events: %+v", events)
+	require.Len(t, events, 7)
+	require.Equal(t, events[0].Type(), evalsrvc.ReceivedSubmissionType)
+	require.Equal(t, events[1].Type(), evalsrvc.StartedTestingType)
+	require.Equal(t, events[2].Type(), evalsrvc.ReachedTestType)
+	require.Equal(t, events[3].Type(), evalsrvc.FinishedTestType)
+	require.Equal(t, events[4].Type(), evalsrvc.ReachedTestType)
+	require.Equal(t, events[5].Type(), evalsrvc.FinishedTestType)
+	require.Equal(t, events[6].Type(), evalsrvc.FinishedTestingType)
+}
 
-	// Uncomment to verify events:
-	/*
-		expectedEvents := []evalsrvc.Event{
-			evalsrvc.StartedEvaluation{},
-			evalsrvc.StartedTesting{},
-			evalsrvc.ReachedTest{},
-			evalsrvc.FinishedTest{},
-			evalsrvc.ReachedTest{},
-			evalsrvc.FinishedTest{},
-			evalsrvc.FinishedTesting{},
-			evalsrvc.FinishedEvaluation{},
+func TestEvalServiceCmpListenWithCompile(t *testing.T) {
+	// 1. enqueue a submission
+	srvc := evalsrvc.NewEvalSrvc()
+	evalId, err := srvc.Enqueue(evalsrvc.CodeWithLang{
+		SrcCode: "a=int(input());b=int(input());print(a+b)",
+		LangId:  "python3.11",
+	}, []evalsrvc.TestFile{
+		{InContent: strPtr("1 2"), AnsContent: strPtr("3")},
+		{InContent: strPtr("3 4"), AnsContent: strPtr("6")},
+	}, evalsrvc.TesterParams{
+		CpuMs:  1000,
+		MemKiB: 1024,
+	})
+	require.NoError(t, err)
+
+	// 2. start listening to eval uuid
+	ch, err := srvc.Listen(evalId)
+	require.NoError(t, err)
+
+	timeout := time.After(10 * time.Second)
+	var events []evalsrvc.Event
+
+	// 3. collect events until channel closes or timeout
+	for {
+		select {
+		case <-timeout:
+			t.Fatal("timeout waiting for evaluation events")
+		case ev, ok := <-ch:
+			if !ok {
+				goto hello
+			}
+			events = append(events, ev)
 		}
-		require.Equal(t, len(expectedEvents), len(events))
-		for i := range events {
-			require.Equal(t, expectedEvents[i].Type(), events[i].Type())
-		}
-	*/
+	}
+hello:
+	require.Len(t, events, 7)
+	expectedEvents := []string{
+		evalsrvc.ReceivedSubmissionType,
+		evalsrvc.StartedCompilationType,
+		evalsrvc.FinishedCompilationType,
+		evalsrvc.StartedTestingType,
+		evalsrvc.ReachedTestType,
+		evalsrvc.FinishedTestType,
+		evalsrvc.FinishedTestingType,
+	}
+	for i, ev := range events {
+		require.Equal(t, expectedEvents[i], ev.Type())
+	}
 }
 
 func strPtr(s string) *string {
