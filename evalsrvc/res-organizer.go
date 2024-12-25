@@ -38,6 +38,10 @@ func NewEvalResOrganizer(hasCompilation bool, numTests int) (*EvalResOrganizer, 
 	}, nil
 }
 
+func (o *EvalResOrganizer) Finished() bool {
+	return o.returnedISE || o.returned[FinishedTestingType] || o.returned[CompilationErrorType]
+}
+
 /*
 1. StartedEvaluation
 2. StartedCompilation

@@ -3,6 +3,7 @@ package evalsrvc
 import (
 	"context"
 	"fmt"
+	"log"
 	"log/slog"
 	"sync"
 	"time"
@@ -156,9 +157,30 @@ func (e *EvalSrvc) prepareForResults(eval Evaluation) {
 	e.handlers[eval.UUID] = make(chan Event)
 	e.notifiers[eval.UUID] = make(chan Event, 1000)
 
+	hasCompilation := eval.PrLang.CompCmd != nil
+	numTests := len(eval.TestRes)
+	organizer, err := NewEvalResOrganizer(hasCompilation, numTests)
+	if err != nil {
+		log.Printf("failed to create organizer: %v", err)
+		return
+	}
+
 	go func() {
-		for x := range e.handlers[eval.UUID] {
-			e.notifiers[eval.UUID] <- x
+		for ev := range e.handlers[eval.UUID] {
+			events, err := organizer.Add(ev)
+			if err != nil {
+				log.Printf("failed to process event: %v", err)
+				return
+			}
+			for _, event := range events {
+				e.notifiers[eval.UUID] <- event
+			}
+			if organizer.Finished() {
+				close(e.handlers[eval.UUID])
+				close(e.notifiers[eval.UUID])
+				delete(e.handlers, eval.UUID)
+				delete(e.notifiers, eval.UUID)
+			}
 		}
 	}()
 }
