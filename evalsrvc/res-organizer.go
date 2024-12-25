@@ -16,6 +16,8 @@ type EvalResOrganizer struct {
 	returned map[string]bool    // KEY returned from Add method
 	finTests int                // finished or ignored tests
 
+	returnedISE bool // whether InternalServerError has been returned
+
 	mu sync.Mutex
 }
 
@@ -52,6 +54,10 @@ func (o *EvalResOrganizer) Add(event Event) ([]Event, error) {
 	o.mu.Lock()
 	defer o.mu.Unlock()
 
+	if o.returnedISE {
+		return []Event{}, nil
+	}
+
 	key := eventKey(event)
 
 	if o.received[key] {
@@ -62,8 +68,8 @@ func (o *EvalResOrganizer) Add(event Event) ([]Event, error) {
 	o.events[event.Type()] = append(o.events[event.Type()], event)
 
 	switch event.Type() {
-	case StartedEvaluationType:
-		return o.startEval()
+	case ReceivedSubmissionType:
+		return o.receiveSubm()
 	case StartedCompilationType:
 		return o.startCompile()
 	case FinishedCompilationType:
@@ -92,31 +98,34 @@ func (o *EvalResOrganizer) Add(event Event) ([]Event, error) {
 		return o.finishTesting()
 	case CompilationErrorType:
 		return o.compileError()
+	case InternalServerErrorType:
+		o.returnedISE = true
+		return []Event{event}, nil
 	}
 
 	return []Event{},
 		fmt.Errorf("unknown event type: %s", event.Type())
 }
 
-func (o *EvalResOrganizer) startEval() ([]Event, error) {
+func (o *EvalResOrganizer) receiveSubm() ([]Event, error) {
 	// skip if evaluation has not been reached yet
-	if !o.received[StartedEvaluationType] {
+	if !o.received[ReceivedSubmissionType] {
 		return []Event{}, nil
 	}
 
 	// break if evaluation has already been returned
-	if o.returned[StartedEvaluationType] {
+	if o.returned[ReceivedSubmissionType] {
 		return []Event{}, nil
 	}
 
 	// get the started evaluation event
-	e, err := o.getSingleEvent(StartedEvaluationType)
+	e, err := o.getSingleEvent(ReceivedSubmissionType)
 	if err != nil {
 		return []Event{}, err
 	}
 
 	// return this value and check whether next is available
-	o.returned[StartedEvaluationType] = true
+	o.returned[ReceivedSubmissionType] = true
 	res := []Event{e}
 	var nxt []Event
 	if o.HasCompilation {
@@ -154,7 +163,7 @@ func (o *EvalResOrganizer) startCompile() ([]Event, error) {
 	}
 
 	// check whether the dependencies are satisfied
-	if !o.returned[StartedEvaluationType] {
+	if !o.returned[ReceivedSubmissionType] {
 		return []Event{}, nil
 	}
 
@@ -236,7 +245,7 @@ func (o *EvalResOrganizer) startTesting() ([]Event, error) {
 			return []Event{}, nil
 		}
 	} else {
-		if !o.returned[StartedEvaluationType] {
+		if !o.returned[ReceivedSubmissionType] {
 			return []Event{}, nil
 		}
 	}
@@ -452,6 +461,31 @@ func (o *EvalResOrganizer) compileError() ([]Event, error) {
 	}
 
 	// get the compilation error event
+	e, err := o.getSingleEvent(key)
+	if err != nil {
+		return []Event{}, err
+	}
+
+	// return this value and check whether next is available
+	o.returned[key] = true
+	res := []Event{e}
+	return res, nil
+}
+
+func (o *EvalResOrganizer) internalServerError() ([]Event, error) {
+	key := InternalServerErrorType
+
+	// if the event has not been received yet, return nothing
+	if !o.received[key] {
+		return []Event{}, nil
+	}
+
+	// if the event has already been returned, return nothing
+	if o.returned[key] {
+		return []Event{}, nil
+	}
+
+	// get the internal server error event
 	e, err := o.getSingleEvent(key)
 	if err != nil {
 		return []Event{}, err

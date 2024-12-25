@@ -7,7 +7,7 @@ type Event interface {
 }
 
 const (
-	StartedEvaluationType   = "started_evaluation"
+	ReceivedSubmissionType  = "received_submission"
 	StartedCompilationType  = "started_compilation"
 	FinishedCompilationType = "finished_compilation"
 	CompilationErrorType    = "compilation_error"
@@ -19,13 +19,13 @@ const (
 	InternalServerErrorType = "internal_server_error"
 )
 
-type StartedEvaluation struct {
+type ReceivedSubmission struct {
 	SysInfo   string    `json:"sys_info"`
 	StartedAt time.Time `json:"started_at"`
 }
 
-func (s StartedEvaluation) Type() string {
-	return StartedEvaluationType
+func (s ReceivedSubmission) Type() string {
+	return ReceivedSubmissionType
 }
 
 type StartedCompiling struct{}

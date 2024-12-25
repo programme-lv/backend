@@ -10,7 +10,7 @@ import (
 // test that we achieve the same result no matter the order or received events
 func TestProcessResultsAnyOrderWithCompilation(t *testing.T) {
 	events := []Event{
-		StartedEvaluation{SysInfo: "some sys info", StartedAt: time.Now()},
+		ReceivedSubmission{SysInfo: "some sys info", StartedAt: time.Now()},
 		StartedCompiling{},
 		FinishedCompiling{RuntimeData: getExRunDataEv()},
 		StartedTesting{},
@@ -26,7 +26,7 @@ func TestProcessResultsAnyOrderWithCompilation(t *testing.T) {
 
 func TestProcessResultsAnyOrderNoCompilation(t *testing.T) {
 	events := []Event{
-		StartedEvaluation{SysInfo: "some sys info", StartedAt: time.Now()},
+		ReceivedSubmission{SysInfo: "some sys info", StartedAt: time.Now()},
 		StartedTesting{},
 		ReachedTest{TestId: 1, In: getExStrPtr(), Ans: getExStrPtr()},
 		FinishedTest{TestID: 1, Subm: getExRunDataEv(), Checker: getExRunDataEv()},
@@ -40,7 +40,7 @@ func TestProcessResultsAnyOrderNoCompilation(t *testing.T) {
 
 func TestProcessResultsAnyOrderCompilationError(t *testing.T) {
 	events := []Event{
-		StartedEvaluation{SysInfo: "some sys info", StartedAt: time.Now()},
+		ReceivedSubmission{SysInfo: "some sys info", StartedAt: time.Now()},
 		StartedCompiling{},
 		FinishedCompiling{RuntimeData: getExRunDataEv()},
 		CompilationError{ErrorMsg: getExStrPtr()},
@@ -49,9 +49,9 @@ func TestProcessResultsAnyOrderCompilationError(t *testing.T) {
 	shuffleAndCmp(t, events)
 }
 
-func TestProcessResultsAnyOrderInternalServerError(t *testing.T) {
+func TestProcessResultsInternalServerError(t *testing.T) {
 	events := []Event{
-		StartedEvaluation{SysInfo: "some sys info", StartedAt: time.Now()},
+		ReceivedSubmission{SysInfo: "some sys info", StartedAt: time.Now()},
 		StartedCompiling{},
 		FinishedCompiling{RuntimeData: getExRunDataEv()},
 		InternalServerError{ErrorMsg: getExStrPtr()},
@@ -95,6 +95,10 @@ func shuffleAndCmp(t *testing.T, events []Event) {
 				t.Fatalf("error adding event: %v, event: %v", err, event)
 			}
 			received = append(received, res...)
+		}
+
+		if received[len(received)-1].Type() == InternalServerErrorType {
+			continue
 		}
 
 		if len(received) != len(events) {

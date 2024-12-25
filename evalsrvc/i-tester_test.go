@@ -84,7 +84,7 @@ func TestEnqueueAndReceiveResults(t *testing.T) {
 		t.Logf("received msg: %s", msg.Data.Type())
 		msgs = append(msgs, msg)
 		switch msg.Data.Type() {
-		case StartedEvaluationType:
+		case ReceivedSubmissionType:
 			receivedStartedEvaluation = true
 		case StartedCompilationType:
 			receivedStartedCompilation = true

@@ -27,7 +27,7 @@ type evalHandler struct {
 	tSetUpd  chan *TSetScoreUpd
 }
 
-func (h *evalHandler) startedEvaluation(e evalsrvc.StartedEvaluation) {
+func (h *evalHandler) startedEvaluation(e evalsrvc.ReceivedSubmission) {
 	sysInfo := e.SysInfo
 	updStmt := table.Evaluations.
 		UPDATE(table.Evaluations.EvaluationStage, table.Evaluations.SystemInformation).
@@ -379,71 +379,6 @@ func (h *evalHandler) finishedTest(x evalsrvc.FinishedTest) {
 			Untested: int(testSet.Untested),
 		}
 	}()
-}
-
-func (h *evalHandler) finishedEvaluation(x evalsrvc.FinishedEvaluation) {
-	if x.CompileError {
-		var updateStmt postgres.UpdateStatement
-		if x.ErrorMsg != nil {
-			updateStmt = table.Evaluations.
-				UPDATE(table.Evaluations.EvaluationStage, table.Evaluations.ErrorMessage).
-				SET(postgres.String("compile_error"), postgres.String(*x.ErrorMsg)).
-				WHERE(table.Evaluations.EvalUUID.EQ(postgres.UUID(h.evalUuid)))
-		} else {
-			updateStmt = table.Evaluations.
-				UPDATE(table.Evaluations.EvaluationStage).
-				SET(postgres.String("compile_error")).
-				WHERE(table.Evaluations.EvalUUID.EQ(postgres.UUID(h.evalUuid)))
-		}
-		_, err := updateStmt.Exec(h.postgres)
-		if err != nil {
-			log.Printf("failed to update evaluation stage: %v", err)
-		}
-
-		h.stageUpd <- &EvalStageUpd{
-			SubmUuid: h.submUuid.String(),
-			EvalUuid: h.evalUuid.String(),
-			NewStage: "compile_error",
-		}
-	} else if x.InternalError || (x.ErrorMsg != nil && *x.ErrorMsg != "") {
-		var updateStmt postgres.UpdateStatement
-		if x.ErrorMsg != nil {
-			updateStmt = table.Evaluations.
-				UPDATE(table.Evaluations.EvaluationStage, table.Evaluations.ErrorMessage).
-				SET(postgres.String("internal_error"), postgres.String(*x.ErrorMsg)).
-				WHERE(table.Evaluations.EvalUUID.EQ(postgres.UUID(h.evalUuid)))
-		} else {
-			updateStmt = table.Evaluations.
-				UPDATE(table.Evaluations.EvaluationStage, table.Evaluations.ErrorMessage).
-				SET(postgres.String("internal_error"), postgres.String("unknown error")).
-				WHERE(table.Evaluations.EvalUUID.EQ(postgres.UUID(h.evalUuid)))
-		}
-		_, err := updateStmt.Exec(h.postgres)
-		if err != nil {
-			log.Printf("failed to update evaluation stage: %v", err)
-		}
-
-		h.stageUpd <- &EvalStageUpd{
-			SubmUuid: h.submUuid.String(),
-			EvalUuid: h.evalUuid.String(),
-			NewStage: "internal_error",
-		}
-	} else {
-		updateStmt := table.Evaluations.
-			UPDATE(table.Evaluations.EvaluationStage).
-			SET(postgres.String("finished")).
-			WHERE(table.Evaluations.EvalUUID.EQ(postgres.UUID(h.evalUuid)))
-		_, err := updateStmt.Exec(h.postgres)
-		if err != nil {
-			log.Printf("failed to update evaluation stage: %v", err)
-		}
-
-		h.stageUpd <- &EvalStageUpd{
-			SubmUuid: h.submUuid.String(),
-			EvalUuid: h.evalUuid.String(),
-			NewStage: "finished",
-		}
-	}
 }
 
 func (s *SubmissionSrvc) getSubmUuidFromEvalUuid(evalUuid uuid.UUID) (uuid.UUID, error) {

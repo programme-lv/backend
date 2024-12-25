@@ -69,7 +69,7 @@ func receiveResultsFromSqs(ctx context.Context,
 					if err != nil {
 						return fmt.Errorf("failed to parse started_at: %w", err)
 					}
-					msgs[i].Data = StartedEvaluation{
+					msgs[i].Data = ReceivedSubmission{
 						SysInfo:   startedEvaluation.SystemInfo,
 						StartedAt: startedAt,
 					}
