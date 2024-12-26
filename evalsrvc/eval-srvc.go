@@ -187,11 +187,11 @@ func (e *EvalSrvc) prepareForResults(evalId uuid.UUID, lang PrLang, params Teste
 		return fmt.Errorf("failed to create organizer: %v", err)
 	}
 
-	go e.handleResults(evalId, lang, params, organizer)
+	go e.handleResults(evalId, lang, params, organizer, numTests)
 	return nil
 }
 
-func (e *EvalSrvc) handleResults(evalId uuid.UUID, lang PrLang, params TesterParams, org *EvalResOrganizer) {
+func (e *EvalSrvc) handleResults(evalId uuid.UUID, lang PrLang, params TesterParams, org *EvalResOrganizer, numTests int) {
 	eval := Evaluation{
 		UUID:      evalId,
 		Stage:     StageWaiting,
@@ -202,6 +202,10 @@ func (e *EvalSrvc) handleResults(evalId uuid.UUID, lang PrLang, params TesterPar
 		SysInfo:   nil,
 		CreatedAt: time.Now(),
 		SubmComp:  nil,
+	}
+	// insert empty tests
+	for i := 0; i < numTests; i++ {
+		eval.TestRes = append(eval.TestRes, TestRes{ID: i + 1})
 	}
 	for ev := range e.handlers[evalId] {
 		events, err := org.Add(ev)
@@ -254,6 +258,28 @@ func applyEventToEval(eval *Evaluation, event Event) error {
 		eval.SubmComp = finComp.RuntimeData
 	case StartedTestingType:
 		eval.Stage = StageTesting
+	case ReachedTestType:
+		rt, ok := event.(ReachedTest)
+		if !ok {
+			return fmt.Errorf("event is not a ReachedTest")
+		}
+		eval.TestRes[rt.TestId-1].Input = rt.In
+		eval.TestRes[rt.TestId-1].Answer = rt.Ans
+		eval.TestRes[rt.TestId-1].Reached = true
+	case FinishedTestType:
+		ft, ok := event.(FinishedTest)
+		if !ok {
+			return fmt.Errorf("event is not a FinishedTest")
+		}
+		eval.TestRes[ft.TestID-1].ProgramReport = ft.Subm
+		eval.TestRes[ft.TestID-1].CheckerReport = ft.Checker
+		eval.TestRes[ft.TestID-1].Finished = true
+	case IgnoredTestType:
+		ig, ok := event.(IgnoredTest)
+		if !ok {
+			return fmt.Errorf("event is not an IgnoredTest")
+		}
+		eval.TestRes[ig.TestId-1].Ignored = true
 	case FinishedTestingType:
 		eval.Stage = StageFinished
 	case InternalServerErrorType:

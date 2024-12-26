@@ -126,13 +126,13 @@ func TestEvalServiceCmpGet(t *testing.T) {
 	srvc := evalsrvc.NewEvalSrvc()
 	evalId, err := srvc.Enqueue(evalsrvc.CodeWithLang{
 		SrcCode: "a=int(input());b=int(input());print(a+b)",
-		LangId:  "python3.11",
+		LangId:  "python3.10",
 	}, []evalsrvc.TestFile{
-		{InContent: strPtr("1 2"), AnsContent: strPtr("3")},
-		{InContent: strPtr("3 4"), AnsContent: strPtr("6")},
+		{InContent: strPtr("1\n2\n"), AnsContent: strPtr("3\n")},
+		{InContent: strPtr("3\n4\n"), AnsContent: strPtr("6\n")},
 	}, evalsrvc.TesterParams{
 		CpuMs:  1000,
-		MemKiB: 1024,
+		MemKiB: 20024,
 	})
 	require.NoError(t, err)
 
@@ -140,7 +140,16 @@ func TestEvalServiceCmpGet(t *testing.T) {
 	defer cancel()
 	eval, err := srvc.Get(ctx, evalId)
 	require.NoError(t, err)
-	require.Equal(t, evalsrvc.StageFinished, eval.Stage)
+	require.Equal(t, eval.Stage, evalsrvc.StageFinished)
+	require.Nil(t, eval.ErrorMsg)
+	require.Len(t, eval.TestRes, 2)
+	require.Equal(t, strPtr("1\n2\n"), eval.TestRes[0].Input)
+	require.Equal(t, strPtr("3\n"), eval.TestRes[0].Answer)
+	require.Equal(t, true, eval.TestRes[0].Reached)
+	require.Equal(t, true, eval.TestRes[0].Finished)
+	require.Equal(t, false, eval.TestRes[0].Ignored)
+	require.Equal(t, int64(0), eval.TestRes[0].CheckerReport.ExitCode)
+	require.Equal(t, int64(0), eval.TestRes[0].ProgramReport.ExitCode)
 }
 
 func strPtr(s string) *string {
