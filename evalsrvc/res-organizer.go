@@ -476,31 +476,6 @@ func (o *EvalResOrganizer) compileError() ([]Event, error) {
 	return res, nil
 }
 
-func (o *EvalResOrganizer) internalServerError() ([]Event, error) {
-	key := InternalServerErrorType
-
-	// if the event has not been received yet, return nothing
-	if !o.received[key] {
-		return []Event{}, nil
-	}
-
-	// if the event has already been returned, return nothing
-	if o.returned[key] {
-		return []Event{}, nil
-	}
-
-	// get the internal server error event
-	e, err := o.getSingleEvent(key)
-	if err != nil {
-		return []Event{}, err
-	}
-
-	// return this value and check whether next is available
-	o.returned[key] = true
-	res := []Event{e}
-	return res, nil
-}
-
 func (o *EvalResOrganizer) getReachedTestEvent(id int) (Event, error) {
 	events, ok := o.events[ReachedTestType]
 	if !ok {

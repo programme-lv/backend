@@ -5,6 +5,10 @@ tasks:
     desc: Integration test evalsrvc+sqs+tester
     cmds:
       - go test -run TestEnqueueAndReceiveResults ./evalsrvc -v -count=1
+  end-to-end-test-evalsrvc:
+    desc: End-to-end test evalsrvc
+    cmds:
+      - go test -run TestEvalServiceCmpGet ./evalsrvc -v -count=1
 
 dotenv:
   - .env

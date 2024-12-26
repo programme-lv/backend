@@ -96,10 +96,6 @@ func (e *EvalSrvc) Enqueue(
 	if err != nil {
 		return uuid.Nil, err
 	}
-	testRes := []TestRes{}
-	for i := range tests {
-		testRes = append(testRes, TestRes{ID: i + 1})
-	}
 
 	// Add WaitGroup before preparing results
 	wg := &sync.WaitGroup{}

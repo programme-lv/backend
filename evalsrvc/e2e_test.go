@@ -122,6 +122,7 @@ hello:
 	}
 }
 
+// test the asynchronocity of the Get() method and persistence after closing the srvc
 func TestEvalServiceCmpGet(t *testing.T) {
 	srvc := evalsrvc.NewEvalSrvc()
 	evalId, err := srvc.Enqueue(evalsrvc.CodeWithLang{
@@ -150,6 +151,10 @@ func TestEvalServiceCmpGet(t *testing.T) {
 	require.Equal(t, false, eval.TestRes[0].Ignored)
 	require.Equal(t, int64(0), eval.TestRes[0].CheckerReport.ExitCode)
 	require.Equal(t, int64(0), eval.TestRes[0].ProgramReport.ExitCode)
+	srvc2 := evalsrvc.NewEvalSrvc()
+	eval2, err := srvc2.Get(ctx, evalId)
+	require.NoError(t, err)
+	require.Equal(t, eval, eval2)
 }
 
 func strPtr(s string) *string {
