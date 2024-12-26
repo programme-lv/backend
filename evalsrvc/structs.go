@@ -43,30 +43,30 @@ const (
 )
 
 type Evaluation struct {
-	UUID      uuid.UUID
-	Stage     string
-	TestRes   []TestRes
-	PrLang    PrLang
-	Params    TesterParams
-	ErrorMsg  *string
-	SysInfo   *string // testing hardware info
-	CreatedAt time.Time
-	SubmComp  *RunData // submitted code compilation runtime data
+	UUID      uuid.UUID    `json:"uuid"`
+	Stage     string       `json:"stage"`
+	TestRes   []TestRes    `json:"test_res"`
+	PrLang    PrLang       `json:"pr_lang"`
+	Params    TesterParams `json:"params"`
+	ErrorMsg  *string      `json:"error_msg"`
+	SysInfo   *string      `json:"sys_info"` // testing hardware info
+	CreatedAt time.Time    `json:"created_at"`
+	SubmComp  *RunData     `json:"subm_comp"` // submitted code compilation runtime data
 	// ChecComp   *RunData // testlib checker compilation runtime data
 }
 
 // Tester machine submitted solution runtime constraints
 type TesterParams struct {
-	CpuMs  int // maximum user-mode CPU time in milliseconds
-	MemKiB int // maximum resident set size in kibibytes
+	CpuMs  int `json:"cpu_ms"`  // maximum user-mode CPU time in milliseconds
+	MemKiB int `json:"mem_kib"` // maximum resident set size in kibibytes
 
 	// optional testlib.h checker program. If not provided,
 	// only output of the user's solution is returned from tester
 	// and is not viable for grading. "run program" use case.
-	Checker *string
+	Checker *string `json:"checker"`
 
 	// optional testlib.h interactor program.
-	Interactor *string
+	Interactor *string `json:"interactor"`
 }
 
 func (p *TesterParams) IsValid() error {
@@ -92,24 +92,24 @@ func (p *TesterParams) IsValid() error {
 }
 
 type PrLang struct {
-	ShortId   string  // short lang/compiler/interpreter id
-	Display   string  // user-friendly programming lang name
-	CodeFname string  // source code filename for mv in to box
-	CompCmd   *string // compile command
-	CompFname *string // exe fname after comp for mv out of box
-	ExecCmd   string  // execution command
+	ShortId   string  `json:"short_id"`   // short lang/compiler/interpreter id
+	Display   string  `json:"display"`    // user-friendly programming lang name
+	CodeFname string  `json:"code_fname"` // source code filename for mv in to box
+	CompCmd   *string `json:"comp_cmd"`   // compile command
+	CompFname *string `json:"comp_fname"` // exe fname after comp for mv out of box
+	ExecCmd   string  `json:"exec_cmd"`   // execution command
 }
 
 type TestRes struct {
-	ID       int
-	Input    *string // test input
-	Answer   *string // test answer
-	Reached  bool
-	Ignored  bool // when score group has another failed test
-	Finished bool
+	ID       int     `json:"id"`
+	Input    *string `json:"inp"` // test input
+	Answer   *string `json:"ans"` // test answer
+	Reached  bool    `json:"rch"`
+	Ignored  bool    `json:"ign"` // when score group has another failed test
+	Finished bool    `json:"fin"`
 
-	CheckerReport *RunData // testlib checker
-	ProgramReport *RunData // user submitted solution
+	ProgramReport *RunData `json:"subm_rd"` // user submitted solution
+	CheckerReport *RunData `json:"tlib_rd"` // testlib checker
 }
 
 // Runtime Data
