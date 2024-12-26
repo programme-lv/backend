@@ -8,6 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/aws/retry"
 	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/programme-lv/backend/planglist"
 )
@@ -76,4 +77,22 @@ func getExtEvalKeyFromEnv() string {
 		panic("EXTERNAL_EVAL_KEY not set in .env file")
 	}
 	return extEvalKey
+}
+
+func getEvalS3BucketFromEnv() string {
+	s3Bucket := os.Getenv("EVAL_S3_BUCKET")
+	if s3Bucket == "" {
+		panic("EVAL_S3_BUCKET not set in .env file")
+	}
+	return s3Bucket
+}
+
+func getS3ClientFromEnv() *s3.Client {
+	cfg, err := config.LoadDefaultConfig(context.TODO(),
+		config.WithRegion("eu-central-1"),
+	)
+	if err != nil {
+		panic(fmt.Errorf("unable to load SDK config, %v", err))
+	}
+	return s3.NewFromConfig(cfg)
 }

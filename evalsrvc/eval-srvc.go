@@ -13,9 +13,8 @@ import (
 )
 
 type EvalRepo interface {
-	Save(eval Evaluation) error
-	Get(evalUuid uuid.UUID) (Evaluation, error)
-	Delete(evalUuid uuid.UUID) error
+	Save(ctx context.Context, eval Evaluation) error
+	Get(ctx context.Context, evalUuid uuid.UUID) (*Evaluation, error)
 }
 
 type EvalSrvc struct {
@@ -34,10 +33,12 @@ type EvalSrvc struct {
 }
 
 func NewEvalSrvc() *EvalSrvc {
+	s3Repo := NewS3EvalRepo(getS3ClientFromEnv(), getEvalS3BucketFromEnv())
+
 	esrvc := &EvalSrvc{
 		sqsClient:  getSqsClientFromEnv(),
 		submQ:      getSubmSqsUrlFromEnv(),
-		evalRepo:   NewInMemEvalRepo(),
+		evalRepo:   s3Repo,
 		respQ:      getResponseSqsUrlFromEnv(),
 		extEvalKey: getExtEvalKeyFromEnv(),
 		handlers:   make(map[uuid.UUID]chan Event),
@@ -138,7 +139,11 @@ func (e *EvalSrvc) Get(ctx context.Context, evalId uuid.UUID) (Evaluation, error
 	// Get the WaitGroup for this evaluation
 	wgVal, exists := e.evalWg.Load(evalId)
 	if !exists {
-		return Evaluation{}, fmt.Errorf("no evaluation found for id %s", evalId)
+		eval, err := e.evalRepo.Get(ctx, evalId)
+		if err != nil {
+			return Evaluation{}, fmt.Errorf("no evaluation found for id %s", evalId)
+		}
+		return *eval, nil
 	}
 
 	wg := wgVal.(*sync.WaitGroup)
@@ -153,7 +158,11 @@ func (e *EvalSrvc) Get(ctx context.Context, evalId uuid.UUID) (Evaluation, error
 	select {
 	case <-done:
 		e.evalWg.Delete(evalId) // Clean up the WaitGroup
-		return e.evalRepo.Get(evalId)
+		eval, err := e.evalRepo.Get(ctx, evalId)
+		if err != nil {
+			return Evaluation{}, err
+		}
+		return *eval, nil
 	case <-ctx.Done():
 		return Evaluation{}, ctx.Err()
 	}
@@ -225,9 +234,11 @@ func (e *EvalSrvc) handleResults(evalId uuid.UUID, lang PrLang, params TesterPar
 	close(e.notifiers[evalId])
 	delete(e.handlers, evalId)
 	delete(e.notifiers, evalId)
-	err := e.evalRepo.Save(eval)
+	ctxWithTimeout, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	err := e.evalRepo.Save(ctxWithTimeout, eval)
 	if err != nil {
-		log.Printf("failed to save evaluation: %v", err)
+		slog.Error("failed to save evaluation", "error", err)
 		return
 	}
 	if wgVal, exists := e.evalWg.Load(evalId); exists {
