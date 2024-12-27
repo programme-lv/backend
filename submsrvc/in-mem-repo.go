@@ -3,6 +3,7 @@ package submsrvc
 import (
 	"context"
 	"fmt"
+	"sort"
 	"sync"
 
 	"github.com/google/uuid"
@@ -21,6 +22,10 @@ func (r *inMemRepo) List(ctx context.Context) ([]Submission, error) {
 	for _, subm := range r.subms {
 		subms = append(subms, subm)
 	}
+	// Sort submissions by created_at timestamp, newest first
+	sort.Slice(subms, func(i, j int) bool {
+		return subms[i].CreatedAt.After(subms[j].CreatedAt)
+	})
 	return subms, nil
 }
 
