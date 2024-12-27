@@ -50,7 +50,7 @@ type Evaluation struct {
 
 type EvaluationError struct {
 	Type    EvaluationErrorType
-	Message string
+	Message *string
 }
 
 type EvaluationErrorType string

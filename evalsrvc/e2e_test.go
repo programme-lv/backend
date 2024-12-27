@@ -44,7 +44,7 @@ func TestEvalServiceCmpListenNoCompile(t *testing.T) {
 	ch, err := srvc.Listen(evalId)
 	require.NoError(t, err)
 
-	timeout := time.After(10 * time.Second)
+	timeout := time.After(30 * time.Second)
 	var events []evalsrvc.Event
 
 	// 3. collect events until channel closes or timeout

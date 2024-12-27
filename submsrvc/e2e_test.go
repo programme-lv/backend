@@ -15,13 +15,14 @@ func TestSubmSrvc(t *testing.T) {
 	taskSrvc, err := tasksrvc.NewTaskSrvc()
 	require.NoError(t, err)
 	evalSrvc := evalsrvc.NewEvalSrvc()
-	srvc := submsrvc.NewSubmSrvc(taskSrvc, evalSrvc)
+	srvc, err := submsrvc.NewSubmSrvc(taskSrvc, evalSrvc)
+	require.NoError(t, err)
 	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(10*time.Second))
 	defer cancel()
 	submCh, err := srvc.ListenToNewSubmCreated(ctx)
 	require.NoError(t, err)
 	subm, err := srvc.CreateSubmission(ctx, &submsrvc.CreateSubmissionParams{
-		Submission: "a=int(input());b=int(input());print(a+b)",
+		Submission: "a,b=input().split();print(int(a)+int(b))",
 		Username:   "KrisjanisP",
 		ProgLangID: "python3.10",
 		TaskCodeID: "aplusb",
@@ -43,6 +44,26 @@ func TestSubmSrvc(t *testing.T) {
 		stage = eval.Stage
 	}
 	require.Equal(t, submsrvc.StageFinished, stage)
-	require.Equal(t, submsrvc.ScoreUnitSubtask, eval.ScoreUnit)
-	require.Equal(t, submsrvc.ScoreUnitSubtask, eval.ScoreUnit)
+	require.Equal(t, submsrvc.ScoreUnitTest, eval.ScoreUnit)
+	require.Equal(t, submsrvc.Test{
+		Ac:       true,
+		Wa:       false,
+		Tle:      false,
+		Mle:      false,
+		Re:       false,
+		Ig:       false,
+		Reached:  true,
+		Finished: true,
+	}, eval.Tests[0])
+	require.Equal(t, submsrvc.Test{
+		Ac:       true,
+		Wa:       false,
+		Tle:      false,
+		Mle:      false,
+		Re:       false,
+		Ig:       false,
+		Reached:  true,
+		Finished: true,
+	}, eval.Tests[1])
+	require.Nil(t, eval.Error)
 }

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"time"
 
 	awshttp "github.com/aws/aws-sdk-go-v2/aws/transport/http"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -19,9 +20,10 @@ type FileData struct {
 }
 
 type S3Bucket struct {
-	client *s3.Client
-	bucket string
-	region string
+	client    *s3.Client
+	presigner *s3.PresignClient
+	bucket    string
+	region    string
 }
 
 func (bucket *S3Bucket) Region() string {
@@ -38,10 +40,14 @@ func NewS3Bucket(region string, bucket string) (*S3Bucket, error) {
 		return nil, fmt.Errorf("unable to load SDK config: %w", err)
 	}
 
+	client := s3.NewFromConfig(cfg)
+	presigner := s3.NewPresignClient(client)
+
 	return &S3Bucket{
-		client: s3.NewFromConfig(cfg),
-		bucket: bucket,
-		region: region,
+		client:    client,
+		presigner: presigner,
+		bucket:    bucket,
+		region:    region,
 	}, nil
 }
 
@@ -104,6 +110,20 @@ func (bucket *S3Bucket) Download(key string) ([]byte, error) {
 		return nil, fmt.Errorf("failed to read object body: %w", err)
 	}
 	return buf.Bytes(), nil
+}
+
+// TODO presign get request
+func (bucket *S3Bucket) PresignedURL(key string, expires time.Duration) (string, error) {
+	req, err := bucket.presigner.PresignGetObject(context.TODO(), &s3.GetObjectInput{
+		Bucket: &bucket.bucket,
+		Key:    &key,
+	}, func(opts *s3.PresignOptions) {
+		opts.Expires = expires
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to presign URL: %w", err)
+	}
+	return req.URL, nil
 }
 
 // ListFiles lists the files in the S3 bucket.

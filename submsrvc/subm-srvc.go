@@ -2,10 +2,12 @@ package submsrvc
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	"github.com/google/uuid"
 	"github.com/programme-lv/backend/evalsrvc"
+	"github.com/programme-lv/backend/s3bucket"
 	"github.com/programme-lv/backend/tasksrvc"
 	"github.com/programme-lv/backend/usersrvc"
 
@@ -18,7 +20,8 @@ type submRepo interface {
 }
 
 type SubmissionSrvc struct {
-	repo submRepo
+	tests *s3bucket.S3Bucket
+	repo  submRepo
 
 	userSrvc *usersrvc.UserService
 	taskSrvc *tasksrvc.TaskService
@@ -37,8 +40,14 @@ type SubmissionSrvc struct {
 	// evalUpdSubscribers []chan *EvalUpdate
 }
 
-func NewSubmSrvc(taskSrvc *tasksrvc.TaskService, evalSrvc *evalsrvc.EvalSrvc) *SubmissionSrvc {
+func NewSubmSrvc(taskSrvc *tasksrvc.TaskService, evalSrvc *evalsrvc.EvalSrvc) (*SubmissionSrvc, error) {
+	testBucket, err := s3bucket.NewS3Bucket("eu-central-1", "proglv-tests")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create test bucket: %w", err)
+	}
+
 	srvc := &SubmissionSrvc{
+		tests:    testBucket,
 		userSrvc: usersrvc.NewUsers(),
 		taskSrvc: taskSrvc,
 		repo:     newInMemRepo(),
@@ -49,7 +58,7 @@ func NewSubmSrvc(taskSrvc *tasksrvc.TaskService, evalSrvc *evalsrvc.EvalSrvc) *S
 		// evalUpdSubscribers: make([]chan *SubmListUpdate, 0, 100),
 	}
 
-	return srvc
+	return srvc, nil
 }
 
 // func getPgConn() *sqlx.DB {

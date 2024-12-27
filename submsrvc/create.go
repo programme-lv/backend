@@ -46,7 +46,7 @@ func (s *SubmissionSrvc) CreateSubmission(ctx context.Context,
 	evalUuid, err := s.evalSrvc.Enqueue(evalsrvc.CodeWithLang{
 		SrcCode: params.Submission,
 		LangId:  params.ProgLangID,
-	}, evalReqTests(&t), evalsrvc.TesterParams{
+	}, s.evalReqTests(&t), evalsrvc.TesterParams{
 		CpuMs:      t.CpuMillis(),
 		MemKiB:     t.MemoryKiB(),
 		Checker:    t.CheckerPtr(),
@@ -157,17 +157,52 @@ func (s *SubmissionSrvc) handleUpdates(subm Submission, ch <-chan evalsrvc.Event
 }
 
 func applyUpdate(eval Evaluation, update evalsrvc.Event) Evaluation {
-	switch update.Type() {
-
+	switch u := update.(type) {
+	case evalsrvc.ReceivedSubmission:
+	case evalsrvc.StartedCompiling:
+		eval.Stage = StageCompiling
+	case evalsrvc.StartedTesting:
+		eval.Stage = StageTesting
+	case evalsrvc.FinishedTesting:
+		eval.Stage = StageFinished
+	case evalsrvc.InternalServerError:
+		eval.Stage = StageFinished
+		eval.Error = &EvaluationError{
+			Type:    ErrorTypeInternal,
+			Message: u.ErrorMsg,
+		}
+	case evalsrvc.CompilationError:
+		eval.Stage = StageFinished
+		eval.Error = &EvaluationError{
+			Type:    ErrorTypeCompilation,
+			Message: u.ErrorMsg,
+		}
+	case evalsrvc.ReachedTest:
+		eval.Tests[u.TestId-1].Reached = true
+	case evalsrvc.FinishedTest:
+		eval.Tests[u.TestID-1].Finished = true
+		if u.Checker != nil && u.Checker.ExitCode == 0 {
+			eval.Tests[u.TestID-1].Ac = true
+		}
+	case evalsrvc.IgnoredTest:
+		eval.Tests[u.TestId-1].Ig = true
 	}
 	return eval
 }
 
-func evalReqTests(task *tasksrvc.Task) []evalsrvc.TestFile {
+func (s *SubmissionSrvc) evalReqTests(task *tasksrvc.Task) []evalsrvc.TestFile {
 	evalReqTests := make([]evalsrvc.TestFile, len(task.Tests))
 	for i, test := range task.Tests {
-		inputS3Url := test.FullInputS3URL()
-		answerS3Url := test.FullAnswerS3URL()
+		inputKey := fmt.Sprintf("%s.zst", test.InpSha2)
+		answerKey := fmt.Sprintf("%s.zst", test.AnsSha2)
+		inputS3Url, err := s.tests.PresignedURL(inputKey, 10*time.Minute)
+		if err != nil {
+			slog.Error("failed to get presigned URL for input", "error", err)
+		}
+		answerS3Url, err := s.tests.PresignedURL(answerKey, 10*time.Minute)
+		if err != nil {
+			slog.Error("failed to get presigned URL for answer", "error", err)
+		}
 		evalReqTests[i] = evalsrvc.TestFile{
 			InSha256:    &test.InpSha2,
 			AnsSha256:   &test.AnsSha2,
