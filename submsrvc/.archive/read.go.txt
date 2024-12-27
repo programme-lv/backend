@@ -237,7 +237,7 @@ func (s *SubmissionSrvc) GetFullSubmission(ctx context.Context, submUuid string)
 			Content: submJoinEval.Submissions.Content,
 			Author:  Author{UUID: submJoinEval.Submissions.AuthorUUID, Username: usernames[0]},
 			Task:    Task{ShortID: submJoinEval.Submissions.TaskID, FullName: taskFullNames[0]},
-			Lang: Lang{
+			Lang: PrLang{
 				ShortID:  submJoinEval.Evaluations.LangID,
 				Display:  langMap[submJoinEval.Evaluations.LangID].FullName,
 				MonacoID: langMap[submJoinEval.Evaluations.LangID].MonacoId,
@@ -485,7 +485,7 @@ func (s *SubmissionSrvc) ListSubmissions(ctx context.Context) ([]*Submission, er
 				ShortID:  subm.Submissions.TaskID,
 				FullName: taskFullNames[i],
 			},
-			Lang: Lang{
+			Lang: PrLang{
 				ShortID:  subm.Evaluations.LangID,
 				Display:  langIDToFullName[subm.Evaluations.LangID],
 				MonacoID: langIDToMonacoID[subm.Evaluations.LangID],
@@ -585,7 +585,7 @@ func (s *SubmissionSrvc) GetSubmission(ctx context.Context, submUuid uuid.UUID) 
 			ShortID:  task.ShortId,
 			FullName: task.FullName,
 		},
-		Lang: Lang{
+		Lang: PrLang{
 			ShortID:  submRow.ProgLangID,
 			Display:  lang.FullName,
 			MonacoID: lang.MonacoId,

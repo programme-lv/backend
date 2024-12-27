@@ -130,7 +130,7 @@ func (httpserver *HttpServer) listenToSubmUpdates(w http.ResponseWriter, r *http
 	for update := range listener.Listen() {
 		message := SubmissionListUpdate{
 			SubmCreated:        mapBriefSubm(update.SubmCreated),
-			StateUpdate:        mapStateUpdate(update.StateUpdate),
+			StateUpdate:        mapStateUpdate(update.StageUpdate),
 			TestGroupResUpdate: mapTestgroupResUpdate(update.TestgroupResUpdate),
 			TestsScoreUpdate:   mapTestsScoreUpdate(update.TestsResUpdate),
 		}
@@ -147,12 +147,12 @@ func (httpserver *HttpServer) listenToSubmUpdates(w http.ResponseWriter, r *http
 }
 
 type submUpdateListener struct {
-	updateChan chan *submsrvc.SubmissionListUpdate
+	updateChan chan *submsrvc.SubmListUpdate
 	mutex      *sync.Mutex
 	closed     bool
 }
 
-func (l *submUpdateListener) Send(update *submsrvc.SubmissionListUpdate) error {
+func (l *submUpdateListener) Send(update *submsrvc.SubmListUpdate) error {
 	l.mutex.Lock()
 	defer l.mutex.Unlock()
 	if l.closed {
@@ -173,13 +173,13 @@ func (l *submUpdateListener) Close() error {
 	return nil
 }
 
-func (l *submUpdateListener) Listen() chan *submsrvc.SubmissionListUpdate {
+func (l *submUpdateListener) Listen() chan *submsrvc.SubmListUpdate {
 	return l.updateChan
 }
 
 func newSubmUpdateListener() *submUpdateListener {
 	return &submUpdateListener{
-		updateChan: make(chan *submsrvc.SubmissionListUpdate, 10000),
+		updateChan: make(chan *submsrvc.SubmListUpdate, 10000),
 		mutex:      &sync.Mutex{},
 		closed:     false,
 	}

@@ -12,23 +12,64 @@ type Submission struct {
 	Content string
 
 	Author Author
-	Task   Task
-	Lang   Lang
+	Task   TaskRef
+	Lang   PrLang
 
 	CurrEval Evaluation
 
 	CreatedAt time.Time
 }
 
+const (
+	ScoreUnitTest      = "test"
+	ScoreUnitTestGroup = "group"
+	ScoreUnitSubtask   = "subtask"
+)
+
+const (
+	StageWaiting   = "waiting"
+	StageCompiling = "compiling"
+	StageTesting   = "testing"
+	StageFinished  = "finished"
+)
+
 type Evaluation struct {
 	UUID      uuid.UUID
 	Stage     string
-	CreatedAt time.Time
+	ScoreUnit string
+
+	Error *EvaluationError
 
 	Subtasks []Subtask
 	Groups   []TestGroup
 
-	TestSet *TestSet
+	Tests []Test
+
+	CreatedAt time.Time
+}
+
+type EvaluationError struct {
+	Type    EvaluationErrorType
+	Message string
+}
+
+type EvaluationErrorType string
+
+const (
+	ErrorTypeCompilation EvaluationErrorType = "compilation"
+	ErrorTypeInternal    EvaluationErrorType = "internal"
+)
+
+type Test struct {
+	Ac  bool // accepted
+	Wa  bool // wrong answer
+	Tle bool // time limit exceeded
+	Mle bool // memory limit exceeded
+	Re  bool // runtime error
+	Ig  bool // ignored
+
+	Reached  bool // reached by tester
+	Finished bool // has finished
 }
 
 type Author struct {
@@ -36,37 +77,25 @@ type Author struct {
 	Username string
 }
 
-type Lang struct {
+type PrLang struct {
 	ShortID  string
 	Display  string
 	MonacoID string
 }
 
-type Task struct {
+type TaskRef struct {
 	ShortID  string
 	FullName string
 }
 
 type Subtask struct {
-	SubtaskID   int
 	Points      int
-	Accepted    int
-	Wrong       int
-	Untested    int
-	Description string
+	Description string // short md spec
+	StTests     []int  // subtask tests
 }
 
 type TestGroup struct {
-	GroupID  int
 	Points   int
-	Accepted int
-	Wrong    int
-	Untested int
 	Subtasks []int
-}
-
-type TestSet struct {
-	Accepted int
-	Wrong    int
-	Untested int
+	TgTests  []int // test group tests
 }

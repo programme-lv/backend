@@ -122,7 +122,7 @@ func (e *EvalSrvc) Enqueue(
 // Returns a channel to stream events to a singular client.
 // The same channel is returned for the same eval uuid.
 // Once evaluation is finished, the channel is closed.
-func (e *EvalSrvc) Listen(evalId uuid.UUID) (chan Event, error) {
+func (e *EvalSrvc) Listen(evalId uuid.UUID) (<-chan Event, error) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 

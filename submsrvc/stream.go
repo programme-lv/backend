@@ -1,97 +1,79 @@
 package submsrvc
 
-import "context"
+import (
+	"context"
+	"log/slog"
 
-func (s *SubmissionSrvc) StartStreamingSubmListUpdates(ctx context.Context) {
-	sendUpdate := func(update *SubmissionListUpdate) {
-		s.listenerLock.Lock()
-		for _, listener := range s.listeners {
-			if len(listener) == cap(listener) {
-				<-listener
-			}
-			listener <- update
-		}
-		s.listenerLock.Unlock()
-	}
+	"github.com/google/uuid"
+)
 
-	for {
-		select {
-		case created := <-s.submCreated:
-			// notify all listeners about the new submission
-			update := &SubmissionListUpdate{
-				SubmCreated: created,
-			}
-			sendUpdate(update)
-		case stateUpdate := <-s.evalStageUpd:
-			// notify all listeners about the state update
-			update := &SubmissionListUpdate{
-				StateUpdate: &EvalStageUpd{
-					SubmUuid: stateUpdate.SubmUuid,
-					EvalUuid: stateUpdate.EvalUuid,
-					NewStage: stateUpdate.NewStage,
-				},
-			}
-			sendUpdate(update)
-		case testgroupScoringResUpdate := <-s.tGroupScoreUpd:
-			// notify all listeners about the testgroup result update
-			update := &SubmissionListUpdate{
-				TestgroupResUpdate: &TGroupScoreUpd{
-					SubmUUID:      testgroupScoringResUpdate.SubmUUID,
-					EvalUUID:      testgroupScoringResUpdate.EvalUUID,
-					TestGroupID:   testgroupScoringResUpdate.TestGroupID,
-					AcceptedTests: testgroupScoringResUpdate.AcceptedTests,
-					WrongTests:    testgroupScoringResUpdate.WrongTests,
-					UntestedTests: testgroupScoringResUpdate.UntestedTests,
-				},
-			}
-
-			sendUpdate(update)
-		case atomicTestsScoringResUpdate := <-s.tSetScoreUpd:
-			update := &SubmissionListUpdate{
-				TestsResUpdate: atomicTestsScoringResUpdate,
-			}
-
-			sendUpdate(update)
-		}
-	}
+type EvalUpdate struct {
+	SubmUuid uuid.UUID
+	Eval     *Evaluation
 }
 
-type Streamee interface {
-	Send(*SubmissionListUpdate) error
-	Close() error
-}
-
-// StreamSubmissionUpdates implements submissions.Service.
-func (s *SubmissionSrvc) StreamSubmissionUpdates(ctx context.Context, stream Streamee) (err error) {
-	// register myself as a listener to the submission updates
-	myChan := make(chan *SubmissionListUpdate, 10000)
+func (s *SubmissionSrvc) broadcastSubmEvalUpdate(update *EvalUpdate) {
 	s.listenerLock.Lock()
-	s.listeners = append(s.listeners, myChan)
-	s.listenerLock.Unlock()
+	defer s.listenerLock.Unlock()
 
-	defer func() {
-		// lock listener slice
-		s.listenerLock.Lock()
-		// remove myself from the listeners slice
-		for i, listener := range s.listeners {
-			if listener == myChan {
-				s.listeners = append(s.listeners[:i], s.listeners[i+1:]...)
+	for _, listener := range s.submEvalUpdSubs {
+		if listener.submUuid != update.SubmUuid {
+			continue
+		}
+		select {
+		case <-listener.ch:
+			// Removed existing update
+		default:
+		}
+
+		select {
+		case listener.ch <- update:
+		default:
+			slog.Error("failed to send update to listener", "update", update)
+		}
+	}
+}
+
+func (s *SubmissionSrvc) broadcastNewSubmCreated(subm *Submission) {
+	s.listenerLock.Lock()
+	defer s.listenerLock.Unlock()
+
+	for _, listener := range s.submCreatedSubs {
+		select {
+		case listener <- subm:
+		default:
+			slog.Error("failed to send update to listener", "update", subm)
+		}
+	}
+}
+
+func (s *SubmissionSrvc) ListenToLatestSubmEvalUpdate(ctx context.Context, submUuid uuid.UUID) (<-chan *EvalUpdate, error) {
+	s.listenerLock.Lock()
+	defer s.listenerLock.Unlock()
+
+	ch := make(chan *EvalUpdate, 1)
+
+	s.submEvalUpdSubs = append(s.submEvalUpdSubs, struct {
+		submUuid uuid.UUID
+		ch       chan *EvalUpdate
+	}{submUuid, ch})
+
+	go func() {
+		<-ctx.Done()
+		for i, listener := range s.submEvalUpdSubs {
+			if listener.ch == ch {
+				s.submEvalUpdSubs = append(s.submEvalUpdSubs[:i], s.submEvalUpdSubs[i+1:]...)
 				break
 			}
 		}
-		s.listenerLock.Unlock()
-		close(myChan)
+		close(ch)
 	}()
 
-	for {
-		select {
-		case <-ctx.Done():
-			return stream.Close()
-		case update := <-myChan:
-			err = stream.Send(update)
-			if err != nil {
-				return stream.Close()
-			}
-		}
-	}
+	return ch, nil
+}
+
+func (s *SubmissionSrvc) ListenToNewSubmCreated(ctx context.Context) (<-chan *Submission, error) {
+	ch := make(chan *Submission, 1)
+	s.submCreatedSubs = append(s.submCreatedSubs, ch)
+	return ch, nil
 }

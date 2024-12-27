@@ -31,7 +31,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("error creating task service: %v", err)
 	}
-	submSrvc := submsrvc.NewSubmissions(taskSrvc, evalSrvc)
+	submSrvc := submsrvc.NewSubmSrvc(taskSrvc, evalSrvc)
 	userSrvc := usersrvc.NewUsers()
 	httpServer := http.NewHttpServer(submSrvc, userSrvc, taskSrvc, evalSrvc,
 		[]byte(jwtKey))
