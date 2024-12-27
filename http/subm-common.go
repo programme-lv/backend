@@ -8,6 +8,7 @@ import (
 
 type Submission struct {
 	SubmUUID  string   `json:"subm_uuid"`
+	Content   string   `json:"content"`
 	Username  string   `json:"username"`
 	CurrEval  SubmEval `json:"curr_eval"`
 	PrLang    PrLang   `json:"pr_lang"`
@@ -47,6 +48,7 @@ type TestGroup struct {
 func mapSubm(subm submsrvc.Submission) *Submission {
 	return &Submission{
 		SubmUUID: subm.UUID.String(),
+		Content:  subm.Content,
 		Username: subm.Author.Username,
 		CurrEval: mapSubmEval(subm.CurrEval),
 		PrLang: PrLang{
