@@ -61,6 +61,10 @@ func NewSubmSrvc(taskSrvc *tasksrvc.TaskService, evalSrvc *evalsrvc.EvalSrvc) (*
 	return srvc, nil
 }
 
+func (s *SubmissionSrvc) GetSubm(ctx context.Context, uuid uuid.UUID) (*Submission, error) {
+	return s.repo.Get(ctx, uuid)
+}
+
 // func getPgConn() *sqlx.DB {
 // 	postgresConnStr := getPostgresConnStr()
 // 	db, err := sqlx.Connect("postgres", postgresConnStr)

@@ -2,6 +2,7 @@ package submsrvc
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	"github.com/google/uuid"
@@ -33,5 +34,5 @@ func (r *inMemRepo) Get(ctx context.Context, uuid uuid.UUID) (*Submission, error
 	if subm, ok := r.subms[uuid]; ok {
 		return &subm, nil
 	}
-	return nil, nil
+	return nil, fmt.Errorf("submission not found")
 }

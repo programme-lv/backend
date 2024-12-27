@@ -13,6 +13,7 @@ import (
 
 func TestSubmSrvc(t *testing.T) {
 	taskSrvc, err := tasksrvc.NewTaskSrvc()
+
 	require.NoError(t, err)
 	evalSrvc := evalsrvc.NewEvalSrvc()
 	srvc, err := submsrvc.NewSubmSrvc(taskSrvc, evalSrvc)
@@ -66,4 +67,11 @@ func TestSubmSrvc(t *testing.T) {
 		Finished: true,
 	}, eval.Tests[1])
 	require.Nil(t, eval.Error)
+	require.NotNil(t, eval)
+	subm.CurrEval = *eval
+	submSrvc2, err := submsrvc.NewSubmSrvc(taskSrvc, evalSrvc)
+	require.NoError(t, err)
+	submFromGet, err := submSrvc2.GetSubm(ctx, subm.UUID)
+	require.NoError(t, err)
+	require.Equal(t, subm, submFromGet)
 }

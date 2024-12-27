@@ -6,3 +6,6 @@ the postgres could store a simple array with scoring information.
 
 We noticed that if the memory limit is too low, segmentation fault is received.
 We could for each programming language specify the minimum memory limit.
+
+In the future permit submission for evaluation without api key
+only without persisting the evaluation results.
