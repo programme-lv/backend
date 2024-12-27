@@ -4,15 +4,10 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/httplog/v2"
 	"github.com/google/uuid"
 	"github.com/programme-lv/backend/evalsrvc"
 )
-
-type TesterRunResponse struct {
-	EvalUUID string `json:"eval_uuid"`
-}
 
 func (httpserver *HttpServer) testerRun(w http.ResponseWriter, r *http.Request) {
 	logger := httplog.LogEntry(r.Context())
@@ -55,10 +50,10 @@ func (httpserver *HttpServer) testerRun(w http.ResponseWriter, r *http.Request) 
 		}
 	}
 
-	uuid, err := httpserver.evalSrvc.EnqueueExternal(req.ApiKey, evalsrvc.NewEvalParams{
-		Code:       req.SrcCode,
-		LangId:     req.ProgLangId,
-		Tests:      tests,
+	uuid, err := httpserver.evalSrvc.Enqueue(evalsrvc.CodeWithLang{
+		SrcCode: req.SrcCode,
+		LangId:  req.ProgLangId,
+	}, tests, evalsrvc.TesterParams{
 		CpuMs:      req.CpuMs,
 		MemKiB:     req.MemKib,
 		Checker:    req.Checker,
@@ -69,41 +64,67 @@ func (httpserver *HttpServer) testerRun(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	res := &TesterRunResponse{
+	type response struct {
+		EvalUUID string `json:"eval_uuid"`
+	}
+
+	res := &response{
 		EvalUUID: uuid.String(),
 	}
 
 	writeJsonSuccessResponse(w, res)
 }
 
-func (httpserver *HttpServer) testerRunLongPoll(w http.ResponseWriter, r *http.Request) {
-	logger := httplog.LogEntry(r.Context())
+func (httpserver *HttpServer) testerListen(w http.ResponseWriter, r *http.Request) {
+	type request struct {
+		EvalUUID string `json:"eval_uuid"`
+	}
 
-	evalUuidStr := chi.URLParam(r, "evalUuid")
-	evalUuid, err := uuid.Parse(evalUuidStr)
-	if err != nil {
-		writeJsonErrorResponse(w,
-			"Nederīgs UUID",
-			http.StatusBadRequest,
-			"invalid_eval_uuid")
+	var req request
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
 
-	received, err := httpserver.evalSrvc.ReceiveFor(evalUuid)
+	evalUuid, err := uuid.Parse(req.EvalUUID)
 	if err != nil {
-		handleJsonSrvcError(logger, w, err)
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
 
-	data := make([]interface{}, len(received))
-	for i, msg := range received {
-		marshalled, _ := json.Marshal(msg.Data)
-		values := make(map[string]interface{})
-		json.Unmarshal(marshalled, &values)
-		values["msg_type"] = msg.Data.Type()
-		delete(values, "sys_info")
-		data[i] = values
+	ch, err := httpserver.evalSrvc.Listen(evalUuid)
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
 	}
 
-	writeJsonSuccessResponse(w, data)
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+
+	encoder := json.NewEncoder(w)
+
+	if f, ok := w.(http.Flusher); ok {
+		f.Flush()
+	}
+
+	notify := r.Context().Done()
+
+	for {
+		select {
+		case event, ok := <-ch:
+			if !ok {
+				return
+			}
+			w.Write([]byte("data: "))
+			encoder.Encode(event)
+			w.Write([]byte("\n\n"))
+			if f, ok := w.(http.Flusher); ok {
+				f.Flush()
+			}
+		case <-notify:
+			return
+		}
+	}
 }

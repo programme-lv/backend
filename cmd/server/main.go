@@ -26,7 +26,6 @@ func main() {
 	}
 
 	evalSrvc := evalsrvc.NewEvalSrvc()
-	go evalSrvc.StartReceivingFromExternalEvalQueue()
 
 	taskSrvc, err := tasksrvc.NewTaskSrvc()
 	if err != nil {

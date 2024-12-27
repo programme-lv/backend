@@ -87,5 +87,5 @@ func (httpserver *HttpServer) routes() {
 	r.Get("/langs", httpserver.listProgrammingLangs)
 	r.Get("/subm-updates", httpserver.listenToSubmUpdates)
 	r.Post("/tester/run", httpserver.testerRun)
-	r.Get("/tester/run/{evalUuid}", httpserver.testerRunLongPoll)
+	r.Get("/tester/run/{evalUuid}", httpserver.testerListen)
 }
