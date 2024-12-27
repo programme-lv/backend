@@ -17,6 +17,7 @@ import (
 type submRepo interface {
 	Store(ctx context.Context, subm Submission) error
 	Get(ctx context.Context, uuid uuid.UUID) (*Submission, error)
+	List(ctx context.Context) ([]Submission, error)
 }
 
 type SubmissionSrvc struct {
@@ -32,7 +33,7 @@ type SubmissionSrvc struct {
 		submUuid uuid.UUID
 		ch       chan *EvalUpdate
 	}
-	submCreatedSubs []chan *Submission
+	submCreatedSubs []chan Submission
 	listenerLock    sync.Mutex
 	// submCreated        chan *Submission
 	// evalUpdate         chan *Evaluation
@@ -63,6 +64,10 @@ func NewSubmSrvc(taskSrvc *tasksrvc.TaskService, evalSrvc *evalsrvc.EvalSrvc) (*
 
 func (s *SubmissionSrvc) GetSubm(ctx context.Context, uuid uuid.UUID) (*Submission, error) {
 	return s.repo.Get(ctx, uuid)
+}
+
+func (s *SubmissionSrvc) ListSubms(ctx context.Context) ([]Submission, error) {
+	return s.repo.List(ctx)
 }
 
 // func getPgConn() *sqlx.DB {

@@ -110,7 +110,7 @@ func (s *SubmissionSrvc) CreateSubmission(ctx context.Context,
 		CreatedAt: time.Now(),
 	}
 
-	s.broadcastNewSubmCreated(&subm)
+	s.broadcastNewSubmCreated(subm)
 	go s.handleUpdates(subm, ch)
 
 	return &subm, nil

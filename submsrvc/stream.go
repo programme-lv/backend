@@ -34,7 +34,7 @@ func (s *SubmissionSrvc) broadcastSubmEvalUpdate(update *EvalUpdate) {
 	}
 }
 
-func (s *SubmissionSrvc) broadcastNewSubmCreated(subm *Submission) {
+func (s *SubmissionSrvc) broadcastNewSubmCreated(subm Submission) {
 	s.listenerLock.Lock()
 	defer s.listenerLock.Unlock()
 
@@ -72,8 +72,8 @@ func (s *SubmissionSrvc) ListenToLatestSubmEvalUpdate(ctx context.Context, submU
 	return ch, nil
 }
 
-func (s *SubmissionSrvc) ListenToNewSubmCreated(ctx context.Context) (<-chan *Submission, error) {
-	ch := make(chan *Submission, 1)
+func (s *SubmissionSrvc) ListenToNewSubmCreated(ctx context.Context) (<-chan Submission, error) {
+	ch := make(chan Submission, 1)
 	s.submCreatedSubs = append(s.submCreatedSubs, ch)
 	return ch, nil
 }
