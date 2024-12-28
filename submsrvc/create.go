@@ -79,7 +79,8 @@ func (s *SubmissionSrvc) CreateSubmission(ctx context.Context,
 	scoreUnit := ScoreUnitTest
 	if len(t.Subtasks) > 0 {
 		scoreUnit = ScoreUnitSubtask
-	} else if len(t.TestGroups) > 0 {
+	}
+	if len(t.TestGroups) > 0 {
 		scoreUnit = ScoreUnitTestGroup
 	}
 
