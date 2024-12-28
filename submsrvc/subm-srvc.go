@@ -3,6 +3,7 @@ package submsrvc
 import (
 	"context"
 	"fmt"
+	"sort"
 	"sync"
 
 	"github.com/google/uuid"
@@ -23,6 +24,7 @@ type submRepo interface {
 type SubmissionSrvc struct {
 	tests *s3bucket.S3Bucket
 	repo  submRepo
+	inMem map[uuid.UUID]Submission // in-progress submissions
 
 	userSrvc *usersrvc.UserService
 	taskSrvc *tasksrvc.TaskService
@@ -53,6 +55,7 @@ func NewSubmSrvc(taskSrvc *tasksrvc.TaskService, evalSrvc *evalsrvc.EvalSrvc) (*
 		taskSrvc: taskSrvc,
 		repo:     newInMemRepo(),
 		evalSrvc: evalSrvc,
+		inMem:    make(map[uuid.UUID]Submission),
 		// submCreated:        make(chan *Submission, 1000),
 		// evalUpdate:         make(chan *Evaluation, 1000),
 		// listenerLock:       sync.Mutex{},
@@ -63,11 +66,40 @@ func NewSubmSrvc(taskSrvc *tasksrvc.TaskService, evalSrvc *evalsrvc.EvalSrvc) (*
 }
 
 func (s *SubmissionSrvc) GetSubm(ctx context.Context, uuid uuid.UUID) (*Submission, error) {
-	return s.repo.Get(ctx, uuid)
+	if subm, ok := s.inMem[uuid]; ok {
+		return &subm, nil
+	}
+	subm, err := s.repo.Get(ctx, uuid)
+	if err != nil {
+		return nil, err
+	}
+	s.inMem[uuid] = *subm
+	return subm, nil
 }
 
 func (s *SubmissionSrvc) ListSubms(ctx context.Context) ([]Submission, error) {
-	return s.repo.List(ctx)
+	repoSubms, err := s.repo.List(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create map of submissions, preferring in-memory ones
+	submMap := make(map[uuid.UUID]Submission)
+	for _, subm := range repoSubms {
+		submMap[subm.UUID] = subm
+	}
+	for _, subm := range s.inMem {
+		submMap[subm.UUID] = subm
+	}
+
+	subms := make([]Submission, 0, len(submMap))
+	for _, subm := range submMap {
+		subms = append(subms, subm)
+	}
+	sort.Slice(subms, func(i, j int) bool {
+		return subms[i].CreatedAt.After(subms[j].CreatedAt)
+	})
+	return subms, nil
 }
 
 // func getPgConn() *sqlx.DB {
