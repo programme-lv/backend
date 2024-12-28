@@ -34,12 +34,13 @@ type SubmissionSrvc struct {
 	evalSrvc *evalsrvc.EvalSrvc
 
 	// real-time updates
-	submEvalUpdSubs []struct {
+	submUuidEvalUpdSubs []struct {
 		submUuid uuid.UUID
 		ch       chan *EvalUpdate
 	}
-	submCreatedSubs []chan Submission
-	listenerLock    sync.Mutex
+	submListEvalUpdSubs []chan *EvalUpdate
+	submCreatedSubs     []chan Submission
+	listenerLock        sync.Mutex
 	// submCreated        chan *Submission
 	// evalUpdate         chan *Evaluation
 	// listenerLock       sync.Mutex
@@ -60,6 +61,7 @@ func NewSubmSrvc(taskSrvc *tasksrvc.TaskService, evalSrvc *evalsrvc.EvalSrvc) (*
 		repo:     newInMemRepo(),
 		evalSrvc: evalSrvc,
 		inMem:    make(map[uuid.UUID]Submission),
+
 		// submCreated:        make(chan *Submission, 1000),
 		// evalUpdate:         make(chan *Evaluation, 1000),
 		// listenerLock:       sync.Mutex{},

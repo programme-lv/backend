@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"reflect"
 	"time"
 
 	"github.com/programme-lv/backend/evalsrvc"
@@ -23,15 +22,13 @@ func (s *SubmissionSrvc) handleUpdates(subm Submission, ch <-chan evalsrvc.Event
 			}
 			l.Info("received eval update", "type", update.Type())
 			newEval := applyUpdate(eval, update)
-			if !reflect.DeepEqual(newEval, eval) { // i don't give a ****
-				s.broadcastSubmEvalUpdate(&EvalUpdate{
-					SubmUuid: subm.UUID,
-					Eval:     &newEval,
-				})
-				eval = newEval
-				subm.CurrEval = newEval
-				s.inMem[subm.UUID] = subm
-			}
+			s.broadcastSubmEvalUpdate(&EvalUpdate{
+				SubmUuid: subm.UUID,
+				Eval:     newEval,
+			})
+			eval = newEval
+			subm.CurrEval = newEval
+			s.inMem[subm.UUID] = subm
 			final := false
 			final = final || update.Type() == evalsrvc.InternalServerErrorType
 			final = final || update.Type() == evalsrvc.CompilationErrorType

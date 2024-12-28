@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-func (httpserver *HttpServer) listenToSubmUpdates(w http.ResponseWriter, r *http.Request) {
+func (httpserver *HttpServer) listenToSubmListUpdates(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
@@ -19,14 +19,26 @@ func (httpserver *HttpServer) listenToSubmUpdates(w http.ResponseWriter, r *http
 		return
 	}
 
-	ch, err := httpserver.submSrvc.ListenToNewSubmCreated(r.Context())
+	submCreatedCh, err := httpserver.submSrvc.ListenToNewSubmCreated(r.Context())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
+	evalUpdateCh, err := httpserver.submSrvc.ListenToSubmListEvalUpdates(r.Context())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	type evalUpdateStruct struct {
+		SubmUuid   string   `json:"subm_uuid"`
+		EvalUpdate SubmEval `json:"new_eval"`
+	}
+
 	type SubmissionListUpdate struct {
-		SubmCreated *Submission `json:"subm_created"`
+		SubmCreated *Submission       `json:"subm_created"`
+		EvalUpdate  *evalUpdateStruct `json:"eval_update"`
 	}
 
 	var writeMutex sync.Mutex
@@ -44,12 +56,29 @@ func (httpserver *HttpServer) listenToSubmUpdates(w http.ResponseWriter, r *http
 		select {
 		case <-keepAliveTicker.C:
 			safeWrite(": keep-alive\n\n")
-		case update, ok := <-ch:
+		case submCreated, ok := <-submCreatedCh:
 			if !ok {
 				return
 			}
 			message := SubmissionListUpdate{
-				SubmCreated: mapSubm(update),
+				SubmCreated: mapSubm(submCreated),
+			}
+			marshalled, err := json.Marshal(message)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			safeWrite("data: " + string(marshalled) + "\n\n")
+		case evalUpdate, ok := <-evalUpdateCh:
+			if !ok {
+				return
+			}
+			message := SubmissionListUpdate{
+				SubmCreated: nil,
+				EvalUpdate: &evalUpdateStruct{
+					SubmUuid:   evalUpdate.SubmUuid.String(),
+					EvalUpdate: mapSubmEval(evalUpdate.Eval),
+				},
 			}
 			marshalled, err := json.Marshal(message)
 			if err != nil {

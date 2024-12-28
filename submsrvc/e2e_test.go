@@ -41,7 +41,7 @@ func TestSubmSrvc(t *testing.T) {
 		evalUpd, ok := <-evalCh
 		require.True(t, ok)
 		require.Equal(t, subm.UUID, evalUpd.SubmUuid)
-		eval = evalUpd.Eval
+		eval = &evalUpd.Eval
 		stage = eval.Stage
 	}
 	require.Equal(t, submsrvc.StageFinished, stage)
