@@ -99,13 +99,18 @@ func (s *SubmissionSrvc) CreateSubmission(ctx context.Context,
 		Task:    TaskRef{ShortID: t.ShortId, FullName: t.FullName},
 		Lang:    PrLang{ShortID: l.ID, Display: l.FullName, MonacoID: l.MonacoId},
 		CurrEval: Evaluation{
-			UUID:      evalUuid,
-			Stage:     evalsrvc.StageWaiting,
-			ScoreUnit: scoreUnit,
-			Subtasks:  subtasks,
-			Groups:    testgroups,
-			Tests:     tests,
-			CreatedAt: time.Now(),
+			UUID:       evalUuid,
+			Stage:      evalsrvc.StageWaiting,
+			ScoreUnit:  scoreUnit,
+			Error:      nil,
+			Subtasks:   subtasks,
+			Groups:     testgroups,
+			Tests:      tests,
+			Checker:    t.CheckerPtr(),
+			Interactor: t.InteractorPtr(),
+			CpuLimMs:   t.CpuMillis(),
+			MemLimKiB:  t.MemoryKiB(),
+			CreatedAt:  time.Now(),
 		},
 		CreatedAt: time.Now(),
 	}
@@ -181,8 +186,24 @@ func applyUpdate(eval Evaluation, update evalsrvc.Event) Evaluation {
 		eval.Tests[u.TestId-1].Reached = true
 	case evalsrvc.FinishedTest:
 		eval.Tests[u.TestID-1].Finished = true
-		if u.Checker != nil && u.Checker.ExitCode == 0 {
-			eval.Tests[u.TestID-1].Ac = true
+		if u.Subm != nil {
+			if u.Subm.ExitCode != 0 {
+				eval.Tests[u.TestID-1].Re = true
+			} else if u.Subm.StdErr != "" {
+				eval.Tests[u.TestID-1].Re = true
+			} else if u.Subm.Signal != nil {
+				eval.Tests[u.TestID-1].Re = true
+			} else if u.Subm.CpuMs > int64(eval.CpuLimMs) {
+				eval.Tests[u.TestID-1].Tle = true
+			} else if u.Subm.MemKiB > int64(eval.MemLimKiB) {
+				eval.Tests[u.TestID-1].Mle = true
+			} else if u.Checker != nil {
+				if u.Checker.ExitCode == 0 {
+					eval.Tests[u.TestID-1].Ac = true
+				} else {
+					eval.Tests[u.TestID-1].Wa = true
+				}
+			}
 		}
 	case evalsrvc.IgnoredTest:
 		eval.Tests[u.TestId-1].Ig = true

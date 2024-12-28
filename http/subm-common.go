@@ -1,6 +1,7 @@
 package http
 
 import (
+	"log"
 	"time"
 
 	"github.com/programme-lv/backend/submsrvc"
@@ -24,13 +25,14 @@ type PrLang struct {
 }
 
 type SubmEval struct {
-	EvalUUID   string      `json:"eval_uuid"`
-	EvalStage  string      `json:"eval_stage"`
-	ScoreUnit  string      `json:"score_unit"`
-	EvalError  string      `json:"eval_error"`
-	ErrorMsg   string      `json:"error_msg"`
-	Subtasks   []Subtask   `json:"subtasks"`
-	TestGroups []TestGroup `json:"test_groups"`
+	EvalUUID     string      `json:"eval_uuid"`
+	EvalStage    string      `json:"eval_stage"`
+	ScoreUnit    string      `json:"score_unit"`
+	EvalError    string      `json:"eval_error"`
+	ErrorMsg     string      `json:"error_msg"`
+	Subtasks     []Subtask   `json:"subtasks"`
+	TestGroups   []TestGroup `json:"test_groups"`
+	TestVerdicts []string    `json:"test_verdicts"` // q,ac,wa,tle,mle,re,ig
 }
 
 type Subtask struct {
@@ -90,13 +92,41 @@ func mapSubmEval(eval submsrvc.Evaluation) SubmEval {
 		})
 	}
 
+	testVerdicts := []string{}
+	for _, test := range eval.Tests {
+		if test.Finished {
+			if test.Ac {
+				testVerdicts = append(testVerdicts, "ac") // accepted
+			} else if test.Wa {
+				testVerdicts = append(testVerdicts, "wa") // wrong answer
+			} else if test.Tle {
+				testVerdicts = append(testVerdicts, "tle") // time limit exceeded
+			} else if test.Mle {
+				testVerdicts = append(testVerdicts, "mle") // memory limit exceeded
+			} else if test.Re {
+				testVerdicts = append(testVerdicts, "re") // runtime error
+			} else if test.Ig {
+				testVerdicts = append(testVerdicts, "ig") // ignored
+			} else {
+				testVerdicts = append(testVerdicts, "") // unknown
+			}
+		} else if test.Reached {
+			testVerdicts = append(testVerdicts, "t") // testing
+		} else {
+			testVerdicts = append(testVerdicts, "q") // queued
+		}
+	}
+
+	log.Println(testVerdicts)
+
 	return SubmEval{
-		EvalUUID:   eval.UUID.String(),
-		EvalStage:  eval.Stage,
-		ScoreUnit:  eval.ScoreUnit,
-		EvalError:  errType,
-		ErrorMsg:   errMsg,
-		Subtasks:   subtasks,
-		TestGroups: testGroups,
+		EvalUUID:     eval.UUID.String(),
+		EvalStage:    eval.Stage,
+		ScoreUnit:    eval.ScoreUnit,
+		EvalError:    errType,
+		ErrorMsg:     errMsg,
+		Subtasks:     subtasks,
+		TestGroups:   testGroups,
+		TestVerdicts: testVerdicts,
 	}
 }

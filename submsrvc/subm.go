@@ -45,6 +45,11 @@ type Evaluation struct {
 
 	Tests []Test
 
+	Checker    *string
+	Interactor *string
+	CpuLimMs   int
+	MemLimKiB  int
+
 	CreatedAt time.Time
 }
 
