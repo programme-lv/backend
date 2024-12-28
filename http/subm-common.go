@@ -1,7 +1,6 @@
 package http
 
 import (
-	"log"
 	"time"
 
 	"github.com/programme-lv/backend/submsrvc"
@@ -116,8 +115,6 @@ func mapSubmEval(eval submsrvc.Evaluation) SubmEval {
 			testVerdicts = append(testVerdicts, "q") // queued
 		}
 	}
-
-	log.Println(testVerdicts)
 
 	return SubmEval{
 		EvalUUID:     eval.UUID.String(),

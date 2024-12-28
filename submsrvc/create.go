@@ -113,6 +113,7 @@ func (s *SubmissionSrvc) CreateSubmission(ctx context.Context,
 		CreatedAt: time.Now(),
 	}
 
+	s.inMem[submUuid] = subm
 	s.broadcastNewSubmCreated(subm)
 	go s.handleUpdates(subm, ch)
 

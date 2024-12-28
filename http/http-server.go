@@ -1,12 +1,14 @@
 package http
 
 import (
+	"fmt"
 	"log/slog"
 	"net/http"
+	"sync"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
-	"github.com/go-chi/httplog/v2"
 	"github.com/programme-lv/backend/evalsrvc"
 	"github.com/programme-lv/backend/submsrvc"
 	"github.com/programme-lv/backend/tasksrvc"
@@ -22,6 +24,77 @@ type HttpServer struct {
 	JwtKey   []byte
 }
 
+type endpointStats struct {
+	count       int
+	totalTime   time.Duration
+	lastPrinted time.Time
+}
+
+type statsLogger struct {
+	stats         map[string]*endpointStats
+	mu            sync.Mutex
+	flushInterval time.Duration
+}
+
+func newStatsLogger() *statsLogger {
+	sl := &statsLogger{
+		stats:         make(map[string]*endpointStats),
+		flushInterval: 5 * time.Second, // Print stats every 5 seconds
+	}
+	go sl.periodicFlush()
+	return sl
+}
+
+func (sl *statsLogger) periodicFlush() {
+	ticker := time.NewTicker(sl.flushInterval)
+	for range ticker.C {
+		sl.flushStats()
+	}
+}
+
+func (sl *statsLogger) flushStats() {
+	sl.mu.Lock()
+	defer sl.mu.Unlock()
+
+	now := time.Now()
+	for endpoint, stats := range sl.stats {
+		if stats.count > 0 && now.Sub(stats.lastPrinted) >= sl.flushInterval {
+			// Convert to float64 and round to 2 decimal places
+			avgTimeMs := float64(stats.totalTime.Microseconds()) / float64(stats.count) / 1000.0
+
+			slog.Info("endpoint stats",
+				"endpoint", endpoint,
+				"count", stats.count,
+				"avg_time_ms", fmt.Sprintf("%.2f", avgTimeMs),
+				"period", sl.flushInterval,
+			)
+			// Reset stats after printing
+			stats.count = 0
+			stats.totalTime = 0
+			stats.lastPrinted = now
+		}
+	}
+}
+
+func (sl *statsLogger) middleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		endpoint := fmt.Sprintf("%s %s", r.Method, r.URL.Path)
+		start := time.Now()
+
+		next.ServeHTTP(w, r)
+
+		duration := time.Since(start)
+
+		sl.mu.Lock()
+		if _, exists := sl.stats[endpoint]; !exists {
+			sl.stats[endpoint] = &endpointStats{}
+		}
+		sl.stats[endpoint].count++
+		sl.stats[endpoint].totalTime += duration
+		sl.mu.Unlock()
+	})
+}
+
 func NewHttpServer(
 	submSrvc *submsrvc.SubmissionSrvc,
 	userSrvc *usersrvc.UserService,
@@ -31,18 +104,8 @@ func NewHttpServer(
 ) *HttpServer {
 	router := chi.NewRouter()
 
-	logger := httplog.NewLogger("proglv", httplog.Options{
-		LogLevel:         slog.LevelDebug,
-		Concise:          true,
-		RequestHeaders:   true,
-		MessageFieldName: "message",
-		Tags: map[string]string{
-			"version": "v1.0-81aa4244d9fc8076a",
-			"env":     "dev",
-		},
-	})
-
-	router.Use(httplog.RequestLogger(logger))
+	statsLogger := newStatsLogger()
+	router.Use(statsLogger.middleware)
 
 	router.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{"http://localhost:3000", "https://programme.lv", "https://www.programme.lv"},

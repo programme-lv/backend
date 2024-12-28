@@ -4,8 +4,10 @@ import (
 	"log"
 	"log/slog"
 	"os"
+	"time"
 
 	"github.com/joho/godotenv"
+	"github.com/lmittmann/tint"
 	"github.com/programme-lv/backend/evalsrvc"
 	"github.com/programme-lv/backend/http"
 	"github.com/programme-lv/backend/submsrvc"
@@ -14,6 +16,16 @@ import (
 )
 
 func main() {
+	w := os.Stderr
+
+	// set global logger with custom options
+	slog.SetDefault(slog.New(
+		tint.NewHandler(w, &tint.Options{
+			Level:      slog.LevelDebug,
+			TimeFormat: time.Kitchen,
+		}),
+	))
+
 	err := godotenv.Load()
 	if err != nil {
 		panic("Error loading .env file")
@@ -40,7 +52,7 @@ func main() {
 		[]byte(jwtKey))
 
 	address := ":8080"
-	log.Printf("Starting server on %s", address)
+	slog.Info("starting server", "address", address)
 	err = httpServer.Start(":8080")
-	log.Printf("Server stopped with error: %v", err)
+	slog.Info("server stopped", "error", err)
 }

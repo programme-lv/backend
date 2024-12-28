@@ -3,8 +3,9 @@ package tasksrvc
 import (
 	"encoding/json"
 	"fmt"
-	"log"
+	"log/slog"
 	"sync"
+	"time"
 
 	"github.com/programme-lv/backend/s3bucket"
 )
@@ -36,12 +37,17 @@ func NewTaskSrvc() (*TaskService, error) {
 		return nil, fmt.Errorf(format, err)
 	}
 
-	log.Printf("Listing all task files from S3 bucket: %s", taskBucket.Bucket())
+	start := time.Now()
+	slog.Info("downloading tasks from S3", "bucket", taskBucket.Bucket())
 	taskFiles, err := taskBucket.ListAndGetAllFiles("")
 	if err != nil {
 		return nil, fmt.Errorf("failed to list task files: %w", err)
 	}
-	log.Printf("Downloaded %d task files from S3 bucket: %s", len(taskFiles), taskBucket.Bucket())
+	elapsed := time.Since(start)
+	slog.Info("downloaded tasks from S3",
+		"bucket", taskBucket.Bucket(),
+		"count", len(taskFiles),
+		"time_ms", elapsed.Milliseconds())
 
 	// unmarshall jsons in taskFiles to tasks
 	tasks := []Task{}

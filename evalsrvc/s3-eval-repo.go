@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
@@ -13,12 +14,14 @@ import (
 )
 
 type S3EvalRepo struct {
+	logger     *slog.Logger
 	client     *s3.Client
 	bucketName string
 }
 
-func NewS3EvalRepo(client *s3.Client, bucketName string) *S3EvalRepo {
+func NewS3EvalRepo(logger *slog.Logger, client *s3.Client, bucketName string) *S3EvalRepo {
 	return &S3EvalRepo{
+		logger:     logger,
 		client:     client,
 		bucketName: bucketName,
 	}
@@ -31,7 +34,8 @@ func (r *S3EvalRepo) Save(ctx context.Context, eval Evaluation) error {
 	}
 
 	key := fmt.Sprintf("%s.json", eval.UUID.String())
-	fmt.Printf("Saving with key: %s\n", key)
+	r.logger.Info("saving eval to S3", "key", key)
+
 	_, err = r.client.PutObject(ctx, &s3.PutObjectInput{
 		Bucket: aws.String(r.bucketName),
 		Key:    aws.String(key),

@@ -14,13 +14,14 @@ import (
 func (s *SubmissionSrvc) handleUpdates(subm Submission, ch <-chan evalsrvc.Event) {
 	timer := time.After(30 * time.Second)
 	eval := subm.CurrEval
+	l := s.logger.With("eval-uuid", eval.UUID)
 	for {
 		select {
 		case update, ok := <-ch:
 			if !ok {
 				return
 			}
-			slog.Info("received update from eval srvc", "update", update)
+			l.Info("received eval update", "type", update.Type())
 			newEval := applyUpdate(eval, update)
 			if !reflect.DeepEqual(newEval, eval) { // i don't give a ****
 				s.broadcastSubmEvalUpdate(&EvalUpdate{

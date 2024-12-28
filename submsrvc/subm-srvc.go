@@ -3,6 +3,7 @@ package submsrvc
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"sort"
 	"sync"
 
@@ -22,6 +23,8 @@ type submRepo interface {
 }
 
 type SubmissionSrvc struct {
+	logger *slog.Logger
+
 	tests *s3bucket.S3Bucket
 	repo  submRepo
 	inMem map[uuid.UUID]Submission // in-progress submissions
@@ -50,6 +53,7 @@ func NewSubmSrvc(taskSrvc *tasksrvc.TaskService, evalSrvc *evalsrvc.EvalSrvc) (*
 	}
 
 	srvc := &SubmissionSrvc{
+		logger:   slog.Default().With("module", "subm"),
 		tests:    testBucket,
 		userSrvc: usersrvc.NewUsers(),
 		taskSrvc: taskSrvc,

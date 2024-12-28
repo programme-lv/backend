@@ -18,6 +18,8 @@ type EvalRepo interface {
 }
 
 type EvalSrvc struct {
+	logger *slog.Logger
+
 	sqsClient *sqs.Client
 	evalRepo  EvalRepo // either in-mem or s3
 
@@ -33,9 +35,11 @@ type EvalSrvc struct {
 }
 
 func NewEvalSrvc() *EvalSrvc {
-	s3Repo := NewS3EvalRepo(getS3ClientFromEnv(), getEvalS3BucketFromEnv())
+	logger := slog.Default().With("module", "eval")
+	s3Repo := NewS3EvalRepo(logger, getS3ClientFromEnv(), getEvalS3BucketFromEnv())
 
 	esrvc := &EvalSrvc{
+		logger:     logger,
 		sqsClient:  getSqsClientFromEnv(),
 		submQ:      getSubmSqsUrlFromEnv(),
 		evalRepo:   s3Repo,
