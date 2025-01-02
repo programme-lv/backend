@@ -20,11 +20,12 @@ func (s *SubmissionSrvc) constructSubm(ctx context.Context, entity SubmissionEnt
 		return nil, err
 	}
 	return &Submission{
-		UUID:     entity.UUID,
-		Content:  entity.Content,
-		Author:   Author{UUID: user.UUID, Username: user.Username},
-		Task:     TaskRef{ShortID: task.ShortId, FullName: task.FullName},
-		Lang:     PrLang{ShortID: lang.ID, Display: lang.FullName, MonacoID: lang.MonacoId},
-		CurrEval: entity.CurrEval,
+		UUID:      entity.UUID,
+		Content:   entity.Content,
+		Author:    Author{UUID: user.UUID, Username: user.Username},
+		Task:      TaskRef{ShortID: task.ShortId, FullName: task.FullName},
+		Lang:      PrLang{ShortID: lang.ID, Display: lang.FullName, MonacoID: lang.MonacoId},
+		CurrEval:  entity.CurrEval,
+		CreatedAt: entity.CreatedAt,
 	}, nil
 }

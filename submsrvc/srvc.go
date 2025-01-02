@@ -102,18 +102,18 @@ func (s *SubmissionSrvc) ListSubms(ctx context.Context) ([]Submission, error) {
 		if _, ok := s.inMem[subm.UUID]; ok {
 			continue
 		}
-		subm, err := s.constructSubm(ctx, subm)
+		subm2, err := s.constructSubm(ctx, subm)
 		if err != nil {
 			return nil, err
 		}
-		submMap[subm.UUID] = *subm
+		submMap[subm.UUID] = *subm2
 	}
 	for _, subm := range s.inMem {
-		subm, err := s.constructSubm(ctx, subm)
+		subm2, err := s.constructSubm(ctx, subm)
 		if err != nil {
 			return nil, err
 		}
-		submMap[subm.UUID] = *subm
+		submMap[subm.UUID] = *subm2
 	}
 
 	subms := make([]Submission, 0, len(submMap))
