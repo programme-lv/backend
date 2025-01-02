@@ -10,7 +10,7 @@ import (
 	"github.com/programme-lv/backend/tasksrvc"
 )
 
-func (s *SubmissionSrvc) handleUpdates(subm Submission, ch <-chan evalsrvc.Event) {
+func (s *SubmissionSrvc) handleUpdates(subm SubmissionEntity, ch <-chan evalsrvc.Event) {
 	timer := time.After(30 * time.Second)
 	eval := subm.CurrEval
 	l := s.logger.With("eval-uuid", eval.UUID)
@@ -21,13 +21,13 @@ func (s *SubmissionSrvc) handleUpdates(subm Submission, ch <-chan evalsrvc.Event
 				return
 			}
 			l.Info("received eval update", "type", update.Type())
-			newEval := applyUpdate(eval, update)
+			newEval := applyUpdate(*eval, update)
 			s.broadcastSubmEvalUpdate(&EvalUpdate{
 				SubmUuid: subm.UUID,
 				Eval:     newEval,
 			})
-			eval = newEval
-			subm.CurrEval = newEval
+			eval = &newEval
+			subm.CurrEval = eval
 			s.inMem[subm.UUID] = subm
 			final := false
 			final = final || update.Type() == evalsrvc.InternalServerErrorType

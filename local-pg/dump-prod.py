@@ -1,3 +1,4 @@
+#! /usr/bin/env python3
 """
 This script dumps the production database to a local file.
 Requires pg_dump and aws cli to be installed.

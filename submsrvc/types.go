@@ -6,6 +6,16 @@ import (
 	"github.com/google/uuid"
 )
 
+type SubmissionEntity struct {
+	UUID        uuid.UUID
+	Content     string
+	AuthorUUID  uuid.UUID
+	TaskShortID string
+	LangShortID string
+	CurrEval    *Evaluation
+	CreatedAt   time.Time
+}
+
 type Submission struct {
 	UUID uuid.UUID
 
@@ -15,7 +25,7 @@ type Submission struct {
 	Task   TaskRef
 	Lang   PrLang
 
-	CurrEval Evaluation
+	CurrEval *Evaluation
 
 	CreatedAt time.Time
 }
