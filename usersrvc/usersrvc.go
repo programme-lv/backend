@@ -20,7 +20,7 @@ type UserService struct {
 	postgres *sqlx.DB
 }
 
-func NewUsers() *UserService {
+func NewUserService() *UserService {
 	postgresConnStr := getPostgresConnStr()
 	db, err := sqlx.Connect("postgres", postgresConnStr)
 	if err != nil {

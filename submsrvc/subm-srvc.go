@@ -56,7 +56,7 @@ func NewSubmSrvc(taskSrvc *tasksrvc.TaskService, evalSrvc *evalsrvc.EvalSrvc) (*
 	srvc := &SubmissionSrvc{
 		logger:   slog.Default().With("module", "subm"),
 		tests:    testBucket,
-		userSrvc: usersrvc.NewUsers(),
+		userSrvc: usersrvc.NewUserService(),
 		taskSrvc: taskSrvc,
 		repo:     newInMemRepo(),
 		evalSrvc: evalSrvc,
