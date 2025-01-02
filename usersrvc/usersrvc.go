@@ -15,7 +15,7 @@ type UserService struct {
 }
 
 func NewUserService() *UserService {
-	postgresConnStr := conf.GetAwsPgConnStrFromEnv()
+	postgresConnStr := conf.GetPgConnStrFromEnv()
 	db, err := sqlx.Connect("postgres", postgresConnStr)
 	if err != nil {
 		panic(fmt.Sprintf("failed to connect to postgres: %v", err))

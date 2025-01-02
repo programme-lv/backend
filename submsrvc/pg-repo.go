@@ -27,39 +27,18 @@ func (r *pgSubmRepo) Store(ctx context.Context, subm SubmissionEntity) error {
 	}
 	defer tx.Rollback(ctx) // Safe to call, does nothing if already committed
 
-	// Insert Submission
-	submissionInsertQuery := `
-		INSERT INTO submissions (
-			uuid, content, author_uuid, task_shortid, lang_shortid, curr_eval_uuid, created_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7)
-	`
+	// If there's a current evaluation, insert it and its related entities first
 	var currEvalUUID *uuid.UUID
 	if subm.CurrEval != nil {
-		currEvalUUID = &subm.CurrEval.UUID
-	}
-	_, err = tx.Exec(ctx, submissionInsertQuery,
-		subm.UUID,
-		subm.Content,
-		subm.AuthorUUID,
-		subm.TaskShortID,
-		subm.LangShortID,
-		currEvalUUID,
-		subm.CreatedAt,
-	)
-	if err != nil {
-		return fmt.Errorf("failed to insert submission: %w", err)
-	}
-
-	// If there's a current evaluation, insert it and its related entities
-	if subm.CurrEval != nil {
 		eval := subm.CurrEval
+		currEvalUUID = &eval.UUID
 
 		// Insert Evaluation
 		evaluationInsertQuery := `
 			INSERT INTO evaluations (
-				uuid, submission_uuid, stage, score_unit, checker, interactor,
+				uuid, stage, score_unit, checker, interactor,
 				cpu_lim_ms, mem_lim_kib, error_type, error_message, created_at
-			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 		`
 		var errorType *string
 		var errorMessage *string
@@ -71,7 +50,6 @@ func (r *pgSubmRepo) Store(ctx context.Context, subm SubmissionEntity) error {
 
 		_, err = tx.Exec(ctx, evaluationInsertQuery,
 			eval.UUID,
-			subm.UUID,
 			eval.Stage,
 			eval.ScoreUnit,
 			eval.Checker,
@@ -144,6 +122,25 @@ func (r *pgSubmRepo) Store(ctx context.Context, subm SubmissionEntity) error {
 				return fmt.Errorf("failed to insert test: %w", err)
 			}
 		}
+	}
+
+	// Insert Submission
+	submissionInsertQuery := `
+		INSERT INTO submissions (
+			uuid, content, author_uuid, task_shortid, lang_shortid, curr_eval_uuid, created_at
+		) VALUES ($1, $2, $3, $4, $5, $6, $7)
+	`
+	_, err = tx.Exec(ctx, submissionInsertQuery,
+		subm.UUID,
+		subm.Content,
+		subm.AuthorUUID,
+		subm.TaskShortID,
+		subm.LangShortID,
+		currEvalUUID,
+		subm.CreatedAt,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to insert submission: %w", err)
 	}
 
 	// Commit the transaction

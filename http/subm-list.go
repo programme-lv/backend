@@ -2,20 +2,18 @@ package http
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
 
-	"github.com/go-chi/httplog/v2"
 	"github.com/programme-lv/backend/submsrvc"
 )
 
 func (httpserver *HttpServer) listSubmissions(w http.ResponseWriter, r *http.Request) {
-	logger := httplog.LogEntry(r.Context())
-
 	type listSubmissionsResponse []*Submission
 
 	subms, err := httpserver.submSrvc.ListSubms(context.TODO())
 	if err != nil {
-		handleJsonSrvcError(logger, w, err)
+		handleJsonSrvcError(slog.Default(), w, err)
 		return
 	}
 
