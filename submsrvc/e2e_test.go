@@ -68,7 +68,7 @@ func TestSubmSrvc(t *testing.T) {
 	}, eval.Tests[1])
 	require.Nil(t, eval.Error)
 	require.NotNil(t, eval)
-	subm.CurrEval = *eval
+	subm.CurrEval = eval
 	submSrvc2, err := submsrvc.NewSubmSrvc(taskSrvc, evalSrvc)
 	require.NoError(t, err)
 	submFromGet, err := submSrvc2.GetSubm(ctx, subm.UUID)

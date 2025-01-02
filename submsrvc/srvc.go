@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/programme-lv/backend/evalsrvc"
 	"github.com/programme-lv/backend/s3bucket"
 	"github.com/programme-lv/backend/tasksrvc"
@@ -17,17 +18,17 @@ import (
 )
 
 type submRepo interface {
-	Store(ctx context.Context, subm Submission) error
-	Get(ctx context.Context, uuid uuid.UUID) (*Submission, error)
-	List(ctx context.Context) ([]Submission, error)
+	Store(ctx context.Context, subm SubmissionEntity) error
+	Get(ctx context.Context, uuid uuid.UUID) (*SubmissionEntity, error)
+	List(ctx context.Context) ([]SubmissionEntity, error)
 }
 
 type SubmissionSrvc struct {
 	logger *slog.Logger
 
 	tests *s3bucket.S3Bucket
-	repo  submRepo
-	inMem map[uuid.UUID]Submission // in-progress submissions
+	repo  submRepo                       // persistent subm storage
+	inMem map[uuid.UUID]SubmissionEntity // in-progress submissions
 
 	userSrvc *usersrvc.UserService
 	taskSrvc *tasksrvc.TaskService
@@ -53,14 +54,19 @@ func NewSubmSrvc(taskSrvc *tasksrvc.TaskService, evalSrvc *evalsrvc.EvalSrvc) (*
 		return nil, fmt.Errorf("failed to create test bucket: %w", err)
 	}
 
+	pool, err := pgxpool.New(context.Background(), "postgres://proglv:proglv@localhost:5433/proglv?sslmode=disable")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create pg pool: %w", err)
+	}
+
 	srvc := &SubmissionSrvc{
 		logger:   slog.Default().With("module", "subm"),
 		tests:    testBucket,
 		userSrvc: usersrvc.NewUserService(),
 		taskSrvc: taskSrvc,
-		repo:     newInMemRepo(),
+		repo:     NewPgSubmRepo(pool),
 		evalSrvc: evalSrvc,
-		inMem:    make(map[uuid.UUID]Submission),
+		inMem:    make(map[uuid.UUID]SubmissionEntity),
 
 		// submCreated:        make(chan *Submission, 1000),
 		// evalUpdate:         make(chan *Evaluation, 1000),
@@ -73,14 +79,14 @@ func NewSubmSrvc(taskSrvc *tasksrvc.TaskService, evalSrvc *evalsrvc.EvalSrvc) (*
 
 func (s *SubmissionSrvc) GetSubm(ctx context.Context, uuid uuid.UUID) (*Submission, error) {
 	if subm, ok := s.inMem[uuid]; ok {
-		return &subm, nil
+		return s.constructSubm(ctx, subm)
 	}
-	subm, err := s.repo.Get(ctx, uuid)
+	entity, err := s.repo.Get(ctx, uuid)
 	if err != nil {
 		return nil, err
 	}
-	s.inMem[uuid] = *subm
-	return subm, nil
+	s.inMem[uuid] = *entity
+	return s.constructSubm(ctx, *entity)
 }
 
 func (s *SubmissionSrvc) ListSubms(ctx context.Context) ([]Submission, error) {
@@ -92,10 +98,22 @@ func (s *SubmissionSrvc) ListSubms(ctx context.Context) ([]Submission, error) {
 	// Create map of submissions, preferring in-memory ones
 	submMap := make(map[uuid.UUID]Submission)
 	for _, subm := range repoSubms {
-		submMap[subm.UUID] = subm
+		// skip if in-mem map
+		if _, ok := s.inMem[subm.UUID]; ok {
+			continue
+		}
+		subm, err := s.constructSubm(ctx, subm)
+		if err != nil {
+			return nil, err
+		}
+		submMap[subm.UUID] = *subm
 	}
 	for _, subm := range s.inMem {
-		submMap[subm.UUID] = subm
+		subm, err := s.constructSubm(ctx, subm)
+		if err != nil {
+			return nil, err
+		}
+		submMap[subm.UUID] = *subm
 	}
 
 	subms := make([]Submission, 0, len(submMap))

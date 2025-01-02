@@ -7,14 +7,14 @@ import (
 )
 
 type Submission struct {
-	SubmUUID  string   `json:"subm_uuid"`
-	Content   string   `json:"content"`
-	Username  string   `json:"username"`
-	CurrEval  SubmEval `json:"curr_eval"`
-	PrLang    PrLang   `json:"pr_lang"`
-	TaskName  string   `json:"task_name"`
-	TaskID    string   `json:"task_id"`
-	CreatedAt string   `json:"created_at"`
+	SubmUUID  string    `json:"subm_uuid"`
+	Content   string    `json:"content"`
+	Username  string    `json:"username"`
+	CurrEval  *SubmEval `json:"curr_eval"`
+	PrLang    PrLang    `json:"pr_lang"`
+	TaskName  string    `json:"task_name"`
+	TaskID    string    `json:"task_id"`
+	CreatedAt string    `json:"created_at"`
 }
 
 type PrLang struct {
@@ -47,11 +47,16 @@ type TestGroup struct {
 }
 
 func mapSubm(subm submsrvc.Submission) *Submission {
+	var currEval *SubmEval
+	if subm.CurrEval != nil {
+		mapped := mapSubmEval(*subm.CurrEval)
+		currEval = &mapped
+	}
 	return &Submission{
 		SubmUUID: subm.UUID.String(),
 		Content:  subm.Content,
 		Username: subm.Author.Username,
-		CurrEval: mapSubmEval(subm.CurrEval),
+		CurrEval: currEval,
 		PrLang: PrLang{
 			ShortID:  subm.Lang.ShortID,
 			Display:  subm.Lang.Display,

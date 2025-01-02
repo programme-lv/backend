@@ -90,13 +90,13 @@ func (s *SubmissionSrvc) CreateSubmission(ctx context.Context,
 	}
 
 	submUuid := uuid.New()
-	subm := Submission{
-		UUID:    submUuid,
-		Content: params.Submission,
-		Author:  Author{UUID: u.UUID, Username: u.Username},
-		Task:    TaskRef{ShortID: t.ShortId, FullName: t.FullName},
-		Lang:    PrLang{ShortID: l.ID, Display: l.FullName, MonacoID: l.MonacoId},
-		CurrEval: Evaluation{
+	entity := SubmissionEntity{
+		UUID:        submUuid,
+		Content:     params.Submission,
+		AuthorUUID:  u.UUID,
+		TaskShortID: t.ShortId,
+		LangShortID: l.ID,
+		CurrEval: &Evaluation{
 			UUID:       evalUuid,
 			Stage:      evalsrvc.StageWaiting,
 			ScoreUnit:  scoreUnit,
@@ -113,9 +113,19 @@ func (s *SubmissionSrvc) CreateSubmission(ctx context.Context,
 		CreatedAt: time.Now(),
 	}
 
-	s.inMem[submUuid] = subm
-	s.broadcastNewSubmCreated(subm)
-	go s.handleUpdates(subm, ch)
+	full := Submission{
+		UUID:      evalUuid,
+		Content:   entity.Content,
+		Author:    Author{UUID: entity.AuthorUUID, Username: u.Username},
+		Task:      TaskRef{ShortID: entity.TaskShortID, FullName: t.FullName},
+		Lang:      PrLang{ShortID: entity.LangShortID, Display: l.FullName, MonacoID: l.MonacoId},
+		CurrEval:  entity.CurrEval,
+		CreatedAt: entity.CreatedAt,
+	}
 
-	return &subm, nil
+	s.inMem[submUuid] = entity
+	s.broadcastNewSubmCreated(full)
+	go s.handleUpdates(entity, ch)
+
+	return &full, nil
 }
