@@ -47,7 +47,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("error creating submission service: %v", err)
 	}
-	userSrvc := usersrvc.NewUsers()
+	userSrvc := usersrvc.NewUserService()
 	httpServer := http.NewHttpServer(submSrvc, userSrvc, taskSrvc, evalSrvc,
 		[]byte(jwtKey))
 
