@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: local-proglv-pg
+    environment:
+      POSTGRES_USER: proglv
+      POSTGRES_PASSWORD: proglv
+      POSTGRES_DB: proglv
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
