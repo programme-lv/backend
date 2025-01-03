@@ -47,7 +47,9 @@ func getSecretFromAWS(secretName string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	svc := secretsmanager.NewFromConfig(cfg)
+	svc := secretsmanager.NewFromConfig(cfg, func(opts *secretsmanager.Options) {
+		opts.Region = "eu-central-1"
+	})
 	input := &secretsmanager.GetSecretValueInput{
 		SecretId: aws.String(secretName),
 	}
