@@ -97,11 +97,11 @@ func (s *SubmissionSrvc) evalReqTests(task *tasksrvc.Task) []evalsrvc.TestFile {
 	for i, test := range task.Tests {
 		inputKey := fmt.Sprintf("%s.zst", test.InpSha2)
 		answerKey := fmt.Sprintf("%s.zst", test.AnsSha2)
-		inputS3Url, err := s.tests.PresignedURL(inputKey, 10*time.Minute)
+		inputS3Url, err := s.tests.PresignedURL(inputKey, 10*time.Hour)
 		if err != nil {
 			slog.Error("failed to get presigned URL for input", "error", err)
 		}
-		answerS3Url, err := s.tests.PresignedURL(answerKey, 10*time.Minute)
+		answerS3Url, err := s.tests.PresignedURL(answerKey, 10*time.Hour)
 		if err != nil {
 			slog.Error("failed to get presigned URL for answer", "error", err)
 		}
