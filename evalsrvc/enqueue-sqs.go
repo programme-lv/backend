@@ -2,12 +2,14 @@ package evalsrvc
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/google/uuid"
+	"github.com/klauspost/compress/zstd"
 	"github.com/programme-lv/tester"
 )
 
@@ -64,10 +66,19 @@ func enqueue(
 		return errMsg
 	}
 
+	zstdEncoder, err := zstd.NewWriter(nil)
+	if err != nil {
+		return fmt.Errorf("failed to create zstd encoder: %w", err)
+	}
+	defer zstdEncoder.Close()
+
+	compressed := zstdEncoder.EncodeAll(jsonReq, make([]byte, 0, len(jsonReq)))
+	encoded := base64.StdEncoding.EncodeToString(compressed)
+
 	_, err = client.SendMessage(context.TODO(),
 		&sqs.SendMessageInput{
 			QueueUrl:    aws.String(submQ),
-			MessageBody: aws.String(string(jsonReq)),
+			MessageBody: aws.String(encoded),
 		})
 	if err != nil {
 		format := "failed to send message to eval queue: %w"
