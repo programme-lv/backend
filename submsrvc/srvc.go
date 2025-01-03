@@ -9,7 +9,9 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/programme-lv/backend/conf"
 	"github.com/programme-lv/backend/evalsrvc"
+	"github.com/programme-lv/backend/planglist"
 	"github.com/programme-lv/backend/s3bucket"
 	"github.com/programme-lv/backend/tasksrvc"
 	"github.com/programme-lv/backend/usersrvc"
@@ -19,16 +21,23 @@ import (
 
 type submRepo interface {
 	Store(ctx context.Context, subm SubmissionEntity) error
-	Get(ctx context.Context, uuid uuid.UUID) (*SubmissionEntity, error)
+	Get(ctx context.Context, uuid uuid.UUID) (SubmissionEntity, error)
 	List(ctx context.Context, limit int, offset int) ([]SubmissionEntity, error)
+	AssignEval(ctx context.Context, submUuid uuid.UUID, evalUuid uuid.UUID) error
+}
+
+type evalRepo interface {
+	Store(ctx context.Context, eval Evaluation) error
+	Get(ctx context.Context, uuid uuid.UUID) (Evaluation, error)
 }
 
 type SubmissionSrvc struct {
 	logger *slog.Logger
 
-	tests *s3bucket.S3Bucket
-	repo  submRepo                       // persistent subm storage
-	inMem map[uuid.UUID]SubmissionEntity // in-progress submissions
+	tests    *s3bucket.S3Bucket
+	submRepo submRepo // persistent subm storage
+	evalRepo evalRepo
+	inMem    map[uuid.UUID]Evaluation // subm id to corresponding in-progress evaluation
 
 	userSrvc *usersrvc.UserService
 	taskSrvc *tasksrvc.TaskService
@@ -42,10 +51,6 @@ type SubmissionSrvc struct {
 	submListEvalUpdSubs []chan *EvalUpdate
 	submCreatedSubs     []chan Submission
 	listenerLock        sync.Mutex
-	// submCreated        chan *Submission
-	// evalUpdate         chan *Evaluation
-	// listenerLock       sync.Mutex
-	// evalUpdSubscribers []chan *EvalUpdate
 }
 
 func NewSubmSrvc(taskSrvc *tasksrvc.TaskService, evalSrvc *evalsrvc.EvalSrvc) (*SubmissionSrvc, error) {
@@ -54,7 +59,7 @@ func NewSubmSrvc(taskSrvc *tasksrvc.TaskService, evalSrvc *evalsrvc.EvalSrvc) (*
 		return nil, fmt.Errorf("failed to create test bucket: %w", err)
 	}
 
-	pool, err := pgxpool.New(context.Background(), "postgres://proglv:proglv@localhost:5433/proglv?sslmode=disable")
+	pool, err := pgxpool.New(context.Background(), conf.GetPgConnStrFromEnv())
 	if err != nil {
 		return nil, fmt.Errorf("failed to create pg pool: %w", err)
 	}
@@ -64,33 +69,63 @@ func NewSubmSrvc(taskSrvc *tasksrvc.TaskService, evalSrvc *evalsrvc.EvalSrvc) (*
 		tests:    testBucket,
 		userSrvc: usersrvc.NewUserService(),
 		taskSrvc: taskSrvc,
-		repo:     NewPgSubmRepo(pool),
+		submRepo: NewPgSubmRepo(pool),
+		evalRepo: NewPgEvalRepo(pool),
 		evalSrvc: evalSrvc,
-		inMem:    make(map[uuid.UUID]SubmissionEntity),
-
-		// submCreated:        make(chan *Submission, 1000),
-		// evalUpdate:         make(chan *Evaluation, 1000),
-		// listenerLock:       sync.Mutex{},
-		// evalUpdSubscribers: make([]chan *SubmListUpdate, 0, 100),
+		inMem:    make(map[uuid.UUID]Evaluation),
 	}
 
 	return srvc, nil
 }
 
-func (s *SubmissionSrvc) GetSubm(ctx context.Context, uuid uuid.UUID) (*Submission, error) {
-	if subm, ok := s.inMem[uuid]; ok {
-		return s.constructSubm(ctx, subm)
-	}
-	entity, err := s.repo.Get(ctx, uuid)
+func (s *SubmissionSrvc) GetSubm(ctx context.Context, submUuid uuid.UUID) (*Submission, error) {
+	entity, err := s.submRepo.Get(ctx, submUuid)
 	if err != nil {
 		return nil, err
 	}
-	s.inMem[uuid] = *entity
-	return s.constructSubm(ctx, *entity)
+	return s.constructSubm(ctx, entity)
+}
+
+func (s *SubmissionSrvc) constructSubm(ctx context.Context, subm SubmissionEntity) (*Submission, error) {
+	var eval *Evaluation
+	if evalVal, ok := s.inMem[subm.UUID]; ok {
+		eval = &evalVal
+	} else if subm.CurrEvalID != uuid.Nil {
+		evalVal, err := s.evalRepo.Get(ctx, subm.CurrEvalID)
+		if err != nil {
+			return nil, err
+		}
+		eval = &evalVal
+	}
+
+	user, err := s.userSrvc.GetUserByUUID(ctx, subm.AuthorUUID)
+	if err != nil {
+		return nil, err
+	}
+
+	task, err := s.taskSrvc.GetTask(ctx, subm.TaskShortID)
+	if err != nil {
+		return nil, err
+	}
+
+	lang, err := planglist.GetProgrammingLanguageById(subm.LangShortID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Submission{
+		UUID:      subm.UUID,
+		Content:   subm.Content,
+		Author:    Author{UUID: user.UUID, Username: user.Username},
+		Task:      TaskRef{ShortID: task.ShortId, FullName: task.FullName},
+		Lang:      PrLang{ShortID: lang.ID, Display: lang.FullName, MonacoID: lang.MonacoId},
+		CurrEval:  eval,
+		CreatedAt: subm.CreatedAt,
+	}, nil
 }
 
 func (s *SubmissionSrvc) ListSubms(ctx context.Context, limit int, offset int) ([]Submission, error) {
-	repoSubms, err := s.repo.List(ctx, limit, offset)
+	repoSubms, err := s.submRepo.List(ctx, limit, offset)
 	if err != nil {
 		return nil, err
 	}
@@ -98,17 +133,6 @@ func (s *SubmissionSrvc) ListSubms(ctx context.Context, limit int, offset int) (
 	// Create map of submissions, preferring in-memory ones
 	submMap := make(map[uuid.UUID]Submission)
 	for _, subm := range repoSubms {
-		// skip if in-mem map
-		if _, ok := s.inMem[subm.UUID]; ok {
-			continue
-		}
-		subm2, err := s.constructSubm(ctx, subm)
-		if err != nil {
-			return nil, err
-		}
-		submMap[subm.UUID] = *subm2
-	}
-	for _, subm := range s.inMem {
 		subm2, err := s.constructSubm(ctx, subm)
 		if err != nil {
 			return nil, err
@@ -123,6 +147,7 @@ func (s *SubmissionSrvc) ListSubms(ctx context.Context, limit int, offset int) (
 	sort.Slice(subms, func(i, j int) bool {
 		return subms[i].CreatedAt.After(subms[j].CreatedAt)
 	})
+
 	return subms, nil
 }
 

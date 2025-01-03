@@ -90,42 +90,51 @@ func (s *SubmissionSrvc) CreateSubmission(ctx context.Context,
 	}
 
 	submUuid := uuid.New()
+
+	eval := Evaluation{
+		UUID:       evalUuid,
+		Stage:      evalsrvc.StageWaiting,
+		ScoreUnit:  scoreUnit,
+		Error:      nil,
+		Subtasks:   subtasks,
+		Groups:     testgroups,
+		Tests:      tests,
+		Checker:    t.CheckerPtr(),
+		Interactor: t.InteractorPtr(),
+		CpuLimMs:   t.CpuMillis(),
+		MemLimKiB:  t.MemoryKiB(),
+		CreatedAt:  time.Now(),
+		SubmUUID:   submUuid,
+	}
+
 	entity := SubmissionEntity{
 		UUID:        submUuid,
 		Content:     params.Submission,
 		AuthorUUID:  u.UUID,
 		TaskShortID: t.ShortId,
 		LangShortID: l.ID,
-		CurrEval: &Evaluation{
-			UUID:       evalUuid,
-			Stage:      evalsrvc.StageWaiting,
-			ScoreUnit:  scoreUnit,
-			Error:      nil,
-			Subtasks:   subtasks,
-			Groups:     testgroups,
-			Tests:      tests,
-			Checker:    t.CheckerPtr(),
-			Interactor: t.InteractorPtr(),
-			CpuLimMs:   t.CpuMillis(),
-			MemLimKiB:  t.MemoryKiB(),
-			CreatedAt:  time.Now(),
-		},
-		CreatedAt: time.Now(),
+		CurrEvalID:  uuid.Nil, // this will be set when the evaluation is finished
+		CreatedAt:   time.Now(),
 	}
 
-	full := Submission{
-		UUID:      evalUuid,
+	err = s.submRepo.Store(ctx, entity)
+	if err != nil {
+		return nil, fmt.Errorf("failed to store submission: %w", err)
+	}
+
+	view := Submission{
+		UUID:      submUuid,
 		Content:   entity.Content,
 		Author:    Author{UUID: entity.AuthorUUID, Username: u.Username},
 		Task:      TaskRef{ShortID: entity.TaskShortID, FullName: t.FullName},
 		Lang:      PrLang{ShortID: entity.LangShortID, Display: l.FullName, MonacoID: l.MonacoId},
-		CurrEval:  entity.CurrEval,
+		CurrEval:  &eval,
 		CreatedAt: entity.CreatedAt,
 	}
 
-	s.inMem[submUuid] = entity
-	s.broadcastNewSubmCreated(full)
-	go s.handleUpdates(entity, ch)
+	s.inMem[submUuid] = eval
+	s.broadcastNewSubmCreated(view)
+	go s.handleUpdates(eval, ch)
 
-	return &full, nil
+	return &view, nil
 }

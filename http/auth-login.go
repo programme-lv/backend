@@ -3,6 +3,7 @@ package http
 import (
 	"context"
 	"encoding/json"
+	"log/slog"
 	"net/http"
 
 	"github.com/go-chi/httplog/v2"
@@ -11,8 +12,6 @@ import (
 )
 
 func (httpserver *HttpServer) authLogin(w http.ResponseWriter, r *http.Request) {
-	logger := httplog.LogEntry(r.Context())
-
 	type loginRequest struct {
 		Username string `json:"username"`
 		Password string `json:"password"`
@@ -24,14 +23,12 @@ func (httpserver *HttpServer) authLogin(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	logger.Info("received login request", "username", request.Username)
-
 	user, err := httpserver.userSrvc.Login(context.TODO(), &usersrvc.LoginParams{
 		Username: request.Username,
 		Password: request.Password,
 	})
 	if err != nil {
-		handleJsonSrvcError(logger, w, err)
+		handleJsonSrvcError(slog.Default(), w, err)
 		return
 	}
 

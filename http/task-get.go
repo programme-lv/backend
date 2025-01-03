@@ -2,10 +2,10 @@ package http
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/httplog/v2"
 )
 
 func (httpserver *HttpServer) getTask(w http.ResponseWriter, r *http.Request) {
@@ -13,7 +13,7 @@ func (httpserver *HttpServer) getTask(w http.ResponseWriter, r *http.Request) {
 
 	task, err := httpserver.taskSrvc.GetTask(context.TODO(), taskId)
 	if err != nil {
-		handleJsonSrvcError(httplog.LogEntry(r.Context()), w, err)
+		handleJsonSrvcError(slog.Default(), w, err)
 		return
 	}
 

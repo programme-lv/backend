@@ -2,16 +2,14 @@ package http
 
 import (
 	"encoding/json"
+	"log/slog"
 	"net/http"
 
-	"github.com/go-chi/httplog/v2"
 	"github.com/google/uuid"
 	"github.com/programme-lv/backend/evalsrvc"
 )
 
 func (httpserver *HttpServer) testerRun(w http.ResponseWriter, r *http.Request) {
-	logger := httplog.LogEntry(r.Context())
-
 	type test struct {
 		InSha256   *string `json:"in_sha256"`
 		InUrl      *string `json:"in_url"`
@@ -60,7 +58,7 @@ func (httpserver *HttpServer) testerRun(w http.ResponseWriter, r *http.Request) 
 		Interactor: req.Interactor,
 	})
 	if err != nil {
-		handleJsonSrvcError(logger, w, err)
+		handleJsonSrvcError(slog.Default(), w, err)
 		return
 	}
 
