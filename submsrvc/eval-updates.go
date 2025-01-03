@@ -11,43 +11,32 @@ import (
 )
 
 func (s *SubmissionSrvc) handleUpdates(eval Evaluation, ch <-chan evalsrvc.Event) {
-	timer := time.After(30 * time.Second)
 	l := s.logger.With("eval-uuid", eval.UUID)
-	for {
-		select {
-		case update, ok := <-ch:
-			if !ok {
-				return
+	for update := range ch {
+		l.Info("received eval update", "type", update.Type())
+		newEval := applyUpdate(eval, update)
+		s.broadcastSubmEvalUpdate(&EvalUpdate{
+			SubmUuid: eval.SubmUUID,
+			Eval:     newEval,
+		})
+		eval = newEval
+		s.inMem[eval.SubmUUID] = eval
+		final := false
+		final = final || update.Type() == evalsrvc.InternalServerErrorType
+		final = final || update.Type() == evalsrvc.CompilationErrorType
+		final = final || update.Type() == evalsrvc.FinishedTestingType
+		if final {
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+			err := s.evalRepo.Store(ctx, eval)
+			if err != nil {
+				slog.Error("failed to store submission", "error", err)
 			}
-			l.Info("received eval update", "type", update.Type())
-			newEval := applyUpdate(eval, update)
-			s.broadcastSubmEvalUpdate(&EvalUpdate{
-				SubmUuid: eval.SubmUUID,
-				Eval:     newEval,
-			})
-			eval = newEval
-			s.inMem[eval.SubmUUID] = eval
-			final := false
-			final = final || update.Type() == evalsrvc.InternalServerErrorType
-			final = final || update.Type() == evalsrvc.CompilationErrorType
-			final = final || update.Type() == evalsrvc.FinishedTestingType
-			if final {
-				ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-				defer cancel()
-				err := s.evalRepo.Store(ctx, eval)
-				if err != nil {
-					slog.Error("failed to store submission", "error", err)
-				}
-				err = s.submRepo.AssignEval(ctx, eval.SubmUUID, eval.UUID)
-				if err != nil {
-					slog.Error("failed to assign evaluation to submission", "error", err)
-				}
-				// point submission to the new evaluation
-				return
+			err = s.submRepo.AssignEval(ctx, eval.SubmUUID, eval.UUID)
+			if err != nil {
+				slog.Error("failed to assign evaluation to submission", "error", err)
 			}
-
-		case <-timer:
-			slog.Warn("evaluation timed out")
+			delete(s.inMem, eval.SubmUUID)
 			return
 		}
 	}
