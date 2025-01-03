@@ -11,6 +11,7 @@ PG_USER=$(grep POSTGRES_USER < .env | cut -d '=' -f2)
 PG_DB=$(grep POSTGRES_DB < .env | cut -d '=' -f2)
 PG_PASSWORD_SECRET_NAME=$(grep POSTGRES_PASSWORD_SECRET_NAME < .env | cut -d '=' -f2 | tr -d "'")
 PG_PW=$(aws secretsmanager get-secret-value --secret-id "$PG_PASSWORD_SECRET_NAME" --region eu-central-1| jq -r '.SecretString' | jq -r '.password')
+PG_PW=$(echo "$PG_PW" | python3 -c "import sys, urllib.parse; print(urllib.parse.quote(sys.stdin.read().strip()))")
 
 echo "PG_HOST: $PG_HOST"
 echo "PG_PORT: $PG_PORT"
