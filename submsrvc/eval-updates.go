@@ -38,6 +38,10 @@ func (s *SubmissionSrvc) handleUpdates(eval Evaluation, ch <-chan evalsrvc.Event
 				if err != nil {
 					slog.Error("failed to store submission", "error", err)
 				}
+				err = s.submRepo.AssignEval(ctx, eval.SubmUUID, eval.UUID)
+				if err != nil {
+					slog.Error("failed to assign evaluation to submission", "error", err)
+				}
 				// point submission to the new evaluation
 				return
 			}
