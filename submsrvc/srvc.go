@@ -20,7 +20,7 @@ import (
 type submRepo interface {
 	Store(ctx context.Context, subm SubmissionEntity) error
 	Get(ctx context.Context, uuid uuid.UUID) (*SubmissionEntity, error)
-	List(ctx context.Context) ([]SubmissionEntity, error)
+	List(ctx context.Context, limit int, offset int) ([]SubmissionEntity, error)
 }
 
 type SubmissionSrvc struct {
@@ -89,8 +89,8 @@ func (s *SubmissionSrvc) GetSubm(ctx context.Context, uuid uuid.UUID) (*Submissi
 	return s.constructSubm(ctx, *entity)
 }
 
-func (s *SubmissionSrvc) ListSubms(ctx context.Context) ([]Submission, error) {
-	repoSubms, err := s.repo.List(ctx)
+func (s *SubmissionSrvc) ListSubms(ctx context.Context, limit int, offset int) ([]Submission, error) {
+	repoSubms, err := s.repo.List(ctx, limit, offset)
 	if err != nil {
 		return nil, err
 	}

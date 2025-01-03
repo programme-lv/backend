@@ -190,13 +190,14 @@ func (r *pgSubmRepo) Get(ctx context.Context, id uuid.UUID) (*SubmissionEntity, 
 }
 
 // List retrieves all SubmissionEntities from the database, including their Evaluations.
-func (r *pgSubmRepo) List(ctx context.Context) ([]SubmissionEntity, error) {
+func (r *pgSubmRepo) List(ctx context.Context, limit int, offset int) ([]SubmissionEntity, error) {
 	submissionsQuery := `
 		SELECT uuid, content, author_uuid, task_shortid, lang_shortid, curr_eval_uuid, created_at
 		FROM submissions
 		ORDER BY created_at DESC
+		LIMIT $1 OFFSET $2
 	`
-	rows, err := r.pool.Query(ctx, submissionsQuery)
+	rows, err := r.pool.Query(ctx, submissionsQuery, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query submissions: %w", err)
 	}
