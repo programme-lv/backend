@@ -22,6 +22,6 @@ echo "PG_PW: $PG_PW"
 # shellcheck disable=SC2162
 read -p "Press Enter to continue..."
 
-echo "TODO: reimplement the script"
+migrate -source file://./migrate -database "postgres://$PG_USER:$PG_PW@$PG_HOST:$PG_PORT/$PG_DB" up
 
 popd
