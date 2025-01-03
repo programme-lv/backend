@@ -151,4 +151,5 @@ func (httpserver *HttpServer) routes() {
 	r.Get("/subm-updates", httpserver.listenToSubmListUpdates)
 	r.Post("/tester/run", httpserver.testerRun)
 	r.Get("/tester/run/{evalUuid}", httpserver.testerListen)
+	r.Get("/exec/{execUuid}", httpserver.execGet)
 }
