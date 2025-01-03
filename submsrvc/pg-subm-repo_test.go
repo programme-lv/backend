@@ -45,6 +45,7 @@ func NewDB(t *testing.T) *pgxpool.Pool {
 }
 
 var existingAuthorUuid = uuid.New() // author pre-existing in the db
+var existingEvalUuid = uuid.New()   // evaluation pre-existing in the db
 
 // NewSampleDB adds a sample author to result of NewDB
 func NewSampleDB(t *testing.T) *pgxpool.Pool {
@@ -61,6 +62,20 @@ func NewSampleDB(t *testing.T) *pgxpool.Pool {
 	if err != nil {
 		t.Fatalf("Failed to create sample author: %v", err)
 	}
+
+	// create a sample evaluation in the db
+	_, err = db.Exec(ctx, `
+		INSERT INTO evaluations (
+			uuid, stage, score_unit, checker, interactor,
+			cpu_lim_ms, mem_lim_kib, error_type, error_message, created_at
+		) VALUES (
+			$1, 'finished', 'test', 'diff', NULL,
+			1000, 262144, NULL, NULL, NOW()
+		)
+	`, existingEvalUuid)
+	if err != nil {
+		t.Fatalf("Failed to create sample evaluation: %v", err)
+	}
 	return db
 }
 
@@ -75,34 +90,29 @@ func TestPgDbSchemaVersion(t *testing.T) {
 	defer cancel()
 	err := db.QueryRow(ctx, "SELECT version, dirty FROM schema_migrations").Scan(&version, &dirty)
 	assert.Nil(t, err)
-	assert.Equal(t, 22, version)
+	assert.Equal(t, 23, version)
 	assert.False(t, dirty)
 }
 
-// generateSampleSubmissionEntity creates a SubmissionEntity with sample data.
-func generateSampleSubmissionEntity() SubmissionEntity {
+// getSampleSubmEntityWithoutEval creates a SubmissionEntity with sample data.
+func getSampleSubmEntityWithoutEval() SubmissionEntity {
 	return SubmissionEntity{
 		UUID:        uuid.New(),
 		Content:     "Sample submission content",
 		AuthorUUID:  existingAuthorUuid, // author must pre-exist in the db
 		TaskShortID: "task_123",
 		LangShortID: "py_x.y.z",
-		CurrEval: &Evaluation{
-			UUID:      uuid.New(),
-			Stage:     StageWaiting,
-			ScoreUnit: ScoreUnitTest,
-			CreatedAt: time.Now().Add(69 * time.Hour),
-			// Initialize other fields as needed
-		},
-		CreatedAt: time.Now(),
+		CurrEvalID:  uuid.Nil,
+		CreatedAt:   time.Now(),
 	}
 }
 
-// TestSubmRepo_Store_Success tests successful storage of a SubmissionEntity.
-func TestSubmRepo_Store_Success(t *testing.T) {
+// TestSubmRepo_StoreWithoutEval_Success tests successful storage of a SubmissionEntity without an evaluation.
+func TestSubmRepo_StoreWithoutEval_Success(t *testing.T) {
+	t.Parallel()
 	repo := NewPgSubmRepo(NewSampleDB(t))
 
-	sampleEntity := generateSampleSubmissionEntity()
+	sampleEntity := getSampleSubmEntityWithoutEval()
 
 	err := repo.Store(context.Background(), sampleEntity)
 	assert.Nil(t, err, "expected no error when storing valid SubmissionEntity")
@@ -117,19 +127,39 @@ func TestSubmRepo_Store_Success(t *testing.T) {
 	sampleEntity.CreatedAt = time.Time{}
 	storedEntity.CreatedAt = time.Time{}
 
-	// compare curr evaluation created at with a 1ms precision
-	require.WithinDuration(t, sampleEntity.CurrEval.CreatedAt, storedEntity.CurrEval.CreatedAt, 1*time.Millisecond)
-	sampleEntity.CurrEval.CreatedAt = time.Time{}
-	storedEntity.CurrEval.CreatedAt = time.Time{}
+	require.Equal(t, sampleEntity, storedEntity)
+}
 
-	require.Equal(t, sampleEntity, *storedEntity)
+// TestSubmRepo_StoreWithEval_Success tests successful storage of a SubmissionEntity with an evaluation.
+func TestSubmRepo_StoreWithEval_Success(t *testing.T) {
+	t.Parallel()
+	repo := NewPgSubmRepo(NewSampleDB(t))
+
+	sampleEntity := getSampleSubmEntityWithoutEval()
+	sampleEntity.CurrEvalID = existingEvalUuid
+
+	err := repo.Store(context.Background(), sampleEntity)
+	assert.Nil(t, err, "expected no error when storing valid SubmissionEntity")
+
+	// Retrieve the stored entity
+	storedEntity, err := repo.Get(context.Background(), sampleEntity.UUID)
+	require.Nil(t, err, "expected no error when retrieving stored SubmissionEntity")
+	require.NotNil(t, storedEntity)
+
+	// compare submission created at with a 1ms precision
+	require.WithinDuration(t, sampleEntity.CreatedAt, storedEntity.CreatedAt, 1*time.Millisecond)
+	sampleEntity.CreatedAt = time.Time{}
+	storedEntity.CreatedAt = time.Time{}
+
+	require.Equal(t, sampleEntity, storedEntity)
 }
 
 // TestSubmRepo_Get_ValidUUID tests retrieving a SubmissionEntity with a valid UUID.
 func TestSubmRepo_Get_ValidUUID(t *testing.T) {
+	t.Parallel()
 	repo := NewPgSubmRepo(NewSampleDB(t))
 
-	sampleEntity := generateSampleSubmissionEntity()
+	sampleEntity := getSampleSubmEntityWithoutEval()
 
 	// Store the entity first
 	err := repo.Store(context.Background(), sampleEntity)
@@ -146,25 +176,27 @@ func TestSubmRepo_Get_ValidUUID(t *testing.T) {
 
 // TestSubmRepo_Get_InvalidUUID tests retrieving a SubmissionEntity with an invalid UUID.
 func TestSubmRepo_Get_InvalidUUID(t *testing.T) {
+	t.Parallel()
 	repo := NewPgSubmRepo(NewSampleDB(t))
 
 	nonExistentUUID := uuid.New()
 
 	retrievedEntity, err := repo.Get(context.Background(), nonExistentUUID)
 	assert.NotNil(t, err, "expected error when retrieving SubmissionEntity with non-existent UUID")
-	assert.Nil(t, retrievedEntity, "expected retrieved SubmissionEntity to be nil for non-existent UUID")
+	assert.Empty(t, retrievedEntity, "expected retrieved SubmissionEntity to be empty for non-existent UUID")
 }
 
 // TestSubmRepo_List_MultipleEntries tests listing multiple SubmissionEntities.
 // require that submissions are sorted by created at with the newest first
 func TestSubmRepo_List_MultipleEntries(t *testing.T) {
+	t.Parallel()
 	repo := NewPgSubmRepo(NewSampleDB(t))
 
 	// Create and store multiple entities
 	numEntries := 5
 	entities := make([]SubmissionEntity, numEntries)
 	for i := 0; i < numEntries; i++ {
-		entities[i] = generateSampleSubmissionEntity()
+		entities[i] = getSampleSubmEntityWithoutEval()
 	}
 	sort.Slice(entities, func(i, j int) bool {
 		return entities[i].CreatedAt.After(entities[j].CreatedAt)
@@ -196,6 +228,7 @@ func TestSubmRepo_List_MultipleEntries(t *testing.T) {
 
 // TestSubmRepo_List_NoEntries tests listing SubmissionEntities when none are stored.
 func TestSubmRepo_List_NoEntries(t *testing.T) {
+	t.Parallel()
 	repo := NewPgSubmRepo(NewSampleDB(t))
 
 	// Ensure repository is empty by not storing any entities
@@ -206,6 +239,7 @@ func TestSubmRepo_List_NoEntries(t *testing.T) {
 
 // TestSubmRepo_Store_MissingFields tests storing SubmissionEntities with missing required fields.
 func TestSubmRepo_Store_MissingFields(t *testing.T) {
+	t.Parallel()
 	repo := NewPgSubmRepo(NewSampleDB(t))
 
 	// Example: Missing Content and AuthorUUID

@@ -10,9 +10,8 @@ import (
 	"github.com/programme-lv/backend/tasksrvc"
 )
 
-func (s *SubmissionSrvc) handleUpdates(subm SubmissionEntity, ch <-chan evalsrvc.Event) {
+func (s *SubmissionSrvc) handleUpdates(eval Evaluation, ch <-chan evalsrvc.Event) {
 	timer := time.After(30 * time.Second)
-	eval := subm.CurrEval
 	l := s.logger.With("eval-uuid", eval.UUID)
 	for {
 		select {
@@ -21,14 +20,13 @@ func (s *SubmissionSrvc) handleUpdates(subm SubmissionEntity, ch <-chan evalsrvc
 				return
 			}
 			l.Info("received eval update", "type", update.Type())
-			newEval := applyUpdate(*eval, update)
+			newEval := applyUpdate(eval, update)
 			s.broadcastSubmEvalUpdate(&EvalUpdate{
-				SubmUuid: subm.UUID,
+				SubmUuid: eval.SubmUUID,
 				Eval:     newEval,
 			})
-			eval = &newEval
-			subm.CurrEval = eval
-			s.inMem[subm.UUID] = subm
+			eval = newEval
+			s.inMem[eval.SubmUUID] = eval
 			final := false
 			final = final || update.Type() == evalsrvc.InternalServerErrorType
 			final = final || update.Type() == evalsrvc.CompilationErrorType
@@ -36,10 +34,11 @@ func (s *SubmissionSrvc) handleUpdates(subm SubmissionEntity, ch <-chan evalsrvc
 			if final {
 				ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 				defer cancel()
-				err := s.repo.Store(ctx, subm)
+				err := s.evalRepo.Store(ctx, eval)
 				if err != nil {
 					slog.Error("failed to store submission", "error", err)
 				}
+				// point submission to the new evaluation
 				return
 			}
 

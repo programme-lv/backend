@@ -97,10 +97,7 @@ func (e *EvalSrvc) Enqueue(
 	}
 
 	// 4. construct evaluation object
-	evalUuid, err := uuid.NewV7()
-	if err != nil {
-		return uuid.Nil, err
-	}
+	evalUuid := uuid.New()
 
 	// Add WaitGroup before preparing results
 	wg := &sync.WaitGroup{}

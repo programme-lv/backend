@@ -2,16 +2,14 @@ package http
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
-
-	"github.com/go-chi/httplog/v2"
 )
 
 func (httpserver *HttpServer) listTasks(w http.ResponseWriter, r *http.Request) {
 	tasks, err := httpserver.taskSrvc.ListTasks(context.TODO())
 	if err != nil {
-		logger := httplog.LogEntry(r.Context())
-		handleJsonSrvcError(logger, w, err)
+		handleJsonSrvcError(slog.Default(), w, err)
 		return
 	}
 

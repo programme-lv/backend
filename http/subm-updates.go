@@ -3,6 +3,7 @@ package http
 import (
 	"encoding/json"
 	"io"
+	"log/slog"
 	"net/http"
 	"sync"
 	"time"
@@ -85,6 +86,7 @@ func (httpserver *HttpServer) listenToSubmListUpdates(w http.ResponseWriter, r *
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
+			slog.Info("eval update", "message", string(marshalled))
 			safeWrite("data: " + string(marshalled) + "\n\n")
 		}
 	}

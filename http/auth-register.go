@@ -3,15 +3,13 @@ package http
 import (
 	"context"
 	"encoding/json"
+	"log/slog"
 	"net/http"
 
-	"github.com/go-chi/httplog/v2"
 	"github.com/programme-lv/backend/usersrvc"
 )
 
 func (httpserver *HttpServer) authRegister(w http.ResponseWriter, r *http.Request) {
-	logger := httplog.LogEntry(r.Context())
-
 	type registerRequest struct {
 		Username  string  `json:"username"`
 		Email     string  `json:"email"`
@@ -43,7 +41,7 @@ func (httpserver *HttpServer) authRegister(w http.ResponseWriter, r *http.Reques
 	})
 
 	if err != nil {
-		handleJsonSrvcError(logger, w, err)
+		handleJsonSrvcError(slog.Default(), w, err)
 		return
 	}
 

@@ -2,15 +2,13 @@ package http
 
 import (
 	"encoding/json"
+	"log/slog"
 	"net/http"
 
-	"github.com/go-chi/httplog/v2"
 	"github.com/programme-lv/backend/submsrvc"
 )
 
 func (httpserver *HttpServer) createSubmission(w http.ResponseWriter, r *http.Request) {
-	logger := httplog.LogEntry(r.Context())
-
 	type createSubmissionRequest struct {
 		Submission        string `json:"submission"`
 		Username          string `json:"username"`
@@ -33,7 +31,7 @@ func (httpserver *HttpServer) createSubmission(w http.ResponseWriter, r *http.Re
 	})
 
 	if err != nil {
-		handleJsonSrvcError(logger, w, err)
+		handleJsonSrvcError(slog.Default(), w, err)
 		return
 	}
 

@@ -12,7 +12,7 @@ type SubmissionEntity struct {
 	AuthorUUID  uuid.UUID
 	TaskShortID string
 	LangShortID string
-	CurrEval    *Evaluation
+	CurrEvalID  uuid.UUID
 	CreatedAt   time.Time
 }
 
@@ -45,6 +45,7 @@ const (
 
 type Evaluation struct {
 	UUID      uuid.UUID
+	SubmUUID  uuid.UUID
 	Stage     string
 	ScoreUnit string
 
