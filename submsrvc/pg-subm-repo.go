@@ -47,7 +47,16 @@ func (r *pgSubmRepo) Store(ctx context.Context, subm SubmissionEntity) error {
 }
 
 func (r *pgSubmRepo) AssignEval(ctx context.Context, submUuid uuid.UUID, evalUuid uuid.UUID) error {
-	panic("not implemented")
+	updateQuery := `
+		UPDATE submissions 
+		SET curr_eval_uuid = $1
+		WHERE uuid = $2
+	`
+	_, err := r.pool.Exec(ctx, updateQuery, evalUuid, submUuid)
+	if err != nil {
+		return fmt.Errorf("failed to assign evaluation to submission: %w", err)
+	}
+	return nil
 }
 
 // Get retrieves a SubmissionEntity by UUID
