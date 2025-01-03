@@ -11,7 +11,7 @@ import (
 func (httpserver *HttpServer) listSubmissions(w http.ResponseWriter, r *http.Request) {
 	type listSubmissionsResponse []*Submission
 
-	subms, err := httpserver.submSrvc.ListSubms(context.TODO())
+	subms, err := httpserver.submSrvc.ListSubms(context.TODO(), 30, 0)
 	if err != nil {
 		handleJsonSrvcError(slog.Default(), w, err)
 		return
