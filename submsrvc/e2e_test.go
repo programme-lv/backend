@@ -24,7 +24,7 @@ func TestSubmSrvc(t *testing.T) {
 	require.NoError(t, err)
 	subm, err := srvc.CreateSubmission(ctx, &submsrvc.CreateSubmissionParams{
 		Submission: "a,b=input().split();print(int(a)+int(b))",
-		Username:   "KrisjanisP",
+		Username:   "admin",
 		ProgLangID: "python3.10",
 		TaskCodeID: "aplusb",
 	})

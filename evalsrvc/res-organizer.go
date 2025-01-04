@@ -5,559 +5,457 @@ import (
 	"sync"
 )
 
-// takes a stream of events and reorders them into the correct order
-// for a single evaluation. It also removes duplicate events.
-type EvalResOrganizer struct {
-	HasCompilation bool // if the subm pr lang has a compilation step
-	NumTests       int  // number of tests the task has
+// ExecResStreamOrganizer transforms a stream of events to gurantee:
+// 1. correct order;
+// 2. no duplicates;
+// 3. no missing events.
+// Organizer supports parallel execution of tests by the tester.
+type ExecResStreamOrganizer struct {
+	hasCompilation bool // if the submission programming language has a compile step
 
-	received map[string]bool    // whether KEY was already rcv
-	events   map[string][]Event // mapping from TYPE to events
-	returned map[string]bool    // KEY returned from Add method
-	finTests int                // finished or ignored tests
+	rcvEvKeys map[string]bool    // tracks whether an event KEY was received
+	evsOfType map[string][]Event // unflushed received events by TYPE
+	retKeys   map[string]bool    // tracks which event KEYs have been returned from Add method
 
-	returnedISE bool // whether InternalServerError has been returned
+	expNumOfTests int // expected number of tests
+	numFinTests   int // number of received finished or ignored tests
 
-	mu sync.Mutex
+	returnedISE bool // whether internal server error has been returned
+
+	mu sync.Mutex // ensures thread-safe access
 }
 
-func NewEvalResOrganizer(hasCompilation bool, numTests int) (*EvalResOrganizer, error) {
+// NewExecResStreamOrganizer creates a new stream organizer.
+// Returns an error if the number of tests is invalid.
+func NewExecResStreamOrganizer(hasCompilation bool, numTests int) (*ExecResStreamOrganizer, error) {
 	if numTests < 0 {
 		return nil, fmt.Errorf("numTests must be non-negative")
 	}
-	if numTests > 1000 {
-		return nil, fmt.Errorf("numTests must be less than 1000")
+	const maxTests = 1000 // Safe upper limit, most tasks have <200 tests
+	if numTests > maxTests {
+		return nil, fmt.Errorf("numTests must be less than %d", maxTests)
 	}
-	return &EvalResOrganizer{
-		HasCompilation: hasCompilation,
-		NumTests:       numTests,
-		received:       make(map[string]bool),
-		events:         make(map[string][]Event),
-		returned:       make(map[string]bool),
-		finTests:       0,
+
+	return &ExecResStreamOrganizer{
+		hasCompilation: hasCompilation,
+		expNumOfTests:  numTests,
+		rcvEvKeys:      make(map[string]bool),
+		evsOfType:      make(map[string][]Event),
+		retKeys:        make(map[string]bool),
+		numFinTests:    0,
 	}, nil
 }
 
-func (o *EvalResOrganizer) Finished() bool {
-	return o.returnedISE || o.returned[FinishedTestingType] || o.returned[CompilationErrorType]
-}
-
-/*
-1. StartedEvaluation
-2. StartedCompilation
-3. FinishedCompilation
-4. StartedTesting
-5. ReachedTest
-6. FinishedTest
-7. IgnoredTest
-8. FinishedTesting
-9. FinishedEvaluation
-*/
-
-func (o *EvalResOrganizer) Add(event Event) ([]Event, error) {
+// Add adds an event to stream organizer to be returned when appropriate.
+// Returns events for which this event was a prerequisite and this event if
+// the dependencies are met in the correct order. Does not return the same
+// event twice if it is determined to have the same key.
+func (o *ExecResStreamOrganizer) Add(event Event) ([]Event, error) {
 	o.mu.Lock()
 	defer o.mu.Unlock()
 
+	// Internal server error has been encountered
 	if o.returnedISE {
-		return []Event{}, nil
+		return nil, nil
 	}
 
 	key := eventKey(event)
 
-	if o.received[key] {
-		return []Event{}, nil
+	// Skip duplicate events
+	if o.rcvEvKeys[key] {
+		return nil, nil
 	}
-	o.received[key] = true
+	o.rcvEvKeys[key] = true
 
-	o.events[event.Type()] = append(o.events[event.Type()], event)
+	// Add event to the list of events of the same type
+	o.evsOfType[event.Type()] = append(o.evsOfType[event.Type()], event)
 
-	switch event.Type() {
-	case ReceivedSubmissionType:
+	switch e := event.(type) {
+	case ReceivedSubmission:
 		return o.receiveSubm()
-	case StartedCompilationType:
+	case StartedCompiling:
 		return o.startCompile()
-	case FinishedCompilationType:
-		return o.finishCompile()
-	case StartedTestingType:
-		return o.startTesting()
-	case ReachedTestType:
-		reachedTest, ok := event.(ReachedTest)
-		if !ok {
-			return []Event{}, fmt.Errorf("event is not a ReachedTest")
-		}
-		return o.reachTest(reachedTest.TestId)
-	case IgnoredTestType:
-		ignoredTest, ok := event.(IgnoredTest)
-		if !ok {
-			return []Event{}, fmt.Errorf("event is not an IgnoredTest")
-		}
-		return o.ignoreTest(ignoredTest.TestId)
-	case FinishedTestType:
-		finishedTest, ok := event.(FinishedTest)
-		if !ok {
-			return []Event{}, fmt.Errorf("event is not a FinishedTest")
-		}
-		return o.finishTest(finishedTest.TestID)
-	case FinishedTestingType:
-		return o.finishTesting()
-	case CompilationErrorType:
+	case CompilationError:
 		return o.compileError()
-	case InternalServerErrorType:
+	case FinishedCompiling:
+		return o.finishCompile()
+	case StartedTesting:
+		return o.startTesting()
+	case ReachedTest:
+		return o.reachTest(e.TestId)
+	case IgnoredTest:
+		return o.ignoreTest(e.TestId)
+	case FinishedTest:
+		return o.finishTest(e.TestID)
+	case FinishedTesting:
+		return o.finishTesting()
+	case InternalServerError:
 		o.returnedISE = true
 		return []Event{event}, nil
+	default:
+		return nil, fmt.Errorf("unknown event type: %s", event.Type())
 	}
-
-	return []Event{},
-		fmt.Errorf("unknown event type: %s", event.Type())
 }
 
-func (o *EvalResOrganizer) receiveSubm() ([]Event, error) {
-	// skip if evaluation has not been reached yet
-	if !o.received[ReceivedSubmissionType] {
-		return []Event{}, nil
+// HasFinished returns true if the evaluation has finished, i.e.
+// 1. an internal server error has been returned;
+// 2. the finished testing event has been returned;
+// 3. the compilation error event has been returned.
+func (o *ExecResStreamOrganizer) HasFinished() bool {
+	o.mu.Lock()
+	defer o.mu.Unlock()
+
+	return o.returnedISE || o.retKeys[FinishedTestingType] || o.retKeys[CompilationErrorType]
+}
+
+func (o *ExecResStreamOrganizer) receiveSubm() ([]Event, error) {
+	if !o.rcvEvKeys[ReceivedSubmissionType] {
+		return nil, nil
 	}
 
-	// break if evaluation has already been returned
-	if o.returned[ReceivedSubmissionType] {
-		return []Event{}, nil
+	if o.retKeys[ReceivedSubmissionType] {
+		return nil, nil
 	}
 
-	// get the started evaluation event
 	e, err := o.getSingleEvent(ReceivedSubmissionType)
 	if err != nil {
-		return []Event{}, err
+		return nil, err
 	}
 
-	// return this value and check whether next is available
-	o.returned[ReceivedSubmissionType] = true
+	o.retKeys[ReceivedSubmissionType] = true
 	res := []Event{e}
+
 	var nxt []Event
-	if o.HasCompilation {
+	if o.hasCompilation {
 		nxt, err = o.startCompile()
 	} else {
 		nxt, err = o.startTesting()
 	}
-	res = append(res, nxt...)
 	if err != nil {
-		return res, err
+		return append(res, nxt...), err
 	}
-	return res, nil
+	return append(res, nxt...), nil
 }
 
-func (o *EvalResOrganizer) startCompile() ([]Event, error) {
-	// pr lang is not to be compiled
-	if !o.HasCompilation {
-		return []Event{}, fmt.Errorf("unexpected compile")
+func (o *ExecResStreamOrganizer) startCompile() ([]Event, error) {
+	if !o.hasCompilation {
+		return nil, fmt.Errorf("unexpected compile for non-compiled language")
 	}
 
-	// compilation has not been received yet
-	if !o.received[StartedCompilationType] {
-		return []Event{}, nil
+	if !o.rcvEvKeys[StartedCompilationType] || o.retKeys[StartedCompilationType] {
+		return nil, nil
 	}
 
-	// break if compilation has already been returned
-	if o.returned[StartedCompilationType] {
-		return []Event{}, nil
+	if !o.retKeys[ReceivedSubmissionType] {
+		return nil, nil
 	}
 
-	// get the started compilation event
 	e, err := o.getSingleEvent(StartedCompilationType)
 	if err != nil {
-		return []Event{}, err
+		return nil, err
 	}
 
-	// check whether the dependencies are satisfied
-	if !o.returned[ReceivedSubmissionType] {
-		return []Event{}, nil
-	}
-
-	// return this value and check whether next is available
-	o.returned[StartedCompilationType] = true
+	o.retKeys[StartedCompilationType] = true
 	res := []Event{e}
+
 	nxt, err := o.finishCompile()
-	res = append(res, nxt...)
 	if err != nil {
-		return res, err
+		return append(res, nxt...), err
 	}
-	return res, nil
+	return append(res, nxt...), nil
 }
 
-func (o *EvalResOrganizer) finishCompile() ([]Event, error) {
-	// pr lang is not to be compiled
-	if !o.HasCompilation {
-		return []Event{}, fmt.Errorf("unexpected compile")
+func (o *ExecResStreamOrganizer) finishCompile() ([]Event, error) {
+	if !o.hasCompilation {
+		return nil, fmt.Errorf("unexpected compile for non-compiled language")
 	}
 
-	// if compilation has not been reached yet, return nothing
-	if !o.received[FinishedCompilationType] {
-		return []Event{}, nil
+	if !o.rcvEvKeys[FinishedCompilationType] || o.retKeys[FinishedCompilationType] {
+		return nil, nil
 	}
 
-	// break if compilation has already been returned
-	if o.returned[FinishedCompilationType] {
-		return []Event{}, nil
+	if !o.retKeys[StartedCompilationType] {
+		return nil, nil
 	}
 
-	// check whether the dependencies are satisfied
-	if !o.returned[StartedCompilationType] {
-		return []Event{}, nil
-	}
-
-	// get the finished compilation event
 	e, err := o.getSingleEvent(FinishedCompilationType)
 	if err != nil {
-		return []Event{}, err
+		return nil, err
 	}
 
-	// return this value and check whether next is available
-	o.returned[FinishedCompilationType] = true
+	o.retKeys[FinishedCompilationType] = true
 	res := []Event{e}
-	var nxt []Event
-	nxt, err = o.compileError()
-	res = append(res, nxt...)
+
+	// Try both compilation error and start testing paths
+	nxt, err := o.compileError()
 	if err != nil {
-		return res, err
+		return append(res, nxt...), err
 	}
+	res = append(res, nxt...)
+
 	nxt, err = o.startTesting()
-	res = append(res, nxt...)
 	if err != nil {
-		return res, err
+		return append(res, nxt...), err
 	}
-	return res, nil
+	return append(res, nxt...), nil
 }
 
-func (o *EvalResOrganizer) startTesting() ([]Event, error) {
-	// start testing has not been reached yet
-	if !o.received[StartedTestingType] {
-		return []Event{}, nil
+func (o *ExecResStreamOrganizer) startTesting() ([]Event, error) {
+	if !o.rcvEvKeys[StartedTestingType] || o.retKeys[StartedTestingType] {
+		return nil, nil
 	}
 
-	// break if testing has already been returned
-	if o.returned[StartedTestingType] {
-		return []Event{}, nil
+	// Check dependencies
+	if o.hasCompilation {
+		if !o.retKeys[FinishedCompilationType] {
+			return nil, nil
+		}
+	} else if !o.retKeys[ReceivedSubmissionType] {
+		return nil, nil
 	}
 
-	// get the started testing event
 	e, err := o.getSingleEvent(StartedTestingType)
 	if err != nil {
-		return []Event{}, err
+		return nil, err
 	}
 
-	// check whether the dependencies are satisfied
-	if o.HasCompilation {
-		if !o.returned[FinishedCompilationType] {
-			return []Event{}, nil
-		}
-	} else {
-		if !o.returned[ReceivedSubmissionType] {
-			return []Event{}, nil
-		}
-	}
-
-	// return this value and check whether next is available
-	o.returned[StartedTestingType] = true
+	o.retKeys[StartedTestingType] = true
 	res := []Event{e}
+
+	// Try both reach test and ignore test paths for first test
 	nxt, err := o.reachTest(1)
-	res = append(res, nxt...)
 	if err != nil {
-		return res, err
+		return append(res, nxt...), err
 	}
+	res = append(res, nxt...)
+
 	nxt, err = o.ignoreTest(1)
-	res = append(res, nxt...)
 	if err != nil {
-		return res, err
+		return append(res, nxt...), err
 	}
-	return res, nil
+	return append(res, nxt...), nil
 }
 
-func (o *EvalResOrganizer) reachTest(id int) ([]Event, error) {
+func (o *ExecResStreamOrganizer) reachTest(id int) ([]Event, error) {
 	key := fmt.Sprintf("%s-%d", ReachedTestType, id)
 
-	// if the test has not been reached yet, return nothing
-	if !o.received[key] {
-		return []Event{}, nil
+	if !o.rcvEvKeys[key] || o.retKeys[key] {
+		return nil, nil
 	}
 
-	// if the test has already been returned, return nothing
-	if o.returned[key] {
-		return []Event{}, nil
+	if !o.retKeys[StartedTestingType] {
+		return nil, nil
 	}
 
-	// get the reached test event
+	// For tests after first, check previous test completion
+	if id > 1 {
+		prevReachedKey := fmt.Sprintf("%s-%d", ReachedTestType, id-1)
+		prevFinishedKey := fmt.Sprintf("%s-%d", FinishedTestType, id-1)
+		if !o.retKeys[prevReachedKey] || !o.retKeys[prevFinishedKey] {
+			return nil, nil
+		}
+	}
+
 	e, err := o.getReachedTestEvent(id)
 	if err != nil {
-		return []Event{}, err
+		return nil, err
 	}
 
-	// check whether the dependencies are satisfied
-	if !o.returned[StartedTestingType] {
-		return []Event{}, nil
-	}
-	if id > 1 {
-		reachedKey := fmt.Sprintf("%s-%d", ReachedTestType, id-1)
-		if !o.returned[reachedKey] {
-			return []Event{}, nil
-		}
-		finishedKey := fmt.Sprintf("%s-%d", FinishedTestType, id-1)
-		if !o.returned[finishedKey] {
-			return []Event{}, nil
-		}
-	}
-
-	// return this value and check whether next is available
-	o.returned[key] = true
+	o.retKeys[key] = true
 	res := []Event{e}
-	var nxt []Event
-	nxt, err = o.finishTest(id)
-	res = append(res, nxt...)
+
+	nxt, err := o.finishTest(id)
 	if err != nil {
-		return res, err
+		return append(res, nxt...), err
 	}
-	return res, nil
+	return append(res, nxt...), nil
 }
 
-func (o *EvalResOrganizer) ignoreTest(id int) ([]Event, error) {
+func (o *ExecResStreamOrganizer) ignoreTest(id int) ([]Event, error) {
 	key := fmt.Sprintf("%s-%d", IgnoredTestType, id)
 
-	// if the test has not been reached yet, return nothing
-	if !o.received[key] {
-		return []Event{}, nil
+	if !o.rcvEvKeys[key] || o.retKeys[key] {
+		return nil, nil
 	}
 
-	// if the test has already been returned, return nothing
-	if o.returned[key] {
-		return []Event{}, nil
+	if !o.retKeys[StartedTestingType] {
+		return nil, nil
 	}
 
-	// check whether the dependencies are satisfied
-	if !o.returned[StartedTestingType] {
-		return []Event{}, nil
-	}
 	if id > 1 {
-		reachedKey := fmt.Sprintf("%s-%d", ReachedTestType, id-1)
-		if !o.returned[reachedKey] {
-			return []Event{}, nil
+		prevReachedKey := fmt.Sprintf("%s-%d", ReachedTestType, id-1)
+		if !o.retKeys[prevReachedKey] {
+			return nil, nil
 		}
 	}
 
 	e, err := o.getIgnoredTestEvent(id)
 	if err != nil {
-		return []Event{}, err
+		return nil, err
 	}
 
-	// return this value and check whether next is available
-	o.returned[key] = true
-	o.finTests++
+	o.retKeys[key] = true
+	o.numFinTests++
 	res := []Event{e}
-	var nxt []Event
-	if id < o.NumTests {
-		nxt, err = o.ignoreTest(id + 1)
-		res = append(res, nxt...)
+
+	if id < o.expNumOfTests {
+		// Try both ignore and reach paths for next test
+		nxt, err := o.ignoreTest(id + 1)
 		if err != nil {
-			return res, err
+			return append(res, nxt...), err
 		}
+		res = append(res, nxt...)
+
 		nxt, err = o.reachTest(id + 1)
-		res = append(res, nxt...)
 		if err != nil {
-			return res, err
+			return append(res, nxt...), err
 		}
+		res = append(res, nxt...)
 	}
-	nxt, err = o.finishTesting()
-	res = append(res, nxt...)
+
+	nxt, err := o.finishTesting()
 	if err != nil {
-		return res, err
+		return append(res, nxt...), err
 	}
-	return res, nil
+	return append(res, nxt...), nil
 }
 
-func (o *EvalResOrganizer) finishTest(id int) ([]Event, error) {
-	if id < 1 || id > o.NumTests {
-		return []Event{}, fmt.Errorf("invalid test id: %d", id)
+func (o *ExecResStreamOrganizer) finishTest(id int) ([]Event, error) {
+	if id < 1 || id > o.expNumOfTests {
+		return nil, fmt.Errorf("invalid test id: %d", id)
 	}
+
 	key := fmt.Sprintf("%s-%d", FinishedTestType, id)
-
-	// if the event has not been received yet, return nothing
-	if !o.received[key] {
-		return []Event{}, nil
+	if !o.rcvEvKeys[key] || o.retKeys[key] {
+		return nil, nil
 	}
 
-	// if the test has already been returned, return nothing
-	if o.returned[key] {
-		return []Event{}, nil
-	}
-
-	// check whether the dependencies are satisfied
 	reachedKey := fmt.Sprintf("%s-%d", ReachedTestType, id)
-	if !o.returned[reachedKey] {
-		return []Event{}, nil
+	if !o.retKeys[reachedKey] {
+		return nil, nil
 	}
 
 	e, err := o.getFinishedTestEvent(id)
 	if err != nil {
-		return []Event{}, err
+		return nil, err
 	}
 
-	// return this value and check whether next is available
-	o.returned[key] = true
-	o.finTests++
+	o.retKeys[key] = true
+	o.numFinTests++
 	res := []Event{e}
-	var nxt []Event
-	if id < o.NumTests {
-		nxt, err = o.reachTest(id + 1)
-		res = append(res, nxt...)
+
+	if id < o.expNumOfTests {
+		nxt, err := o.reachTest(id + 1)
 		if err != nil {
-			return res, err
+			return append(res, nxt...), err
 		}
+		res = append(res, nxt...)
 	}
-	nxt, err = o.finishTesting()
-	res = append(res, nxt...)
+
+	nxt, err := o.finishTesting()
 	if err != nil {
-		return res, err
+		return append(res, nxt...), err
 	}
-	return res, nil
+	return append(res, nxt...), nil
 }
 
-func (o *EvalResOrganizer) finishTesting() ([]Event, error) {
-	key := FinishedTestingType
-
-	// if the event has not been received yet, return nothing
-	if !o.received[key] {
-		return []Event{}, nil
+func (o *ExecResStreamOrganizer) finishTesting() ([]Event, error) {
+	if !o.rcvEvKeys[FinishedTestingType] || o.retKeys[FinishedTestingType] {
+		return nil, nil
 	}
 
-	// if the event has already been returned, return nothing
-	if o.returned[key] {
-		return []Event{}, nil
+	if o.numFinTests < o.expNumOfTests {
+		return nil, nil
 	}
 
-	// if not all tests have been finished, return nothing
-	if o.finTests < o.NumTests {
-		return []Event{}, nil
-	}
-
-	e, err := o.getSingleEvent(key)
+	e, err := o.getSingleEvent(FinishedTestingType)
 	if err != nil {
-		return []Event{}, err
+		return nil, err
 	}
 
-	// return this value and check whether next is available
-	o.returned[key] = true
-	res := []Event{e}
-	return res, nil
+	o.retKeys[FinishedTestingType] = true
+	return []Event{e}, nil
 }
 
-func (o *EvalResOrganizer) compileError() ([]Event, error) {
-	key := CompilationErrorType
-
-	// if the event has not been received yet, return nothing
-	if !o.received[key] {
-		return []Event{}, nil
+func (o *ExecResStreamOrganizer) compileError() ([]Event, error) {
+	if !o.rcvEvKeys[CompilationErrorType] || o.retKeys[CompilationErrorType] {
+		return nil, nil
 	}
 
-	// if the event has already been returned, return nothing
-	if o.returned[key] {
-		return []Event{}, nil
+	if !o.retKeys[FinishedCompilationType] {
+		return nil, nil
 	}
 
-	// check whether the dependencies are satisfied
-	if !o.returned[FinishedCompilationType] {
-		return []Event{}, nil
-	}
-
-	// get the compilation error event
-	e, err := o.getSingleEvent(key)
+	e, err := o.getSingleEvent(CompilationErrorType)
 	if err != nil {
-		return []Event{}, err
+		return nil, err
 	}
 
-	// return this value and check whether next is available
-	o.returned[key] = true
-	res := []Event{e}
-	return res, nil
+	o.retKeys[CompilationErrorType] = true
+	return []Event{e}, nil
 }
 
-func (o *EvalResOrganizer) getReachedTestEvent(id int) (Event, error) {
-	events, ok := o.events[ReachedTestType]
+func (o *ExecResStreamOrganizer) getReachedTestEvent(id int) (Event, error) {
+	events, ok := o.evsOfType[ReachedTestType]
 	if !ok {
-		return nil, fmt.Errorf("no events for key: %s, id: %d", ReachedTestType, id)
+		return nil, fmt.Errorf("no events for type: %s", ReachedTestType)
 	}
+
 	for _, event := range events {
-		reachedTest, ok := event.(ReachedTest)
-		if !ok {
-			return nil, fmt.Errorf("event is not a ReachedTest")
-		}
-		if reachedTest.TestId == id {
+		if reachedTest, ok := event.(ReachedTest); ok && reachedTest.TestId == id {
 			return event, nil
 		}
 	}
-	return nil, fmt.Errorf("no event for id: %d", id)
+	return nil, fmt.Errorf("no ReachedTest event for id: %d", id)
 }
 
-func (o *EvalResOrganizer) getIgnoredTestEvent(id int) (Event, error) {
-	events, ok := o.events[IgnoredTestType]
+func (o *ExecResStreamOrganizer) getIgnoredTestEvent(id int) (Event, error) {
+	events, ok := o.evsOfType[IgnoredTestType]
 	if !ok {
-		return nil, fmt.Errorf("no events for key: %s", IgnoredTestType)
+		return nil, fmt.Errorf("no events for type: %s", IgnoredTestType)
 	}
+
 	for _, event := range events {
-		ignoredTest, ok := event.(IgnoredTest)
-		if !ok {
-			return nil, fmt.Errorf("event is not an IgnoredTest")
-		}
-		if ignoredTest.TestId == id {
+		if ignoredTest, ok := event.(IgnoredTest); ok && ignoredTest.TestId == id {
 			return event, nil
 		}
 	}
-	return nil, fmt.Errorf("no event for id: %d", id)
+	return nil, fmt.Errorf("no IgnoredTest event for id: %d", id)
 }
 
-func (o *EvalResOrganizer) getFinishedTestEvent(id int) (Event, error) {
-	events, ok := o.events[FinishedTestType]
+func (o *ExecResStreamOrganizer) getFinishedTestEvent(id int) (Event, error) {
+	events, ok := o.evsOfType[FinishedTestType]
 	if !ok {
-		return nil, fmt.Errorf("no events for key: %s", FinishedTestType)
+		return nil, fmt.Errorf("no events for type: %s", FinishedTestType)
 	}
+
 	for _, event := range events {
-		finishedTest, ok := event.(FinishedTest)
-		if !ok {
-			return nil, fmt.Errorf("event is not a FinishedTest")
-		}
-		if finishedTest.TestID == id {
+		if finishedTest, ok := event.(FinishedTest); ok && finishedTest.TestID == id {
 			return event, nil
 		}
 	}
-	return nil, fmt.Errorf("no event for id: %d", id)
+	return nil, fmt.Errorf("no FinishedTest event for id: %d", id)
 }
 
-func (o *EvalResOrganizer) getSingleEvent(eventType string) (Event, error) {
-	events, ok := o.events[eventType]
+func (o *ExecResStreamOrganizer) getSingleEvent(eventType string) (Event, error) {
+	events, ok := o.evsOfType[eventType]
 	if !ok {
-		return nil, fmt.Errorf("no events for key: %s", eventType)
+		return nil, fmt.Errorf("no events for type: %s", eventType)
 	}
 	if len(events) > 1 {
-		return nil, fmt.Errorf("multiple events for key: %s", eventType)
+		return nil, fmt.Errorf("multiple events for type: %s", eventType)
 	}
 	return events[0], nil
 }
 
 func eventKey(event Event) string {
-	switch event.Type() {
-	case ReachedTestType:
-		reachedTest, ok := event.(ReachedTest)
-		if !ok {
-			return ""
-		}
-		return fmt.Sprintf("%s-%d", ReachedTestType, reachedTest.TestId)
-	case IgnoredTestType:
-		ignoredTest, ok := event.(IgnoredTest)
-		if !ok {
-			return ""
-		}
-		return fmt.Sprintf("%s-%d", IgnoredTestType, ignoredTest.TestId)
-	case FinishedTestType:
-		finishedTest, ok := event.(FinishedTest)
-		if !ok {
-			return ""
-		}
-		return fmt.Sprintf("%s-%d", FinishedTestType, finishedTest.TestID)
+	switch e := event.(type) {
+	case ReachedTest:
+		return fmt.Sprintf("%s-%d", ReachedTestType, e.TestId)
+	case IgnoredTest:
+		return fmt.Sprintf("%s-%d", IgnoredTestType, e.TestId)
+	case FinishedTest:
+		return fmt.Sprintf("%s-%d", FinishedTestType, e.TestID)
 	default:
 		return event.Type()
 	}

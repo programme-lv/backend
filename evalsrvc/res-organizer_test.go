@@ -83,7 +83,7 @@ func shuffleAndCmp(t *testing.T, events []Event) {
 			shuffled[i], shuffled[j] = shuffled[j], shuffled[i]
 		})
 
-		organizer, err := NewEvalResOrganizer(hasCompilation, numTests)
+		organizer, err := NewExecResStreamOrganizer(hasCompilation, numTests)
 		if err != nil {
 			t.Fatalf("error creating organizer: %v", err)
 		}
