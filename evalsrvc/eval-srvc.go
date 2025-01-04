@@ -188,7 +188,7 @@ func (e *EvalSrvc) prepareForResults(evalId uuid.UUID, lang PrLang, params Teste
 	e.handlers[evalId] = make(chan Event)
 	e.notifiers[evalId] = make(chan Event, 1000)
 
-	organizer, err := NewEvalResOrganizer(lang.CompCmd != nil, numTests)
+	organizer, err := NewExecResStreamOrganizer(lang.CompCmd != nil, numTests)
 	if err != nil {
 		return fmt.Errorf("failed to create organizer: %v", err)
 	}
@@ -197,7 +197,7 @@ func (e *EvalSrvc) prepareForResults(evalId uuid.UUID, lang PrLang, params Teste
 	return nil
 }
 
-func (e *EvalSrvc) handleResults(evalId uuid.UUID, lang PrLang, params TesterParams, org *EvalResOrganizer, numTests int) {
+func (e *EvalSrvc) handleResults(evalId uuid.UUID, lang PrLang, params TesterParams, org *ExecResStreamOrganizer, numTests int) {
 	eval := Evaluation{
 		UUID:      evalId,
 		Stage:     StageWaiting,
@@ -227,7 +227,7 @@ func (e *EvalSrvc) handleResults(evalId uuid.UUID, lang PrLang, params TesterPar
 			}
 			e.notifiers[evalId] <- event
 		}
-		if org.Finished() {
+		if org.HasFinished() {
 			break
 		}
 	}
