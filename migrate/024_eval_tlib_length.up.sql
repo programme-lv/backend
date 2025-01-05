@@ -1,0 +1,7 @@
+BEGIN;
+
+ALTER TABLE evaluations
+    ALTER COLUMN checker TYPE TEXT,
+    ALTER COLUMN interactor TYPE TEXT;
+
+COMMIT;
