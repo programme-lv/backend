@@ -13,17 +13,17 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestEnqueueAndReceiveResults verifies that submission is correctly enqueued
-// and that ALL corresponding evaluation results are received from tester:
-// - started evaluation
-// - started compilation iff the lang needs compilation
-// - finished compilation iff the lang needs compilation
-// - started testing
-// - reached & finished test for every single test
-// - finished testing
-// - finished evaluation
-// This does NOT verify that the messages are processed correctly,
-// only that all of them are received.
+// TestEnqueueAndReceiveResults verifies the complete evaluation lifecycle:
+// 1. Submission enqueuing
+// 2. Event emission and ordering:
+//   - Evaluation start
+//   - Compilation phase (language-dependent)
+//   - Test execution phase
+//   - Individual test results
+//   - Evaluation completion
+//
+// The test focuses on event completeness rather than correctness of event processing.
+// It ensures all expected events are received for both compiled and interpreted languages.
 func TestEnqueueAndReceiveResults(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 

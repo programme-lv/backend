@@ -5,28 +5,35 @@ import (
 	"sync"
 )
 
-// ExecResStreamOrganizer transforms a stream of events to gurantee:
-// 1. correct order;
-// 2. no duplicates;
-// 3. no missing events.
-// Organizer supports parallel execution of tests by the tester.
+// ExecResStreamOrganizer processes and orders a stream of evaluation events to ensure:
+// - Sequential ordering: Events are emitted only after their dependencies are satisfied
+// - Deduplication: Events with identical keys are processed only once
+// - Completeness: All required events must be received before evaluation completion
+//
+// The organizer supports concurrent test execution while maintaining sequential event emission.
+// For example, if test #2 finishes before test #1, the organizer will buffer test #2's results
+// until test #1's results are processed.
 type ExecResStreamOrganizer struct {
-	hasCompilation bool // if the submission programming language has a compile step
+	hasCompilation bool // indicates if the language requires a compilation step
 
-	rcvEvKeys map[string]bool    // tracks whether an event KEY was received
-	evsOfType map[string][]Event // unflushed received events by TYPE
-	retKeys   map[string]bool    // tracks which event KEYs have been returned from Add method
+	rcvEvKeys map[string]bool    // tracks received event keys for deduplication
+	evsOfType map[string][]Event // buffers events by type until ready for emission
+	retKeys   map[string]bool    // tracks emitted event keys to enforce ordering
 
-	expNumOfTests int // expected number of tests
-	numFinTests   int // number of received finished or ignored tests
+	expNumOfTests int // total number of tests to execute
+	numFinTests   int // count of completed or ignored tests
 
-	returnedISE bool // whether internal server error has been returned
+	returnedISE bool // indicates if an internal server error occurred
 
-	mu sync.Mutex // ensures thread-safe access
+	mu sync.Mutex // synchronizes access to internal state
 }
 
-// NewExecResStreamOrganizer creates a new stream organizer.
-// Returns an error if the number of tests is invalid.
+// NewExecResStreamOrganizer initializes a stream organizer for evaluation events.
+// Parameters:
+//   - hasCompilation: whether the language requires compilation
+//   - numTests: number of test cases to execute
+//
+// Returns error if numTests is invalid (negative or exceeds maximum limit).
 func NewExecResStreamOrganizer(hasCompilation bool, numTests int) (*ExecResStreamOrganizer, error) {
 	if numTests < 0 {
 		return nil, fmt.Errorf("numTests must be non-negative")
@@ -46,10 +53,14 @@ func NewExecResStreamOrganizer(hasCompilation bool, numTests int) (*ExecResStrea
 	}, nil
 }
 
-// Add adds an event to stream organizer to be returned when appropriate.
-// Returns events for which this event was a prerequisite and this event if
-// the dependencies are met in the correct order. Does not return the same
-// event twice if it is determined to have the same key.
+// Add processes an incoming event and returns any events that are now ready for emission.
+// Events are considered ready when all their dependencies have been satisfied and emitted.
+// For example:
+//   - Test results require their corresponding "test reached" event
+//   - Test execution requires compilation success (for compiled languages)
+//
+// The function handles event deduplication and maintains sequential ordering.
+// Returns error if the event type is unknown or event processing fails.
 func (o *ExecResStreamOrganizer) Add(event Event) ([]Event, error) {
 	o.mu.Lock()
 	defer o.mu.Unlock()
@@ -97,10 +108,11 @@ func (o *ExecResStreamOrganizer) Add(event Event) ([]Event, error) {
 	}
 }
 
-// HasFinished returns true if the evaluation has finished, i.e.
-// 1. an internal server error has been returned;
-// 2. the finished testing event has been returned;
-// 3. the compilation error event has been returned.
+// HasFinished indicates whether the evaluation has completed and no more events
+// will be processed. This occurs when:
+//   - An internal server error is encountered
+//   - All tests complete successfully (FinishedTesting)
+//   - Compilation fails (CompilationError)
 func (o *ExecResStreamOrganizer) HasFinished() bool {
 	o.mu.Lock()
 	defer o.mu.Unlock()
@@ -108,11 +120,16 @@ func (o *ExecResStreamOrganizer) HasFinished() bool {
 	return o.returnedISE || o.retKeys[FinishedTestingType] || o.retKeys[CompilationErrorType]
 }
 
+// receiveSubm handles the initial submission event and triggers the appropriate next phase.
+// For compiled languages, this initiates compilation. For interpreted languages,
+// testing begins immediately.
 func (o *ExecResStreamOrganizer) receiveSubm() ([]Event, error) {
+	// Return if we haven't received the "received submission" event yet
 	if !o.rcvEvKeys[ReceivedSubmissionType] {
 		return nil, nil
 	}
 
+	// Return if we've already processed "received submission" event
 	if o.retKeys[ReceivedSubmissionType] {
 		return nil, nil
 	}
@@ -122,9 +139,12 @@ func (o *ExecResStreamOrganizer) receiveSubm() ([]Event, error) {
 		return nil, err
 	}
 
+	// Mark "received submission" event as processed
 	o.retKeys[ReceivedSubmissionType] = true
 	res := []Event{e}
 
+	// For compiled languages, expect compilation to start
+	// For interpreted languages, expect testing to start
 	var nxt []Event
 	if o.hasCompilation {
 		nxt, err = o.startCompile()
@@ -137,27 +157,38 @@ func (o *ExecResStreamOrganizer) receiveSubm() ([]Event, error) {
 	return append(res, nxt...), nil
 }
 
+// startCompile processes the compilation start event for compiled languages.
+// This represents the beginning of the compilation phase and is only valid
+// after submission has been received.
 func (o *ExecResStreamOrganizer) startCompile() ([]Event, error) {
+	// Verify this is a compiled language
 	if !o.hasCompilation {
 		return nil, fmt.Errorf("unexpected compile for non-compiled language")
 	}
 
+	// Return if we haven't received StartedCompilation event yet
+	// or if we've already processed it
 	if !o.rcvEvKeys[StartedCompilationType] || o.retKeys[StartedCompilationType] {
 		return nil, nil
 	}
 
+	// Return if we haven't processed ReceivedSubmission event yet
+	// (compilation can't start before submission is received)
 	if !o.retKeys[ReceivedSubmissionType] {
 		return nil, nil
 	}
 
+	// Get the StartedCompilation event
 	e, err := o.getSingleEvent(StartedCompilationType)
 	if err != nil {
 		return nil, err
 	}
 
+	// Mark StartedCompilation event as processed
 	o.retKeys[StartedCompilationType] = true
 	res := []Event{e}
 
+	// Try to process FinishedCompilation event if it's ready
 	nxt, err := o.finishCompile()
 	if err != nil {
 		return append(res, nxt...), err
@@ -165,28 +196,39 @@ func (o *ExecResStreamOrganizer) startCompile() ([]Event, error) {
 	return append(res, nxt...), nil
 }
 
+// finishCompile handles compilation completion and determines the next phase.
+// On success, testing begins. On failure, a compilation error is emitted.
 func (o *ExecResStreamOrganizer) finishCompile() ([]Event, error) {
+	// Verify this is a compiled language
 	if !o.hasCompilation {
 		return nil, fmt.Errorf("unexpected compile for non-compiled language")
 	}
 
+	// Return if we haven't received FinishedCompilation event yet
+	// or if we've already processed it
 	if !o.rcvEvKeys[FinishedCompilationType] || o.retKeys[FinishedCompilationType] {
 		return nil, nil
 	}
 
+	// Return if we haven't processed StartedCompilation event yet
+	// (compilation can't finish before it starts)
 	if !o.retKeys[StartedCompilationType] {
 		return nil, nil
 	}
 
+	// Get the FinishedCompilation event
 	e, err := o.getSingleEvent(FinishedCompilationType)
 	if err != nil {
 		return nil, err
 	}
 
+	// Mark FinishedCompilation event as processed
 	o.retKeys[FinishedCompilationType] = true
 	res := []Event{e}
 
-	// Try both compilation error and start testing paths
+	// After compilation finishes, we need to check two possible paths:
+	// 1. If compilation failed, we'll get a compilation error event
+	// 2. If compilation succeeded, we can start testing
 	nxt, err := o.compileError()
 	if err != nil {
 		return append(res, nxt...), err
@@ -200,6 +242,9 @@ func (o *ExecResStreamOrganizer) finishCompile() ([]Event, error) {
 	return append(res, nxt...), nil
 }
 
+// startTesting initiates the test execution phase.
+// For compiled languages, this requires successful compilation.
+// For interpreted languages, this follows immediately after submission.
 func (o *ExecResStreamOrganizer) startTesting() ([]Event, error) {
 	if !o.rcvEvKeys[StartedTestingType] || o.retKeys[StartedTestingType] {
 		return nil, nil
@@ -236,6 +281,8 @@ func (o *ExecResStreamOrganizer) startTesting() ([]Event, error) {
 	return append(res, nxt...), nil
 }
 
+// reachTest processes a test case initiation event.
+// Ensures tests are processed sequentially by buffering out-of-order results.
 func (o *ExecResStreamOrganizer) reachTest(id int) ([]Event, error) {
 	key := fmt.Sprintf("%s-%d", ReachedTestType, id)
 
@@ -271,6 +318,8 @@ func (o *ExecResStreamOrganizer) reachTest(id int) ([]Event, error) {
 	return append(res, nxt...), nil
 }
 
+// ignoreTest handles skipped test cases while maintaining sequential order.
+// A test may be ignored if previous tests failed or resource limits were exceeded.
 func (o *ExecResStreamOrganizer) ignoreTest(id int) ([]Event, error) {
 	key := fmt.Sprintf("%s-%d", IgnoredTestType, id)
 
@@ -320,6 +369,8 @@ func (o *ExecResStreamOrganizer) ignoreTest(id int) ([]Event, error) {
 	return append(res, nxt...), nil
 }
 
+// finishTest processes a test completion event.
+// Ensures the test was properly initiated and maintains sequential ordering.
 func (o *ExecResStreamOrganizer) finishTest(id int) ([]Event, error) {
 	if id < 1 || id > o.expNumOfTests {
 		return nil, fmt.Errorf("invalid test id: %d", id)
@@ -359,6 +410,8 @@ func (o *ExecResStreamOrganizer) finishTest(id int) ([]Event, error) {
 	return append(res, nxt...), nil
 }
 
+// finishTesting handles the completion of all test cases.
+// Verifies that all expected tests have either completed or been ignored.
 func (o *ExecResStreamOrganizer) finishTesting() ([]Event, error) {
 	if !o.rcvEvKeys[FinishedTestingType] || o.retKeys[FinishedTestingType] {
 		return nil, nil
@@ -377,6 +430,8 @@ func (o *ExecResStreamOrganizer) finishTesting() ([]Event, error) {
 	return []Event{e}, nil
 }
 
+// compileError processes compilation failures.
+// Only valid after compilation has finished and before testing begins.
 func (o *ExecResStreamOrganizer) compileError() ([]Event, error) {
 	if !o.rcvEvKeys[CompilationErrorType] || o.retKeys[CompilationErrorType] {
 		return nil, nil
@@ -395,6 +450,8 @@ func (o *ExecResStreamOrganizer) compileError() ([]Event, error) {
 	return []Event{e}, nil
 }
 
+// getReachedTestEvent retrieves the event indicating a test case has started.
+// Returns error if the event doesn't exist or if multiple events exist for the same test.
 func (o *ExecResStreamOrganizer) getReachedTestEvent(id int) (Event, error) {
 	events, ok := o.evsOfType[ReachedTestType]
 	if !ok {
@@ -409,6 +466,8 @@ func (o *ExecResStreamOrganizer) getReachedTestEvent(id int) (Event, error) {
 	return nil, fmt.Errorf("no ReachedTest event for id: %d", id)
 }
 
+// getIgnoredTestEvent retrieves the event indicating a test case was skipped.
+// Returns error if the event doesn't exist or if multiple events exist for the same test.
 func (o *ExecResStreamOrganizer) getIgnoredTestEvent(id int) (Event, error) {
 	events, ok := o.evsOfType[IgnoredTestType]
 	if !ok {
@@ -423,6 +482,8 @@ func (o *ExecResStreamOrganizer) getIgnoredTestEvent(id int) (Event, error) {
 	return nil, fmt.Errorf("no IgnoredTest event for id: %d", id)
 }
 
+// getFinishedTestEvent retrieves the event indicating a test case has completed.
+// Returns error if the event doesn't exist or if multiple events exist for the same test.
 func (o *ExecResStreamOrganizer) getFinishedTestEvent(id int) (Event, error) {
 	events, ok := o.evsOfType[FinishedTestType]
 	if !ok {
@@ -437,6 +498,8 @@ func (o *ExecResStreamOrganizer) getFinishedTestEvent(id int) (Event, error) {
 	return nil, fmt.Errorf("no FinishedTest event for id: %d", id)
 }
 
+// getSingleEvent retrieves a unique event of the specified type.
+// Returns error if no events exist or if multiple events are found.
 func (o *ExecResStreamOrganizer) getSingleEvent(eventType string) (Event, error) {
 	events, ok := o.evsOfType[eventType]
 	if !ok {
@@ -448,6 +511,8 @@ func (o *ExecResStreamOrganizer) getSingleEvent(eventType string) (Event, error)
 	return events[0], nil
 }
 
+// eventKey generates a unique identifier for deduplication.
+// Test-related events include the test ID in their key.
 func eventKey(event Event) string {
 	switch e := event.(type) {
 	case ReachedTest:

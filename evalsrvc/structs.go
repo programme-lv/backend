@@ -102,8 +102,8 @@ type PrLang struct {
 
 type TestRes struct {
 	ID       int     `json:"id"`
-	Input    *string `json:"inp"` // test input
-	Answer   *string `json:"ans"` // test answer
+	Input    *string `json:"inp"` // trimmed test input file preview
+	Answer   *string `json:"ans"` // trimmed test answer file preview
 	Reached  bool    `json:"rch"`
 	Ignored  bool    `json:"ign"` // when score group has another failed test
 	Finished bool    `json:"fin"`
@@ -114,17 +114,17 @@ type TestRes struct {
 
 // Runtime Data
 type RunData struct {
-	StdIn    string `json:"in"`
-	StdOut   string `json:"out"`
-	StdErr   string `json:"err"`
-	CpuMs    int64  `json:"cpu_ms"`   // cpu user-mode time in milliseconds
-	WallMs   int64  `json:"wall_ms"`  // wall clock time in milliseconds
-	MemKiB   int64  `json:"mem_kib"`  // memory usage in kibibytes
-	ExitCode int64  `json:"exit"`     // exit code
-	CtxSwV   int64  `json:"ctx_sw_v"` // context switches forced by kernel
-	CtxSwF   int64  `json:"ctx_sw_f"` // context switches forced by kernel
-	Signal   *int64 `json:"signal"`   // exit signal if any
-	// IsolStatus *string `json:"isol_status"` // isolate execution environment status
+	StdIn      string  `json:"in"`          // standard input
+	StdOut     string  `json:"out"`         // standard output
+	StdErr     string  `json:"err"`         // standard error
+	CpuMs      int64   `json:"cpu_ms"`      // cpu user-mode time in milliseconds
+	WallMs     int64   `json:"wall_ms"`     // wall clock time in milliseconds
+	MemKiB     int64   `json:"mem_kib"`     // memory usage (resident set size) in kibibytes
+	ExitCode   int64   `json:"exit"`        // exit code
+	CtxSwV     int64   `json:"ctx_sw_v"`    // voluntary context switches, e.g. waiting for I/O
+	CtxSwF     int64   `json:"ctx_sw_f"`    // involuntary context switches, e.g. waiting for CPU
+	Signal     *int64  `json:"signal"`      // exit signal if any
+	IsolStatus *string `json:"isol_status"` // isolate sandbox execution environment status
 }
 
 // type Text struct {

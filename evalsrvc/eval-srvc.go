@@ -193,11 +193,11 @@ func (e *EvalSrvc) prepareForResults(evalId uuid.UUID, lang PrLang, params Teste
 		return fmt.Errorf("failed to create organizer: %v", err)
 	}
 
-	go e.handleResults(evalId, lang, params, organizer, numTests)
+	go e.handleResultStreamForEval(evalId, lang, params, organizer, numTests)
 	return nil
 }
 
-func (e *EvalSrvc) handleResults(evalId uuid.UUID, lang PrLang, params TesterParams, org *ExecResStreamOrganizer, numTests int) {
+func (e *EvalSrvc) handleResultStreamForEval(evalId uuid.UUID, lang PrLang, params TesterParams, org *ExecResStreamOrganizer, numTests int) {
 	eval := Evaluation{
 		UUID:      evalId,
 		Stage:     StageWaiting,

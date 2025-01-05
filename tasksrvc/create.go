@@ -35,7 +35,7 @@ func (ts *TaskService) UploadStatementPdf(body []byte) (string, error) {
 
 // S3 bucket: "proglv-public" (as of 2024-09-29)
 // S3 key format: "task-illustrations/<sha2>.<ext>"
-func (ts *TaskService) UploadIllustrationImg(mimeType string, body []byte) (s3key string, err error) {
+func (ts *TaskService) UploadIllustrationImg(mimeType string, body []byte) (url string, err error) {
 	sha2 := ts.Sha2Hex(body)
 	exts, err := mime.ExtensionsByType(mimeType)
 	if err != nil {
@@ -50,7 +50,7 @@ func (ts *TaskService) UploadIllustrationImg(mimeType string, body []byte) (s3ke
 }
 
 // S3 key format: "task-md-images/<sha2>.<extension>"
-func (ts *TaskService) UploadMarkdownImage(mimeType string, body []byte) (s3key string, err error) {
+func (ts *TaskService) UploadMarkdownImage(mimeType string, body []byte) (url string, err error) {
 	sha2 := ts.Sha2Hex(body)
 	exts, err := mime.ExtensionsByType(mimeType)
 	if err != nil {
