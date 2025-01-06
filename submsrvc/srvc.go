@@ -10,7 +10,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/programme-lv/backend/conf"
-	"github.com/programme-lv/backend/evalsrvc"
+	"github.com/programme-lv/backend/execsrvc"
 	"github.com/programme-lv/backend/planglist"
 	"github.com/programme-lv/backend/s3bucket"
 	"github.com/programme-lv/backend/tasksrvc"
@@ -41,7 +41,7 @@ type SubmissionSrvc struct {
 
 	userSrvc *usersrvc.UserService
 	taskSrvc *tasksrvc.TaskService
-	evalSrvc *evalsrvc.EvalSrvc
+	evalSrvc *execsrvc.EvalSrvc
 
 	// real-time updates
 	submUuidEvalUpdSubs []struct {
@@ -53,7 +53,7 @@ type SubmissionSrvc struct {
 	listenerLock        sync.Mutex
 }
 
-func NewSubmSrvc(taskSrvc *tasksrvc.TaskService, evalSrvc *evalsrvc.EvalSrvc) (*SubmissionSrvc, error) {
+func NewSubmSrvc(taskSrvc *tasksrvc.TaskService, evalSrvc *execsrvc.EvalSrvc) (*SubmissionSrvc, error) {
 	testBucket, err := s3bucket.NewS3Bucket("eu-central-1", "proglv-tests")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create test bucket: %w", err)

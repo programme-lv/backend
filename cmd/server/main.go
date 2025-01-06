@@ -8,7 +8,7 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/lmittmann/tint"
-	"github.com/programme-lv/backend/evalsrvc"
+	"github.com/programme-lv/backend/execsrvc"
 	"github.com/programme-lv/backend/http"
 	"github.com/programme-lv/backend/submsrvc"
 	"github.com/programme-lv/backend/tasksrvc"
@@ -37,7 +37,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	evalSrvc := evalsrvc.NewEvalSrvc()
+	evalSrvc := execsrvc.NewDefaultEvalSrvc()
 
 	taskSrvc, err := tasksrvc.NewTaskSrvc()
 	if err != nil {
