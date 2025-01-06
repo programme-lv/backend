@@ -1,4 +1,4 @@
-package evalsrvc
+package execsrvc
 
 import (
 	"math/rand/v2"

@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/programme-lv/backend/evalsrvc"
+	"github.com/programme-lv/backend/execsrvc"
 	"github.com/programme-lv/backend/planglist"
 )
 
@@ -40,10 +40,10 @@ func (s *SubmissionSrvc) CreateSubmission(ctx context.Context,
 	}
 
 	// enqueue evaluation into sqs for testing
-	evalUuid, err := s.evalSrvc.Enqueue(evalsrvc.CodeWithLang{
+	evalUuid, err := s.evalSrvc.Enqueue(execsrvc.CodeWithLang{
 		SrcCode: params.Submission,
 		LangId:  params.ProgLangID,
-	}, s.evalReqTests(&t), evalsrvc.TesterParams{
+	}, s.evalReqTests(&t), execsrvc.TesterParams{
 		CpuMs:      t.CpuMillis(),
 		MemKiB:     t.MemoryKiB(),
 		Checker:    t.CheckerPtr(),
@@ -93,7 +93,7 @@ func (s *SubmissionSrvc) CreateSubmission(ctx context.Context,
 
 	eval := Evaluation{
 		UUID:       evalUuid,
-		Stage:      evalsrvc.StageWaiting,
+		Stage:      execsrvc.StageWaiting,
 		ScoreUnit:  scoreUnit,
 		Error:      nil,
 		Subtasks:   subtasks,

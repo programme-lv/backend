@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/programme-lv/backend/evalsrvc"
+	"github.com/programme-lv/backend/execsrvc"
 	"github.com/programme-lv/backend/submsrvc"
 	"github.com/programme-lv/backend/tasksrvc"
 	"github.com/stretchr/testify/require"
@@ -15,7 +15,7 @@ func TestSubmSrvc(t *testing.T) {
 	taskSrvc, err := tasksrvc.NewTaskSrvc()
 
 	require.NoError(t, err)
-	evalSrvc := evalsrvc.NewEvalSrvc()
+	evalSrvc := execsrvc.NewDefaultEvalSrvc()
 	srvc, err := submsrvc.NewSubmSrvc(taskSrvc, evalSrvc)
 	require.NoError(t, err)
 	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(10*time.Second))

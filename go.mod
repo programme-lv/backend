@@ -24,6 +24,8 @@ require (
 	github.com/lmittmann/tint v1.0.6
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
 	github.com/pelletier/go-toml/v2 v2.2.3
+	github.com/peterldowns/pgtestdb v0.1.1
+	github.com/peterldowns/pgtestdb/migrators/golangmigrator v0.1.1
 	github.com/programme-lv/tester v0.2.1-0.20241227183509-d7fdd302b062
 	github.com/rs/zerolog v1.33.0
 	github.com/spf13/cobra v1.8.1
@@ -62,8 +64,6 @@ require (
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
-	github.com/peterldowns/pgtestdb v0.1.1 // indirect
-	github.com/peterldowns/pgtestdb/migrators/golangmigrator v0.1.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	go.uber.org/atomic v1.7.0 // indirect

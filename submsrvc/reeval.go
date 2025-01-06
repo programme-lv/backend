@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/programme-lv/backend/evalsrvc"
+	"github.com/programme-lv/backend/execsrvc"
 )
 
 func (s *SubmissionSrvc) ReevalSubm(ctx context.Context, submUuid uuid.UUID) error {
@@ -21,10 +21,10 @@ func (s *SubmissionSrvc) ReevalSubm(ctx context.Context, submUuid uuid.UUID) err
 	}
 
 	// enqueue evaluation into sqs for testing
-	evalUuid, err := s.evalSrvc.Enqueue(evalsrvc.CodeWithLang{
+	evalUuid, err := s.evalSrvc.Enqueue(execsrvc.CodeWithLang{
 		SrcCode: subm.Content,
 		LangId:  subm.Lang.ShortID,
-	}, s.evalReqTests(&t), evalsrvc.TesterParams{
+	}, s.evalReqTests(&t), execsrvc.TesterParams{
 		CpuMs:      t.CpuMillis(),
 		MemKiB:     t.MemoryKiB(),
 		Checker:    t.CheckerPtr(),
@@ -72,7 +72,7 @@ func (s *SubmissionSrvc) ReevalSubm(ctx context.Context, submUuid uuid.UUID) err
 
 	eval := Evaluation{
 		UUID:       evalUuid,
-		Stage:      evalsrvc.StageWaiting,
+		Stage:      execsrvc.StageWaiting,
 		ScoreUnit:  scoreUnit,
 		Error:      nil,
 		Subtasks:   subtasks,

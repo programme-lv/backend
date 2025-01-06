@@ -6,11 +6,11 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/programme-lv/backend/evalsrvc"
+	"github.com/programme-lv/backend/execsrvc"
 	"github.com/programme-lv/backend/tasksrvc"
 )
 
-func (s *SubmissionSrvc) handleUpdates(eval Evaluation, ch <-chan evalsrvc.Event) {
+func (s *SubmissionSrvc) handleUpdates(eval Evaluation, ch <-chan execsrvc.Event) {
 	l := s.logger.With("eval-uuid", eval.UUID)
 	for update := range ch {
 		l.Info("received eval update", "type", update.Type())
@@ -22,9 +22,9 @@ func (s *SubmissionSrvc) handleUpdates(eval Evaluation, ch <-chan evalsrvc.Event
 		eval = newEval
 		s.inMem[eval.SubmUUID] = eval
 		final := false
-		final = final || update.Type() == evalsrvc.InternalServerErrorType
-		final = final || update.Type() == evalsrvc.CompilationErrorType
-		final = final || update.Type() == evalsrvc.FinishedTestingType
+		final = final || update.Type() == execsrvc.InternalServerErrorType
+		final = final || update.Type() == execsrvc.CompilationErrorType
+		final = final || update.Type() == execsrvc.FinishedTestingType
 		if final {
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
@@ -42,30 +42,30 @@ func (s *SubmissionSrvc) handleUpdates(eval Evaluation, ch <-chan evalsrvc.Event
 	}
 }
 
-func applyUpdate(eval Evaluation, update evalsrvc.Event) Evaluation {
+func applyUpdate(eval Evaluation, update execsrvc.Event) Evaluation {
 	switch u := update.(type) {
-	case evalsrvc.ReceivedSubmission:
-	case evalsrvc.StartedCompiling:
+	case execsrvc.ReceivedSubmission:
+	case execsrvc.StartedCompiling:
 		eval.Stage = StageCompiling
-	case evalsrvc.StartedTesting:
+	case execsrvc.StartedTesting:
 		eval.Stage = StageTesting
-	case evalsrvc.FinishedTesting:
+	case execsrvc.FinishedTesting:
 		eval.Stage = StageFinished
-	case evalsrvc.InternalServerError:
+	case execsrvc.InternalServerError:
 		eval.Stage = StageFinished
 		eval.Error = &EvaluationError{
 			Type:    ErrorTypeInternal,
 			Message: u.ErrorMsg,
 		}
-	case evalsrvc.CompilationError:
+	case execsrvc.CompilationError:
 		eval.Stage = StageFinished
 		eval.Error = &EvaluationError{
 			Type:    ErrorTypeCompilation,
 			Message: u.ErrorMsg,
 		}
-	case evalsrvc.ReachedTest:
+	case execsrvc.ReachedTest:
 		eval.Tests[u.TestId-1].Reached = true
-	case evalsrvc.FinishedTest:
+	case execsrvc.FinishedTest:
 		eval.Tests[u.TestID-1].Finished = true
 		if u.Subm != nil {
 			if u.Subm.ExitCode != 0 {
@@ -86,14 +86,14 @@ func applyUpdate(eval Evaluation, update evalsrvc.Event) Evaluation {
 				}
 			}
 		}
-	case evalsrvc.IgnoredTest:
+	case execsrvc.IgnoredTest:
 		eval.Tests[u.TestId-1].Ig = true
 	}
 	return eval
 }
 
-func (s *SubmissionSrvc) evalReqTests(task *tasksrvc.Task) []evalsrvc.TestFile {
-	evalReqTests := make([]evalsrvc.TestFile, len(task.Tests))
+func (s *SubmissionSrvc) evalReqTests(task *tasksrvc.Task) []execsrvc.TestFile {
+	evalReqTests := make([]execsrvc.TestFile, len(task.Tests))
 	for i, test := range task.Tests {
 		inputKey := fmt.Sprintf("%s.zst", test.InpSha2)
 		answerKey := fmt.Sprintf("%s.zst", test.AnsSha2)
@@ -105,7 +105,7 @@ func (s *SubmissionSrvc) evalReqTests(task *tasksrvc.Task) []evalsrvc.TestFile {
 		if err != nil {
 			slog.Error("failed to get presigned URL for answer", "error", err)
 		}
-		evalReqTests[i] = evalsrvc.TestFile{
+		evalReqTests[i] = execsrvc.TestFile{
 			InSha256:    &test.InpSha2,
 			AnsSha256:   &test.AnsSha2,
 			InDownlUrl:  &inputS3Url,

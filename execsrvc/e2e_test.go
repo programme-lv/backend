@@ -1,11 +1,11 @@
-package evalsrvc_test
+package execsrvc_test
 
 import (
 	"context"
 	"testing"
 	"time"
 
-	"github.com/programme-lv/backend/evalsrvc"
+	"github.com/programme-lv/backend/execsrvc"
 	"github.com/stretchr/testify/require"
 )
 
@@ -27,14 +27,14 @@ func TestEvalServiceCmpListenNoCompile(t *testing.T) {
 	// 4. compare to expected events
 
 	// 1. enqueue a submission
-	srvc := evalsrvc.NewEvalSrvc()
-	evalId, err := srvc.Enqueue(evalsrvc.CodeWithLang{
+	srvc := execsrvc.NewDefaultEvalSrvc()
+	evalId, err := srvc.Enqueue(execsrvc.CodeWithLang{
 		SrcCode: "a=int(input());b=int(input());print(a+b)",
 		LangId:  "python3.11",
-	}, []evalsrvc.TestFile{
+	}, []execsrvc.TestFile{
 		{InContent: strPtr("1 2"), AnsContent: strPtr("3")},
 		{InContent: strPtr("3 4"), AnsContent: strPtr("6")},
-	}, evalsrvc.TesterParams{
+	}, execsrvc.TesterParams{
 		CpuMs:  1000,
 		MemKiB: 1024,
 	})
@@ -45,7 +45,7 @@ func TestEvalServiceCmpListenNoCompile(t *testing.T) {
 	require.NoError(t, err)
 
 	timeout := time.After(30 * time.Second)
-	var events []evalsrvc.Event
+	var events []execsrvc.Event
 
 	// 3. collect events until channel closes or timeout
 	for {
@@ -61,25 +61,25 @@ func TestEvalServiceCmpListenNoCompile(t *testing.T) {
 	}
 hello:
 	require.Len(t, events, 7)
-	require.Equal(t, events[0].Type(), evalsrvc.ReceivedSubmissionType)
-	require.Equal(t, events[1].Type(), evalsrvc.StartedTestingType)
-	require.Equal(t, events[2].Type(), evalsrvc.ReachedTestType)
-	require.Equal(t, events[3].Type(), evalsrvc.FinishedTestType)
-	require.Equal(t, events[4].Type(), evalsrvc.ReachedTestType)
-	require.Equal(t, events[5].Type(), evalsrvc.FinishedTestType)
-	require.Equal(t, events[6].Type(), evalsrvc.FinishedTestingType)
+	require.Equal(t, events[0].Type(), execsrvc.ReceivedSubmissionType)
+	require.Equal(t, events[1].Type(), execsrvc.StartedTestingType)
+	require.Equal(t, events[2].Type(), execsrvc.ReachedTestType)
+	require.Equal(t, events[3].Type(), execsrvc.FinishedTestType)
+	require.Equal(t, events[4].Type(), execsrvc.ReachedTestType)
+	require.Equal(t, events[5].Type(), execsrvc.FinishedTestType)
+	require.Equal(t, events[6].Type(), execsrvc.FinishedTestingType)
 }
 
 func TestEvalServiceCmpListenWithCompile(t *testing.T) {
 	// 1. enqueue a submission
-	srvc := evalsrvc.NewEvalSrvc()
-	evalId, err := srvc.Enqueue(evalsrvc.CodeWithLang{
+	srvc := execsrvc.NewDefaultEvalSrvc()
+	evalId, err := srvc.Enqueue(execsrvc.CodeWithLang{
 		SrcCode: "#include <iostream>\nint main() {int a,b;std::cin>>a>>b;std::cout<<a+b<<std::endl;}",
 		LangId:  "cpp17",
-	}, []evalsrvc.TestFile{
+	}, []execsrvc.TestFile{
 		{InContent: strPtr("1 2"), AnsContent: strPtr("3")},
 		{InContent: strPtr("3 4"), AnsContent: strPtr("6")},
-	}, evalsrvc.TesterParams{
+	}, execsrvc.TesterParams{
 		CpuMs:  1000,
 		MemKiB: 1024,
 	})
@@ -90,7 +90,7 @@ func TestEvalServiceCmpListenWithCompile(t *testing.T) {
 	require.NoError(t, err)
 
 	timeout := time.After(10 * time.Second)
-	var events []evalsrvc.Event
+	var events []execsrvc.Event
 
 	// 3. collect events until channel closes or timeout
 	for {
@@ -107,15 +107,15 @@ func TestEvalServiceCmpListenWithCompile(t *testing.T) {
 hello:
 	require.Len(t, events, 9)
 	expectedEvents := []string{
-		evalsrvc.ReceivedSubmissionType,
-		evalsrvc.StartedCompilationType,
-		evalsrvc.FinishedCompilationType,
-		evalsrvc.StartedTestingType,
-		evalsrvc.ReachedTestType,
-		evalsrvc.FinishedTestType,
-		evalsrvc.ReachedTestType,
-		evalsrvc.FinishedTestType,
-		evalsrvc.FinishedTestingType,
+		execsrvc.ReceivedSubmissionType,
+		execsrvc.StartedCompilationType,
+		execsrvc.FinishedCompilationType,
+		execsrvc.StartedTestingType,
+		execsrvc.ReachedTestType,
+		execsrvc.FinishedTestType,
+		execsrvc.ReachedTestType,
+		execsrvc.FinishedTestType,
+		execsrvc.FinishedTestingType,
 	}
 	for i, ev := range events {
 		require.Equal(t, expectedEvents[i], ev.Type())
@@ -124,14 +124,14 @@ hello:
 
 // test the asynchronocity of the Get() method and persistence after closing the srvc
 func TestEvalServiceCmpGet(t *testing.T) {
-	srvc := evalsrvc.NewEvalSrvc()
-	evalId, err := srvc.Enqueue(evalsrvc.CodeWithLang{
+	srvc := execsrvc.NewDefaultEvalSrvc()
+	evalId, err := srvc.Enqueue(execsrvc.CodeWithLang{
 		SrcCode: "a=int(input());b=int(input());print(a+b)",
 		LangId:  "python3.10",
-	}, []evalsrvc.TestFile{
+	}, []execsrvc.TestFile{
 		{InContent: strPtr("1\n2\n"), AnsContent: strPtr("3\n")},
 		{InContent: strPtr("3\n4\n"), AnsContent: strPtr("6\n")},
-	}, evalsrvc.TesterParams{
+	}, execsrvc.TesterParams{
 		CpuMs:  1000,
 		MemKiB: 20024,
 	})
@@ -141,7 +141,7 @@ func TestEvalServiceCmpGet(t *testing.T) {
 	defer cancel()
 	eval, err := srvc.Get(ctx, evalId)
 	require.NoError(t, err)
-	require.Equal(t, eval.Stage, evalsrvc.StageFinished)
+	require.Equal(t, eval.Stage, execsrvc.StageFinished)
 	require.Nil(t, eval.ErrorMsg)
 	require.Len(t, eval.TestRes, 2)
 	require.Equal(t, strPtr("1\n2\n"), eval.TestRes[0].Input)
@@ -151,7 +151,7 @@ func TestEvalServiceCmpGet(t *testing.T) {
 	require.Equal(t, false, eval.TestRes[0].Ignored)
 	require.Equal(t, int64(0), eval.TestRes[0].CheckerReport.ExitCode)
 	require.Equal(t, int64(0), eval.TestRes[0].ProgramReport.ExitCode)
-	srvc2 := evalsrvc.NewEvalSrvc()
+	srvc2 := execsrvc.NewDefaultEvalSrvc()
 	eval2, err := srvc2.Get(ctx, evalId)
 	require.NoError(t, err)
 	require.Equal(t, eval, eval2)

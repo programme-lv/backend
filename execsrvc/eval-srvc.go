@@ -1,4 +1,4 @@
-package evalsrvc
+package execsrvc
 
 import (
 	"context"
@@ -12,11 +12,14 @@ import (
 	"github.com/google/uuid"
 )
 
+// EvalRepo defines the interface for evaluation storage operations
 type EvalRepo interface {
 	Save(ctx context.Context, eval Evaluation) error
 	Get(ctx context.Context, evalUuid uuid.UUID) (*Evaluation, error)
 }
 
+// EvalSrvc handles code evaluation workflow and manages communication
+// between different components of the evaluation system
 type EvalSrvc struct {
 	logger *slog.Logger
 
@@ -29,12 +32,14 @@ type EvalSrvc struct {
 	extEvalKey string // api key for external requests
 
 	mu        sync.Mutex
-	handlers  map[uuid.UUID]chan Event
-	notifiers map[uuid.UUID]chan Event
-	evalWg    sync.Map // maps uuid.UUID to *sync.WaitGroup
+	handlers  map[uuid.UUID]chan Event // maps eval IDs to their event handlers
+	notifiers map[uuid.UUID]chan Event // maps eval IDs to client notification channels
+	evalWg    sync.Map                 // tracks completion status of evaluations
 }
 
-func NewEvalSrvc() *EvalSrvc {
+// NewDefaultEvalSrvc creates an evaluation service with default configuration
+// using environment variables for AWS services setup
+func NewDefaultEvalSrvc() *EvalSrvc {
 	logger := slog.Default().With("module", "eval")
 	s3Repo := NewS3EvalRepo(logger, getS3ClientFromEnv(), getEvalS3BucketFromEnv())
 
@@ -59,13 +64,32 @@ func NewEvalSrvc() *EvalSrvc {
 	return esrvc
 }
 
-// Enqueues code for evaluation by tester, returns eval uuid:
-// 1. validates programming language;
-// 2. validates cpu, mem constraints & checker, interactor size;
-// 3. validates test files (max 200 tests);
-// 4. constructs initial evaluation object;
-// 5. initializes response stream processor with evaluation;
-// 6. enqueues evaluation request to sqs
+// NewEvalSrvc creates a customized evaluation service with provided dependencies
+func NewEvalSrvc(
+	logger *slog.Logger,
+	sqsClient *sqs.Client,
+	submQ string,
+	evalRepo EvalRepo,
+	respQ string,
+	extEvalKey string,
+) *EvalSrvc {
+	return &EvalSrvc{
+		logger:     logger,
+		sqsClient:  sqsClient,
+		submQ:      submQ,
+		evalRepo:   evalRepo,
+		respQ:      respQ,
+		extEvalKey: extEvalKey,
+		handlers:   make(map[uuid.UUID]chan Event),
+		notifiers:  make(map[uuid.UUID]chan Event),
+	}
+}
+
+// Enqueue processes a code evaluation request by:
+// 1. Validating the programming language and constraints
+// 2. Setting up result handlers and notification channels
+// 3. Sending the evaluation request to the processing queue
+// Returns the evaluation UUID for tracking
 func (e *EvalSrvc) Enqueue(
 	code CodeWithLang,
 	tests []TestFile,
@@ -120,9 +144,8 @@ func (e *EvalSrvc) Enqueue(
 	return evalUuid, nil
 }
 
-// Returns a channel to stream events to a singular client.
-// The same channel is returned for the same eval uuid.
-// Once evaluation is finished, the channel is closed.
+// Listen returns a channel that streams evaluation events to clients
+// The channel is automatically closed once the evaluation is complete
 func (e *EvalSrvc) Listen(evalId uuid.UUID) (<-chan Event, error) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
@@ -136,6 +159,8 @@ func (e *EvalSrvc) Listen(evalId uuid.UUID) (<-chan Event, error) {
 	return ch, nil
 }
 
+// Get retrieves the evaluation results for a given evaluation ID
+// It waits for completion if the evaluation is still in progress
 func (e *EvalSrvc) Get(ctx context.Context, evalId uuid.UUID) (Evaluation, error) {
 	// Get the WaitGroup for this evaluation
 	wgVal, exists := e.evalWg.Load(evalId)
@@ -169,6 +194,7 @@ func (e *EvalSrvc) Get(ctx context.Context, evalId uuid.UUID) (Evaluation, error
 	}
 }
 
+// handleSqsMsg processes incoming SQS messages and routes them to appropriate handlers
 func (e *EvalSrvc) handleSqsMsg(msg SqsResponseMsg) error {
 	e.mu.Lock()
 	ch, ok := e.handlers[msg.EvalId]
@@ -181,7 +207,8 @@ func (e *EvalSrvc) handleSqsMsg(msg SqsResponseMsg) error {
 	return nil
 }
 
-// Initialize response stream organizer, processor and notifier.
+// prepareForResults sets up the event processing pipeline for an evaluation
+// including result organization and client notification channels
 func (e *EvalSrvc) prepareForResults(evalId uuid.UUID, lang PrLang, params TesterParams, numTests int) error {
 	// initialize some kind of mysthical organizer that reorders events
 	// the organizer has to know the number of tests and whether the submission has a compilation step
@@ -197,6 +224,11 @@ func (e *EvalSrvc) prepareForResults(evalId uuid.UUID, lang PrLang, params Teste
 	return nil
 }
 
+// handleResultStreamForEval manages the evaluation lifecycle by:
+// - Processing incoming events
+// - Updating evaluation state
+// - Managing client notifications
+// - Persisting final results
 func (e *EvalSrvc) handleResultStreamForEval(evalId uuid.UUID, lang PrLang, params TesterParams, org *ExecResStreamOrganizer, numTests int) {
 	eval := Evaluation{
 		UUID:      evalId,
@@ -248,6 +280,8 @@ func (e *EvalSrvc) handleResultStreamForEval(evalId uuid.UUID, lang PrLang, para
 	}
 }
 
+// applyEventToEval updates the evaluation state based on incoming events
+// Handles various event types including compilation, testing, and error states
 func applyEventToEval(eval *Evaluation, event Event) error {
 	switch event.Type() {
 	case ReceivedSubmissionType:
