@@ -12,49 +12,49 @@ import (
 	"github.com/google/uuid"
 )
 
-// EvalRepo defines the interface for evaluation storage operations
-type EvalRepo interface {
-	Save(ctx context.Context, eval Evaluation) error
-	Get(ctx context.Context, evalUuid uuid.UUID) (*Evaluation, error)
+// ExecRepo defines the interface for execution storage operations
+type ExecRepo interface {
+	Save(ctx context.Context, exec Execution) error
+	Get(ctx context.Context, id uuid.UUID) (*Execution, error)
 }
 
-// EvalSrvc handles code evaluation workflow and manages communication
-// between different components of the evaluation system
-type EvalSrvc struct {
+// ExecSrvc handles code execution workflow and manages communication
+// between different components of the execution system
+type ExecSrvc struct {
 	logger *slog.Logger
 
 	sqsClient *sqs.Client
-	evalRepo  EvalRepo // either in-mem or s3
+	execRepo  ExecRepo // either in-mem or s3
 
 	submQ string // submission sqs queue url
 	respQ string // response sqs queue url
 
-	extEvalKey string // api key for external requests
+	extPartnerPw string // api key for external requests
 
 	mu        sync.Mutex
-	handlers  map[uuid.UUID]chan Event // maps eval IDs to their event handlers
-	notifiers map[uuid.UUID]chan Event // maps eval IDs to client notification channels
-	evalWg    sync.Map                 // tracks completion status of evaluations
+	handlers  map[uuid.UUID]chan Event // maps exec IDs to their event handlers
+	notifiers map[uuid.UUID]chan Event // maps exec IDs to client notification channels
+	execWg    sync.Map                 // tracks completion status of executions
 }
 
-// NewDefaultEvalSrvc creates an evaluation service with default configuration
+// NewDefaultExecSrvc creates an execution service with default configuration
 // using environment variables for AWS services setup
-func NewDefaultEvalSrvc() *EvalSrvc {
-	logger := slog.Default().With("module", "eval")
-	s3Repo := NewS3EvalRepo(logger, getS3ClientFromEnv(), getEvalS3BucketFromEnv())
+func NewDefaultExecSrvc() *ExecSrvc {
+	logger := slog.Default().With("module", "exec")
+	s3Repo := NewS3ExecRepo(logger, getS3ClientFromEnv(), getExecS3BucketFromEnv())
 
-	esrvc := &EvalSrvc{
-		logger:     logger,
-		sqsClient:  getSqsClientFromEnv(),
-		submQ:      getSubmSqsUrlFromEnv(),
-		evalRepo:   s3Repo,
-		respQ:      getResponseSqsUrlFromEnv(),
-		extEvalKey: getExtEvalKeyFromEnv(),
-		handlers:   make(map[uuid.UUID]chan Event),
-		notifiers:  make(map[uuid.UUID]chan Event),
+	esrvc := &ExecSrvc{
+		logger:       logger,
+		sqsClient:    getSqsClientFromEnv(),
+		submQ:        getSubmSqsUrlFromEnv(),
+		execRepo:     s3Repo,
+		respQ:        getResponseSqsUrlFromEnv(),
+		extPartnerPw: getExtPartnerPwFromEnv(),
+		handlers:     make(map[uuid.UUID]chan Event),
+		notifiers:    make(map[uuid.UUID]chan Event),
 	}
 
-	go receiveResultsFromSqs(context.Background(),
+	go StartReceivingResultsFromSqs(context.Background(),
 		esrvc.respQ,
 		esrvc.sqsClient,
 		esrvc.handleSqsMsg,
@@ -64,33 +64,33 @@ func NewDefaultEvalSrvc() *EvalSrvc {
 	return esrvc
 }
 
-// NewEvalSrvc creates a customized evaluation service with provided dependencies
-func NewEvalSrvc(
+// NewExecSrvc creates a customized execution service with provided dependencies
+func NewExecSrvc(
 	logger *slog.Logger,
 	sqsClient *sqs.Client,
 	submQ string,
-	evalRepo EvalRepo,
+	execRepo ExecRepo,
 	respQ string,
-	extEvalKey string,
-) *EvalSrvc {
-	return &EvalSrvc{
-		logger:     logger,
-		sqsClient:  sqsClient,
-		submQ:      submQ,
-		evalRepo:   evalRepo,
-		respQ:      respQ,
-		extEvalKey: extEvalKey,
-		handlers:   make(map[uuid.UUID]chan Event),
-		notifiers:  make(map[uuid.UUID]chan Event),
+	extPartnerPw string,
+) *ExecSrvc {
+	return &ExecSrvc{
+		logger:       logger,
+		sqsClient:    sqsClient,
+		submQ:        submQ,
+		execRepo:     execRepo,
+		respQ:        respQ,
+		extPartnerPw: extPartnerPw,
+		handlers:     make(map[uuid.UUID]chan Event),
+		notifiers:    make(map[uuid.UUID]chan Event),
 	}
 }
 
-// Enqueue processes a code evaluation request by:
+// Enqueue processes a code execution request by:
 // 1. Validating the programming language and constraints
 // 2. Setting up result handlers and notification channels
-// 3. Sending the evaluation request to the processing queue
-// Returns the evaluation UUID for tracking
-func (e *EvalSrvc) Enqueue(
+// 3. Sending the execution request to the processing queue
+// Returns the execution UUID for tracking
+func (e *ExecSrvc) Enqueue(
 	code CodeWithLang,
 	tests []TestFile,
 	params TesterParams,
@@ -120,56 +120,56 @@ func (e *EvalSrvc) Enqueue(
 		}
 	}
 
-	// 4. construct evaluation object
-	evalUuid := uuid.New()
+	// 4. construct execution object
+	execUuid := uuid.New()
 
 	// Add WaitGroup before preparing results
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
-	e.evalWg.Store(evalUuid, wg)
+	e.execWg.Store(execUuid, wg)
 
 	// 5. initialize organizer, processor and notifier
-	err = e.prepareForResults(evalUuid, lang, params, len(tests))
+	err = e.prepareForResults(execUuid, lang, params, len(tests))
 	if err != nil {
 		return uuid.Nil, err
 	}
 
-	// 6. enqueue evaluation request to sqs
-	err = enqueue(evalUuid, code.SrcCode, lang, tests, params,
+	// 6. enqueue execution request to sqs
+	err = enqueue(execUuid, code.SrcCode, lang, tests, params,
 		e.sqsClient, e.submQ, e.respQ)
 	if err != nil {
 		return uuid.Nil, err
 	}
 
-	return evalUuid, nil
+	return execUuid, nil
 }
 
-// Listen returns a channel that streams evaluation events to clients
-// The channel is automatically closed once the evaluation is complete
-func (e *EvalSrvc) Listen(evalId uuid.UUID) (<-chan Event, error) {
+// Listen returns a channel that streams execution events to clients
+// The channel is automatically closed once the execution is complete
+func (e *ExecSrvc) Listen(execId uuid.UUID) (<-chan Event, error) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
-	ch, ok := e.notifiers[evalId]
+	ch, ok := e.notifiers[execId]
 	if !ok {
-		format := "no listener for eval %s"
-		errMsg := fmt.Errorf(format, evalId)
+		format := "no listener for exec %s"
+		errMsg := fmt.Errorf(format, execId)
 		return nil, errMsg
 	}
 	return ch, nil
 }
 
-// Get retrieves the evaluation results for a given evaluation ID
-// It waits for completion if the evaluation is still in progress
-func (e *EvalSrvc) Get(ctx context.Context, evalId uuid.UUID) (Evaluation, error) {
-	// Get the WaitGroup for this evaluation
-	wgVal, exists := e.evalWg.Load(evalId)
+// Get retrieves the execution results for a given execution ID
+// It waits for completion if the execution is still in progress
+func (e *ExecSrvc) Get(ctx context.Context, execId uuid.UUID) (Execution, error) {
+	// Get the WaitGroup for this execution
+	wgVal, exists := e.execWg.Load(execId)
 	if !exists {
-		eval, err := e.evalRepo.Get(ctx, evalId)
+		exec, err := e.execRepo.Get(ctx, execId)
 		if err != nil {
-			return Evaluation{}, fmt.Errorf("no evaluation found for id %s", evalId)
+			return Execution{}, fmt.Errorf("no execution found for id %s", execId)
 		}
-		return *eval, nil
+		return *exec, nil
 	}
 
 	wg := wgVal.(*sync.WaitGroup)
@@ -183,55 +183,55 @@ func (e *EvalSrvc) Get(ctx context.Context, evalId uuid.UUID) (Evaluation, error
 
 	select {
 	case <-done:
-		e.evalWg.Delete(evalId) // Clean up the WaitGroup
-		eval, err := e.evalRepo.Get(ctx, evalId)
+		e.execWg.Delete(execId) // Clean up the WaitGroup
+		exec, err := e.execRepo.Get(ctx, execId)
 		if err != nil {
-			return Evaluation{}, err
+			return Execution{}, err
 		}
-		return *eval, nil
+		return *exec, nil
 	case <-ctx.Done():
-		return Evaluation{}, ctx.Err()
+		return Execution{}, ctx.Err()
 	}
 }
 
 // handleSqsMsg processes incoming SQS messages and routes them to appropriate handlers
-func (e *EvalSrvc) handleSqsMsg(msg SqsResponseMsg) error {
+func (e *ExecSrvc) handleSqsMsg(msg SqsResponseMsg) error {
 	e.mu.Lock()
-	ch, ok := e.handlers[msg.EvalId]
+	ch, ok := e.handlers[msg.ExecId]
 	e.mu.Unlock()
 	if !ok {
-		errMsg := fmt.Errorf("no handler for eval %s", msg.EvalId)
+		errMsg := fmt.Errorf("no handler for exec %s", msg.ExecId)
 		return errMsg // returning error to indicate that the message was not processed
 	}
 	ch <- msg.Data
 	return nil
 }
 
-// prepareForResults sets up the event processing pipeline for an evaluation
+// prepareForResults sets up the event processing pipeline for an execution
 // including result organization and client notification channels
-func (e *EvalSrvc) prepareForResults(evalId uuid.UUID, lang PrLang, params TesterParams, numTests int) error {
+func (e *ExecSrvc) prepareForResults(execId uuid.UUID, lang PrLang, params TesterParams, numTests int) error {
 	// initialize some kind of mysthical organizer that reorders events
 	// the organizer has to know the number of tests and whether the submission has a compilation step
-	e.handlers[evalId] = make(chan Event)
-	e.notifiers[evalId] = make(chan Event, 1000)
+	e.handlers[execId] = make(chan Event)
+	e.notifiers[execId] = make(chan Event, 1000)
 
 	organizer, err := NewExecResStreamOrganizer(lang.CompCmd != nil, numTests)
 	if err != nil {
 		return fmt.Errorf("failed to create organizer: %v", err)
 	}
 
-	go e.handleResultStreamForEval(evalId, lang, params, organizer, numTests)
+	go e.handleResultStreamForExec(execId, lang, params, organizer, numTests)
 	return nil
 }
 
-// handleResultStreamForEval manages the evaluation lifecycle by:
+// handleResultStreamForExec manages the execution lifecycle by:
 // - Processing incoming events
-// - Updating evaluation state
+// - Updating execution state
 // - Managing client notifications
 // - Persisting final results
-func (e *EvalSrvc) handleResultStreamForEval(evalId uuid.UUID, lang PrLang, params TesterParams, org *ExecResStreamOrganizer, numTests int) {
-	eval := Evaluation{
-		UUID:      evalId,
+func (e *ExecSrvc) handleResultStreamForExec(execId uuid.UUID, lang PrLang, params TesterParams, org *ExecResStreamOrganizer, numTests int) {
+	exec := Execution{
+		UUID:      execId,
 		Stage:     StageWaiting,
 		TestRes:   []TestRes{},
 		PrLang:    lang,
@@ -243,101 +243,101 @@ func (e *EvalSrvc) handleResultStreamForEval(evalId uuid.UUID, lang PrLang, para
 	}
 	// insert empty tests
 	for i := 0; i < numTests; i++ {
-		eval.TestRes = append(eval.TestRes, TestRes{ID: i + 1})
+		exec.TestRes = append(exec.TestRes, TestRes{ID: i + 1})
 	}
-	for ev := range e.handlers[evalId] {
+	for ev := range e.handlers[execId] {
 		events, err := org.Add(ev)
 		if err != nil {
 			log.Printf("failed to process event: %v", err)
 			return
 		}
 		for _, event := range events {
-			err := applyEventToEval(&eval, event)
+			err := applyEventToExec(&exec, event)
 			if err != nil {
 				log.Printf("failed to apply event: %v", err)
 				return
 			}
-			e.notifiers[evalId] <- event
+			e.notifiers[execId] <- event
 		}
 		if org.HasFinished() {
 			break
 		}
 	}
-	close(e.handlers[evalId])
-	close(e.notifiers[evalId])
-	delete(e.handlers, evalId)
-	delete(e.notifiers, evalId)
+	close(e.handlers[execId])
+	close(e.notifiers[execId])
+	delete(e.handlers, execId)
+	delete(e.notifiers, execId)
 	ctxWithTimeout, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	err := e.evalRepo.Save(ctxWithTimeout, eval)
+	err := e.execRepo.Save(ctxWithTimeout, exec)
 	if err != nil {
-		slog.Error("failed to save evaluation", "error", err)
+		slog.Error("failed to save execution", "error", err)
 		return
 	}
-	if wgVal, exists := e.evalWg.Load(evalId); exists {
+	if wgVal, exists := e.execWg.Load(execId); exists {
 		wg := wgVal.(*sync.WaitGroup)
 		wg.Done()
 	}
 }
 
-// applyEventToEval updates the evaluation state based on incoming events
+// applyEventToExec updates the execution state based on incoming events
 // Handles various event types including compilation, testing, and error states
-func applyEventToEval(eval *Evaluation, event Event) error {
+func applyEventToExec(exec *Execution, event Event) error {
 	switch event.Type() {
 	case ReceivedSubmissionType:
 		rcvSubm, ok := event.(ReceivedSubmission)
 		if !ok {
 			return fmt.Errorf("event is not a ReceivedSubmission")
 		}
-		eval.SysInfo = &rcvSubm.SysInfo
+		exec.SysInfo = &rcvSubm.SysInfo
 	case StartedCompilationType:
-		eval.Stage = StageCompiling
+		exec.Stage = StageCompiling
 	case FinishedCompilationType:
 		finComp, ok := event.(FinishedCompiling)
 		if !ok {
 			return fmt.Errorf("event is not a FinishedCompiling")
 		}
-		eval.SubmComp = finComp.RuntimeData
+		exec.SubmComp = finComp.RuntimeData
 	case StartedTestingType:
-		eval.Stage = StageTesting
+		exec.Stage = StageTesting
 	case ReachedTestType:
 		rt, ok := event.(ReachedTest)
 		if !ok {
 			return fmt.Errorf("event is not a ReachedTest")
 		}
-		eval.TestRes[rt.TestId-1].Input = rt.In
-		eval.TestRes[rt.TestId-1].Answer = rt.Ans
-		eval.TestRes[rt.TestId-1].Reached = true
+		exec.TestRes[rt.TestId-1].Input = rt.In
+		exec.TestRes[rt.TestId-1].Answer = rt.Ans
+		exec.TestRes[rt.TestId-1].Reached = true
 	case FinishedTestType:
 		ft, ok := event.(FinishedTest)
 		if !ok {
 			return fmt.Errorf("event is not a FinishedTest")
 		}
-		eval.TestRes[ft.TestID-1].ProgramReport = ft.Subm
-		eval.TestRes[ft.TestID-1].CheckerReport = ft.Checker
-		eval.TestRes[ft.TestID-1].Finished = true
+		exec.TestRes[ft.TestID-1].ProgramReport = ft.Subm
+		exec.TestRes[ft.TestID-1].CheckerReport = ft.Checker
+		exec.TestRes[ft.TestID-1].Finished = true
 	case IgnoredTestType:
 		ig, ok := event.(IgnoredTest)
 		if !ok {
 			return fmt.Errorf("event is not an IgnoredTest")
 		}
-		eval.TestRes[ig.TestId-1].Ignored = true
+		exec.TestRes[ig.TestId-1].Ignored = true
 	case FinishedTestingType:
-		eval.Stage = StageFinished
+		exec.Stage = StageFinished
 	case InternalServerErrorType:
-		eval.Stage = StageInternalError
+		exec.Stage = StageInternalError
 		ise, ok := event.(InternalServerError)
 		if !ok {
 			return fmt.Errorf("event is not an InternalServerError")
 		}
-		eval.ErrorMsg = ise.ErrorMsg
+		exec.ErrorMsg = ise.ErrorMsg
 	case CompilationErrorType:
-		eval.Stage = StageCompileError
+		exec.Stage = StageCompileError
 		ce, ok := event.(CompilationError)
 		if !ok {
 			return fmt.Errorf("event is not a CompilationError")
 		}
-		eval.ErrorMsg = ce.ErrorMsg
+		exec.ErrorMsg = ce.ErrorMsg
 	}
 	return nil
 }

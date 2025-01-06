@@ -37,7 +37,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	evalSrvc := execsrvc.NewDefaultEvalSrvc()
+	evalSrvc := execsrvc.NewDefaultExecSrvc()
 
 	taskSrvc, err := tasksrvc.NewTaskSrvc()
 	if err != nil {

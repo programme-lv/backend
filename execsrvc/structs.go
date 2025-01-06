@@ -42,7 +42,7 @@ const (
 	StageInternalError = "internal_error"
 )
 
-type Evaluation struct {
+type Execution struct {
 	UUID      uuid.UUID    `json:"uuid"`
 	Stage     string       `json:"stage"`
 	TestRes   []TestRes    `json:"test_res"`
