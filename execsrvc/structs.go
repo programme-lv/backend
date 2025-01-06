@@ -108,8 +108,8 @@ type TestRes struct {
 	Ignored  bool    `json:"ign"` // when score group has another failed test
 	Finished bool    `json:"fin"`
 
-	ProgramReport *RunData `json:"subm_rd"` // user submitted solution
-	CheckerReport *RunData `json:"tlib_rd"` // testlib checker
+	Subm    *RunData `json:"subm_rd"` // user submitted solution
+	Checker *RunData `json:"tlib_rd"` // testlib checker
 }
 
 // Runtime Data
