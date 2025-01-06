@@ -1,111 +1,81 @@
-## version history
+# FSTask Package
 
-### version "v4.0.0"
+A Go package for reading and writing programming contest task directories. This package handles the filesystem-based task format used by Programme.lv, supporting various task components like tests, examples, statements, and evaluation files.
 
-breaking change:
-- markdown sections do be divided by second level underlined headings
+## Features
 
-### version "v3.0.0"
+- Read and write task directories with version control
+- Support for multiple statement formats (Markdown and PDF)
+- Test and example management
+- Solution handling with metadata
+- Asset and archive file management
+- Evaluation components (checker and interactor)
+- Subtask and test group organization
 
-well i don't remember xd
+## Directory Structure
 
-- image sizing through problem.toml
-- listing subtasks in problem.toml
-
-### version "v2.5.0"
-
-- added solutions directory
-- added solutions information to problem.toml
-
-```toml
-[[solutions]]
-  filename = "kp_kp_ok.cpp"
-  score_eq = 100
-  author = "Krišjānis Petručeņa"
-  og_max_exec_time = 0.035
 ```
-
-- added archive directory
-- added evaluation directory
-    - checker.cpp
-    - interactor.cpp
-
-### version "v2.4.0"
-
-- added assets directory
-- added origin notes dictionary to metadata
-
-### version "v2.3.0"
-
-- prefixed version by "v", migrated to semantic versioning 3 numbers
-- added concept of ids to tests and examples
-- when parsing default file ids are assigned by lex order of filenames
-- test default ids can then be overriden by `test_id_overwrite` table
-- tests in test group can be specified by ids instead of filenames
-- ids dictate the order in which tests are run
-
-Motivation: filenames don't make much sense in systems where the filesystem
-is abstracted away. This change also decouples test ordering from
-filesystem ordering. It also makes toml files more readable.
-
-problem.toml spec
-- added `test_id_overwrite` (string to int map)
-- added `test_ids` to `test_groups` object
-
-### version "2.2"
-
-problem.toml spec
-- added `visible_input_subtasks` (int array) field.
-
-Motivation: some subtasks have visible input to motivate solvers to attempt
-test cases on paper / in their head without developing an algorithm.
-
-### version "2.1"
-
-problem.toml spec
-- added `test_groups` object array. `test_groups` object:  
-    - `group_id` (int)
-    - `points` (int)
-    - `subtask` (int)
-    - `public` (bool)
-    - `test_filenames` (string array) 
-
-Motivation: test groups are a concept used in Latvia's informatics olympiad.
-Each test group belongs to a subtask who's scoring is described in statement.
-
-### version "2.0"
-
-problem.toml spec:
-- `task_name`
-- `metadata`
-    - `problem_tags`
-    - `difficulty_1_to_5`
-    - `task_authors`
-    - `origin_olympiad`
-- `constraints`
-    - `memory_megabytes`
-    - `cpu_time_seconds`
-
-directory structure:
-```
-summa
-├── evaluation
-│   └── checker.cpp
-├── examples
+task-name/
+├── assets/           # Task-related assets (images, etc.)
+├── archive/          # Additional task files
+├── evaluation/       # Checker and interactor files
+│   ├── checker.cpp
+│   └── interactor.cpp
+├── examples/         # Example test cases
 │   ├── 001.in
-│   ├── 001.out
-│   ├── 002.in
-│   └── 002.out
-├── problem.toml
-├── statements
-│   └── md
-│       └── lv
-│           ├── input.md
-│           ├── output.md
-│           └── story.md
-└── tests
-    ├── 001.ans
+│   └── 001.out
+├── problem.toml      # Task metadata and configuration
+├── statements/       # Task statements
+│   ├── md/          # Markdown statements
+│   └── pdf/         # PDF statements
+├── solutions/        # Solution files with metadata
+└── tests/           # Test cases
     ├── 001.in
-    ├── 002.ans
-    ├── 002.in
+    └── 001.ans
 ```
+
+## Usage
+
+```go
+// Read a task directory
+task, err := fstask.Read("path/to/task")
+
+// Store a task to directory
+err = task.Store("path/to/output")
+```
+
+## Task Components
+
+- `Task`: Main structure containing all task information
+- `Example`: Input/output examples with optional notes
+- `Test`: Test cases with input and answer
+- `TestGroup`: Groups of tests with scoring information
+- `Subtask`: Subtask information with points and descriptions
+- `Solution`: Solution files with metadata
+- `MarkdownStatement`: Task statements in markdown format
+- `PdfStatement`: Task statements in PDF format
+- `AssetFile`: Task-related assets
+- `ArchiveFile`: Additional task files
+
+## Configuration
+
+The `problem.toml` file contains task metadata:
+- Task name and full name
+- Origin and authorship information
+- Resource constraints (memory, CPU time)
+- Problem tags and difficulty rating
+- Test group and subtask configuration
+- Solution metadata
+
+## Version Support
+
+The package uses semantic versioning for the task format specification. Current version: v3.0.0
+
+Version features:
+- v3.0.0: Image sizing and subtask listing in problem.toml
+- v2.5.0: Solutions directory and archive support
+- v2.4.0: Assets directory and origin notes
+- v2.3.0: Test ID system and ordering
+- v2.2.0: Visible input subtasks
+- v2.1.0: Test group support
+- v2.0.0: Basic task format

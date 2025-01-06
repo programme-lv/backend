@@ -1,11 +1,63 @@
-TODO: if we can get evaluation from another service object, it means that the
-s3 repository is WORKING as expected. that should be included in the test.
+# ExecSrvc - Code Execution Service
 
-Next start integrating with submission service. I think that at least for now
-the postgres could store a simple array with scoring information.
+A Go package that provides a robust service for executing and testing code submissions in various programming languages.
 
-We noticed that if the memory limit is too low, segmentation fault is received.
-We could for each programming language specify the minimum memory limit.
+This service is designed to handle concurrent test execution while maintaining ordered result streaming and proper resource management.
 
-In the future permit submission for evaluation without api key
-only without persisting the evaluation results.
+## Features
+
+- Process code execution requests through AWS SQS queues
+- Execute code in different programming languages with customizable compilation and execution commands
+- Maintain sequential ordering of test results even with concurrent execution
+- Store execution results using either S3 or in-memory repository
+- Stream execution events for real-time progress monitoring
+- Control execution parameters like memory limits and timeouts
+
+## Core Components
+
+- `ExecSrvc`: Main service that handles code execution requests and result management
+- `ExecResStreamOrganizer`: Manages ordered streaming of execution results
+- `ExecRepo`: Interface for execution result storage (S3 or in-memory implementations)
+
+## Usage
+
+```go
+// Create a new execution service with default configuration
+srvc := execsrvc.NewDefaultExecSrvc()
+
+// Or create with custom configuration
+srvc := execsrvc.NewExecSrvc(
+    logger,
+    sqsClient,
+    submissionQueueURL,
+    execRepository,
+    responseQueueURL,
+    externalPartnerPassword,
+)
+
+// Enqueue code for execution
+execID, err := srvc.Enqueue(
+    code,
+    tests,
+    params,
+)
+
+// Get execution results
+exec, err := srvc.Get(ctx, execID)
+```
+
+## Configuration
+
+The service requires the following environment variables for AWS services setup:
+- AWS credentials and region configuration
+- SQS queue URLs for submission and response queues
+- S3 bucket configuration for result storage
+- External partner password for authentication
+
+## TODO / ideas
+
+- [ ] Add tests for S3 repository functionality
+- [ ] Integrate with submission service using PostgreSQL for scoring storage
+- [ ] Implement minimum memory limits per programming language
+- [ ] Add support for evaluation without API key (without result persistence)
+
