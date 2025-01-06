@@ -41,7 +41,7 @@ type SubmissionSrvc struct {
 
 	userSrvc *usersrvc.UserService
 	taskSrvc *tasksrvc.TaskService
-	evalSrvc *execsrvc.EvalSrvc
+	evalSrvc *execsrvc.ExecSrvc
 
 	// real-time updates
 	submUuidEvalUpdSubs []struct {
@@ -53,7 +53,7 @@ type SubmissionSrvc struct {
 	listenerLock        sync.Mutex
 }
 
-func NewSubmSrvc(taskSrvc *tasksrvc.TaskService, evalSrvc *execsrvc.EvalSrvc) (*SubmissionSrvc, error) {
+func NewSubmSrvc(taskSrvc *tasksrvc.TaskService, evalSrvc *execsrvc.ExecSrvc) (*SubmissionSrvc, error) {
 	testBucket, err := s3bucket.NewS3Bucket("eu-central-1", "proglv-tests")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create test bucket: %w", err)

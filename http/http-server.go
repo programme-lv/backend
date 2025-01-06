@@ -19,7 +19,7 @@ type HttpServer struct {
 	submSrvc *submsrvc.SubmissionSrvc
 	userSrvc *usersrvc.UserService
 	taskSrvc *tasksrvc.TaskService
-	evalSrvc *execsrvc.EvalSrvc
+	evalSrvc *execsrvc.ExecSrvc
 	router   *chi.Mux
 	JwtKey   []byte
 }
@@ -99,7 +99,7 @@ func NewHttpServer(
 	submSrvc *submsrvc.SubmissionSrvc,
 	userSrvc *usersrvc.UserService,
 	taskSrvc *tasksrvc.TaskService,
-	evalSrvc *execsrvc.EvalSrvc,
+	evalSrvc *execsrvc.ExecSrvc,
 	jwtKey []byte,
 ) *HttpServer {
 	router := chi.NewRouter()

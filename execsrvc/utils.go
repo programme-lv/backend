@@ -71,7 +71,7 @@ func getSubmSqsUrlFromEnv() string {
 	return submQueueUrl
 }
 
-func getExtEvalKeyFromEnv() string {
+func getExtPartnerPwFromEnv() string {
 	extEvalKey := os.Getenv("EXTERNAL_EVAL_KEY")
 	if extEvalKey == "" {
 		panic("EXTERNAL_EVAL_KEY not set in .env file")
@@ -79,7 +79,7 @@ func getExtEvalKeyFromEnv() string {
 	return extEvalKey
 }
 
-func getEvalS3BucketFromEnv() string {
+func getExecS3BucketFromEnv() string {
 	s3Bucket := os.Getenv("EVAL_S3_BUCKET")
 	if s3Bucket == "" {
 		panic("EVAL_S3_BUCKET not set in .env file")

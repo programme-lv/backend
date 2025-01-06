@@ -19,7 +19,7 @@ type S3EvalRepo struct {
 	bucketName string
 }
 
-func NewS3EvalRepo(logger *slog.Logger, client *s3.Client, bucketName string) *S3EvalRepo {
+func NewS3ExecRepo(logger *slog.Logger, client *s3.Client, bucketName string) *S3EvalRepo {
 	return &S3EvalRepo{
 		logger:     logger,
 		client:     client,
@@ -27,7 +27,7 @@ func NewS3EvalRepo(logger *slog.Logger, client *s3.Client, bucketName string) *S
 	}
 }
 
-func (r *S3EvalRepo) Save(ctx context.Context, eval Evaluation) error {
+func (r *S3EvalRepo) Save(ctx context.Context, eval Execution) error {
 	data, err := json.Marshal(eval)
 	if err != nil {
 		return fmt.Errorf("failed to marshal evaluation: %w", err)
@@ -48,7 +48,7 @@ func (r *S3EvalRepo) Save(ctx context.Context, eval Evaluation) error {
 	return nil
 }
 
-func (r *S3EvalRepo) Get(ctx context.Context, evalUuid uuid.UUID) (*Evaluation, error) {
+func (r *S3EvalRepo) Get(ctx context.Context, evalUuid uuid.UUID) (*Execution, error) {
 	key := fmt.Sprintf("%s.json", evalUuid.String())
 	fmt.Printf("Getting with key: %s\n", key)
 
@@ -67,7 +67,7 @@ func (r *S3EvalRepo) Get(ctx context.Context, evalUuid uuid.UUID) (*Evaluation, 
 		return nil, fmt.Errorf("failed to read evaluation data: %w", err)
 	}
 
-	var eval Evaluation
+	var eval Execution
 	if err := json.Unmarshal(data, &eval); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal evaluation: %w", err)
 	}

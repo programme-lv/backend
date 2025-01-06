@@ -27,7 +27,7 @@ func TestEvalServiceCmpListenNoCompile(t *testing.T) {
 	// 4. compare to expected events
 
 	// 1. enqueue a submission
-	srvc := execsrvc.NewDefaultEvalSrvc()
+	srvc := execsrvc.NewDefaultExecSrvc()
 	evalId, err := srvc.Enqueue(execsrvc.CodeWithLang{
 		SrcCode: "a=int(input());b=int(input());print(a+b)",
 		LangId:  "python3.11",
@@ -72,7 +72,7 @@ hello:
 
 func TestEvalServiceCmpListenWithCompile(t *testing.T) {
 	// 1. enqueue a submission
-	srvc := execsrvc.NewDefaultEvalSrvc()
+	srvc := execsrvc.NewDefaultExecSrvc()
 	evalId, err := srvc.Enqueue(execsrvc.CodeWithLang{
 		SrcCode: "#include <iostream>\nint main() {int a,b;std::cin>>a>>b;std::cout<<a+b<<std::endl;}",
 		LangId:  "cpp17",
@@ -124,7 +124,7 @@ hello:
 
 // test the asynchronocity of the Get() method and persistence after closing the srvc
 func TestEvalServiceCmpGet(t *testing.T) {
-	srvc := execsrvc.NewDefaultEvalSrvc()
+	srvc := execsrvc.NewDefaultExecSrvc()
 	evalId, err := srvc.Enqueue(execsrvc.CodeWithLang{
 		SrcCode: "a=int(input());b=int(input());print(a+b)",
 		LangId:  "python3.10",
@@ -151,7 +151,7 @@ func TestEvalServiceCmpGet(t *testing.T) {
 	require.Equal(t, false, eval.TestRes[0].Ignored)
 	require.Equal(t, int64(0), eval.TestRes[0].CheckerReport.ExitCode)
 	require.Equal(t, int64(0), eval.TestRes[0].ProgramReport.ExitCode)
-	srvc2 := execsrvc.NewDefaultEvalSrvc()
+	srvc2 := execsrvc.NewDefaultExecSrvc()
 	eval2, err := srvc2.Get(ctx, evalId)
 	require.NoError(t, err)
 	require.Equal(t, eval, eval2)

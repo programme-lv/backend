@@ -77,8 +77,8 @@ func TestEnqueueAndReceiveResults(t *testing.T) {
 		if everythingExceptTests && allTestsReceived {
 			return fmt.Errorf("received message after all tests received: %s", msg.Data.Type())
 		}
-		if msg.EvalId != evalId {
-			t.Logf("received msg for wrong eval: %s", msg.EvalId)
+		if msg.ExecId != evalId {
+			t.Logf("received msg for wrong eval: %s", msg.ExecId)
 			return nil
 		}
 		t.Logf("received msg: %s", msg.Data.Type())
@@ -129,7 +129,7 @@ func TestEnqueueAndReceiveResults(t *testing.T) {
 	}
 
 	go func() {
-		err := receiveResultsFromSqs(ctx,
+		err := StartReceivingResultsFromSqs(ctx,
 			responseSqsUrl, sqsClient,
 			handle,
 			slog.Default(),

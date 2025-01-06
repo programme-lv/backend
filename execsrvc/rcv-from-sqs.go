@@ -15,7 +15,7 @@ import (
 )
 
 // Starts receiving msgs until ctx is cancelled and passes them to handler function
-func receiveResultsFromSqs(ctx context.Context,
+func StartReceivingResultsFromSqs(ctx context.Context,
 	sqsUrl string, client *sqs.Client,
 	handleFunc func(msg SqsResponseMsg) error,
 	logger *slog.Logger,
@@ -56,7 +56,7 @@ func receiveResultsFromSqs(ctx context.Context,
 				}
 				msgs[i].Handle = *msg.ReceiptHandle
 				msgs[i].QueueUrl = sqsUrl
-				msgs[i].EvalId, err = uuid.Parse(header.EvalUuid)
+				msgs[i].ExecId, err = uuid.Parse(header.EvalUuid)
 				if err != nil {
 					return fmt.Errorf("failed to parse eval_uuid: %w", err)
 				}
@@ -157,7 +157,7 @@ func receiveResultsFromSqs(ctx context.Context,
 }
 
 type SqsResponseMsg struct {
-	EvalId   uuid.UUID
+	ExecId   uuid.UUID
 	QueueUrl string // url of queue it was received from
 	Handle   string // receipt handle for acknowledgment / delete
 	Data     Event  // data specific to the message / event type

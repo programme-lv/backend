@@ -15,7 +15,7 @@ func TestSubmSrvc(t *testing.T) {
 	taskSrvc, err := tasksrvc.NewTaskSrvc()
 
 	require.NoError(t, err)
-	evalSrvc := execsrvc.NewDefaultEvalSrvc()
+	evalSrvc := execsrvc.NewDefaultExecSrvc()
 	srvc, err := submsrvc.NewSubmSrvc(taskSrvc, evalSrvc)
 	require.NoError(t, err)
 	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(10*time.Second))
