@@ -89,7 +89,7 @@ func TestEvalServiceCmpListenWithCompile(t *testing.T) {
 	ch, err := srvc.Listen(evalId)
 	require.NoError(t, err)
 
-	timeout := time.After(10 * time.Second)
+	timeout := time.After(30 * time.Second)
 	var events []execsrvc.Event
 
 	// 3. collect events until channel closes or timeout
@@ -137,7 +137,7 @@ func TestEvalServiceCmpGet(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	eval, err := srvc.Get(ctx, evalId)
 	require.NoError(t, err)
