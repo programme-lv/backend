@@ -46,7 +46,7 @@ func TestProcessResultsAnyOrderWithCompilation(
 		FinishedTesting{},
 	}
 
-	shuffleAndCmp(t, events, true, 0)
+	shuffleAndCmp(t, events, true, 2)
 }
 
 // Tests that event processing produces consistent
@@ -84,7 +84,7 @@ func TestProcessResultsAnyOrderNoCompilation(
 		FinishedTesting{},
 	}
 
-	shuffleAndCmp(t, events, false, 0)
+	shuffleAndCmp(t, events, false, 2)
 }
 
 // Tests that compilation errors are handled
@@ -106,7 +106,7 @@ func TestProcessResultsAnyOrderCompilationError(
 		},
 	}
 
-	shuffleAndCmp(t, events, true, 0)
+	shuffleAndCmp(t, events, true, 2)
 }
 
 // Tests that internal server errors are handled
@@ -127,7 +127,7 @@ func TestProcessResultsInternalServerError(
 			ErrorMsg: getExampleStrPtr(),
 		},
 	}
-	shuffleAndCmp(t, events, true, 0)
+	shuffleAndCmp(t, events, true, 2)
 }
 
 // Helper function that tests event processing by:

@@ -142,13 +142,16 @@ func StartReceivingResultsFromSqs(ctx context.Context,
 					err = handleFunc(msg)
 					if err != nil {
 						logger.Error("failed to process tester result", "error", err)
-					}
-					_, err := client.DeleteMessage(context.TODO(), &sqs.DeleteMessageInput{
-						QueueUrl:      aws.String(sqsUrl),
-						ReceiptHandle: aws.String(msg.Handle),
-					})
-					if err != nil {
-						logger.Error("failed to ack message", "error", err)
+					} else {
+						ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+						defer cancel()
+						_, err := client.DeleteMessage(ctx, &sqs.DeleteMessageInput{
+							QueueUrl:      aws.String(sqsUrl),
+							ReceiptHandle: aws.String(msg.Handle),
+						})
+						if err != nil {
+							logger.Error("failed to ack message", "error", err)
+						}
 					}
 				}(msgs[i])
 			}

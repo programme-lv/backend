@@ -90,7 +90,7 @@ func TestPgDbSchemaVersion(t *testing.T) {
 	defer cancel()
 	err := db.QueryRow(ctx, "SELECT version, dirty FROM schema_migrations").Scan(&version, &dirty)
 	assert.Nil(t, err)
-	assert.Equal(t, 23, version)
+	assert.Equal(t, 24, version)
 	assert.False(t, dirty)
 }
 
