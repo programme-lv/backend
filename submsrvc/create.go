@@ -40,7 +40,7 @@ func (s *SubmissionSrvc) CreateSubmission(ctx context.Context,
 	}
 
 	// enqueue evaluation into sqs for testing
-	evalUuid, err := s.evalSrvc.Enqueue(execsrvc.CodeWithLang{
+	evalUuid, err := s.execSrvc.Enqueue(execsrvc.CodeWithLang{
 		SrcCode: params.Submission,
 		LangId:  params.ProgLangID,
 	}, s.evalReqTests(&t), execsrvc.TesterParams{
@@ -84,7 +84,7 @@ func (s *SubmissionSrvc) CreateSubmission(ctx context.Context,
 		scoreUnit = ScoreUnitTestGroup
 	}
 
-	ch, err := s.evalSrvc.Listen(evalUuid)
+	ch, err := s.execSrvc.Listen(evalUuid)
 	if err != nil {
 		return nil, fmt.Errorf("failed to listen for evaluation updates: %w", err)
 	}

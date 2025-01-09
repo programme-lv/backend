@@ -41,7 +41,7 @@ type SubmissionSrvc struct {
 
 	userSrvc *usersrvc.UserService
 	taskSrvc *tasksrvc.TaskService
-	evalSrvc *execsrvc.ExecSrvc
+	execSrvc *execsrvc.ExecSrvc
 
 	// real-time updates
 	submUuidEvalUpdSubs []struct {
@@ -71,7 +71,7 @@ func NewSubmSrvc(taskSrvc *tasksrvc.TaskService, evalSrvc *execsrvc.ExecSrvc) (*
 		taskSrvc: taskSrvc,
 		submRepo: NewPgSubmRepo(pool),
 		evalRepo: NewPgEvalRepo(pool),
-		evalSrvc: evalSrvc,
+		execSrvc: evalSrvc,
 		inMem:    make(map[uuid.UUID]Evaluation),
 	}
 
