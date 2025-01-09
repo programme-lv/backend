@@ -303,22 +303,10 @@ func (e *ExecSrvc) prepareForResults(
 		1000,
 	)
 
-	organizer, err := NewExecResStreamOrganizer(
-		lang.CompCmd != nil,
-		numTests,
-	)
-	if err != nil {
-		return fmt.Errorf(
-			"failed to create organizer: %v",
-			err,
-		)
-	}
-
 	go e.handleResultStreamForExec(
 		execId,
 		lang,
 		params,
-		organizer,
 		numTests,
 	)
 	return nil
@@ -334,9 +322,21 @@ func (e *ExecSrvc) handleResultStreamForExec(
 	execId uuid.UUID,
 	lang PrLang,
 	params TesterParams,
-	org *ExecResStreamOrganizer,
 	numTests int,
 ) {
+	org, err := NewExecResStreamOrganizer(
+		lang.CompCmd != nil,
+		numTests,
+	)
+	if err != nil {
+		slog.Error(
+			"failed to create organizer",
+			"error",
+			err,
+		)
+		return
+	}
+
 	exec := Execution{
 		UUID:      execId,
 		Stage:     StageWaiting,
@@ -376,6 +376,8 @@ func (e *ExecSrvc) handleResultStreamForExec(
 				return
 			}
 			e.notifiers[execId] <- event
+			// make sure to delete the notifier channel 10 minutes after receiving the first event
+
 		}
 		if org.HasFinished() {
 			break
@@ -390,7 +392,7 @@ func (e *ExecSrvc) handleResultStreamForExec(
 		10*time.Second,
 	)
 	defer cancel()
-	err := e.execRepo.Save(ctxWithTimeout, exec)
+	err = e.execRepo.Save(ctxWithTimeout, exec)
 	if err != nil {
 		slog.Error(
 			"failed to save execution",

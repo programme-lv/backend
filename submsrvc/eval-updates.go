@@ -12,6 +12,7 @@ import (
 
 func (s *SubmissionSrvc) handleUpdates(eval Evaluation, ch <-chan execsrvc.Event) {
 	l := s.logger.With("eval-uuid", eval.UUID)
+	wasSaved := false
 	for update := range ch {
 		l.Info("received eval update", "type", update.Type())
 		newEval := applyUpdate(eval, update)
@@ -26,6 +27,7 @@ func (s *SubmissionSrvc) handleUpdates(eval Evaluation, ch <-chan execsrvc.Event
 		final = final || update.Type() == execsrvc.CompilationErrorType
 		final = final || update.Type() == execsrvc.FinishedTestingType
 		if final {
+			wasSaved = true
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
 			err := s.evalRepo.Store(ctx, eval)
@@ -39,6 +41,9 @@ func (s *SubmissionSrvc) handleUpdates(eval Evaluation, ch <-chan execsrvc.Event
 			delete(s.inMem, eval.SubmUUID)
 			return
 		}
+	}
+	if !wasSaved {
+		s.logger.Error("evaluation was not saved via listening to events", "eval", eval)
 	}
 }
 
