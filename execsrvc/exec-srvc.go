@@ -15,7 +15,7 @@ import (
 type ExecRepo interface {
 	Save(
 		ctx context.Context,
-		exec Execution,
+		exec *Execution,
 	) error
 	Get(
 		ctx context.Context,
@@ -41,8 +41,6 @@ type ExecSrvc struct {
 	extPartnerPw string
 
 	mu sync.Mutex
-	// maps exec IDs to their event handlers
-	handlers map[uuid.UUID]chan Event
 	// maps exec IDs to client result channels
 	notifiers map[uuid.UUID]chan Event
 	// tracks completion status of executions
@@ -50,6 +48,9 @@ type ExecSrvc struct {
 
 	listenCancel context.CancelFunc
 	listenWait   sync.WaitGroup // on close, waits for sqs jobs to finish
+
+	organizers map[uuid.UUID]*ExecResStreamOrganizer
+	executions map[uuid.UUID]*Execution
 }
 
 // NewDefaultExecSrvc creates an execution service
@@ -73,11 +74,14 @@ func NewDefaultExecSrvc() *ExecSrvc {
 		execRepo:     s3Repo,
 		respQ:        getResponseSqsUrlFromEnv(),
 		extPartnerPw: getExtPartnerPwFromEnv(),
-		handlers: make(
-			map[uuid.UUID]chan Event,
-		),
 		notifiers: make(
 			map[uuid.UUID]chan Event,
+		),
+		organizers: make(
+			map[uuid.UUID]*ExecResStreamOrganizer,
+		),
+		executions: make(
+			map[uuid.UUID]*Execution,
 		),
 	}
 
@@ -119,11 +123,14 @@ func NewExecSrvc(
 		execRepo:     execRepo,
 		respQ:        respQ,
 		extPartnerPw: extPartnerPw,
-		handlers: make(
-			map[uuid.UUID]chan Event,
-		),
 		notifiers: make(
 			map[uuid.UUID]chan Event,
+		),
+		organizers: make(
+			map[uuid.UUID]*ExecResStreamOrganizer,
+		),
+		executions: make(
+			map[uuid.UUID]*Execution,
 		),
 	}
 }
@@ -281,31 +288,95 @@ func (e *ExecSrvc) Get(
 func (e *ExecSrvc) handleSqsMsg(
 	msg SqsResponseMsg,
 ) error {
-	e.logger.Info("locking mu")
 	e.mu.Lock()
-	e.logger.Info("locked mu")
-	ch, ok := e.handlers[msg.ExecId]
 	defer e.mu.Unlock()
-	if !ok {
-		errMsg := fmt.Errorf(
-			"no handler for exec %s",
+
+	org, exists := e.organizers[msg.ExecId]
+	if !exists {
+		e.logger.Error(
+			"no organizer found for execution",
+			"exec_id",
 			msg.ExecId,
 		)
-		// returning error to indicate that the
-		// message was not processed
-		return errMsg
+		return fmt.Errorf("no organizer found for execution %s", msg.ExecId)
 	}
 
-	// Try sending on channel, return error if closed
-	e.logger.Info("sending event to handler", "event", msg.Data)
-	ch <- msg.Data
-	e.logger.Info("event sent to handler", "event", msg.Data)
+	if org == nil {
+		e.logger.Error(
+			"organizer is nil for execution",
+			"exec_id",
+			msg.ExecId,
+		)
+		return fmt.Errorf("organizer is nil for execution %s", msg.ExecId)
+	}
+
+	if org.HasFinished() {
+		return nil
+	}
+
+	events, err := org.Add(msg.Data)
+	if err != nil {
+		return fmt.Errorf(
+			"failed to process msg: %w",
+			err,
+		)
+	}
+	exec := e.executions[msg.ExecId]
+	if exec == nil {
+		e.logger.Error(
+			"execution not found",
+			"exec_id",
+			msg.ExecId,
+		)
+		return fmt.Errorf("execution not found for %s", msg.ExecId)
+	}
+
+	for _, event := range events {
+		err := applyEventToExec(exec, event)
+		if err != nil {
+			return fmt.Errorf(
+				"failed to apply event: %w",
+				err,
+			)
+		}
+		e.notifiers[msg.ExecId] <- event
+	}
+	if !org.HasFinished() {
+		return nil
+	}
+	close(e.notifiers[msg.ExecId])
+	delete(e.notifiers, msg.ExecId)  // deleting closes the channel
+	delete(e.organizers, msg.ExecId) // cleanup the organizer
+	delete(e.executions, msg.ExecId) // cleanup the execution
+	ctxWithTimeout, cancel := context.WithTimeout(
+		context.Background(),
+		10*time.Second,
+	)
+	defer cancel()
+	err = e.execRepo.Save(ctxWithTimeout, exec)
+	if err != nil {
+		e.logger.Error(
+			"failed to save execution",
+			"error",
+			err,
+		)
+		return fmt.Errorf(
+			"failed to save execution: %w",
+			err,
+		)
+	}
+	wgVal, exists := e.execWg.Load(msg.ExecId)
+	if exists {
+		wg := wgVal.(*sync.WaitGroup)
+		wg.Done()
+	}
 	return nil
 }
 
 // prepareForResults sets up the event processing
 // pipeline for an execution including result
 // organization and client notification channels
+// we are in a locked mutex state in this function
 func (e *ExecSrvc) prepareForResults(
 	execId uuid.UUID,
 	lang PrLang,
@@ -316,45 +387,20 @@ func (e *ExecSrvc) prepareForResults(
 	// that reorders events the organizer has to
 	// know the number of tests and whether the
 	// submission has a compilation step
-	e.handlers[execId] = make(chan Event)
 	e.notifiers[execId] = make(
 		chan Event,
 		1000,
 	)
 
-	go e.handleResultStreamForExec(
-		execId,
-		lang,
-		params,
-		numTests,
-	)
-	return nil
-}
-
-// handleResultStreamForExec manages the execution
-// lifecycle by:
-// - Processing incoming events
-// - Updating execution state
-// - Managing client notifications
-// - Persisting final results
-func (e *ExecSrvc) handleResultStreamForExec(
-	execId uuid.UUID,
-	lang PrLang,
-	params TesterParams,
-	numTests int,
-) {
 	org, err := NewExecResStreamOrganizer(
 		lang.CompCmd != nil,
 		numTests,
 	)
 	if err != nil {
-		slog.Error(
-			"failed to create organizer",
-			"error",
-			err,
-		)
-		return
+		return err
 	}
+	// we need to get a sync map of organizers
+	e.organizers[execId] = org
 
 	exec := Execution{
 		UUID:      execId,
@@ -374,66 +420,11 @@ func (e *ExecSrvc) handleResultStreamForExec(
 			TestRes{ID: i + 1},
 		)
 	}
-	e.mu.Lock()
-	ch := e.handlers[execId]
-	e.mu.Unlock()
-	for ev := range ch {
-		events, err := org.Add(ev)
-		if err != nil {
-			slog.Error(
-				"failed to process event",
-				"error",
-				err,
-			)
-			return
-		}
-		for _, event := range events {
-			err := applyEventToExec(&exec, event)
-			if err != nil {
-				slog.Error(
-					"failed to apply event",
-					"error",
-					err,
-				)
-				return
-			}
-			e.notifiers[execId] <- event
-			// make sure to delete the notifier channel 10 minutes after receiving the first event
+	e.executions[execId] = &exec
 
-		}
-		if org.HasFinished() {
-			break
-		}
-	}
-	e.mu.Lock()
-	close(e.handlers[execId])
-	close(e.notifiers[execId])
-	delete(e.handlers, execId)  // deleting closes the channel
-	delete(e.notifiers, execId) // deleting closes the channel
-	e.mu.Unlock()
-
-	ctxWithTimeout, cancel := context.WithTimeout(
-		context.Background(),
-		10*time.Second,
-	)
-	defer cancel()
-	err = e.execRepo.Save(ctxWithTimeout, exec)
-	if err != nil {
-		slog.Error(
-			"failed to save execution",
-			"error",
-			err,
-		)
-		return
-	}
-	wgVal, exists := e.execWg.Load(execId)
-	if exists {
-		wg := wgVal.(*sync.WaitGroup)
-		wg.Done()
-	}
+	return nil
 }
 
-// applyEventToExec updates the execution state
 // based on incoming events. Handles various event
 // types including compilation, testing, and error
 // states

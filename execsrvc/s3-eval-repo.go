@@ -28,7 +28,7 @@ func NewS3ExecRepo(logger *slog.Logger, client *s3.Client, bucketName string) *S
 	}
 }
 
-func (r *S3EvalRepo) Save(ctx context.Context, eval Execution) error {
+func (r *S3EvalRepo) Save(ctx context.Context, eval *Execution) error {
 	data, err := json.Marshal(eval)
 	if err != nil {
 		return fmt.Errorf("failed to marshal evaluation: %w", err)

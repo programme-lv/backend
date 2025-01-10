@@ -76,6 +76,7 @@ func NewExecResStreamOrganizer(
 		evsOfType:      make(map[string][]Event),
 		retKeys:        make(map[string]bool),
 		numFinTests:    0,
+		mu:             sync.Mutex{},
 	}, nil
 }
 
