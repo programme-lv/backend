@@ -85,7 +85,9 @@ func (s *SubmissionSrvc) ReevalSubm(ctx context.Context, submUuid uuid.UUID) err
 		CreatedAt:  time.Now(),
 		SubmUUID:   submUuid,
 	}
+	s.inMemLock.Lock()
 	s.inMem[submUuid] = eval
+	s.inMemLock.Unlock()
 	go s.handleUpdates(eval, ch)
 
 	return nil

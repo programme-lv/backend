@@ -132,7 +132,9 @@ func (s *SubmissionSrvc) CreateSubmission(ctx context.Context,
 		CreatedAt: entity.CreatedAt,
 	}
 
+	s.inMemLock.Lock()
 	s.inMem[submUuid] = eval
+	s.inMemLock.Unlock()
 	s.broadcastNewSubmCreated(view)
 	go s.handleUpdates(eval, ch)
 

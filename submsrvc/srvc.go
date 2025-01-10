@@ -34,10 +34,11 @@ type evalRepo interface {
 type SubmissionSrvc struct {
 	logger *slog.Logger
 
-	tests    *s3bucket.S3Bucket
-	submRepo submRepo // persistent subm storage
-	evalRepo evalRepo
-	inMem    map[uuid.UUID]Evaluation // subm id to corresponding in-progress evaluation
+	tests     *s3bucket.S3Bucket
+	submRepo  submRepo // persistent subm storage
+	evalRepo  evalRepo
+	inMem     map[uuid.UUID]Evaluation // subm id to corresponding in-progress evaluation
+	inMemLock sync.Mutex
 
 	userSrvc *usersrvc.UserService
 	taskSrvc *tasksrvc.TaskService
@@ -88,6 +89,7 @@ func (s *SubmissionSrvc) GetSubm(ctx context.Context, submUuid uuid.UUID) (*Subm
 
 func (s *SubmissionSrvc) constructSubm(ctx context.Context, subm SubmissionEntity) (*Submission, error) {
 	var eval *Evaluation
+	s.inMemLock.Lock()
 	if evalVal, ok := s.inMem[subm.UUID]; ok {
 		eval = &evalVal
 	} else if subm.CurrEvalID != uuid.Nil {
@@ -97,7 +99,7 @@ func (s *SubmissionSrvc) constructSubm(ctx context.Context, subm SubmissionEntit
 		}
 		eval = &evalVal
 	}
-
+	s.inMemLock.Unlock()
 	user, err := s.userSrvc.GetUserByUUID(ctx, subm.AuthorUUID)
 	if err != nil {
 		return nil, err
