@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"sync"
 	"time"
 
 	awshttp "github.com/aws/aws-sdk-go-v2/aws/transport/http"
@@ -184,13 +185,16 @@ func (bucket *S3Bucket) ListAndGetAllFiles(prefix string) ([]FileData, error) {
 	// Here, we'll use a buffered channel to limit the number of concurrent downloads
 	const maxConcurrency = 10
 	semaphore := make(chan struct{}, maxConcurrency)
-	results := make(chan FileData)
-	errs := make(chan error)
+	results := make(chan FileData, len(keys))
+	errs := make(chan error, len(keys))
+	var wg sync.WaitGroup
 
 	// Step 3: Start downloading each file concurrently
 	for _, key := range keys {
+		wg.Add(1)
 		semaphore <- struct{}{} // Acquire a slot
 		go func(k string) {
+			defer wg.Done()
 			defer func() { <-semaphore }() // Release the slot
 
 			content, err := bucket.Download(k)
@@ -206,12 +210,9 @@ func (bucket *S3Bucket) ListAndGetAllFiles(prefix string) ([]FileData, error) {
 		}(key)
 	}
 
-	// Step 4: Collect the results
+	// Step 4: Wait for all downloads to complete in a separate goroutine
 	go func() {
-		// Wait for all goroutines to finish
-		for i := 0; i < cap(semaphore); i++ {
-			semaphore <- struct{}{}
-		}
+		wg.Wait()
 		close(results)
 		close(errs)
 	}()
