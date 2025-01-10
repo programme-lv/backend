@@ -16,12 +16,20 @@ func (s *SubmissionSrvc) handleUpdates(eval Evaluation, ch <-chan execsrvc.Event
 	for update := range ch {
 		l.Info("received eval update", "type", update.Type())
 		newEval := applyUpdate(eval, update)
+		eval = newEval
+		s.inMemLock.Lock()
+		isTheCurrentEval := s.inMem[eval.SubmUUID].UUID == eval.UUID
+		if isTheCurrentEval {
+			s.inMem[eval.SubmUUID] = eval
+		}
+		s.inMemLock.Unlock()
+		if !isTheCurrentEval {
+			break
+		}
 		s.broadcastSubmEvalUpdate(&EvalUpdate{
 			SubmUuid: eval.SubmUUID,
 			Eval:     newEval,
 		})
-		eval = newEval
-		s.inMem[eval.SubmUUID] = eval
 		final := false
 		final = final || update.Type() == execsrvc.InternalServerErrorType
 		final = final || update.Type() == execsrvc.CompilationErrorType
@@ -38,7 +46,9 @@ func (s *SubmissionSrvc) handleUpdates(eval Evaluation, ch <-chan execsrvc.Event
 			if err != nil {
 				slog.Error("failed to assign evaluation to submission", "error", err)
 			}
+			s.inMemLock.Lock()
 			delete(s.inMem, eval.SubmUUID)
+			s.inMemLock.Unlock()
 			return
 		}
 	}

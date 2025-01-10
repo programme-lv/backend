@@ -293,7 +293,7 @@ func (e *ExecSrvc) handleSqsMsg(
 
 	org, exists := e.organizers[msg.ExecId]
 	if !exists {
-		e.logger.Error(
+		e.logger.Debug(
 			"no organizer found for execution",
 			"exec_id",
 			msg.ExecId,
