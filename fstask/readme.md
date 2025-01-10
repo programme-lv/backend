@@ -31,7 +31,7 @@ task-name/
 ├── solutions/        # Solution files with metadata
 └── tests/           # Test cases
     ├── 001.in
-    └── 001.ans
+    └── 001.out
 ```
 
 ## Usage
