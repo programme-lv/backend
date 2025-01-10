@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"sync"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -23,8 +24,10 @@ func StartReceivingResultsFromSqs(ctx context.Context,
 	for {
 		select {
 		case <-ctx.Done():
+			// before returning, wait for everything to finish
 			return ctx.Err()
 		default:
+
 			output, err := client.ReceiveMessage(ctx, &sqs.ReceiveMessageInput{
 				QueueUrl:            aws.String(sqsUrl),
 				MaxNumberOfMessages: 10,
@@ -38,6 +41,7 @@ func StartReceivingResultsFromSqs(ctx context.Context,
 				continue
 			}
 
+			wg := sync.WaitGroup{}
 			msgs := make([]SqsResponseMsg, len(output.Messages))
 			for i, msg := range output.Messages {
 				if msg.Body == nil {
@@ -138,6 +142,7 @@ func StartReceivingResultsFromSqs(ctx context.Context,
 					return errMsg
 				}
 
+				wg.Add(1)
 				go func(msg SqsResponseMsg) {
 					err = handleFunc(msg)
 					if err != nil {
@@ -152,8 +157,10 @@ func StartReceivingResultsFromSqs(ctx context.Context,
 					if err != nil {
 						logger.Error("failed to ack message", "error", err)
 					}
+					wg.Done()
 				}(msgs[i])
 			}
+			wg.Wait()
 		}
 	}
 }

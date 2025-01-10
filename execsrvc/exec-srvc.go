@@ -46,7 +46,10 @@ type ExecSrvc struct {
 	// maps exec IDs to client result channels
 	notifiers map[uuid.UUID]chan Event
 	// tracks completion status of executions
-	execWg sync.Map
+	execWg sync.Map // notifies get listener when execution is finished
+
+	listenCancel context.CancelFunc
+	listenWait   sync.WaitGroup // on close, waits for sqs jobs to finish
 }
 
 // NewDefaultExecSrvc creates an execution service
@@ -78,13 +81,23 @@ func NewDefaultExecSrvc() *ExecSrvc {
 		),
 	}
 
-	go StartReceivingResultsFromSqs(
-		context.Background(),
-		esrvc.respQ,
-		esrvc.sqsClient,
-		esrvc.handleSqsMsg,
-		slog.Default(),
-	)
+	esrvc.listenWait.Add(1)
+	go func() {
+		ctx, cancel := context.WithCancel(context.Background())
+		esrvc.listenCancel = cancel
+		defer cancel()
+		err := StartReceivingResultsFromSqs(
+			ctx,
+			esrvc.respQ,
+			esrvc.sqsClient,
+			esrvc.handleSqsMsg,
+			esrvc.logger,
+		)
+		if err != nil {
+			slog.Error("failed to listen for sqs messages", "error", err)
+		}
+		esrvc.listenWait.Done()
+	}()
 
 	return esrvc
 }
@@ -268,9 +281,11 @@ func (e *ExecSrvc) Get(
 func (e *ExecSrvc) handleSqsMsg(
 	msg SqsResponseMsg,
 ) error {
+	e.logger.Info("locking mu")
 	e.mu.Lock()
+	e.logger.Info("locked mu")
 	ch, ok := e.handlers[msg.ExecId]
-	e.mu.Unlock()
+	defer e.mu.Unlock()
 	if !ok {
 		errMsg := fmt.Errorf(
 			"no handler for exec %s",
@@ -280,7 +295,11 @@ func (e *ExecSrvc) handleSqsMsg(
 		// message was not processed
 		return errMsg
 	}
+
+	// Try sending on channel, return error if closed
+	e.logger.Info("sending event to handler", "event", msg.Data)
 	ch <- msg.Data
+	e.logger.Info("event sent to handler", "event", msg.Data)
 	return nil
 }
 
@@ -355,7 +374,10 @@ func (e *ExecSrvc) handleResultStreamForExec(
 			TestRes{ID: i + 1},
 		)
 	}
-	for ev := range e.handlers[execId] {
+	e.mu.Lock()
+	ch := e.handlers[execId]
+	e.mu.Unlock()
+	for ev := range ch {
 		events, err := org.Add(ev)
 		if err != nil {
 			slog.Error(
@@ -383,10 +405,13 @@ func (e *ExecSrvc) handleResultStreamForExec(
 			break
 		}
 	}
+	e.mu.Lock()
 	close(e.handlers[execId])
 	close(e.notifiers[execId])
-	delete(e.handlers, execId)
-	delete(e.notifiers, execId)
+	delete(e.handlers, execId)  // deleting closes the channel
+	delete(e.notifiers, execId) // deleting closes the channel
+	e.mu.Unlock()
+
 	ctxWithTimeout, cancel := context.WithTimeout(
 		context.Background(),
 		10*time.Second,
@@ -443,4 +468,11 @@ func applyEventToExec(
 		exec.ErrorMsg = e.ErrorMsg
 	}
 	return nil
+}
+
+func (e *ExecSrvc) Close() {
+	e.logger.Info("closing execsrvc")
+	e.listenCancel()
+	e.listenWait.Wait()
+	e.logger.Info("execsrvc closed")
 }
