@@ -68,6 +68,8 @@ hello:
 	require.Equal(t, events[4].Type(), execsrvc.ReachedTestType)
 	require.Equal(t, events[5].Type(), execsrvc.FinishedTestType)
 	require.Equal(t, events[6].Type(), execsrvc.FinishedTestingType)
+
+	srvc.Close()
 }
 
 func TestEvalServiceCmpListenWithCompile(t *testing.T) {
@@ -120,6 +122,7 @@ hello:
 	for i, ev := range events {
 		require.Equal(t, expectedEvents[i], ev.Type())
 	}
+	srvc.Close()
 }
 
 // test the asynchronocity of the Get() method and persistence after closing the srvc
@@ -141,6 +144,7 @@ func TestEvalServiceCmpGet(t *testing.T) {
 	defer cancel()
 	eval, err := srvc.Get(ctx, evalId)
 	require.NoError(t, err)
+	srvc.Close()
 	require.Equal(t, eval.Stage, execsrvc.StageFinished)
 	require.Nil(t, eval.ErrorMsg)
 	require.Len(t, eval.TestRes, 2)
@@ -155,6 +159,8 @@ func TestEvalServiceCmpGet(t *testing.T) {
 	eval2, err := srvc2.Get(ctx, evalId)
 	require.NoError(t, err)
 	require.Equal(t, eval, eval2)
+
+	srvc2.Close()
 }
 
 func strPtr(s string) *string {

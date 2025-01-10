@@ -10,6 +10,8 @@ for the notifier channels place the information onto disk
 
 we have to somehow simulate the receiving of many events and monitor memory usage
 
+get rid of the handlers channel to avoid writing to closed channel and goroutine circus.
+
 # ExecSrvc - Code Execution Service
 
 A Go package that provides a robust service for executing and testing code submissions in various programming languages.

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
@@ -36,12 +37,17 @@ func (r *S3EvalRepo) Save(ctx context.Context, eval Execution) error {
 	key := fmt.Sprintf("%s.json", eval.UUID.String())
 	r.logger.Info("saving eval to S3", "key", key)
 
+	// add additional timeout
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
 	_, err = r.client.PutObject(ctx, &s3.PutObjectInput{
 		Bucket: aws.String(r.bucketName),
 		Key:    aws.String(key),
 		Body:   bytes.NewReader(data),
 	})
 	if err != nil {
+		r.logger.Error("failed to store evaluation in S3", "error", err)
 		return fmt.Errorf("failed to store evaluation in S3: %w", err)
 	}
 
