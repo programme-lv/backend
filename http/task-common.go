@@ -112,6 +112,8 @@ func mapTaskResponse(task *tasksrvc.Task) *Task {
 	if task.IllustrImgUrl != "" {
 		illstrImgUrl = new(string)
 		*illstrImgUrl = task.IllustrImgUrl
+
+		*illstrImgUrl = strings.Replace(*illstrImgUrl, "https://proglv-public.s3.eu-central-1.amazonaws.com/", PublicCloudfrontEndpoint, 1)
 	}
 
 	difficultyRating := new(int)
