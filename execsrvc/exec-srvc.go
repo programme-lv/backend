@@ -439,6 +439,7 @@ func applyEventToExec(
 		exec.Stage = StageCompiling
 	case FinishedCompiling:
 		exec.Stage = StageFinished
+		exec.SubmComp = e.RuntimeData
 	case ReachedTest:
 		exec.TestRes[e.TestId-1].Input = e.In
 		exec.TestRes[e.TestId-1].Answer = e.Ans
