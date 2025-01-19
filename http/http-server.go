@@ -144,8 +144,8 @@ func (httpserver *HttpServer) routes() {
 	r := httpserver.router
 	// r.Post("/submissions", httpserver.createSubmission)
 	// r.Post("/reevaluate", httpserver.reevaluateSubmissions)
-	// r.Get("/submissions", httpserver.listSubmissions)
-	r.Get("/submissions/{submUuid}", httpserver.submHttpServer.GetSubmView)
+	r.Get("/subm", httpserver.submHttpServer.GetSubmList)
+	r.Get("/subm/{subm-uuid}", httpserver.submHttpServer.GetSubmView)
 	r.Post("/auth/login", httpserver.authLogin)
 	r.Post("/users", httpserver.authRegister)
 	r.Get("/tasks", httpserver.listTasks)

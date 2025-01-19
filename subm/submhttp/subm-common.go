@@ -12,12 +12,12 @@ import (
 
 type Subm struct {
 	SubmUUID  string `json:"subm_uuid"`
-	Content   string `json:"content"`
+	Content   string `json:"content,omitempty"`
 	Username  string `json:"username"`
 	CurrEval  *Eval  `json:"curr_eval"`
 	PrLang    PrLang `json:"pr_lang"`
-	TaskName  string `json:"task_name"`
 	TaskID    string `json:"task_id"`
+	TaskName  string `json:"task_name"`
 	CreatedAt string `json:"created_at"`
 }
 
@@ -28,11 +28,11 @@ type PrLang struct {
 }
 
 type Eval struct {
-	EvalUUID   string      `json:"eval_uuid"`
-	EvalStage  string      `json:"eval_stage"`
-	ScoreUnit  string      `json:"score_unit"`
-	EvalError  string      `json:"eval_error"`
-	ErrorMsg   string      `json:"error_msg"`
+	EvalUUID  string `json:"eval_uuid"`
+	EvalStage string `json:"eval_stage"`
+	ScoreUnit string `json:"score_unit"`
+	EvalError string `json:"eval_error"`
+	// ErrorMsg   string      `json:"error_msg"`
 	Subtasks   []Subtask   `json:"subtasks"`
 	TestGroups []TestGroup `json:"test_groups"`
 	Verdicts   string      `json:"verdicts"` // q,ac,wa,tle,mle,re,ig -> "QAWTMRI"
@@ -51,28 +51,6 @@ type TestGroup struct {
 	// TgTests  []int `json:"tg_tests"`
 	TgTests [][]int `json:"tg_tests"`
 }
-
-// func mapSubm(subm subm.SubmView) *Submission {
-// 	var currEval *SubmEval
-// 	if subm.CurrEval != nil {
-// 		mapped := mapSubmEval(*subm.CurrEval)
-// 		currEval = &mapped
-// 	}
-// 	return &Submission{
-// 		SubmUUID: subm.UUID.String(),
-// 		Content:  subm.Content,
-// 		Username: subm.Author.Username,
-// 		CurrEval: currEval,
-// 		PrLang: PrLang{
-// 			ShortID:  subm.Lang.ShortID,
-// 			Display:  subm.Lang.Display,
-// 			MonacoID: subm.Lang.MonacoID,
-// 		},
-// 		TaskName:  subm.Task.FullName,
-// 		TaskID:    subm.Task.ShortID,
-// 		CreatedAt: subm.CreatedAt.Format(time.RFC3339),
-// 	}
-// }
 
 func (h SubmHttpServer) mapSubm(
 	ctx context.Context,
@@ -158,12 +136,12 @@ func mapSubm(
 
 func mapSubmEval(eval subm.Eval) Eval {
 	errType := ""
-	errMsg := ""
+	// errMsg := ""
 	if eval.Error != nil {
 		errType = string(eval.Error.Type)
-		if eval.Error.Message != nil {
-			errMsg = *eval.Error.Message
-		}
+		// if eval.Error.Message != nil {
+		// 	errMsg = *eval.Error.Message
+		// }
 	}
 
 	// subtasks := []Subtask{}
@@ -254,11 +232,11 @@ func mapSubmEval(eval subm.Eval) Eval {
 	}
 
 	return Eval{
-		EvalUUID:   eval.UUID.String(),
-		EvalStage:  string(eval.Stage),
-		ScoreUnit:  string(eval.ScoreUnit),
-		EvalError:  errType,
-		ErrorMsg:   errMsg,
+		EvalUUID:  eval.UUID.String(),
+		EvalStage: string(eval.Stage),
+		ScoreUnit: string(eval.ScoreUnit),
+		EvalError: errType,
+		// ErrorMsg:   errMsg,
 		Subtasks:   subtasks,
 		TestGroups: testGroups,
 		Verdicts:   verdicts,
