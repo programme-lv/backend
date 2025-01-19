@@ -10,7 +10,8 @@ import (
 	"github.com/lmittmann/tint"
 	"github.com/programme-lv/backend/execsrvc"
 	"github.com/programme-lv/backend/http"
-	"github.com/programme-lv/backend/subm"
+	"github.com/programme-lv/backend/subm/submhttp"
+	"github.com/programme-lv/backend/subm/submsrvc"
 	"github.com/programme-lv/backend/tasksrvc"
 	"github.com/programme-lv/backend/usersrvc"
 )
@@ -38,17 +39,18 @@ func main() {
 	}
 
 	evalSrvc := execsrvc.NewExecSrvc()
+	userSrvc := usersrvc.NewUserService()
 
 	taskSrvc, err := tasksrvc.NewTaskSrvc()
 	if err != nil {
 		log.Fatalf("error creating task service: %v", err)
 	}
-	submSrvc, err := subm.NewSubmSrvc(taskSrvc, evalSrvc)
+	submSrvc, err := submsrvc.NewSubmSrvc(userSrvc, taskSrvc, evalSrvc)
 	if err != nil {
 		log.Fatalf("error creating submission service: %v", err)
 	}
-	userSrvc := usersrvc.NewUserService()
-	httpServer := http.NewHttpServer(submSrvc, userSrvc, taskSrvc, evalSrvc,
+	submHttpServer := submhttp.NewSubmHttpServer(submSrvc, taskSrvc, userSrvc)
+	httpServer := http.NewHttpServer(submHttpServer, submSrvc, userSrvc, taskSrvc, evalSrvc,
 		[]byte(jwtKey))
 
 	address := ":8080"

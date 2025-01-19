@@ -4,7 +4,7 @@ import (
 	"context"
 )
 
-func (ts *TaskService) GetTask(ctx context.Context, id string) (res Task, err error) {
+func (ts *TaskSrvc) GetTask(ctx context.Context, id string) (res Task, err error) {
 	for _, task := range ts.tasks {
 		if task.ShortId == id {
 			res = task
@@ -15,13 +15,13 @@ func (ts *TaskService) GetTask(ctx context.Context, id string) (res Task, err er
 	return res, NewErrorTaskNotFound(id)
 }
 
-func (ts *TaskService) ListTasks(ctx context.Context) ([]Task, error) {
+func (ts *TaskSrvc) ListTasks(ctx context.Context) ([]Task, error) {
 	tasks := make([]Task, 0, len(ts.tasks))
 	tasks = append(tasks, ts.tasks...)
 	return tasks, nil
 }
 
-func (ts *TaskService) GetTaskFullNames(ctx context.Context, shortIDs []string) ([]string, error) {
+func (ts *TaskSrvc) GetTaskFullNames(ctx context.Context, shortIDs []string) ([]string, error) {
 	fullNames := make([]string, 0, len(shortIDs))
 
 	for _, shortID := range shortIDs {

@@ -10,18 +10,20 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
 	"github.com/programme-lv/backend/execsrvc"
+	"github.com/programme-lv/backend/subm/submhttp"
 	"github.com/programme-lv/backend/subm/submsrvc"
 	"github.com/programme-lv/backend/tasksrvc"
 	"github.com/programme-lv/backend/usersrvc"
 )
 
 type HttpServer struct {
-	submSrvc *submsrvc.SubmSrvc
-	userSrvc *usersrvc.UserService
-	taskSrvc *tasksrvc.TaskService
-	evalSrvc *execsrvc.ExecSrvc
-	router   *chi.Mux
-	JwtKey   []byte
+	submHttpServer *submhttp.SubmHttpServer
+	submSrvc       *submsrvc.SubmSrvc
+	userSrvc       *usersrvc.UserSrvc
+	taskSrvc       *tasksrvc.TaskSrvc
+	evalSrvc       *execsrvc.ExecSrvc
+	router         *chi.Mux
+	JwtKey         []byte
 }
 
 type endpointStats struct {
@@ -96,9 +98,10 @@ func (sl *statsLogger) middleware(next http.Handler) http.Handler {
 }
 
 func NewHttpServer(
+	submHttpServer *submhttp.SubmHttpServer,
 	submSrvc *submsrvc.SubmSrvc,
-	userSrvc *usersrvc.UserService,
-	taskSrvc *tasksrvc.TaskService,
+	userSrvc *usersrvc.UserSrvc,
+	taskSrvc *tasksrvc.TaskSrvc,
 	evalSrvc *execsrvc.ExecSrvc,
 	jwtKey []byte,
 ) *HttpServer {
@@ -119,12 +122,13 @@ func NewHttpServer(
 	router.Use(getJwtAuthMiddleware(jwtKey))
 
 	server := &HttpServer{
-		submSrvc: submSrvc,
-		userSrvc: userSrvc,
-		taskSrvc: taskSrvc,
-		evalSrvc: evalSrvc,
-		router:   router,
-		JwtKey:   jwtKey,
+		submHttpServer: submHttpServer,
+		submSrvc:       submSrvc,
+		userSrvc:       userSrvc,
+		taskSrvc:       taskSrvc,
+		evalSrvc:       evalSrvc,
+		router:         router,
+		JwtKey:         jwtKey,
 	}
 
 	server.routes()
@@ -141,7 +145,7 @@ func (httpserver *HttpServer) routes() {
 	// r.Post("/submissions", httpserver.createSubmission)
 	// r.Post("/reevaluate", httpserver.reevaluateSubmissions)
 	// r.Get("/submissions", httpserver.listSubmissions)
-	// r.Get("/submissions/{submUuid}", httpserver.getSubmission)
+	r.Get("/submissions/{submUuid}", httpserver.submHttpServer.GetSubmView)
 	r.Post("/auth/login", httpserver.authLogin)
 	r.Post("/users", httpserver.authRegister)
 	r.Get("/tasks", httpserver.listTasks)

@@ -12,7 +12,7 @@ type LoginParams struct {
 	Password string
 }
 
-func (s *UserService) Login(ctx context.Context, p *LoginParams) (res *User, err error) {
+func (s *UserSrvc) Login(ctx context.Context, p *LoginParams) (res *User, err error) {
 	allUsers, err := selectAllUsers(s.postgres)
 	if err != nil {
 		errMsg := fmt.Errorf("error listing users: %w", err)

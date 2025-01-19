@@ -3,11 +3,12 @@ package http
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"net/http"
 
-	"github.com/go-chi/httplog/v2"
 	"github.com/programme-lv/backend/auth"
+	"github.com/programme-lv/backend/httpjson"
 	"github.com/programme-lv/backend/usersrvc"
 )
 
@@ -28,7 +29,7 @@ func (httpserver *HttpServer) authLogin(w http.ResponseWriter, r *http.Request) 
 		Password: request.Password,
 	})
 	if err != nil {
-		handleJsonSrvcError(slog.Default(), w, err)
+		httpjson.HandleError(slog.Default(), w, err)
 		return
 	}
 
@@ -38,11 +39,10 @@ func (httpserver *HttpServer) authLogin(w http.ResponseWriter, r *http.Request) 
 		user.Firstname, user.Lastname,
 		httpserver.JwtKey)
 	if err != nil {
-		logger := httplog.LogEntry(r.Context())
-		logger.Error("failed to generate JWT", "error", err)
-		writeJsonInternalServerError(w)
+		err = fmt.Errorf("failed to generate JWT: %w", err)
+		httpjson.HandleError(slog.Default(), w, err)
 		return
 	}
 
-	writeJsonSuccessResponse(w, token)
+	httpjson.WriteSuccessJson(w, token)
 }

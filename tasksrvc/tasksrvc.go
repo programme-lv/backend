@@ -10,7 +10,7 @@ import (
 	"github.com/programme-lv/backend/s3bucket"
 )
 
-type TaskService struct {
+type TaskSrvc struct {
 	tasks []Task
 
 	testFileCache sync.Map
@@ -20,7 +20,7 @@ type TaskService struct {
 	s3TaskBucket     *s3bucket.S3Bucket
 }
 
-func NewTaskSrvc() (*TaskService, error) {
+func NewTaskSrvc() (*TaskSrvc, error) {
 	publicBucket, err := s3bucket.NewS3Bucket("eu-central-1", "proglv-public")
 	if err != nil {
 		format := "failed to create S3 bucket: %w"
@@ -60,7 +60,7 @@ func NewTaskSrvc() (*TaskService, error) {
 		tasks = append(tasks, task)
 	}
 
-	return &TaskService{
+	return &TaskSrvc{
 		tasks: tasks,
 
 		testFileCache: sync.Map{},

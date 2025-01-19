@@ -23,7 +23,7 @@ type JwtClaims struct {
 }
 
 // QueryCurrentJWT implements users.Service.
-func (s *UserService) QueryCurrentJWT(ctx context.Context) (res *JwtClaims, err error) {
+func (s *UserSrvc) QueryCurrentJWT(ctx context.Context) (res *JwtClaims, err error) {
 	claims := ctx.Value(auth.CtxJwtClaimsKey).(*auth.JwtClaims)
 	if claims == nil {
 		return nil, fmt.Errorf("no claims found in context")

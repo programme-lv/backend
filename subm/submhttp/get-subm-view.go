@@ -6,10 +6,11 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	"github.com/programme-lv/backend/httpjson"
 	"github.com/programme-lv/backend/subm/submqueries"
 )
 
-func (h *SubmHttpServer) getSubm(w http.ResponseWriter, r *http.Request) {
+func (h *SubmHttpServer) GetSubmView(w http.ResponseWriter, r *http.Request) {
 	submUuidStr := chi.URLParam(r, "submUuid")
 	submUuid, err := uuid.Parse(submUuidStr)
 	if err != nil {
@@ -21,11 +22,15 @@ func (h *SubmHttpServer) getSubm(w http.ResponseWriter, r *http.Request) {
 		SubmUUID: submUuid,
 	})
 	if err != nil {
-		handleJsonSrvcError(slog.Default(), w, err)
+		httpjson.HandleError(slog.Default(), w, err)
 		return
 	}
 
-	response := mapSubm(*subm)
+	response, err := h.mapSubm(r.Context(), subm)
+	if err != nil {
+		httpjson.HandleError(slog.Default(), w, err)
+		return
+	}
 
-	writeJsonSuccessResponse(w, response)
+	httpjson.WriteSuccessJson(w, response)
 }

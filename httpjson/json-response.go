@@ -1,4 +1,4 @@
-package http
+package httpjson
 
 import (
 	"encoding/json"
@@ -11,12 +11,12 @@ import (
 
 type JsonResponse struct {
 	Status  string `json:"status"` // "success" or "error"
-	Data    any    `json:"data"`
+	Data    any    `json:"data,omitempty"`
 	ErrCode string `json:"code,omitempty"`
 	ErrMsg  string `json:"message,omitempty"`
 }
 
-func writeJsonSuccessResponse(w http.ResponseWriter, data any) {
+func WriteSuccessJson(w http.ResponseWriter, data any) {
 	resp := JsonResponse{
 		Status: "success",
 		Data:   data,
@@ -26,7 +26,7 @@ func writeJsonSuccessResponse(w http.ResponseWriter, data any) {
 	json.NewEncoder(w).Encode(resp)
 }
 
-func writeJsonErrorResponse(w http.ResponseWriter, errMsg string, statusCode int, errCode string) {
+func WriteErrorJson(w http.ResponseWriter, errMsg string, statusCode int, errCode string) {
 	resp := JsonResponse{
 		Status:  "error",
 		ErrMsg:  errMsg,
@@ -37,14 +37,14 @@ func writeJsonErrorResponse(w http.ResponseWriter, errMsg string, statusCode int
 	json.NewEncoder(w).Encode(resp)
 }
 
-func writeJsonInternalServerError(w http.ResponseWriter) {
-	writeJsonErrorResponse(w,
+func writeInternalErrorJson(w http.ResponseWriter) {
+	WriteErrorJson(w,
 		http.StatusText(http.StatusInternalServerError),
 		http.StatusInternalServerError,
-		"internal_server_error")
+		"")
 }
 
-func handleJsonSrvcError(logger *slog.Logger, w http.ResponseWriter, err error) {
+func HandleError(logger *slog.Logger, w http.ResponseWriter, err error) {
 	srvcErr := &srvcerror.Error{}
 	if errors.As(err, &srvcErr) {
 		if srvcErr.DebugInfo() != nil {
@@ -55,9 +55,10 @@ func handleJsonSrvcError(logger *slog.Logger, w http.ResponseWriter, err error) 
 		if srvcErr.HttpStatusCode() == http.StatusInternalServerError {
 			logger.Error("internal server error", "error", err)
 		}
-		writeJsonErrorResponse(w, srvcErr.Error(), srvcErr.HttpStatusCode(), srvcErr.ErrorCode())
+		WriteErrorJson(w, srvcErr.Error(), srvcErr.HttpStatusCode(), srvcErr.ErrorCode())
 		return
+	} else {
+		logger.Error("internal server error", "error", err)
+		writeInternalErrorJson(w)
 	}
-	logger.Error("internal server error", "error", err)
-	writeJsonInternalServerError(w)
 }
