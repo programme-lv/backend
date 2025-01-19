@@ -21,7 +21,7 @@ import (
 type SubmSrvc struct {
 	CreateSubmCmd  submcmds.CreateSubmCmd
 	CreateEvalCmd  submcmds.CreateEvalCmd
-	AssignEvalCmd  submcmds.AssignEvalCmd
+	AttachEvalCmd  submcmds.AttachEvalCmd
 	EnqueueEvalCmd submcmds.EnqueueEvalCmd
 	ReEvalSubmCmd  submcmds.ReEvalSubmCmd
 
@@ -74,7 +74,7 @@ func NewSubmSrvc(
 		evalRepo.StoreEval,
 	)
 
-	assignEvalCmd := submcmds.NewAssignEvalCmd(
+	attachEvalCmd := submcmds.NewAttachEvalCmd(
 		evalRepo.GetEval,
 		submRepo.GetSubm,
 		submRepo.StoreSubm,
@@ -92,7 +92,7 @@ func NewSubmSrvc(
 	reevalSubmCmd := submcmds.NewReEvalSubmCmd(
 		submRepo.GetSubm,
 		createEvalFunc(createEvalCmd),
-		assignEvalFunc(assignEvalCmd),
+		attachEvalFunc(attachEvalCmd),
 		enqueueEvalFunc(enqueueEvalCmd),
 	)
 
@@ -105,7 +105,7 @@ func NewSubmSrvc(
 	return &SubmSrvc{
 		CreateSubmCmd:  createSubmCmd,
 		CreateEvalCmd:  createEvalCmd,
-		AssignEvalCmd:  assignEvalCmd,
+		AttachEvalCmd:  attachEvalCmd,
 		EnqueueEvalCmd: enqueueEvalCmd,
 		ReEvalSubmCmd:  reevalSubmCmd,
 		GetSubmQuery:   getSubmQuery,
@@ -123,9 +123,9 @@ func createEvalFunc(cmd submcmds.CreateEvalCmd) func(ctx context.Context, evalUu
 	}
 }
 
-func assignEvalFunc(cmd submcmds.AssignEvalCmd) func(ctx context.Context, evalUuid uuid.UUID) error {
+func attachEvalFunc(cmd submcmds.AttachEvalCmd) func(ctx context.Context, evalUuid uuid.UUID) error {
 	return func(ctx context.Context, evalUuid uuid.UUID) error {
-		return cmd.Handle(ctx, submcmds.AssignEvalParams{
+		return cmd.Handle(ctx, submcmds.AttachEvalParams{
 			EvalUUID: evalUuid,
 		})
 	}

@@ -9,31 +9,31 @@ import (
 	"github.com/programme-lv/backend/subm/decorator"
 )
 
-type AssignEvalCmd decorator.CmdHandler[AssignEvalParams]
+type AttachEvalCmd decorator.CmdHandler[AttachEvalParams]
 
-func NewAssignEvalCmd(
+func NewAttachEvalCmd(
 	getEval func(ctx context.Context, uuid uuid.UUID) (subm.Eval, error),
 	getSubm func(ctx context.Context, uuid uuid.UUID) (subm.Subm, error),
 	storeSubm func(ctx context.Context, subm subm.Subm) error,
-) AssignEvalCmd {
-	return assignEvalHandler{
+) AttachEvalCmd {
+	return attachEvalHandler{
 		getEval:   getEval,
 		getSubm:   getSubm,
 		storeSubm: storeSubm,
 	}
 }
 
-type AssignEvalParams struct {
+type AttachEvalParams struct {
 	EvalUUID uuid.UUID
 }
 
-type assignEvalHandler struct {
+type attachEvalHandler struct {
 	getEval   func(ctx context.Context, uuid uuid.UUID) (subm.Eval, error)
 	getSubm   func(ctx context.Context, uuid uuid.UUID) (subm.Subm, error)
 	storeSubm func(ctx context.Context, subm subm.Subm) error
 }
 
-func (h assignEvalHandler) Handle(ctx context.Context, p AssignEvalParams) error {
+func (h attachEvalHandler) Handle(ctx context.Context, p AttachEvalParams) error {
 	eval, err := h.getEval(ctx, p.EvalUUID)
 	if err != nil {
 		return fmt.Errorf("failed to get eval: %w", err)
