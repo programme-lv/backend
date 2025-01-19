@@ -39,7 +39,7 @@ func TestEvalServiceCmpListenNoCompile(t *testing.T) {
 	// 4. compare to expected events
 
 	// 1. enqueue a submission
-	srvc := execsrvc.NewDefaultExecSrvc()
+	srvc := execsrvc.NewExecSrvc()
 	evalId, err := srvc.Enqueue(execsrvc.CodeWithLang{
 		SrcCode: "a=int(input());b=int(input());print(a+b)",
 		LangId:  "python3.11",
@@ -86,7 +86,7 @@ hello:
 
 func TestEvalServiceCmpListenWithCompile(t *testing.T) {
 	// 1. enqueue a submission
-	srvc := execsrvc.NewDefaultExecSrvc()
+	srvc := execsrvc.NewExecSrvc()
 	evalId, err := srvc.Enqueue(execsrvc.CodeWithLang{
 		SrcCode: "#include <iostream>\nint main() {int a,b;std::cin>>a>>b;std::cout<<a+b<<std::endl;}",
 		LangId:  "cpp17",
@@ -139,7 +139,7 @@ hello:
 
 // test the asynchronocity of the Get() method and persistence after closing the srvc
 func TestEvalServiceCmpGet(t *testing.T) {
-	srvc := execsrvc.NewDefaultExecSrvc()
+	srvc := execsrvc.NewExecSrvc()
 	evalId, err := srvc.Enqueue(execsrvc.CodeWithLang{
 		SrcCode: "a=int(input());b=int(input());print(a+b)",
 		LangId:  "python3.10",
@@ -167,7 +167,7 @@ func TestEvalServiceCmpGet(t *testing.T) {
 	require.Equal(t, false, eval.TestRes[0].Ignored)
 	require.Equal(t, int64(0), eval.TestRes[0].Checker.ExitCode)
 	require.Equal(t, int64(0), eval.TestRes[0].Subm.ExitCode)
-	srvc2 := execsrvc.NewDefaultExecSrvc()
+	srvc2 := execsrvc.NewExecSrvc()
 	eval2, err := srvc2.Get(ctx, evalId)
 	require.NoError(t, err)
 	require.Equal(t, eval, eval2)
@@ -204,7 +204,7 @@ func BenchmarkEvalServiceMemoryConsumption(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		srvc := execsrvc.NewDefaultExecSrvc()
+		srvc := execsrvc.NewExecSrvc()
 		evalId, err := srvc.Enqueue(execsrvc.CodeWithLang{
 			SrcCode: "#include <iostream>\nint main() {int a,b;std::cin>>a>>b;std::cout<<a+b<<std::endl;}",
 			LangId:  "cpp17",

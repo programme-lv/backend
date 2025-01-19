@@ -149,7 +149,7 @@ def execute_pg_dump(host, port, user, db_name, password, sslmode, dump_file='./m
 
 def main():
     # Step 1: Read environment variables from .env file
-    env_vars = read_env_file('../.env')
+    env_vars = read_env_file('../.env.prod')
     
     required_vars = [
         'POSTGRES_HOST',

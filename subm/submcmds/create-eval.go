@@ -1,0 +1,104 @@
+package submcmds
+
+import (
+	"context"
+	"fmt"
+	"time"
+
+	"github.com/google/uuid"
+	"github.com/programme-lv/backend/execsrvc"
+	"github.com/programme-lv/backend/subm"
+	"github.com/programme-lv/backend/subm/decorator"
+	"github.com/programme-lv/backend/tasksrvc"
+)
+
+type CreateEvalCmd decorator.CmdHandler[CreateEvalParams]
+
+func NewCreateEvalCmd(
+	getSubm func(ctx context.Context, uuid uuid.UUID) (subm.Subm, error),
+	getTask func(ctx context.Context, shortId string) (tasksrvc.Task, error),
+	storeEval func(ctx context.Context, eval subm.Eval) error,
+) CreateEvalCmd {
+	return createEvalHandler{
+		getSubm:   getSubm,
+		getTask:   getTask,
+		storeEval: storeEval,
+	}
+}
+
+type createEvalHandler struct {
+	getSubm   func(ctx context.Context, uuid uuid.UUID) (subm.Subm, error)
+	getTask   func(ctx context.Context, shortId string) (tasksrvc.Task, error)
+	storeEval func(ctx context.Context, eval subm.Eval) error
+}
+
+type CreateEvalParams struct {
+	EvalUUID uuid.UUID
+	SubmUUID uuid.UUID
+}
+
+func (h createEvalHandler) Handle(ctx context.Context, p CreateEvalParams) error {
+	s, err := h.getSubm(ctx, p.SubmUUID)
+	if err != nil {
+		return fmt.Errorf("failed to get subm: %w", err)
+	}
+
+	t, err := h.getTask(ctx, s.TaskShortID)
+	if err != nil {
+		return fmt.Errorf("failed to get task: %w", err)
+	}
+
+	subtasks := []subm.Subtask{}
+	for _, subtask := range t.Subtasks {
+		subtasks = append(subtasks, subm.Subtask{
+			Points:      subtask.Score,
+			Description: subtask.Descriptions["lv"],
+			StTests:     subtask.TestIDs,
+		})
+	}
+
+	testgroups := []subm.TestGroup{}
+	for i, tg := range t.TestGroups {
+		testgroups = append(testgroups, subm.TestGroup{
+			Points:   tg.Points,
+			Subtasks: t.FindTestGroupSubtasks(i + 1),
+			TgTests:  tg.TestIDs,
+		})
+	}
+
+	tests := []subm.Test{}
+	for range t.Tests {
+		tests = append(tests, subm.Test{})
+	}
+
+	scoreUnit := subm.ScoreUnitTest
+	if len(t.Subtasks) > 0 {
+		scoreUnit = subm.ScoreUnitSubtask
+	}
+	if len(t.TestGroups) > 0 {
+		scoreUnit = subm.ScoreUnitTestGroup
+	}
+
+	eval := subm.Eval{
+		UUID:       p.EvalUUID,
+		Stage:      execsrvc.StageWaiting,
+		ScoreUnit:  scoreUnit,
+		Error:      nil,
+		Subtasks:   subtasks,
+		Groups:     testgroups,
+		Tests:      tests,
+		Checker:    t.CheckerPtr(),
+		Interactor: t.InteractorPtr(),
+		CpuLimMs:   t.CpuMillis(),
+		MemLimKiB:  t.MemoryKiB(),
+		CreatedAt:  time.Now(),
+		SubmUUID:   p.SubmUUID,
+	}
+
+	err = h.storeEval(ctx, eval)
+	if err != nil {
+		return fmt.Errorf("failed to store evaluation: %w", err)
+	}
+
+	return nil
+}

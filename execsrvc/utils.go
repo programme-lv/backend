@@ -14,7 +14,7 @@ import (
 )
 
 func getPrLangById(id string) (PrLang, error) {
-	lang, err := planglist.GetProgrammingLanguageById(id)
+	lang, err := planglist.GetProgrLangById(id)
 	if err != nil {
 		return PrLang{}, err
 	}

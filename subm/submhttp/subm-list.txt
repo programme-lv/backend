@@ -5,7 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/programme-lv/backend/submsrvc"
+	"github.com/programme-lv/backend/subm"
 )
 
 func (httpserver *HttpServer) listSubmissions(w http.ResponseWriter, r *http.Request) {
@@ -17,7 +17,7 @@ func (httpserver *HttpServer) listSubmissions(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	mapSubmList := func(subms []submsrvc.Submission) listSubmissionsResponse {
+	mapSubmList := func(subms []subm.SubmView) listSubmissionsResponse {
 		response := make(listSubmissionsResponse, len(subms))
 		for i, subm := range subms {
 			response[i] = mapSubm(subm)

@@ -1,4 +1,4 @@
-package submsrvc
+package submerrors
 
 import (
 	"fmt"

@@ -1,4 +1,4 @@
-package submsrvc
+package subm
 
 import (
 	"context"
@@ -7,12 +7,7 @@ import (
 	"github.com/google/uuid"
 )
 
-type EvalUpdate struct {
-	SubmUuid uuid.UUID
-	Eval     Evaluation
-}
-
-func (s *SubmissionSrvc) broadcastSubmEvalUpdate(update *EvalUpdate) {
+func (s *SubmSrvc) broadcastSubmEvalUpdate(update *EvalUpdate) {
 	s.listenerLock.Lock()
 	defer s.listenerLock.Unlock()
 
@@ -82,7 +77,7 @@ func (s *SubmissionSrvc) broadcastSubmEvalUpdate(update *EvalUpdate) {
 	}
 }
 
-func (s *SubmissionSrvc) broadcastNewSubmCreated(subm Submission) {
+func (s *SubmSrvc) broadcastNewSubmCreated(subm SubmView) {
 	s.listenerLock.Lock()
 	defer s.listenerLock.Unlock()
 
@@ -95,7 +90,7 @@ func (s *SubmissionSrvc) broadcastNewSubmCreated(subm Submission) {
 	}
 }
 
-func (s *SubmissionSrvc) ListenToSubmListEvalUpdates(ctx context.Context) (<-chan *EvalUpdate, error) {
+func (s *SubmSrvc) ListenToSubmListEvalUpdates(ctx context.Context) (<-chan *EvalUpdate, error) {
 	s.listenerLock.Lock()
 	defer s.listenerLock.Unlock()
 
@@ -104,7 +99,7 @@ func (s *SubmissionSrvc) ListenToSubmListEvalUpdates(ctx context.Context) (<-cha
 	return ch, nil
 }
 
-func (s *SubmissionSrvc) ListenToLatestSubmEvalUpdate(ctx context.Context, submUuid uuid.UUID) (<-chan *EvalUpdate, error) {
+func (s *SubmSrvc) ListenToLatestSubmEvalUpdate(ctx context.Context, submUuid uuid.UUID) (<-chan *EvalUpdate, error) {
 	s.listenerLock.Lock()
 	defer s.listenerLock.Unlock()
 
@@ -129,8 +124,8 @@ func (s *SubmissionSrvc) ListenToLatestSubmEvalUpdate(ctx context.Context, submU
 	return ch, nil
 }
 
-func (s *SubmissionSrvc) ListenToNewSubmCreated(ctx context.Context) (<-chan Submission, error) {
-	ch := make(chan Submission, 1)
+func (s *SubmSrvc) ListenToNewSubmCreated(ctx context.Context) (<-chan SubmView, error) {
+	ch := make(chan SubmView, 1)
 	s.submCreatedSubs = append(s.submCreatedSubs, ch)
 	return ch, nil
 }
