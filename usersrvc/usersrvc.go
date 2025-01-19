@@ -10,22 +10,22 @@ import (
 	"github.com/programme-lv/backend/conf"
 )
 
-type UserService struct {
+type UserSrvc struct {
 	postgres *sqlx.DB
 }
 
-func NewUserService() *UserService {
+func NewUserService() *UserSrvc {
 	postgresConnStr := conf.GetPgConnStrFromEnv()
 	db, err := sqlx.Connect("postgres", postgresConnStr)
 	if err != nil {
 		panic(fmt.Sprintf("failed to connect to postgres: %v", err))
 	}
-	return &UserService{
+	return &UserSrvc{
 		postgres: db,
 	}
 }
 
-func (s *UserService) GetUserByUsername(ctx context.Context, username string) (res *User, err error) {
+func (s *UserSrvc) GetUserByUsername(ctx context.Context, username string) (res *User, err error) {
 	allUsers, err := selectAllUsers(s.postgres)
 	if err != nil {
 		errMsg := fmt.Errorf("error listing users: %w", err)
@@ -61,7 +61,7 @@ func (s *UserService) GetUserByUsername(ctx context.Context, username string) (r
 	return &resSlice[0], nil
 }
 
-func (s *UserService) GetUserByUUID(ctx context.Context, uuid uuid.UUID) (res *User, err error) {
+func (s *UserSrvc) GetUserByUUID(ctx context.Context, uuid uuid.UUID) (res *User, err error) {
 	// Start Generation Here
 	allUsers, err := selectAllUsers(s.postgres)
 	if err != nil {
@@ -98,7 +98,7 @@ func (s *UserService) GetUserByUUID(ctx context.Context, uuid uuid.UUID) (res *U
 	return &resSlice[0], nil
 }
 
-func (s *UserService) GetUsernames(ctx context.Context,
+func (s *UserSrvc) GetUsernames(ctx context.Context,
 	uuids []uuid.UUID) ([]string, error) {
 
 	allUsers, err := selectAllUsers(s.postgres)

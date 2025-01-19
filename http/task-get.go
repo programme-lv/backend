@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/programme-lv/backend/httpjson"
 )
 
 func (httpserver *HttpServer) getTask(w http.ResponseWriter, r *http.Request) {
@@ -13,11 +14,11 @@ func (httpserver *HttpServer) getTask(w http.ResponseWriter, r *http.Request) {
 
 	task, err := httpserver.taskSrvc.GetTask(context.TODO(), taskId)
 	if err != nil {
-		handleJsonSrvcError(slog.Default(), w, err)
+		httpjson.HandleError(slog.Default(), w, err)
 		return
 	}
 
 	response := mapTaskResponse(&task)
 
-	writeJsonSuccessResponse(w, response)
+	httpjson.WriteSuccessJson(w, response)
 }

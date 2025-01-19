@@ -387,7 +387,7 @@ func resizeImage(imgData []byte, maxWidth uint) ([]byte, int, int, error) {
 	return buf.Bytes(), newWidth, newHeight, nil
 }
 
-func processMdStatement(taskSrvc *tasksrvc.TaskService, fsTask *fstask.Task, mdStatement *fstask.MarkdownStatement) (*tasksrvc.MarkdownStatement, error) {
+func processMdStatement(taskSrvc *tasksrvc.TaskSrvc, fsTask *fstask.Task, mdStatement *fstask.MarkdownStatement) (*tasksrvc.MarkdownStatement, error) {
 	sttmntImgUuidToUrl := make(map[string]string)
 	// Replace images in all relevant markdown fields
 	modifiedStory, err := replaceImages(mdStatement.Story, sttmntImgUuidToUrl)

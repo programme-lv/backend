@@ -21,7 +21,7 @@ type CreateUserParams struct {
 	Password  string
 }
 
-func (s *UserService) CreateUser(ctx context.Context,
+func (s *UserSrvc) CreateUser(ctx context.Context,
 	p CreateUserParams) (res *User, err error) {
 
 	var (

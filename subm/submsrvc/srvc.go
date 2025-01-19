@@ -27,11 +27,12 @@ type SubmSrvc struct {
 
 	GetSubmQuery   submqueries.GetSubmQuery
 	ListSubmsQuery submqueries.ListSubmsQuery
+	GetEvalQuery   submqueries.GetEvalQuery
 }
 
 func NewSubmSrvc(
-	userSrvc *usersrvc.UserService,
-	taskSrvc *tasksrvc.TaskService,
+	userSrvc *usersrvc.UserSrvc,
+	taskSrvc *tasksrvc.TaskSrvc,
 	execSrvc *execsrvc.ExecSrvc,
 ) (*SubmSrvc, error) {
 	pgPool, err := pgxpool.New(context.Background(), conf.GetPgConnStrFromEnv())
@@ -99,6 +100,8 @@ func NewSubmSrvc(
 
 	listSubmsQuery := submqueries.NewListSubmsQuery(submRepo.ListSubms)
 
+	getEvalQuery := submqueries.NewGetEvalQuery(evalRepo.GetEval)
+
 	return &SubmSrvc{
 		CreateSubmCmd:  createSubmCmd,
 		CreateEvalCmd:  createEvalCmd,
@@ -107,6 +110,7 @@ func NewSubmSrvc(
 		ReEvalSubmCmd:  reevalSubmCmd,
 		GetSubmQuery:   getSubmQuery,
 		ListSubmsQuery: listSubmsQuery,
+		GetEvalQuery:   getEvalQuery,
 	}, nil
 }
 
@@ -135,7 +139,7 @@ func enqueueEvalFunc(cmd submcmds.EnqueueEvalCmd) func(ctx context.Context, eval
 	}
 }
 
-func getUserUuidFunc(userSrvc *usersrvc.UserService) func(ctx context.Context, username string) (uuid.UUID, error) {
+func getUserUuidFunc(userSrvc *usersrvc.UserSrvc) func(ctx context.Context, username string) (uuid.UUID, error) {
 	return func(ctx context.Context, username string) (uuid.UUID, error) {
 		user, err := userSrvc.GetUserByUsername(ctx, username)
 		if err != nil {
@@ -145,7 +149,7 @@ func getUserUuidFunc(userSrvc *usersrvc.UserService) func(ctx context.Context, u
 	}
 }
 
-func getTaskExistsFunc(taskSrvc *tasksrvc.TaskService) func(ctx context.Context, shortId string) (bool, error) {
+func getTaskExistsFunc(taskSrvc *tasksrvc.TaskSrvc) func(ctx context.Context, shortId string) (bool, error) {
 	return func(ctx context.Context, shortId string) (bool, error) {
 		task, err := taskSrvc.GetTask(ctx, shortId)
 		if err != nil {

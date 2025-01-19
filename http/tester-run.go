@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/programme-lv/backend/execsrvc"
+	"github.com/programme-lv/backend/httpjson"
 )
 
 func (httpserver *HttpServer) testerRun(w http.ResponseWriter, r *http.Request) {
@@ -58,7 +59,7 @@ func (httpserver *HttpServer) testerRun(w http.ResponseWriter, r *http.Request) 
 		Interactor: req.Interactor,
 	})
 	if err != nil {
-		handleJsonSrvcError(slog.Default(), w, err)
+		httpjson.HandleError(slog.Default(), w, err)
 		return
 	}
 
@@ -70,7 +71,7 @@ func (httpserver *HttpServer) testerRun(w http.ResponseWriter, r *http.Request) 
 		EvalUUID: uuid.String(),
 	}
 
-	writeJsonSuccessResponse(w, res)
+	httpjson.WriteSuccessJson(w, res)
 }
 
 func (httpserver *HttpServer) testerListen(w http.ResponseWriter, r *http.Request) {
