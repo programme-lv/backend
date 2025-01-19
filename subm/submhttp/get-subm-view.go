@@ -11,7 +11,7 @@ import (
 )
 
 func (h *SubmHttpServer) GetSubmView(w http.ResponseWriter, r *http.Request) {
-	submUuidStr := chi.URLParam(r, "submUuid")
+	submUuidStr := chi.URLParam(r, "subm-uuid")
 	submUuid, err := uuid.Parse(submUuidStr)
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
