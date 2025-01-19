@@ -1,4 +1,4 @@
-package submsrvc
+package submpgrepo
 
 import (
 	"sort"
@@ -10,6 +10,7 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/peterldowns/pgtestdb"
 	"github.com/peterldowns/pgtestdb/migrators/golangmigrator"
+	"github.com/programme-lv/backend/subm"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -95,15 +96,15 @@ func TestPgDbSchemaVersion(t *testing.T) {
 }
 
 // getSampleSubmEntityWithoutEval creates a SubmissionEntity with sample data.
-func getSampleSubmEntityWithoutEval() SubmissionEntity {
-	return SubmissionEntity{
-		UUID:        uuid.New(),
-		Content:     "Sample submission content",
-		AuthorUUID:  existingAuthorUuid, // author must pre-exist in the db
-		TaskShortID: "task_123",
-		LangShortID: "py_x.y.z",
-		CurrEvalID:  uuid.Nil,
-		CreatedAt:   time.Now(),
+func getSampleSubmEntityWithoutEval() subm.Subm {
+	return subm.Subm{
+		UUID:         uuid.New(),
+		Content:      "Sample submission content",
+		AuthorUUID:   existingAuthorUuid, // author must pre-exist in the db
+		TaskShortID:  "task_123",
+		LangShortID:  "py_x.y.z",
+		CurrEvalUUID: uuid.Nil,
+		CreatedAt:    time.Now(),
 	}
 }
 
@@ -114,11 +115,11 @@ func TestSubmRepo_StoreWithoutEval_Success(t *testing.T) {
 
 	sampleEntity := getSampleSubmEntityWithoutEval()
 
-	err := repo.Store(context.Background(), sampleEntity)
+	err := repo.StoreSubm(context.Background(), sampleEntity)
 	assert.Nil(t, err, "expected no error when storing valid SubmissionEntity")
 
 	// Retrieve the stored entity
-	storedEntity, err := repo.Get(context.Background(), sampleEntity.UUID)
+	storedEntity, err := repo.GetSubm(context.Background(), sampleEntity.UUID)
 	require.Nil(t, err, "expected no error when retrieving stored SubmissionEntity")
 	require.NotNil(t, storedEntity)
 
@@ -136,13 +137,13 @@ func TestSubmRepo_StoreWithEval_Success(t *testing.T) {
 	repo := NewPgSubmRepo(NewSampleDB(t))
 
 	sampleEntity := getSampleSubmEntityWithoutEval()
-	sampleEntity.CurrEvalID = existingEvalUuid
+	sampleEntity.CurrEvalUUID = existingEvalUuid
 
-	err := repo.Store(context.Background(), sampleEntity)
+	err := repo.StoreSubm(context.Background(), sampleEntity)
 	assert.Nil(t, err, "expected no error when storing valid SubmissionEntity")
 
 	// Retrieve the stored entity
-	storedEntity, err := repo.Get(context.Background(), sampleEntity.UUID)
+	storedEntity, err := repo.GetSubm(context.Background(), sampleEntity.UUID)
 	require.Nil(t, err, "expected no error when retrieving stored SubmissionEntity")
 	require.NotNil(t, storedEntity)
 
@@ -162,11 +163,11 @@ func TestSubmRepo_Get_ValidUUID(t *testing.T) {
 	sampleEntity := getSampleSubmEntityWithoutEval()
 
 	// Store the entity first
-	err := repo.Store(context.Background(), sampleEntity)
+	err := repo.StoreSubm(context.Background(), sampleEntity)
 	assert.Nil(t, err, "expected no error when storing valid SubmissionEntity")
 
 	// Retrieve the entity
-	retrievedEntity, err := repo.Get(context.Background(), sampleEntity.UUID)
+	retrievedEntity, err := repo.GetSubm(context.Background(), sampleEntity.UUID)
 	assert.Nil(t, err, "expected no error when retrieving SubmissionEntity")
 	assert.NotNil(t, retrievedEntity, "expected retrieved SubmissionEntity to be not nil")
 	assert.Equal(t, sampleEntity.UUID, retrievedEntity.UUID, "UUIDs should match")
@@ -181,7 +182,7 @@ func TestSubmRepo_Get_InvalidUUID(t *testing.T) {
 
 	nonExistentUUID := uuid.New()
 
-	retrievedEntity, err := repo.Get(context.Background(), nonExistentUUID)
+	retrievedEntity, err := repo.GetSubm(context.Background(), nonExistentUUID)
 	assert.NotNil(t, err, "expected error when retrieving SubmissionEntity with non-existent UUID")
 	assert.Empty(t, retrievedEntity, "expected retrieved SubmissionEntity to be empty for non-existent UUID")
 }
@@ -194,7 +195,7 @@ func TestSubmRepo_List_MultipleEntries(t *testing.T) {
 
 	// Create and store multiple entities
 	numEntries := 5
-	entities := make([]SubmissionEntity, numEntries)
+	entities := make([]subm.Subm, numEntries)
 	for i := 0; i < numEntries; i++ {
 		entities[i] = getSampleSubmEntityWithoutEval()
 	}
@@ -203,12 +204,12 @@ func TestSubmRepo_List_MultipleEntries(t *testing.T) {
 	})
 
 	for i := 0; i < numEntries; i++ {
-		err := repo.Store(context.Background(), entities[i])
+		err := repo.StoreSubm(context.Background(), entities[i])
 		require.Nil(t, err, "expected no error when storing SubmissionEntity")
 	}
 
 	// List all entities
-	listedEntities, err := repo.List(context.Background(), 3, 1)
+	listedEntities, err := repo.ListSubms(context.Background(), 3, 1)
 	require.Nil(t, err, "expected no error when listing SubmissionEntities")
 	require.Len(t, listedEntities, 3, "expected number of listed entities to match stored entries")
 
@@ -232,7 +233,7 @@ func TestSubmRepo_List_NoEntries(t *testing.T) {
 	repo := NewPgSubmRepo(NewSampleDB(t))
 
 	// Ensure repository is empty by not storing any entities
-	listedEntities, err := repo.List(context.Background(), 100, 0)
+	listedEntities, err := repo.ListSubms(context.Background(), 100, 0)
 	assert.Nil(t, err, "expected no error when listing with no SubmissionEntities")
 	assert.Empty(t, listedEntities, "expected no SubmissionEntities to be listed")
 }
@@ -243,7 +244,7 @@ func TestSubmRepo_Store_MissingFields(t *testing.T) {
 	repo := NewPgSubmRepo(NewSampleDB(t))
 
 	// Example: Missing Content and AuthorUUID
-	invalidEntities := []SubmissionEntity{
+	invalidEntities := []subm.Subm{
 		{
 			UUID:        uuid.New(),
 			Content:     "",
@@ -264,7 +265,7 @@ func TestSubmRepo_Store_MissingFields(t *testing.T) {
 	}
 
 	for _, entity := range invalidEntities {
-		err := repo.Store(context.Background(), entity)
+		err := repo.StoreSubm(context.Background(), entity)
 		assert.NotNil(t, err, "expected error when storing SubmissionEntity with missing fields")
 	}
 }

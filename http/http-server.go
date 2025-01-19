@@ -10,13 +10,13 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
 	"github.com/programme-lv/backend/execsrvc"
-	"github.com/programme-lv/backend/submsrvc"
+	"github.com/programme-lv/backend/subm/submsrvc"
 	"github.com/programme-lv/backend/tasksrvc"
 	"github.com/programme-lv/backend/usersrvc"
 )
 
 type HttpServer struct {
-	submSrvc *submsrvc.SubmissionSrvc
+	submSrvc *submsrvc.SubmSrvc
 	userSrvc *usersrvc.UserService
 	taskSrvc *tasksrvc.TaskService
 	evalSrvc *execsrvc.ExecSrvc
@@ -96,7 +96,7 @@ func (sl *statsLogger) middleware(next http.Handler) http.Handler {
 }
 
 func NewHttpServer(
-	submSrvc *submsrvc.SubmissionSrvc,
+	submSrvc *submsrvc.SubmSrvc,
 	userSrvc *usersrvc.UserService,
 	taskSrvc *tasksrvc.TaskService,
 	evalSrvc *execsrvc.ExecSrvc,
@@ -138,17 +138,17 @@ func (httpserver *HttpServer) Start(address string) error {
 
 func (httpserver *HttpServer) routes() {
 	r := httpserver.router
-	r.Post("/submissions", httpserver.createSubmission)
-	r.Post("/reevaluate", httpserver.reevaluateSubmissions)
-	r.Get("/submissions", httpserver.listSubmissions)
-	r.Get("/submissions/{submUuid}", httpserver.getSubmission)
+	// r.Post("/submissions", httpserver.createSubmission)
+	// r.Post("/reevaluate", httpserver.reevaluateSubmissions)
+	// r.Get("/submissions", httpserver.listSubmissions)
+	// r.Get("/submissions/{submUuid}", httpserver.getSubmission)
 	r.Post("/auth/login", httpserver.authLogin)
 	r.Post("/users", httpserver.authRegister)
 	r.Get("/tasks", httpserver.listTasks)
 	r.Get("/tasks/{taskId}", httpserver.getTask)
 	r.Get("/programming-languages", httpserver.listProgrammingLangs)
 	r.Get("/langs", httpserver.listProgrammingLangs)
-	r.Get("/subm-updates", httpserver.listenToSubmListUpdates)
+	// r.Get("/subm-updates", httpserver.listenToSubmListUpdates)
 	r.Post("/tester/run", httpserver.testerRun)
 	r.Get("/tester/run/{evalUuid}", httpserver.testerListen)
 	r.Get("/exec/{execUuid}", httpserver.execGet)

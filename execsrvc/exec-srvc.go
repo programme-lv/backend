@@ -53,10 +53,10 @@ type ExecSrvc struct {
 	executions map[uuid.UUID]*Execution
 }
 
-// NewDefaultExecSrvc creates an execution service
+// NewExecSrvc creates an execution service
 // with default configuration using environment
 // variables for AWS services setup
-func NewDefaultExecSrvc() *ExecSrvc {
+func NewExecSrvc() *ExecSrvc {
 	logger := slog.Default().With(
 		"module",
 		"exec",
@@ -106,9 +106,9 @@ func NewDefaultExecSrvc() *ExecSrvc {
 	return esrvc
 }
 
-// NewExecSrvc creates a customized execution
+// NewCustomExecSrvc creates a customized execution
 // service with provided dependencies
-func NewExecSrvc(
+func NewCustomExecSrvc(
 	logger *slog.Logger,
 	sqsClient *sqs.Client,
 	submQ string,

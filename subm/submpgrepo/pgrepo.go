@@ -1,4 +1,4 @@
-package submsrvc
+package submpgrepo
 
 import (
 	"context"
@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/programme-lv/backend/subm"
 )
 
 type pgEvalRepo struct {
@@ -18,7 +19,7 @@ func NewPgEvalRepo(pool *pgxpool.Pool) *pgEvalRepo {
 	return &pgEvalRepo{pool: pool}
 }
 
-func (r *pgEvalRepo) Store(ctx context.Context, eval Evaluation) error {
+func (r *pgEvalRepo) StoreEval(ctx context.Context, eval subm.Eval) error {
 	// Start a transaction
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
@@ -124,7 +125,7 @@ func (r *pgEvalRepo) Store(ctx context.Context, eval Evaluation) error {
 	return nil
 }
 
-func (r *pgEvalRepo) Get(ctx context.Context, evalUUID uuid.UUID) (Evaluation, error) {
+func (r *pgEvalRepo) GetEval(ctx context.Context, evalUUID uuid.UUID) (subm.Eval, error) {
 	// Fetch Evaluation
 	evalQuery := `
 		SELECT uuid, stage, score_unit, checker, interactor, cpu_lim_ms, mem_lim_kib,
@@ -132,7 +133,7 @@ func (r *pgEvalRepo) Get(ctx context.Context, evalUUID uuid.UUID) (Evaluation, e
 		FROM evaluations
 		WHERE uuid = $1
 	`
-	var eval Evaluation
+	var eval subm.Eval
 	var errorType *string
 	var errorMessage *string
 	err := r.pool.QueryRow(ctx, evalQuery, evalUUID).Scan(
@@ -149,15 +150,15 @@ func (r *pgEvalRepo) Get(ctx context.Context, evalUUID uuid.UUID) (Evaluation, e
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return Evaluation{}, fmt.Errorf("evaluation not found: %w", err)
+			return subm.Eval{}, fmt.Errorf("evaluation not found: %w", err)
 		}
-		return Evaluation{}, fmt.Errorf("failed to query evaluation: %w", err)
+		return subm.Eval{}, fmt.Errorf("failed to query evaluation: %w", err)
 	}
 
 	// Handle EvaluationError
 	if errorType != nil {
-		et := EvaluationErrorType(*errorType)
-		eval.Error = &EvaluationError{
+		et := subm.EvalErrorType(*errorType)
+		eval.Error = &subm.EvalError{
 			Type:    et,
 			Message: errorMessage,
 		}
@@ -171,20 +172,20 @@ func (r *pgEvalRepo) Get(ctx context.Context, evalUUID uuid.UUID) (Evaluation, e
 	`
 	subtaskRows, err := r.pool.Query(ctx, subtasksQuery, evalUUID)
 	if err != nil {
-		return Evaluation{}, fmt.Errorf("failed to query subtasks: %w", err)
+		return subm.Eval{}, fmt.Errorf("failed to query subtasks: %w", err)
 	}
 	defer subtaskRows.Close()
 
 	for subtaskRows.Next() {
-		var st Subtask
+		var st subm.Subtask
 		err := subtaskRows.Scan(&st.Points, &st.Description, &st.StTests)
 		if err != nil {
-			return Evaluation{}, fmt.Errorf("failed to scan subtask: %w", err)
+			return subm.Eval{}, fmt.Errorf("failed to scan subtask: %w", err)
 		}
 		eval.Subtasks = append(eval.Subtasks, st)
 	}
 	if err := subtaskRows.Err(); err != nil {
-		return Evaluation{}, fmt.Errorf("error iterating subtasks: %w", err)
+		return subm.Eval{}, fmt.Errorf("error iterating subtasks: %w", err)
 	}
 
 	// Fetch TestGroups
@@ -195,20 +196,20 @@ func (r *pgEvalRepo) Get(ctx context.Context, evalUUID uuid.UUID) (Evaluation, e
 	`
 	groupRows, err := r.pool.Query(ctx, testGroupsQuery, evalUUID)
 	if err != nil {
-		return Evaluation{}, fmt.Errorf("failed to query test groups: %w", err)
+		return subm.Eval{}, fmt.Errorf("failed to query test groups: %w", err)
 	}
 	defer groupRows.Close()
 
 	for groupRows.Next() {
-		var tg TestGroup
+		var tg subm.TestGroup
 		err := groupRows.Scan(&tg.Points, &tg.Subtasks, &tg.TgTests)
 		if err != nil {
-			return Evaluation{}, fmt.Errorf("failed to scan test group: %w", err)
+			return subm.Eval{}, fmt.Errorf("failed to scan test group: %w", err)
 		}
 		eval.Groups = append(eval.Groups, tg)
 	}
 	if err := groupRows.Err(); err != nil {
-		return Evaluation{}, fmt.Errorf("error iterating test groups: %w", err)
+		return subm.Eval{}, fmt.Errorf("error iterating test groups: %w", err)
 	}
 
 	// Fetch Tests
@@ -219,12 +220,12 @@ func (r *pgEvalRepo) Get(ctx context.Context, evalUUID uuid.UUID) (Evaluation, e
 	`
 	testRows, err := r.pool.Query(ctx, testsQuery, evalUUID)
 	if err != nil {
-		return Evaluation{}, fmt.Errorf("failed to query tests: %w", err)
+		return subm.Eval{}, fmt.Errorf("failed to query tests: %w", err)
 	}
 	defer testRows.Close()
 
 	for testRows.Next() {
-		var test Test
+		var test subm.Test
 		err := testRows.Scan(
 			&test.Ac,
 			&test.Wa,
@@ -236,13 +237,128 @@ func (r *pgEvalRepo) Get(ctx context.Context, evalUUID uuid.UUID) (Evaluation, e
 			&test.Finished,
 		)
 		if err != nil {
-			return Evaluation{}, fmt.Errorf("failed to scan test: %w", err)
+			return subm.Eval{}, fmt.Errorf("failed to scan test: %w", err)
 		}
 		eval.Tests = append(eval.Tests, test)
 	}
 	if err := testRows.Err(); err != nil {
-		return Evaluation{}, fmt.Errorf("error iterating tests: %w", err)
+		return subm.Eval{}, fmt.Errorf("error iterating tests: %w", err)
 	}
 
 	return eval, nil
+}
+
+type pgSubmRepo struct {
+	pool *pgxpool.Pool
+}
+
+func NewPgSubmRepo(pool *pgxpool.Pool) *pgSubmRepo {
+	return &pgSubmRepo{pool: pool}
+}
+
+// StoreSubm inserts a new SubmissionEntity into the database.
+func (r *pgSubmRepo) StoreSubm(ctx context.Context, subm subm.Subm) error {
+	submissionInsertQuery := `
+		INSERT INTO submissions (
+			uuid, content, author_uuid, task_shortid, lang_shortid, curr_eval_uuid, created_at
+		) VALUES ($1, $2, $3, $4, $5, $6, $7)
+	`
+
+	var currEvalId *uuid.UUID
+	if subm.CurrEvalUUID != uuid.Nil {
+		currEvalId = &subm.CurrEvalUUID
+	}
+	_, err := r.pool.Exec(ctx, submissionInsertQuery,
+		subm.UUID,
+		subm.Content,
+		subm.AuthorUUID,
+		subm.TaskShortID,
+		subm.LangShortID,
+		currEvalId,
+		subm.CreatedAt,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to insert submission: %w", err)
+	}
+
+	return nil
+}
+
+func (r *pgSubmRepo) AssignEval(ctx context.Context, submUuid uuid.UUID, evalUuid uuid.UUID) error {
+	updateQuery := `
+		UPDATE submissions 
+		SET curr_eval_uuid = $1
+		WHERE uuid = $2
+	`
+	_, err := r.pool.Exec(ctx, updateQuery, evalUuid, submUuid)
+	if err != nil {
+		return fmt.Errorf("failed to assign evaluation to submission: %w", err)
+	}
+	return nil
+}
+
+// GetSubm retrieves a SubmissionEntity by UUID
+func (r *pgSubmRepo) GetSubm(ctx context.Context, id uuid.UUID) (subm.Subm, error) {
+	submissionQuery := `
+		SELECT uuid, content, author_uuid, task_shortid, lang_shortid, curr_eval_uuid, created_at
+		FROM submissions
+		WHERE uuid = $1
+	`
+	var s subm.Subm
+	err := r.pool.QueryRow(ctx, submissionQuery, id).Scan(
+		&s.UUID,
+		&s.Content,
+		&s.AuthorUUID,
+		&s.TaskShortID,
+		&s.LangShortID,
+		&s.CurrEvalUUID,
+		&s.CreatedAt,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return subm.Subm{}, fmt.Errorf("submission not found: %w", err)
+		}
+		return subm.Subm{}, fmt.Errorf("failed to query submission: %w", err)
+	}
+
+	return s, nil
+}
+
+// ListSubms retrieves all SubmissionEntities from the database
+func (r *pgSubmRepo) ListSubms(ctx context.Context, limit int, offset int) ([]subm.Subm, error) {
+	submissionsQuery := `
+			SELECT uuid, content, author_uuid, task_shortid, lang_shortid, curr_eval_uuid, created_at
+			FROM submissions
+			ORDER BY created_at DESC
+			LIMIT $1 OFFSET $2
+	`
+	rows, err := r.pool.Query(ctx, submissionsQuery, limit, offset)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query submissions: %w", err)
+	}
+	defer rows.Close()
+
+	var submissions []subm.Subm
+	for rows.Next() {
+		var subm subm.Subm
+		err := rows.Scan(
+			&subm.UUID,
+			&subm.Content,
+			&subm.AuthorUUID,
+			&subm.TaskShortID,
+			&subm.LangShortID,
+			&subm.CurrEvalUUID,
+			&subm.CreatedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan submission: %w", err)
+		}
+		submissions = append(submissions, subm)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating submissions: %w", err)
+	}
+
+	return submissions, nil
 }

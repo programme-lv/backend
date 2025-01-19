@@ -1,9 +1,9 @@
-package http
+package submhttp
 
 import (
 	"time"
 
-	"github.com/programme-lv/backend/submsrvc"
+	"github.com/programme-lv/backend/subm"
 )
 
 type Submission struct {
@@ -46,7 +46,7 @@ type TestGroup struct {
 	TgTests  []int `json:"tg_tests"`
 }
 
-func mapSubm(subm submsrvc.Submission) *Submission {
+func mapSubm(subm subm.SubmView) *Submission {
 	var currEval *SubmEval
 	if subm.CurrEval != nil {
 		mapped := mapSubmEval(*subm.CurrEval)
@@ -68,7 +68,7 @@ func mapSubm(subm submsrvc.Submission) *Submission {
 	}
 }
 
-func mapSubmEval(eval submsrvc.Evaluation) SubmEval {
+func mapSubmEval(eval subm.Eval) SubmEval {
 	errType := ""
 	errMsg := ""
 	if eval.Error != nil {

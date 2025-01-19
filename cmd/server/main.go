@@ -10,7 +10,7 @@ import (
 	"github.com/lmittmann/tint"
 	"github.com/programme-lv/backend/execsrvc"
 	"github.com/programme-lv/backend/http"
-	"github.com/programme-lv/backend/submsrvc"
+	"github.com/programme-lv/backend/subm"
 	"github.com/programme-lv/backend/tasksrvc"
 	"github.com/programme-lv/backend/usersrvc"
 )
@@ -37,13 +37,13 @@ func main() {
 		os.Exit(1)
 	}
 
-	evalSrvc := execsrvc.NewDefaultExecSrvc()
+	evalSrvc := execsrvc.NewExecSrvc()
 
 	taskSrvc, err := tasksrvc.NewTaskSrvc()
 	if err != nil {
 		log.Fatalf("error creating task service: %v", err)
 	}
-	submSrvc, err := submsrvc.NewSubmSrvc(taskSrvc, evalSrvc)
+	submSrvc, err := subm.NewSubmSrvc(taskSrvc, evalSrvc)
 	if err != nil {
 		log.Fatalf("error creating submission service: %v", err)
 	}

@@ -1,0 +1,175 @@
+
+	// view := SubmissionView{
+	// 	UUID:      submUuid,
+	// 	Content:   entity.Content,
+	// 	Author:    Author{UUID: entity.AuthorUUID, Username: p.Username},
+	// 	Task:      TaskRef{ShortID: entity.TaskShortID, FullName: t.FullName},
+	// 	Lang:      PrLang{ShortID: entity.LangShortID, Display: l.FullName, MonacoID: l.MonacoId},
+	// 	CurrEval:  &eval,
+	// 	CreatedAt: entity.CreatedAt,
+	// }
+
+	// h.inMemLock.Lock()
+	// h.inMem[submUuid] = eval
+	// h.inMemLock.Unlock()
+
+
+    		h.inMemLock.Lock()
+		isTheCurrentEval := h.inMem[eval.SubmUUID].UUID == eval.UUID
+		if isTheCurrentEval {
+			h.inMem[eval.SubmUUID] = eval
+		}
+		h.inMemLock.Unlock()
+		if !isTheCurrentEval {
+			break
+		}
+
+        			err := h.evalRepo.StoreEval(ctx, eval)
+			if err != nil {
+				slog.Error("failed to store submission", "error", err)
+			}
+			err = h.submRepo.AssignEval(ctx, eval.SubmUUID, eval.UUID)
+			if err != nil {
+				slog.Error("failed to assign evaluation to submission", "error", err)
+			}
+			h.inMemLock.Lock()
+			delete(h.inMem, eval.SubmUUID)
+			h.inMemLock.Unlock()
+
+
+func (s *SubmSrvc) constructSubmView(ctx context.Context, subm subm.Subm) (*SubmissionView, error) {
+	var eval *subm.EvalEntity
+	s.inMemLock.Lock()
+	if evalVal, ok := s.inMem[subm.UUID]; ok {
+		eval = &evalVal
+	} else if subm.CurrEvalID != uuid.Nil {
+		evalVal, err := s.evalRepo.GetEval(ctx, subm.CurrEvalID)
+		if err != nil {
+			return nil, err
+		}
+		eval = &evalVal
+	}
+	s.inMemLock.Unlock()
+	user, err := s.userSrvc.GetUserByUUID(ctx, subm.AuthorUUID)
+	if err != nil {
+		return nil, err
+	}
+
+	task, err := s.taskSrvc.GetTask(ctx, subm.TaskShortID)
+	if err != nil {
+		return nil, err
+	}
+
+	lang, err := planglist.GetProgrLangById(subm.LangShortID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &SubmissionView{
+		UUID:      subm.UUID,
+		Content:   subm.Content,
+		Author:    Author{UUID: user.UUID, Username: user.Username},
+		Task:      TaskRef{ShortID: task.ShortId, FullName: task.FullName},
+		Lang:      PrLang{ShortID: lang.ID, Display: lang.FullName, MonacoID: lang.MonacoId},
+		CurrEval:  eval,
+		CreatedAt: subm.CreatedAt,
+	}, nil
+}
+
+
+
+type SubmView struct {
+	UUID uuid.UUID
+
+	Content string
+
+	Author Author
+	Task   TaskRef
+	Lang   PrLang
+
+	CurrEval *EvalEntity
+
+	CreatedAt time.Time
+}
+
+
+type Author struct {
+	UUID     uuid.UUID
+	Username string
+}
+
+type PrLang struct {
+	ShortID  string
+	Display  string
+	MonacoID string
+}
+
+type TaskRef struct {
+	ShortID  string
+	FullName string
+}
+
+
+	// // Create map of submissions, preferring in-memory ones
+	// submMap := make(map[uuid.UUID]SubmissionView)
+	// for _, subm := range repoSubms {
+	// 	subm2, err := s.constructSubmView(ctx, subm)
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+	// 	submMap[subm.UUID] = *subm2
+	// }
+
+	// subms := make([]SubmissionView, 0, len(submMap))
+	// for _, subm := range submMap {
+	// 	subms = append(subms, subm)
+	// }
+	// sort.Slice(subms, func(i, j int) bool {
+	// 	return subms[i].CreatedAt.After(subms[j].CreatedAt)
+	// })
+
+	// return subms, nil
+
+type SubmSrvc struct {
+	logger *slog.Logger
+
+	tests     *s3bucket.S3Bucket
+	inMem     map[uuid.UUID]EvalEntity // subm id to corresponding in-progress evaluation
+	inMemLock sync.Mutex
+
+	userSrvc *usersrvc.UserService
+	taskSrvc *tasksrvc.TaskService
+	execSrvc *execsrvc.ExecSrvc
+
+	// real-time updates
+	submUuidEvalUpdSubs []struct {
+		submUuid uuid.UUID
+		ch       chan *EvalUpdate
+	}
+	submListEvalUpdSubs []chan *EvalUpdate
+	submCreatedSubs     []chan SubmissionView
+	listenerLock        sync.Mutex
+}
+
+func NewSubmSrvc(taskSrvc *tasksrvc.TaskService, evalSrvc *execsrvc.ExecSrvc) (*SubmSrvc, error) {
+	testBucket, err := s3bucket.NewS3Bucket("eu-central-1", "proglv-tests")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create test bucket: %w", err)
+	}
+
+	pool, err := pgxpool.New(context.Background(), conf.GetPgConnStrFromEnv())
+	if err != nil {
+		return nil, fmt.Errorf("failed to create pg pool: %w", err)
+	}
+
+	srvc := &SubmSrvc{
+		logger:   slog.Default().With("module", "subm"),
+		tests:    testBucket,
+		userSrvc: usersrvc.NewUserService(),
+		taskSrvc: taskSrvc,
+		execSrvc: evalSrvc,
+		inMem:    make(map[uuid.UUID]EvalEntity),
+	}
+
+	return srvc, nil
+}

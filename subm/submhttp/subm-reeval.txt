@@ -25,7 +25,7 @@ func (httpserver *HttpServer) reevaluateSubmissions(w http.ResponseWriter, r *ht
 			handleJsonSrvcError(slog.Default(), w, err)
 			return
 		}
-		err = httpserver.submSrvc.ReevalSubm(r.Context(), uuid)
+		err = httpserver.submSrvc.ReEvaluateSubm(r.Context(), uuid)
 		if err != nil {
 			handleJsonSrvcError(slog.Default(), w, err)
 			return
