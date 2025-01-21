@@ -10,6 +10,7 @@ import (
 )
 
 func (h *SubmHttpServer) GetSubmList(w http.ResponseWriter, r *http.Request) {
+
 	subms, err := h.submSrvc.ListSubmsQuery.Handle(r.Context(), submqueries.ListSubmsParams{
 		Limit:  30,
 		Offset: 0,
@@ -19,16 +20,10 @@ func (h *SubmHttpServer) GetSubmList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	mapSubmList := func(subms []subm.Subm) []Subm {
-		response := make([]Subm, len(subms))
+	mapSubmList := func(subms []subm.Subm) []SubmListEntry {
+		response := make([]SubmListEntry, len(subms))
 		for i, subm := range subms {
-			ptr, err := h.mapSubm(r.Context(), subm)
-			if err != nil {
-				httpjson.HandleError(slog.Default(), w, err)
-				return nil
-			}
-			response[i] = *ptr
-			response[i].Content = "" // don't send content to list view
+			response[i] = h.mapSubmListEntry(r.Context(), subm)
 		}
 		return response
 	}

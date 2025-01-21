@@ -10,7 +10,7 @@ import (
 	"github.com/lmittmann/tint"
 	"github.com/programme-lv/backend/execsrvc"
 	"github.com/programme-lv/backend/http"
-	"github.com/programme-lv/backend/subm/submhttp"
+	"github.com/programme-lv/backend/http/submhttp"
 	"github.com/programme-lv/backend/subm/submsrvc"
 	"github.com/programme-lv/backend/tasksrvc"
 	"github.com/programme-lv/backend/usersrvc"

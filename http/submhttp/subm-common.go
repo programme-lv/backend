@@ -10,7 +10,7 @@ import (
 	"github.com/programme-lv/backend/subm/submqueries"
 )
 
-type Subm struct {
+type DetailedSubmView struct {
 	SubmUUID  string `json:"subm_uuid"`
 	Content   string `json:"content,omitempty"`
 	Username  string `json:"username"`
@@ -19,6 +19,31 @@ type Subm struct {
 	TaskID    string `json:"task_id"`
 	TaskName  string `json:"task_name"`
 	CreatedAt string `json:"created_at"`
+}
+
+type SubmListEntry struct {
+	SubmUuid   string `json:"subm_uuid"`
+	Username   string `json:"username"`
+	TaskId     string `json:"task_id"`
+	TaskName   string `json:"task_name"`
+	PrLangId   string `json:"pr_lang_id"`
+	PrLangName string `json:"pr_lang_name"`
+
+	ScoreBar struct {
+		Green  int `json:"green"`
+		Red    int `json:"red"`
+		Gray   int `json:"gray"`
+		Yellow int `json:"yellow"`
+		Purple int `json:"purple"`
+	} `json:"score_bar"`
+	ReceivedScore int `json:"received_score"`
+	PossibleScore int `json:"possible_score"`
+
+	Status    string `json:"status"`
+	CreatedAt string `json:"created_at"`
+
+	MaxCpuMs  int `json:"max_cpu_ms"`
+	MaxMemMiB int `json:"max_mem_mib"` // mebibytes
 }
 
 type PrLang struct {
@@ -55,7 +80,7 @@ type TestGroup struct {
 func (h SubmHttpServer) mapSubm(
 	ctx context.Context,
 	s subm.Subm,
-) (*Subm, error) {
+) (*DetailedSubmView, error) {
 	return mapSubm(
 		ctx,
 		s,
@@ -92,6 +117,199 @@ func (h SubmHttpServer) mapSubm(
 	)
 }
 
+func (h *SubmHttpServer) mapSubmListEntry(
+	ctx context.Context,
+	s subm.Subm,
+) SubmListEntry {
+	getUsername := func(ctx context.Context, userUuid uuid.UUID) (string, error) {
+		user, err := h.userSrvc.GetUserByUUID(ctx, userUuid)
+		if err != nil {
+			return "", err
+		}
+		return user.Username, nil
+	}
+
+	getTaskName := func(ctx context.Context, shortID string) (string, error) {
+		task, err := h.taskSrvc.GetTask(ctx, shortID)
+		if err != nil {
+			return "", err
+		}
+		return task.FullName, nil
+	}
+
+	getPrLang := func(ctx context.Context, shortID string) (PrLang, error) {
+		plang, err := planglist.GetProgrLangById(shortID)
+		if err != nil {
+			return PrLang{}, err
+		}
+		return PrLang{
+			ShortID:  plang.ID,
+			Display:  plang.FullName,
+			MonacoID: plang.MonacoId,
+		}, nil
+	}
+
+	getEval := func(ctx context.Context, evalUuid uuid.UUID) (subm.Eval, error) {
+		return h.submSrvc.GetEvalQuery.Handle(ctx, submqueries.GetEvalParams{
+			EvalUUID: evalUuid,
+		})
+	}
+
+	return mapSubmListEntry(
+		ctx,
+		s,
+		getTaskName,
+		getUsername,
+		getPrLang,
+		getEval,
+	)
+}
+
+func mapSubmListEntry(
+	ctx context.Context,
+	s subm.Subm,
+	getTaskName func(ctx context.Context, shortID string) (string, error),
+	getUsername func(ctx context.Context, userUuid uuid.UUID) (string, error),
+	getPrLang func(ctx context.Context, shortID string) (PrLang, error),
+	getEval func(ctx context.Context, evalUuid uuid.UUID) (subm.Eval, error),
+) SubmListEntry {
+
+	username, err := getUsername(ctx, s.AuthorUUID)
+	if err != nil {
+		return SubmListEntry{}
+	}
+
+	taskName, err := getTaskName(ctx, s.TaskShortID)
+	if err != nil {
+		return SubmListEntry{}
+	}
+
+	prLang, err := getPrLang(ctx, s.LangShortID)
+	if err != nil {
+		return SubmListEntry{}
+	}
+
+	eval, err := getEval(ctx, s.CurrEvalUUID)
+	if err != nil {
+		return SubmListEntry{}
+	}
+
+	gotScore := 0
+	maxScore := 0
+	green := 0
+	red := 0
+	gray := 0
+	yellow := 0
+	purple := 0
+	if eval.ScoreUnit == subm.ScoreUnitTestGroup {
+		for _, testGroup := range eval.Groups {
+			maxScore += testGroup.Points
+		}
+		if eval.Error == nil {
+			for _, testGroup := range eval.Groups {
+				allUncreached := true
+				allAccepted := true
+				hasWrong := false
+				for _, testIdx := range testGroup.TgTests {
+					test := eval.Tests[testIdx-1]
+					if test.Reached {
+						allUncreached = false
+					}
+					if !test.Ac {
+						allAccepted = false
+					}
+					if test.Wa || test.Tle || test.Mle || test.Re {
+						hasWrong = true
+					}
+				}
+				if allUncreached {
+					gray += testGroup.Points
+				} else if allAccepted {
+					green += testGroup.Points
+					gotScore += testGroup.Points
+				} else if hasWrong {
+					red += testGroup.Points
+				} else {
+					yellow += testGroup.Points
+				}
+			}
+		} else {
+			purple = 100
+		}
+	} else if eval.ScoreUnit == subm.ScoreUnitTest {
+		maxScore += len(eval.Tests)
+		if eval.Error == nil {
+			for _, test := range eval.Tests {
+				if test.Ac {
+					green += 1
+					gotScore += 1
+				} else if test.Wa || test.Tle || test.Mle || test.Re {
+					red += 1
+				} else if test.Reached {
+					yellow += 1
+				} else {
+					gray += 1
+				}
+			}
+		} else {
+			purple = 100
+		}
+	}
+
+	status := string(eval.Stage)
+	if eval.Error != nil {
+		status = string(eval.Error.Type)
+	}
+
+	// maxCpuMs := 0
+	// maxMemMiB := 0
+
+	// for _, test := range eval.Tests {
+	// 	if test.CpuLimMs > maxCpuMs {
+	// 		maxCpuMs = test.CpuLimMs
+	// 	}
+	// 	if test.MemLimKiB > maxMemMiB {
+	// 		maxMemMiB = test.MemLimKiB
+	// 	}
+	// }
+
+	// green red gray yellow purple should sum up to 100
+	total := green + red + gray + yellow + purple
+	green = green * 100 / total
+	red = red * 100 / total
+	yellow = yellow * 100 / total
+	purple = purple * 100 / total
+	gray = 100 - green - red - yellow - purple
+
+	return SubmListEntry{
+		SubmUuid:   s.UUID.String(),
+		Username:   username,
+		TaskId:     s.TaskShortID,
+		TaskName:   taskName,
+		PrLangId:   prLang.ShortID,
+		PrLangName: prLang.Display,
+		ScoreBar: struct {
+			Green  int `json:"green"`
+			Red    int `json:"red"`
+			Gray   int `json:"gray"`
+			Yellow int `json:"yellow"`
+			Purple int `json:"purple"`
+		}{
+			Green:  green,
+			Red:    red,
+			Gray:   gray,
+			Yellow: yellow,
+			Purple: purple,
+		},
+		ReceivedScore: gotScore,
+		PossibleScore: maxScore,
+		Status:        status,
+		CreatedAt:     s.CreatedAt.Format(time.RFC3339),
+		MaxCpuMs:      0,
+		MaxMemMiB:     0,
+	}
+}
+
 func mapSubm(
 	ctx context.Context,
 	subm subm.Subm,
@@ -99,7 +317,7 @@ func mapSubm(
 	getUsername func(ctx context.Context, userUuid uuid.UUID) (string, error),
 	getPrLang func(ctx context.Context, shortID string) (PrLang, error),
 	getEval func(ctx context.Context, evalUuid uuid.UUID) (subm.Eval, error),
-) (*Subm, error) {
+) (*DetailedSubmView, error) {
 	taskName, err := getTaskName(ctx, subm.TaskShortID)
 	if err != nil {
 		return nil, err
@@ -121,7 +339,7 @@ func mapSubm(
 		mapped := mapSubmEval(eval)
 		currEval = &mapped
 	}
-	return &Subm{
+	return &DetailedSubmView{
 		SubmUUID:  subm.UUID.String(),
 		Content:   subm.Content,
 		Username:  username,
