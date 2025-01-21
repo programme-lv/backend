@@ -10,7 +10,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
 	"github.com/programme-lv/backend/execsrvc"
-	"github.com/programme-lv/backend/subm/submhttp"
+	"github.com/programme-lv/backend/http/submhttp"
 	"github.com/programme-lv/backend/subm/submsrvc"
 	"github.com/programme-lv/backend/tasksrvc"
 	"github.com/programme-lv/backend/usersrvc"
@@ -145,7 +145,7 @@ func (httpserver *HttpServer) routes() {
 	// r.Post("/submissions", httpserver.createSubmission)
 	// r.Post("/reevaluate", httpserver.reevaluateSubmissions)
 	r.Get("/subm", httpserver.submHttpServer.GetSubmList)
-	r.Get("/subm/{subm-uuid}", httpserver.submHttpServer.GetSubmView)
+	r.Get("/subm/{subm-uuid}", httpserver.submHttpServer.GetFullSubm)
 	r.Post("/auth/login", httpserver.authLogin)
 	r.Post("/users", httpserver.authRegister)
 	r.Get("/tasks", httpserver.listTasks)
