@@ -4,10 +4,8 @@ import (
 	"log"
 	"log/slog"
 	"os"
-	"time"
 
 	"github.com/joho/godotenv"
-	"github.com/lmittmann/tint"
 	"github.com/programme-lv/backend/execsrvc"
 	"github.com/programme-lv/backend/http"
 	"github.com/programme-lv/backend/http/submhttp"
@@ -17,13 +15,9 @@ import (
 )
 
 func main() {
-	w := os.Stderr
-
-	// set global logger with custom options
 	slog.SetDefault(slog.New(
-		tint.NewHandler(w, &tint.Options{
-			Level:      slog.LevelDebug,
-			TimeFormat: time.Kitchen,
+		slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+			Level: slog.LevelDebug,
 		}),
 	))
 
@@ -49,7 +43,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("error creating submission service: %v", err)
 	}
-	submHttpServer := submhttp.NewSubmHttpServer(submSrvc, taskSrvc, userSrvc)
+	submHttpServer := submhttp.NewSubmHttpHandler(submSrvc, taskSrvc, userSrvc)
 	httpServer := http.NewHttpServer(submHttpServer, submSrvc, userSrvc, taskSrvc, evalSrvc,
 		[]byte(jwtKey))
 

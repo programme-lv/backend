@@ -5,9 +5,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/programme-lv/backend/planglist"
 	"github.com/programme-lv/backend/subm"
-	"github.com/programme-lv/backend/subm/submqueries"
 )
 
 type DetailedSubmView struct {
@@ -75,94 +73,6 @@ type TestGroup struct {
 	Subtasks []int `json:"subtasks"`
 	// TgTests  []int `json:"tg_tests"`
 	TgTests [][]int `json:"tg_tests"`
-}
-
-func (h SubmHttpServer) mapSubm(
-	ctx context.Context,
-	s subm.Subm,
-) (*DetailedSubmView, error) {
-	return mapSubm(
-		ctx,
-		s,
-		func(ctx context.Context, shortID string) (string, error) {
-			task, err := h.taskSrvc.GetTask(ctx, shortID)
-			if err != nil {
-				return "", err
-			}
-			return task.FullName, nil
-		},
-		func(ctx context.Context, userUuid uuid.UUID) (string, error) {
-			user, err := h.userSrvc.GetUserByUUID(ctx, userUuid)
-			if err != nil {
-				return "", err
-			}
-			return user.Username, nil
-		},
-		func(ctx context.Context, shortID string) (PrLang, error) {
-			plang, err := planglist.GetProgrLangById(shortID)
-			if err != nil {
-				return PrLang{}, err
-			}
-			return PrLang{
-				ShortID:  plang.ID,
-				Display:  plang.FullName,
-				MonacoID: plang.MonacoId,
-			}, nil
-		},
-		func(ctx context.Context, evalUuid uuid.UUID) (subm.Eval, error) {
-			return h.submSrvc.GetEvalQuery.Handle(ctx, submqueries.GetEvalParams{
-				EvalUUID: evalUuid,
-			})
-		},
-	)
-}
-
-func (h *SubmHttpServer) mapSubmListEntry(
-	ctx context.Context,
-	s subm.Subm,
-) SubmListEntry {
-	getUsername := func(ctx context.Context, userUuid uuid.UUID) (string, error) {
-		user, err := h.userSrvc.GetUserByUUID(ctx, userUuid)
-		if err != nil {
-			return "", err
-		}
-		return user.Username, nil
-	}
-
-	getTaskName := func(ctx context.Context, shortID string) (string, error) {
-		task, err := h.taskSrvc.GetTask(ctx, shortID)
-		if err != nil {
-			return "", err
-		}
-		return task.FullName, nil
-	}
-
-	getPrLang := func(ctx context.Context, shortID string) (PrLang, error) {
-		plang, err := planglist.GetProgrLangById(shortID)
-		if err != nil {
-			return PrLang{}, err
-		}
-		return PrLang{
-			ShortID:  plang.ID,
-			Display:  plang.FullName,
-			MonacoID: plang.MonacoId,
-		}, nil
-	}
-
-	getEval := func(ctx context.Context, evalUuid uuid.UUID) (subm.Eval, error) {
-		return h.submSrvc.GetEvalQuery.Handle(ctx, submqueries.GetEvalParams{
-			EvalUUID: evalUuid,
-		})
-	}
-
-	return mapSubmListEntry(
-		ctx,
-		s,
-		getTaskName,
-		getUsername,
-		getPrLang,
-		getEval,
-	)
 }
 
 func mapSubmListEntry(

@@ -3,6 +3,7 @@ package submsrvc
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"sync"
 
 	"github.com/google/uuid"
@@ -66,6 +67,9 @@ func NewSubmSrvc(
 		getUserUuidFunc(userSrvc),
 		submRepo.StoreSubm,
 		getTaskExistsFunc(taskSrvc),
+		func(subm subm.Subm) {
+			slog.Default().Info("NewSubmCreated", "subm", subm)
+		},
 	)
 
 	createEvalCmd := submcmds.NewCreateEvalCmd(
