@@ -10,7 +10,7 @@ import (
 	"github.com/programme-lv/backend/subm/submqueries"
 )
 
-func (h *SubmHttpServer) GetFullSubm(w http.ResponseWriter, r *http.Request) {
+func (h *SubmHttpHandler) GetFullSubm(w http.ResponseWriter, r *http.Request) {
 	submUuidStr := chi.URLParam(r, "subm-uuid")
 	submUuid, err := uuid.Parse(submUuidStr)
 	if err != nil {

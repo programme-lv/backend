@@ -17,7 +17,7 @@ import (
 )
 
 type HttpServer struct {
-	submHttpServer *submhttp.SubmHttpServer
+	submHttpServer *submhttp.SubmHttpHandler
 	submSrvc       *submsrvc.SubmSrvc
 	userSrvc       *usersrvc.UserSrvc
 	taskSrvc       *tasksrvc.TaskSrvc
@@ -98,7 +98,7 @@ func (sl *statsLogger) middleware(next http.Handler) http.Handler {
 }
 
 func NewHttpServer(
-	submHttpServer *submhttp.SubmHttpServer,
+	submHttpServer *submhttp.SubmHttpHandler,
 	submSrvc *submsrvc.SubmSrvc,
 	userSrvc *usersrvc.UserSrvc,
 	taskSrvc *tasksrvc.TaskSrvc,
@@ -142,7 +142,7 @@ func (httpserver *HttpServer) Start(address string) error {
 
 func (httpserver *HttpServer) routes() {
 	r := httpserver.router
-	// r.Post("/submissions", httpserver.createSubmission)
+	r.Post("/subm", httpserver.submHttpServer.PostSubm)
 	// r.Post("/reevaluate", httpserver.reevaluateSubmissions)
 	r.Get("/subm", httpserver.submHttpServer.GetSubmList)
 	r.Get("/subm/{subm-uuid}", httpserver.submHttpServer.GetFullSubm)

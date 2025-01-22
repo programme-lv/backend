@@ -1,0 +1,93 @@
+package submhttp
+
+import (
+	"context"
+
+	"github.com/google/uuid"
+	"github.com/programme-lv/backend/planglist"
+	"github.com/programme-lv/backend/subm"
+	"github.com/programme-lv/backend/subm/submqueries"
+	"github.com/programme-lv/backend/subm/submsrvc"
+	"github.com/programme-lv/backend/tasksrvc"
+	"github.com/programme-lv/backend/usersrvc"
+)
+
+type SubmHttpHandler struct {
+	submSrvc *submsrvc.SubmSrvc
+	taskSrvc *tasksrvc.TaskSrvc
+	userSrvc *usersrvc.UserSrvc
+}
+
+func NewSubmHttpHandler(
+	submSrvc *submsrvc.SubmSrvc,
+	taskSrvc *tasksrvc.TaskSrvc,
+	userSrvc *usersrvc.UserSrvc,
+) *SubmHttpHandler {
+	return &SubmHttpHandler{
+		submSrvc: submSrvc,
+		taskSrvc: taskSrvc,
+		userSrvc: userSrvc,
+	}
+}
+
+func (h SubmHttpHandler) mapSubm(
+	ctx context.Context,
+	s subm.Subm,
+) (*DetailedSubmView, error) {
+	return mapSubm(
+		ctx,
+		s,
+		h.getTaskFullName,
+		h.getUsername,
+		h.getPrLang,
+		h.getEval,
+	)
+}
+
+func (h *SubmHttpHandler) mapSubmListEntry(
+	ctx context.Context,
+	s subm.Subm,
+) SubmListEntry {
+	return mapSubmListEntry(
+		ctx,
+		s,
+		h.getTaskFullName,
+		h.getUsername,
+		h.getPrLang,
+		h.getEval,
+	)
+}
+
+func (h SubmHttpHandler) getTaskFullName(ctx context.Context, shortID string) (string, error) {
+	task, err := h.taskSrvc.GetTask(ctx, shortID)
+	if err != nil {
+		return "", err
+	}
+	return task.FullName, nil
+}
+
+func (h *SubmHttpHandler) getUsername(ctx context.Context, userUuid uuid.UUID) (string, error) {
+	user, err := h.userSrvc.GetUserByUUID(ctx, userUuid)
+	if err != nil {
+		return "", err
+	}
+	return user.Username, nil
+}
+
+func (h *SubmHttpHandler) getPrLang(ctx context.Context, shortID string) (PrLang, error) {
+	plang, err := planglist.GetProgrLangById(shortID)
+	if err != nil {
+		return PrLang{}, err
+	}
+	return PrLang{
+		ShortID:  plang.ID,
+		Display:  plang.FullName,
+		MonacoID: plang.MonacoId,
+	}, nil
+}
+
+func (h *SubmHttpHandler) getEval(ctx context.Context, evalUuid uuid.UUID) (subm.Eval, error) {
+	return h.submSrvc.GetEvalQuery.Handle(ctx, submqueries.GetEvalParams{
+		EvalUUID: evalUuid,
+	})
+}

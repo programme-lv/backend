@@ -18,11 +18,13 @@ func NewCreateSubmCmd(
 	getUserUuid func(ctx context.Context, username string) (uuid.UUID, error),
 	persistSubm func(ctx context.Context, subm subm.Subm) error,
 	doesTaskExist func(ctx context.Context, shortId string) (bool, error),
+	bcastNewSubmCreated func(subm subm.Subm),
 ) CreateSubmCmd {
 	return createSubmHandler{
-		getUserUuid:   getUserUuid,
-		storeSubm:     persistSubm,
-		doesTaskExist: doesTaskExist,
+		getUserUuid:         getUserUuid,
+		storeSubm:           persistSubm,
+		doesTaskExist:       doesTaskExist,
+		bcastNewSubmCreated: bcastNewSubmCreated,
 	}
 }
 
