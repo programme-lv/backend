@@ -18,12 +18,8 @@ type EnqueueEvalCmd decorator.CmdHandler[EnqueueEvalParams]
 func NewEnqueueEvalCmd(
 	getSubm func(ctx context.Context, uuid uuid.UUID) (subm.Subm, error),
 	getEval func(ctx context.Context, evalUuid uuid.UUID) (subm.Eval, error),
-	enqueueExec func(
-		ctx context.Context,
-		subm execsrvc.CodeWithLang,
-		tests []execsrvc.TestFile,
-		params execsrvc.TesterParams,
-	) (uuid.UUID, error),
+
+	enqueueExec func(ctx context.Context, execUuid uuid.UUID, srcCode string, prLangId string, tests []execsrvc.TestFile, cpuMs int, memKiB int, checker *string, interactor *string) error,
 	listenToExec func(ctx context.Context, evalUuid uuid.UUID) (<-chan execsrvc.Event, error),
 	updateEvalInMem func(eval subm.Eval),
 	storeEvalFinal func(ctx context.Context, eval subm.Eval) error,
@@ -42,12 +38,7 @@ type enqueueEvalHandler struct {
 	getSubm func(ctx context.Context, uuid uuid.UUID) (subm.Subm, error)
 	getEval func(ctx context.Context, evalUuid uuid.UUID) (subm.Eval, error)
 
-	enqueueExec func(
-		ctx context.Context,
-		subm execsrvc.CodeWithLang,
-		tests []execsrvc.TestFile,
-		params execsrvc.TesterParams,
-	) (uuid.UUID, error)
+	enqueueExec func(ctx context.Context, execUuid uuid.UUID, srcCode string, prLangId string, tests []execsrvc.TestFile, cpuMs int, memKiB int, checker *string, interactor *string) error
 
 	listenToExec func(ctx context.Context, evalUuid uuid.UUID) (<-chan execsrvc.Event, error)
 
@@ -79,15 +70,8 @@ func (h enqueueEvalHandler) Handle(ctx context.Context, p EnqueueEvalParams) err
 		return fmt.Errorf("failed to get task: %w", err)
 	}
 
-	execUuid, err := h.enqueueExec(ctx, execsrvc.CodeWithLang{
-		SrcCode: subm.Content,
-		LangId:  subm.LangShortID,
-	}, evalReqTests(ctx, &t, h.getTestDownlUrl), execsrvc.TesterParams{
-		CpuMs:      t.CpuMillis(),
-		MemKiB:     t.MemoryKiB(),
-		Checker:    t.CheckerPtr(),
-		Interactor: t.InteractorPtr(),
-	})
+	execUuid := uuid.New()
+	err = h.enqueueExec(ctx, execUuid, subm.Content, subm.LangShortID, evalReqTests(ctx, &t, h.getTestDownlUrl), t.CpuMillis(), t.MemoryKiB(), t.CheckerPtr(), t.InteractorPtr())
 	if err != nil {
 		return fmt.Errorf("failed to enqueue evaluation: %w", err)
 	}

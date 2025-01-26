@@ -1,4 +1,4 @@
-package submqueries
+package submquery
 
 import (
 	"context"

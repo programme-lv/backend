@@ -1,4 +1,4 @@
-package submcmds
+package submcmd
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 	"github.com/programme-lv/backend/subm"
 )
 
-type ReEvalSubmCmd decorator.CmdHandler[ReEvaluateSubmParams]
+type ReEvalSubmCmd decorator.CmdHandler[ReEvalSubmParams]
 
 func NewReEvalSubmCmd(
 	getSubm func(ctx context.Context, submUuid uuid.UUID) (subm.Subm, error),
@@ -17,7 +17,7 @@ func NewReEvalSubmCmd(
 	assignEval func(ctx context.Context, evalUuid uuid.UUID) error,
 	enqueueEval func(ctx context.Context, evalUuid uuid.UUID) error,
 ) ReEvalSubmCmd {
-	return reEvaluateSubmHandler{
+	return reEvalSubmHandler{
 		getSubm:     getSubm,
 		createEval:  createEval,
 		assignEval:  assignEval,
@@ -25,11 +25,11 @@ func NewReEvalSubmCmd(
 	}
 }
 
-type ReEvaluateSubmParams struct {
+type ReEvalSubmParams struct {
 	SubmUUID uuid.UUID
 }
 
-type reEvaluateSubmHandler struct {
+type reEvalSubmHandler struct {
 	// get persisted submission entity by uuid
 	getSubm func(ctx context.Context, submUuid uuid.UUID) (subm.Subm, error)
 
@@ -43,7 +43,7 @@ type reEvaluateSubmHandler struct {
 	enqueueEval func(ctx context.Context, evalUuid uuid.UUID) error
 }
 
-func (h reEvaluateSubmHandler) Handle(ctx context.Context, p ReEvaluateSubmParams) error {
+func (h reEvalSubmHandler) Handle(ctx context.Context, p ReEvalSubmParams) error {
 	subm, err := h.getSubm(ctx, p.SubmUUID)
 	if err != nil {
 		return err

@@ -173,3 +173,22 @@ func NewSubmSrvc(taskSrvc *tasksrvc.TaskService, evalSrvc *execsrvc.ExecSrvc) (*
 
 	return srvc, nil
 }
+
+	lock := sync.Mutex{}
+	evalMem := map[uuid.UUID]subm.Eval{}
+	updateEvalInMem := func(eval subm.Eval) {
+		lock.Lock()
+		defer lock.Unlock()
+		evalMem[eval.UUID] = eval
+	}
+
+	updateEvalFinal := func(ctx context.Context, eval subm.Eval) error {
+		err := evalRepo.StoreEval(ctx, eval)
+		if err != nil {
+			return fmt.Errorf("failed to store eval: %w", err)
+		}
+		lock.Lock()
+		defer lock.Unlock()
+		delete(evalMem, eval.UUID)
+		return nil
+	}

@@ -1,4 +1,4 @@
-package submerrors
+package submerror
 
 import (
 	"fmt"
