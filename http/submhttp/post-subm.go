@@ -37,7 +37,7 @@ func (h *SubmHttpHandler) PostSubm(w http.ResponseWriter, r *http.Request) {
 
 	submUUID := uuid.New()
 
-	err := h.submSrvc.CreateSubmCmd.Handle(r.Context(), submcmds.CreateSubmParams{
+	err := h.submSrvc.CreateSubm.Handle(r.Context(), submcmds.CreateSubmParams{
 		UUID:        submUUID,
 		Submission:  request.Submission,
 		Username:    request.Username,
@@ -49,7 +49,7 @@ func (h *SubmHttpHandler) PostSubm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.submSrvc.CreateEvalCmd.Handle(r.Context(), submcmds.CreateEvalParams{
+	err = h.submSrvc.CreateEval.Handle(r.Context(), submcmds.CreateEvalParams{
 		EvalUUID: uuid.New(),
 		SubmUUID: submUUID,
 	})
@@ -58,7 +58,7 @@ func (h *SubmHttpHandler) PostSubm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.submSrvc.AttachEvalCmd.Handle(r.Context(), submcmds.AttachEvalParams{
+	err = h.submSrvc.AttachEval.Handle(r.Context(), submcmds.AttachEvalParams{
 		EvalUUID: uuid.New(),
 	})
 	if err != nil {
@@ -66,7 +66,7 @@ func (h *SubmHttpHandler) PostSubm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.submSrvc.EnqueueEvalCmd.Handle(r.Context(), submcmds.EnqueueEvalParams{
+	err = h.submSrvc.EnqueueEval.Handle(r.Context(), submcmds.EnqueueEvalParams{
 		EvalUUID: uuid.New(),
 	})
 	if err != nil {
@@ -74,7 +74,7 @@ func (h *SubmHttpHandler) PostSubm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	subm, err := h.submSrvc.GetSubmQuery.Handle(r.Context(), submqueries.GetSubmParams{
+	subm, err := h.submSrvc.GetSubm.Handle(r.Context(), submqueries.GetSubmParams{
 		SubmUUID: submUUID,
 	})
 	if err != nil {

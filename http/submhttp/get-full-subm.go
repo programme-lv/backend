@@ -18,7 +18,7 @@ func (h *SubmHttpHandler) GetFullSubm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	subm, err := h.submSrvc.GetSubmQuery.Handle(r.Context(), submqueries.GetSubmParams{
+	subm, err := h.submSrvc.GetSubm.Handle(r.Context(), submqueries.GetSubmParams{
 		SubmUUID: submUuid,
 	})
 	if err != nil {

@@ -7,8 +7,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/programme-lv/backend/execsrvc"
+	decorator "github.com/programme-lv/backend/srvccqs"
 	"github.com/programme-lv/backend/subm"
-	"github.com/programme-lv/backend/subm/decorator"
 	"github.com/programme-lv/backend/tasksrvc"
 )
 

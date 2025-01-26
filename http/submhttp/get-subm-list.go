@@ -10,7 +10,7 @@ import (
 )
 
 func (h *SubmHttpHandler) GetSubmList(w http.ResponseWriter, r *http.Request) {
-	subms, err := h.submSrvc.ListSubmsQuery.Handle(r.Context(), submqueries.ListSubmsParams{
+	subms, err := h.submSrvc.ListSubms.Handle(r.Context(), submqueries.ListSubmsParams{
 		Limit:  30,
 		Offset: 0,
 	})

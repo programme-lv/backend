@@ -87,7 +87,7 @@ func (h *SubmHttpHandler) getPrLang(ctx context.Context, shortID string) (PrLang
 }
 
 func (h *SubmHttpHandler) getEval(ctx context.Context, evalUuid uuid.UUID) (subm.Eval, error) {
-	return h.submSrvc.GetEvalQuery.Handle(ctx, submqueries.GetEvalParams{
+	return h.submSrvc.GetEval.Handle(ctx, submqueries.GetEvalParams{
 		EvalUUID: evalUuid,
 	})
 }
