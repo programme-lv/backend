@@ -5,10 +5,11 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
+	decorator "github.com/programme-lv/backend/srvccqs"
 	"github.com/programme-lv/backend/subm"
-	"github.com/programme-lv/backend/subm/decorator"
 )
 
+// Switch current eval ptr of referenced subm to the eval
 type AttachEvalCmd decorator.CmdHandler[AttachEvalParams]
 
 func NewAttachEvalCmd(

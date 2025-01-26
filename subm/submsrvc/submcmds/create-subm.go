@@ -7,30 +7,30 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/programme-lv/backend/planglist"
+	decorator "github.com/programme-lv/backend/srvccqs"
 	"github.com/programme-lv/backend/subm"
-	"github.com/programme-lv/backend/subm/decorator"
 	"github.com/programme-lv/backend/subm/submerrors"
 )
 
 type CreateSubmCmd decorator.CmdHandler[CreateSubmParams]
 
 func NewCreateSubmCmd(
-	getUserUuid func(ctx context.Context, username string) (uuid.UUID, error),
 	persistSubm func(ctx context.Context, subm subm.Subm) error,
+	doesUserExist func(ctx context.Context, uuid uuid.UUID) (bool, error),
 	doesTaskExist func(ctx context.Context, shortId string) (bool, error),
 	bcastNewSubmCreated func(subm subm.Subm),
 ) CreateSubmCmd {
 	return createSubmHandler{
-		getUserUuid:         getUserUuid,
 		storeSubm:           persistSubm,
+		doesUserExist:       doesUserExist,
 		doesTaskExist:       doesTaskExist,
 		bcastNewSubmCreated: bcastNewSubmCreated,
 	}
 }
 
 type createSubmHandler struct {
-	getUserUuid   func(ctx context.Context, username string) (uuid.UUID, error)
 	storeSubm     func(ctx context.Context, subm subm.Subm) error
+	doesUserExist func(ctx context.Context, uuid uuid.UUID) (bool, error)
 	doesTaskExist func(ctx context.Context, shortId string) (bool, error)
 
 	bcastNewSubmCreated func(subm subm.Subm)
@@ -39,7 +39,7 @@ type createSubmHandler struct {
 type CreateSubmParams struct {
 	UUID        uuid.UUID
 	Submission  string
-	Username    string
+	AuthorUUID  uuid.UUID
 	ProgrLangID string
 	TaskShortID string
 }
@@ -47,11 +47,6 @@ type CreateSubmParams struct {
 func (h createSubmHandler) Handle(ctx context.Context, p CreateSubmParams) error {
 	if len(p.Submission) > 64*1024 { // 64 KB
 		return submerrors.ErrSubmissionTooLong(64)
-	}
-
-	uUuid, err := h.getUserUuid(ctx, p.Username)
-	if err != nil {
-		return fmt.Errorf("failed to get user: %w", err)
 	}
 
 	l, err := planglist.GetProgrLangById(p.ProgrLangID)
@@ -70,7 +65,7 @@ func (h createSubmHandler) Handle(ctx context.Context, p CreateSubmParams) error
 	entity := subm.Subm{
 		UUID:         p.UUID,
 		Content:      p.Submission,
-		AuthorUUID:   uUuid,
+		AuthorUUID:   p.AuthorUUID,
 		TaskShortID:  p.TaskShortID,
 		LangShortID:  l.ID,
 		CurrEvalUUID: uuid.Nil,

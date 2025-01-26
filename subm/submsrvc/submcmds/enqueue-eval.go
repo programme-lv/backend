@@ -8,8 +8,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/programme-lv/backend/execsrvc"
+	decorator "github.com/programme-lv/backend/srvccqs"
 	"github.com/programme-lv/backend/subm"
-	"github.com/programme-lv/backend/subm/decorator"
 	"github.com/programme-lv/backend/tasksrvc"
 )
 
@@ -19,11 +19,12 @@ func NewEnqueueEvalCmd(
 	getSubm func(ctx context.Context, uuid uuid.UUID) (subm.Subm, error),
 	getEval func(ctx context.Context, evalUuid uuid.UUID) (subm.Eval, error),
 	enqueueExec func(
+		ctx context.Context,
 		subm execsrvc.CodeWithLang,
 		tests []execsrvc.TestFile,
 		params execsrvc.TesterParams,
 	) (uuid.UUID, error),
-	listenToExec func(evalUuid uuid.UUID) (<-chan execsrvc.Event, error),
+	listenToExec func(ctx context.Context, evalUuid uuid.UUID) (<-chan execsrvc.Event, error),
 	updateEvalInMem func(eval subm.Eval),
 	storeEvalFinal func(ctx context.Context, eval subm.Eval) error,
 ) EnqueueEvalCmd {
@@ -42,12 +43,13 @@ type enqueueEvalHandler struct {
 	getEval func(ctx context.Context, evalUuid uuid.UUID) (subm.Eval, error)
 
 	enqueueExec func(
+		ctx context.Context,
 		subm execsrvc.CodeWithLang,
 		tests []execsrvc.TestFile,
 		params execsrvc.TesterParams,
 	) (uuid.UUID, error)
 
-	listenToExec func(evalUuid uuid.UUID) (<-chan execsrvc.Event, error)
+	listenToExec func(ctx context.Context, evalUuid uuid.UUID) (<-chan execsrvc.Event, error)
 
 	getTaskByShortId func(ctx context.Context, shortId string) (tasksrvc.Task, error)
 
@@ -77,7 +79,7 @@ func (h enqueueEvalHandler) Handle(ctx context.Context, p EnqueueEvalParams) err
 		return fmt.Errorf("failed to get task: %w", err)
 	}
 
-	execUuid, err := h.enqueueExec(execsrvc.CodeWithLang{
+	execUuid, err := h.enqueueExec(ctx, execsrvc.CodeWithLang{
 		SrcCode: subm.Content,
 		LangId:  subm.LangShortID,
 	}, evalReqTests(ctx, &t, h.getTestDownlUrl), execsrvc.TesterParams{
@@ -90,7 +92,7 @@ func (h enqueueEvalHandler) Handle(ctx context.Context, p EnqueueEvalParams) err
 		return fmt.Errorf("failed to enqueue evaluation: %w", err)
 	}
 
-	ch, err := h.listenToExec(execUuid)
+	ch, err := h.listenToExec(ctx, execUuid)
 	if err != nil {
 		return fmt.Errorf("failed to listen for evaluation updates: %w", err)
 	}

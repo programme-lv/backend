@@ -3,8 +3,8 @@ package submqueries
 import (
 	"context"
 
+	decorator "github.com/programme-lv/backend/srvccqs"
 	"github.com/programme-lv/backend/subm"
-	"github.com/programme-lv/backend/subm/decorator"
 )
 
 type ListSubmsQuery decorator.QueryHandler[ListSubmsParams, []subm.Subm]

@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	decorator "github.com/programme-lv/backend/srvccqs"
 	"github.com/programme-lv/backend/subm"
-	"github.com/programme-lv/backend/subm/decorator"
 )
 
 type GetSubmQuery decorator.QueryHandler[GetSubmParams, subm.Subm]
