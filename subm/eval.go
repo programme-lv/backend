@@ -4,17 +4,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/programme-lv/backend/tasksrvc"
 )
-
-type Subm struct {
-	UUID         uuid.UUID
-	Content      string
-	AuthorUUID   uuid.UUID
-	TaskShortID  string
-	LangShortID  string
-	CurrEvalUUID uuid.UUID
-	CreatedAt    time.Time
-}
 
 type ScoreUnit string
 
@@ -88,4 +79,53 @@ type TestGroup struct {
 	Points   int
 	Subtasks []int
 	TgTests  []int // test group tests
+}
+
+func NewEval(uuid uuid.UUID, submUuid uuid.UUID, task tasksrvc.Task) Eval {
+	subtasks := []Subtask{}
+	for _, subtask := range task.Subtasks {
+		subtasks = append(subtasks, Subtask{
+			Points:      subtask.Score,
+			Description: subtask.Descriptions["lv"],
+			StTests:     subtask.TestIDs,
+		})
+	}
+
+	testgroups := []TestGroup{}
+	for i, tg := range task.TestGroups {
+		testgroups = append(testgroups, TestGroup{
+			Points:   tg.Points,
+			Subtasks: task.FindTestGroupSubtasks(i + 1),
+			TgTests:  tg.TestIDs,
+		})
+	}
+
+	tests := []Test{}
+	for range task.Tests {
+		tests = append(tests, Test{})
+	}
+
+	scoreUnit := ScoreUnitTest
+	if len(task.Subtasks) > 0 {
+		scoreUnit = ScoreUnitSubtask
+	}
+	if len(task.TestGroups) > 0 {
+		scoreUnit = ScoreUnitTestGroup
+	}
+
+	return Eval{
+		UUID:       uuid,
+		SubmUUID:   submUuid,
+		Stage:      EvalStageWaiting,
+		ScoreUnit:  scoreUnit,
+		Error:      nil,
+		Subtasks:   subtasks,
+		Groups:     testgroups,
+		Tests:      tests,
+		Checker:    task.CheckerPtr(),
+		Interactor: task.InteractorPtr(),
+		CpuLimMs:   task.CpuMillis(),
+		MemLimKiB:  task.MemoryKiB(),
+		CreatedAt:  time.Now(),
+	}
 }
