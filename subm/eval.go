@@ -67,6 +67,9 @@ type Test struct {
 
 	Reached  bool // reached by tester
 	Finished bool // has finished
+
+	InpSha256 string
+	AnsSha256 string
 }
 
 type Subtask struct {

@@ -7,20 +7,20 @@ import (
 	"github.com/programme-lv/backend/subm"
 )
 
-type SubNewSubms decorator.QueryHandler[SubNewSubmsParams, <-chan subm.Subm]
+type SubsNewSubms decorator.QueryHandler[SubsNewSubmsParams, <-chan subm.Subm]
 
-type SubNewSubmsParams struct{}
+type SubsNewSubmsParams struct{}
 
-func NewSubNewSubmsQuery(subNewSubms func(ctx context.Context) (<-chan subm.Subm, error)) SubNewSubms {
-	return subNewSubmsHandler{subNewSubms: subNewSubms}
+func NewSubsNewSubmsQuery(subNewSubms func(ctx context.Context) (<-chan subm.Subm, error)) SubsNewSubms {
+	return subsNewSubmsHandler{subsNewSubms: subNewSubms}
 }
 
-type subNewSubmsHandler struct {
-	subNewSubms func(ctx context.Context) (<-chan subm.Subm, error)
+type subsNewSubmsHandler struct {
+	subsNewSubms func(ctx context.Context) (<-chan subm.Subm, error)
 }
 
-func (h subNewSubmsHandler) Handle(ctx context.Context, p SubNewSubmsParams) (<-chan subm.Subm, error) {
-	all, err := h.subNewSubms(ctx)
+func (h subsNewSubmsHandler) Handle(ctx context.Context, p SubsNewSubmsParams) (<-chan subm.Subm, error) {
+	all, err := h.subsNewSubms(ctx)
 	if err != nil {
 		return nil, err
 	}

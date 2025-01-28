@@ -3,6 +3,8 @@ package submsrvc_test
 import (
 	"context"
 	"math"
+	"math/rand/v2"
+	"strconv"
 	"testing"
 	"time"
 
@@ -12,10 +14,10 @@ import (
 	"github.com/peterldowns/pgtestdb"
 	"github.com/peterldowns/pgtestdb/migrators/golangmigrator"
 	"github.com/programme-lv/backend/execsrvc"
+	"github.com/programme-lv/backend/subm"
 	"github.com/programme-lv/backend/subm/submpgrepo"
 	"github.com/programme-lv/backend/subm/submsrvc"
 	"github.com/programme-lv/backend/subm/submsrvc/submcmd"
-	"github.com/programme-lv/backend/subm/submsrvc/submquery"
 	"github.com/programme-lv/backend/tasksrvc"
 	"github.com/programme-lv/backend/usersrvc"
 	"github.com/stretchr/testify/require"
@@ -59,19 +61,6 @@ func newPgDb(t *testing.T) *pgxpool.Pool {
 }
 
 func TestSubmitSolution(t *testing.T) {
-	// test plan:
-	// 1. initialize service
-	// 2. attempt to get submission, expect error
-	// 3. submit solution in c++ for a tests task
-	// 4. await submission created event
-	// 5. get submission, expect no error
-	// 6. cmp submission to expected
-	// 7. recreate the service
-	// 8. get submission, expect no error
-	// 9. cmp submission to expected
-	// - submit solution in c++ for a testgroup task
-	// - submit solution in python for a testgroup task
-
 	userSrvcMock := userSrvcMock{
 		getUserByUUID: func(ctx context.Context, uuid uuid.UUID) (usersrvc.User, error) {
 			t.Logf("getUserByUUID called with uuid: %s", uuid)
@@ -91,32 +80,78 @@ func TestSubmitSolution(t *testing.T) {
 			t.Logf("enqueue called with execUuid: %s, srcCode: %s, prLangId: %s, tests: %v, cpuMs: %d, memKiB: %d, checker: %v, interactor: %v", execUuid, srcCode, prLangId, tests, cpuMs, memKiB, checker, interactor)
 			return nil
 		},
+		listen: func(ctx context.Context, evalUuid uuid.UUID) (<-chan execsrvc.Event, error) {
+			mockCh := make(chan execsrvc.Event, 1000)
+			go func() {
+				defer close(mockCh)
+				events := []execsrvc.Event{
+					execsrvc.ReceivedSubmission{ // 1st update to user
+						SysInfo:   "some sys info",
+						StartedAt: time.Now(),
+					},
+					execsrvc.StartedCompiling{}, // 2nd update to user
+					execsrvc.FinishedCompiling{
+						RuntimeData: getExampleRunData(),
+					},
+					execsrvc.StartedTesting{}, // 3rd update to user
+					execsrvc.ReachedTest{ // 4th update to user
+						TestId: 1,
+						In:     getExampleStrPtr(),
+						Ans:    getExampleStrPtr(),
+					},
+					execsrvc.FinishedTest{ // 5th update to user
+						TestID:  1,
+						Subm:    getExampleRunData(),
+						Checker: getExampleRunData(),
+					},
+					execsrvc.ReachedTest{ // 6th update to user
+						TestId: 2,
+						In:     getExampleStrPtr(),
+						Ans:    getExampleStrPtr(),
+					},
+					execsrvc.FinishedTest{ // 7th update to user
+						TestID:  2,
+						Subm:    getExampleRunData(),
+						Checker: getExampleRunData(),
+					},
+					execsrvc.FinishedTesting{}, // 8th update to user
+				}
+				for _, event := range events {
+					mockCh <- event
+				}
+			}()
+			return mockCh, nil
+		},
 	}
 
 	pgPool := newPgDb(t)
 	submRepo := submpgrepo.NewPgSubmRepo(pgPool)
 	evalRepo := submpgrepo.NewPgEvalRepo(pgPool)
-	srvc, err := submsrvc.NewSubmSrvc(userSrvcMock, taskSrvcMock, execSrvcMock, submRepo, evalRepo)
-	require.NoError(t, err)
+	srvc := submsrvc.NewSubmSrvc(userSrvcMock, taskSrvcMock, execSrvcMock, submRepo, evalRepo)
 	require.NotNil(t, srvc)
 
 	bg := context.Background()
 
 	submUUID := uuid.New()
-	err = srvc.SubmitSol.Handle(bg, submcmd.SubmitSolParams{
+	err := srvc.SubmitSol(bg, submcmd.SubmitSolParams{
 		UUID:        submUUID,
 		Submission:  "print(sum([int(x) for x in input().split()]))",
 		ProgrLangID: "python3.12",
 		TaskShortID: "aplusb",
 		AuthorUUID:  uuid.New(),
 	})
-	require.Error(t, err, "expected error because user does not exists")
+	require.NoError(t, err)
 
-	ch, err := srvc.SubNewSubm.Handle(bg, submquery.SubNewSubmsParams{})
+	newSubmCh, err := srvc.SubsNewSubm(bg)
+	require.NoError(t, err)
+
+	// okay so the next step is to listen for evaluation execution events
+	// we have to do that on the original service, because it has the events in mem
+	evalUpdCh, err := srvc.SubsEvalUpd(bg)
 	require.NoError(t, err)
 
 	submUUID = uuid.New()
-	err = srvc.SubmitSol.Handle(bg, submcmd.SubmitSolParams{
+	err = srvc.SubmitSol(bg, submcmd.SubmitSolParams{
 		UUID:        submUUID,
 		Submission:  "print(sum([int(x) for x in input().split()]))",
 		ProgrLangID: "python3.12",
@@ -125,12 +160,10 @@ func TestSubmitSolution(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	submFromCh := <-ch
+	submFromCh := <-newSubmCh
 	require.Equal(t, submFromCh.UUID, submUUID)
 
-	submFromGet, err := srvc.GetSubm.Handle(bg, submquery.GetSubmParams{
-		SubmUUID: submUUID,
-	})
+	submFromGet, err := srvc.GetSubm(bg, submUUID)
 	require.NoError(t, err)
 
 	require.Less(t, math.Abs(submFromCh.CreatedAt.Sub(submFromGet.CreatedAt).Seconds()), 1.0)
@@ -140,21 +173,32 @@ func TestSubmitSolution(t *testing.T) {
 
 	require.NotEqual(t, submFromCh.CurrEvalUUID, uuid.Nil)
 
-	newSubmSrvc, err := submsrvc.NewSubmSrvc(userSrvcMock, taskSrvcMock, execSrvcMock, submRepo, evalRepo)
-	require.NoError(t, err)
+	newSubmSrvc := submsrvc.NewSubmSrvc(userSrvcMock, taskSrvcMock, execSrvcMock, submRepo, evalRepo)
 	require.NotNil(t, newSubmSrvc)
 
-	submFromGet2, err := newSubmSrvc.GetSubm.Handle(bg, submquery.GetSubmParams{
-		SubmUUID: submUUID,
-	})
+	submFromGet2, err := newSubmSrvc.GetSubm(bg, submUUID)
 	require.NoError(t, err)
 	require.Equal(t, submFromGet, submFromGet2)
 
-	evalFromGet, err := newSubmSrvc.GetEval.Handle(bg, submquery.GetEvalParams{
-		EvalUUID: submFromGet.CurrEvalUUID,
-	})
+	evalFromGet, err := newSubmSrvc.GetEval(bg, submFromGet.CurrEvalUUID)
 	require.NoError(t, err)
 	require.Equal(t, submFromGet.CurrEvalUUID, evalFromGet.UUID)
+	evalUpdates := []subm.Eval{}
+	timeout := time.After(5 * time.Second)
+	for {
+		select {
+		case e, ok := <-evalUpdCh:
+			if !ok {
+				goto done
+			}
+			evalUpdates = append(evalUpdates, e)
+		case <-timeout:
+			t.Fatal("timed out waiting for eval updates")
+		}
+	}
+done:
+	require.Equal(t, 8, len(evalUpdates))
+
 }
 
 type userSrvcMock struct {
@@ -204,4 +248,26 @@ func (e execSrvcMock) Enqueue(
 
 func (e execSrvcMock) Subscribe(ctx context.Context, evalUuid uuid.UUID) (<-chan execsrvc.Event, error) {
 	return e.listen(ctx, evalUuid)
+}
+
+// Helper that generates random run data for tests
+func getExampleRunData() *execsrvc.RunData {
+	return &execsrvc.RunData{
+		StdIn:    "some std in",
+		StdOut:   "some std out",
+		StdErr:   "some std err",
+		CpuMs:    1 + int64(rand.IntN(100)),
+		WallMs:   2 + int64(rand.IntN(100)),
+		MemKiB:   3 + int64(rand.IntN(100)),
+		ExitCode: 4 + int64(rand.IntN(100)),
+		CtxSwV:   rand.Int64(),
+		CtxSwF:   rand.Int64(),
+		Signal:   nil,
+	}
+}
+
+// Helper that generates random string pointer
+func getExampleStrPtr() *string {
+	s := strconv.Itoa(rand.IntN(100))
+	return &s
 }
