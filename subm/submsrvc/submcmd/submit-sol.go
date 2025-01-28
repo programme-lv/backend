@@ -29,6 +29,7 @@ type SubmitSolCmdHandler struct {
 	StoreSubm        func(ctx context.Context, subm subm.Subm) error
 	StoreEval        func(ctx context.Context, eval subm.Eval) error
 	BcastSubmCreated func(subm subm.Subm)
+	EnqueueEvalExec  func(ctx context.Context, eval subm.Eval, srcCode string, prLangId string) error
 }
 
 func (h SubmitSolCmdHandler) Handle(ctx context.Context, p SubmitSolParams) error {
@@ -78,6 +79,11 @@ func (h SubmitSolCmdHandler) Handle(ctx context.Context, p SubmitSolParams) erro
 	}
 
 	h.BcastSubmCreated(entity)
+
+	err = h.EnqueueEvalExec(ctx, eval, entity.Content, l.ID)
+	if err != nil {
+		return fmt.Errorf("failed to enqueue execution of submission: %w", err)
+	}
 
 	return nil
 }

@@ -2,27 +2,41 @@ package submsrvc
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"sync"
 
 	"github.com/google/uuid"
 	_ "github.com/lib/pq"
+	"github.com/programme-lv/backend/execsrvc"
 	"github.com/programme-lv/backend/subm"
 	"github.com/programme-lv/backend/subm/submsrvc/submadapter"
 	"github.com/programme-lv/backend/subm/submsrvc/submcmd"
 	"github.com/programme-lv/backend/subm/submsrvc/submquery"
 )
 
+type SubmSrvcClient interface {
+	SubmitSol(ctx context.Context, p submcmd.SubmitSolParams) error
+	ReEvalSubm(ctx context.Context, p submcmd.ReEvalSubmParams) error
+	GetSubm(ctx context.Context, uuid uuid.UUID) (subm.Subm, error)
+	ListSubms(ctx context.Context, filter submquery.ListSubmsParams) ([]subm.Subm, error)
+	GetEval(ctx context.Context, uuid uuid.UUID) (subm.Eval, error)
+	SubsNewSubm(ctx context.Context) (<-chan subm.Subm, error)
+	SubsEvalUpd(ctx context.Context) (<-chan subm.Eval, error)
+}
+
 type SubmSrvc struct {
-	SubmitSol  submcmd.SubmitSolCmd
-	ReEvalSubm submcmd.ReEvalSubmCmd
+	userSrvc submadapter.UserSrvcFacade
+	taskSrvc submadapter.TaskSrvcFacade
+	execSrvc submadapter.ExecSrvcFacade
+	submRepo submadapter.SubmRepo
+	evalRepo submadapter.EvalRepo
 
-	GetSubm   submquery.GetSubmQuery
-	ListSubms submquery.ListSubmsQuery
-	GetEval   submquery.GetEvalQuery
+	newSubmChListenerLock sync.Mutex
+	newSubmListeners      map[chan<- subm.Subm]struct{}
 
-	SubNewSubm submquery.SubNewSubms
-	SubEvalUpd submquery.SubEvalUpd
+	newEvalUpdListenerLock sync.Mutex
+	newEvalUpdListeners    map[chan<- subm.Eval]struct{}
 }
 
 func NewSubmSrvc(
@@ -31,56 +45,102 @@ func NewSubmSrvc(
 	execSrvc submadapter.ExecSrvcFacade,
 	submRepo submadapter.SubmRepo,
 	evalRepo submadapter.EvalRepo,
-) (*SubmSrvc, error) {
-	newSubmChListenerLock := sync.Mutex{}
-	newSubmListeners := make(map[chan<- subm.Subm]struct{})
+) SubmSrvcClient {
+	return &SubmSrvc{
+		userSrvc: userSrvc,
+		taskSrvc: taskSrvc,
+		execSrvc: execSrvc,
+		submRepo: submRepo,
+		evalRepo: evalRepo,
 
+		newSubmListeners:    make(map[chan<- subm.Subm]struct{}),
+		newEvalUpdListeners: make(map[chan<- subm.Eval]struct{}),
+	}
+}
+
+func (s *SubmSrvc) SubmitSol(ctx context.Context, p submcmd.SubmitSolParams) error {
 	submitSolCmd := submcmd.SubmitSolCmdHandler{
 		DoesUserExist: func(ctx context.Context, uuid uuid.UUID) (bool, error) {
-			user, err := userSrvc.GetUserByUUID(ctx, uuid)
+			user, err := s.userSrvc.GetUserByUUID(ctx, uuid)
 			if err != nil {
 				return false, err
 			}
 			return user.UUID == uuid, nil
 		},
-		GetTask:   taskSrvc.GetTask,
-		StoreSubm: submRepo.StoreSubm,
-		StoreEval: evalRepo.StoreEval,
+		GetTask:   s.taskSrvc.GetTask,
+		StoreSubm: s.submRepo.StoreSubm,
+		StoreEval: s.evalRepo.StoreEval,
 		BcastSubmCreated: func(subm subm.Subm) {
 			slog.Info("submitted solution", "subm", subm)
-			newSubmChListenerLock.Lock()
-			for ch := range newSubmListeners {
+			s.newSubmChListenerLock.Lock()
+			for ch := range s.newSubmListeners {
 				ch <- subm
 			}
-			newSubmChListenerLock.Unlock()
+			s.newSubmChListenerLock.Unlock()
+		},
+		EnqueueEvalExec: func(ctx context.Context, eval subm.Eval, srcCode string, prLangId string) error {
+			err := s.execSrvc.Enqueue(ctx, eval.UUID, srcCode, prLangId, nil, 0, 0, nil, nil)
+			if err != nil {
+				return fmt.Errorf("failed to enqueue evaluation: %w", err)
+			}
+			ch, err := s.execSrvc.Subscribe(ctx, eval.UUID)
+			if err != nil {
+				return fmt.Errorf("failed to subscribe to evaluation: %w", err)
+			}
+			go func(execEvCh <-chan execsrvc.Event) {
+				for ev := range execEvCh {
+					slog.Info("received execution event", "ev", ev)
+				}
+			}(ch)
+			return nil
 		},
 	}
 
-	getSubmQuery := submquery.NewGetSubmQuery(submRepo.GetSubm)
-	listSubmsQuery := submquery.NewListSubmsQuery(submRepo.ListSubms)
-	getEvalQuery := submquery.NewGetEvalQuery(evalRepo.GetEval)
+	return submitSolCmd.Handle(ctx, p)
+}
 
-	subNewSubmsQuery := submquery.NewSubNewSubmsQuery(func(ctx context.Context) (<-chan subm.Subm, error) {
-		ch := make(chan subm.Subm)
-		newSubmChListenerLock.Lock()
-		newSubmListeners[ch] = struct{}{}
-		newSubmChListenerLock.Unlock()
-		go func() {
-			<-ctx.Done()
-			newSubmChListenerLock.Lock()
-			delete(newSubmListeners, ch)
-			newSubmChListenerLock.Unlock()
-			close(ch)
-		}()
-		return ch, nil
+func (s *SubmSrvc) ReEvalSubm(ctx context.Context, p submcmd.ReEvalSubmParams) error {
+	panic("not implemented")
+}
 
-	})
+func (s *SubmSrvc) GetSubm(ctx context.Context, uuid uuid.UUID) (subm.Subm, error) {
+	return s.submRepo.GetSubm(ctx, uuid)
+}
 
-	return &SubmSrvc{
-		SubmitSol:  submitSolCmd,
-		GetSubm:    getSubmQuery,
-		ListSubms:  listSubmsQuery,
-		GetEval:    getEvalQuery,
-		SubNewSubm: subNewSubmsQuery,
-	}, nil
+func (s *SubmSrvc) ListSubms(ctx context.Context, filter submquery.ListSubmsParams) ([]subm.Subm, error) {
+	return s.submRepo.ListSubms(ctx, filter.Limit, filter.Offset)
+}
+
+func (s *SubmSrvc) GetEval(ctx context.Context, uuid uuid.UUID) (subm.Eval, error) {
+	return s.evalRepo.GetEval(ctx, uuid)
+}
+
+func (s *SubmSrvc) SubsNewSubm(ctx context.Context) (<-chan subm.Subm, error) {
+	ch := make(chan subm.Subm)
+	s.newSubmChListenerLock.Lock()
+	s.newSubmListeners[ch] = struct{}{}
+	s.newSubmChListenerLock.Unlock()
+	go func() {
+		<-ctx.Done()
+		s.newSubmChListenerLock.Lock()
+		delete(s.newSubmListeners, ch)
+		s.newSubmChListenerLock.Unlock()
+		close(ch)
+	}()
+	return ch, nil
+}
+
+func (s *SubmSrvc) SubsEvalUpd(ctx context.Context) (<-chan subm.Eval, error) {
+	ch := make(chan subm.Eval)
+	s.newEvalUpdListenerLock.Lock()
+	s.newEvalUpdListeners[ch] = struct{}{}
+	s.newEvalUpdListenerLock.Unlock()
+	go func() {
+		<-ctx.Done()
+		s.newEvalUpdListenerLock.Lock()
+		delete(s.newEvalUpdListeners, ch)
+		s.newEvalUpdListenerLock.Unlock()
+		close(ch)
+	}()
+	return ch, nil
 }
