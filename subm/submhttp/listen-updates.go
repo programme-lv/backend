@@ -1,14 +1,15 @@
-package http
+package submhttp
 
 import (
 	"encoding/json"
 	"io"
+	"log/slog"
 	"net/http"
 	"sync"
 	"time"
 )
 
-func (httpserver *HttpServer) listenToSubmListUpdates(w http.ResponseWriter, r *http.Request) {
+func (h *SubmHttpHandler) ListenToSubmListUpdates(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
@@ -19,26 +20,21 @@ func (httpserver *HttpServer) listenToSubmListUpdates(w http.ResponseWriter, r *
 		return
 	}
 
-	submCreatedCh, err := httpserver.submSrvc.ListenToNewSubmCreated(r.Context())
+	submCreatedCh, err := h.submSrvc.SubsNewSubm(r.Context())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	evalUpdateCh, err := httpserver.submSrvc.ListenToSubmListEvalUpdates(r.Context())
+	evalUpdateCh, err := h.submSrvc.SubsEvalUpd(r.Context())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
-	}
-
-	type evalUpdateStruct struct {
-		SubmUuid   string   `json:"subm_uuid"`
-		EvalUpdate SubmEval `json:"new_eval"`
 	}
 
 	type SubmissionListUpdate struct {
-		SubmCreated *Submission       `json:"subm_created"`
-		EvalUpdate  *evalUpdateStruct `json:"eval_update"`
+		SubmCreated *SubmListEntry `json:"subm_created"`
+		EvalUpdate  *Eval          `json:"eval_update"`
 	}
 
 	var writeMutex sync.Mutex
@@ -60,8 +56,13 @@ func (httpserver *HttpServer) listenToSubmListUpdates(w http.ResponseWriter, r *
 			if !ok {
 				return
 			}
+			entry, err := h.mapSubmListEntry(r.Context(), submCreated)
+			if err != nil {
+				slog.Default().Warn("failed to map subm list entry", "error", err, "subm_uuid", submCreated.UUID)
+				continue
+			}
 			message := SubmissionListUpdate{
-				SubmCreated: mapSubm(submCreated),
+				SubmCreated: &entry,
 			}
 			marshalled, err := json.Marshal(message)
 			if err != nil {
@@ -73,12 +74,9 @@ func (httpserver *HttpServer) listenToSubmListUpdates(w http.ResponseWriter, r *
 			if !ok {
 				return
 			}
+			mappedEval := mapSubmEval(evalUpdate)
 			message := SubmissionListUpdate{
-				SubmCreated: nil,
-				EvalUpdate: &evalUpdateStruct{
-					SubmUuid:   evalUpdate.SubmUuid.String(),
-					EvalUpdate: mapSubmEval(evalUpdate.Eval),
-				},
+				EvalUpdate: &mappedEval,
 			}
 			marshalled, err := json.Marshal(message)
 			if err != nil {

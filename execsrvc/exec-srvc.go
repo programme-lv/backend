@@ -145,40 +145,40 @@ func NewCustomExecSrvc(
 //
 // Returns the execution UUID for tracking
 func (e *ExecSrvc) Enqueue(
-	code CodeWithLang,
+	ctx context.Context,
+	execUuid uuid.UUID,
+	srcCode string,
+	langId string,
 	tests []TestFile,
-	params TesterParams,
-) (uuid.UUID, error) {
+	params TestingParams,
+) error {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
 	// 1. validate programming language
-	lang, err := getPrLangById(code.LangId)
+	lang, err := getPrLangById(langId)
 	if err != nil {
-		return uuid.Nil, err
+		return err
 	}
 
 	// 2. validate tester execution constraints,
 	// checker
 	err = params.IsValid()
 	if err != nil {
-		return uuid.Nil, err
+		return err
 	}
 
 	// 3. validate test files
 	if len(tests) > 200 {
-		return uuid.Nil, fmt.Errorf(
+		return fmt.Errorf(
 			"too many tests",
 		)
 	}
 	for _, test := range tests {
 		if err := test.IsValid(); err != nil {
-			return uuid.Nil, err
+			return err
 		}
 	}
-
-	// 4. construct execution object
-	execUuid := uuid.New()
 
 	// Add WaitGroup before preparing results
 	wg := &sync.WaitGroup{}
@@ -194,13 +194,13 @@ func (e *ExecSrvc) Enqueue(
 		len(tests),
 	)
 	if err != nil {
-		return uuid.Nil, err
+		return err
 	}
 
 	// 6. enqueue execution request to sqs
 	err = enqueue(
 		execUuid,
-		code.SrcCode,
+		srcCode,
 		lang,
 		tests,
 		params,
@@ -209,16 +209,17 @@ func (e *ExecSrvc) Enqueue(
 		e.respQ,
 	)
 	if err != nil {
-		return uuid.Nil, err
+		return err
 	}
 
-	return execUuid, nil
+	return nil
 }
 
 // Listen returns a channel that streams execution
 // events to clients. The channel is automatically
 // closed once the execution is complete
 func (e *ExecSrvc) Listen(
+	ctx context.Context,
 	execId uuid.UUID,
 ) (<-chan Event, error) {
 	e.mu.Lock()
@@ -380,7 +381,7 @@ func (e *ExecSrvc) handleSqsMsg(
 func (e *ExecSrvc) prepareForResults(
 	execId uuid.UUID,
 	lang PrLang,
-	params TesterParams,
+	params TestingParams,
 	numTests int,
 ) error {
 	// initialize some kind of mysthical organizer

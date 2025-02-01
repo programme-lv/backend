@@ -7,7 +7,6 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/programme-lv/backend/httpjson"
-	"github.com/programme-lv/backend/subm/submqueries"
 )
 
 func (h *SubmHttpHandler) GetFullSubm(w http.ResponseWriter, r *http.Request) {
@@ -18,9 +17,7 @@ func (h *SubmHttpHandler) GetFullSubm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	subm, err := h.submSrvc.GetSubm.Handle(r.Context(), submqueries.GetSubmParams{
-		SubmUUID: submUuid,
-	})
+	subm, err := h.submSrvc.GetSubm(r.Context(), submUuid)
 	if err != nil {
 		httpjson.HandleError(slog.Default(), w, err)
 		return

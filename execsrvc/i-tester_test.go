@@ -146,7 +146,7 @@ func TestEnqueueAndReceiveResults(t *testing.T) {
 		"a=int(input());b=int(input());print(a+b)",
 		lang,
 		tests,
-		TesterParams{
+		TestingParams{
 			CpuMs:      100,
 			MemKiB:     1024 * 100,
 			Checker:    strPtr(checker),

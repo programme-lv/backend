@@ -43,20 +43,20 @@ const (
 )
 
 type Execution struct {
-	UUID      uuid.UUID    `json:"uuid"`
-	Stage     string       `json:"stage"`
-	TestRes   []TestRes    `json:"test_res"`
-	PrLang    PrLang       `json:"pr_lang"`
-	Params    TesterParams `json:"params"`
-	ErrorMsg  *string      `json:"error_msg"`
-	SysInfo   *string      `json:"sys_info"` // testing hardware info
-	CreatedAt time.Time    `json:"created_at"`
-	SubmComp  *RunData     `json:"subm_comp"` // submitted code compilation runtime data
+	UUID      uuid.UUID     `json:"uuid"`
+	Stage     string        `json:"stage"`
+	TestRes   []TestRes     `json:"test_res"`
+	PrLang    PrLang        `json:"pr_lang"`
+	Params    TestingParams `json:"params"`
+	ErrorMsg  *string       `json:"error_msg"`
+	SysInfo   *string       `json:"sys_info"` // testing hardware info
+	CreatedAt time.Time     `json:"created_at"`
+	SubmComp  *RunData      `json:"subm_comp"` // submitted code compilation runtime data
 	// ChecComp   *RunData // testlib checker compilation runtime data
 }
 
 // Tester machine submitted solution runtime constraints
-type TesterParams struct {
+type TestingParams struct {
 	CpuMs  int `json:"cpu_ms"`  // maximum user-mode CPU time in milliseconds
 	MemKiB int `json:"mem_kib"` // maximum resident set size in kibibytes
 
@@ -69,7 +69,7 @@ type TesterParams struct {
 	Interactor *string `json:"interactor"`
 }
 
-func (p *TesterParams) IsValid() error {
+func (p *TestingParams) IsValid() error {
 	if p.CpuMs <= 0 {
 		return ErrInvalidTesterParams()
 	}

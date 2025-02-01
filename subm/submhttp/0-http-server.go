@@ -6,20 +6,19 @@ import (
 	"github.com/google/uuid"
 	"github.com/programme-lv/backend/planglist"
 	"github.com/programme-lv/backend/subm"
-	"github.com/programme-lv/backend/subm/submqueries"
 	"github.com/programme-lv/backend/subm/submsrvc"
 	"github.com/programme-lv/backend/tasksrvc"
 	"github.com/programme-lv/backend/usersrvc"
 )
 
 type SubmHttpHandler struct {
-	submSrvc *submsrvc.SubmSrvc
+	submSrvc submsrvc.SubmSrvcClient
 	taskSrvc *tasksrvc.TaskSrvc
 	userSrvc *usersrvc.UserSrvc
 }
 
 func NewSubmHttpHandler(
-	submSrvc *submsrvc.SubmSrvc,
+	submSrvc submsrvc.SubmSrvcClient,
 	taskSrvc *tasksrvc.TaskSrvc,
 	userSrvc *usersrvc.UserSrvc,
 ) *SubmHttpHandler {
@@ -47,7 +46,7 @@ func (h SubmHttpHandler) mapSubm(
 func (h *SubmHttpHandler) mapSubmListEntry(
 	ctx context.Context,
 	s subm.Subm,
-) SubmListEntry {
+) (SubmListEntry, error) {
 	return mapSubmListEntry(
 		ctx,
 		s,
@@ -87,7 +86,5 @@ func (h *SubmHttpHandler) getPrLang(ctx context.Context, shortID string) (PrLang
 }
 
 func (h *SubmHttpHandler) getEval(ctx context.Context, evalUuid uuid.UUID) (subm.Eval, error) {
-	return h.submSrvc.GetEval.Handle(ctx, submqueries.GetEvalParams{
-		EvalUUID: evalUuid,
-	})
+	return h.submSrvc.GetEval(ctx, evalUuid)
 }

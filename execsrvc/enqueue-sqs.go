@@ -22,7 +22,7 @@ func enqueue(
 	code string,
 	lang PrLang,
 	tests []TestFile,
-	params TesterParams,
+	params TestingParams,
 	client *sqs.Client,
 	submQ string,
 	respQ string,

@@ -76,7 +76,11 @@ func TestSubmitSolution(t *testing.T) {
 	}
 
 	execSrvcMock := execSrvcMock{
-		enqueue: func(ctx context.Context, execUuid uuid.UUID, srcCode string, prLangId string, tests []execsrvc.TestFile, cpuMs int, memKiB int, checker *string, interactor *string) error {
+		enqueue: func(ctx context.Context, execUuid uuid.UUID, srcCode string, prLangId string, tests []execsrvc.TestFile, params execsrvc.TestingParams) error {
+			cpuMs := params.CpuMs
+			memKiB := params.MemKiB
+			checker := params.Checker
+			interactor := params.Interactor
 			t.Logf("enqueue called with execUuid: %s, srcCode: %s, prLangId: %s, tests: %v, cpuMs: %d, memKiB: %d, checker: %v, interactor: %v", execUuid, srcCode, prLangId, tests, cpuMs, memKiB, checker, interactor)
 			return nil
 		},
@@ -224,10 +228,7 @@ type execSrvcMock struct {
 		srcCode string,
 		prLangId string,
 		tests []execsrvc.TestFile,
-		cpuMs int,
-		memKiB int,
-		checker *string,
-		interactor *string,
+		params execsrvc.TestingParams,
 	) error
 	listen func(ctx context.Context, evalUuid uuid.UUID) (<-chan execsrvc.Event, error)
 }
@@ -238,15 +239,12 @@ func (e execSrvcMock) Enqueue(
 	srcCode string,
 	prLangId string,
 	tests []execsrvc.TestFile,
-	cpuMs int,
-	memKiB int,
-	checker *string,
-	interactor *string,
+	params execsrvc.TestingParams,
 ) error {
-	return e.enqueue(ctx, execUuid, srcCode, prLangId, tests, cpuMs, memKiB, checker, interactor)
+	return e.enqueue(ctx, execUuid, srcCode, prLangId, tests, params)
 }
 
-func (e execSrvcMock) Subscribe(ctx context.Context, evalUuid uuid.UUID) (<-chan execsrvc.Event, error) {
+func (e execSrvcMock) Listen(ctx context.Context, evalUuid uuid.UUID) (<-chan execsrvc.Event, error) {
 	return e.listen(ctx, evalUuid)
 }
 

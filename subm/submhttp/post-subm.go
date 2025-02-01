@@ -7,8 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/programme-lv/backend/httpjson"
-	"github.com/programme-lv/backend/subm/submcmds"
-	"github.com/programme-lv/backend/subm/submqueries"
+	"github.com/programme-lv/backend/subm/submsrvc/submcmd"
 )
 
 func (h *SubmHttpHandler) PostSubm(w http.ResponseWriter, r *http.Request) {
@@ -35,12 +34,18 @@ func (h *SubmHttpHandler) PostSubm(w http.ResponseWriter, r *http.Request) {
 		request.TaskCodeID,
 	)
 
+	author, err := h.userSrvc.GetUserByUsername(r.Context(), request.Username)
+	if err != nil {
+		httpjson.HandleError(slog.Default(), w, err)
+		return
+	}
+
 	submUUID := uuid.New()
 
-	err := h.submSrvc.CreateSubm.Handle(r.Context(), submcmds.CreateSubmParams{
+	err = h.submSrvc.SubmitSol(r.Context(), submcmd.SubmitSolParams{
 		UUID:        submUUID,
 		Submission:  request.Submission,
-		Username:    request.Username,
+		AuthorUUID:  author.UUID,
 		ProgrLangID: request.ProgrammingLangID,
 		TaskShortID: request.TaskCodeID,
 	})
@@ -49,34 +54,7 @@ func (h *SubmHttpHandler) PostSubm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.submSrvc.CreateEval.Handle(r.Context(), submcmds.CreateEvalParams{
-		EvalUUID: uuid.New(),
-		SubmUUID: submUUID,
-	})
-	if err != nil {
-		httpjson.HandleError(slog.Default(), w, err)
-		return
-	}
-
-	err = h.submSrvc.AttachEval.Handle(r.Context(), submcmds.AttachEvalParams{
-		EvalUUID: uuid.New(),
-	})
-	if err != nil {
-		httpjson.HandleError(slog.Default(), w, err)
-		return
-	}
-
-	err = h.submSrvc.EnqueueEval.Handle(r.Context(), submcmds.EnqueueEvalParams{
-		EvalUUID: uuid.New(),
-	})
-	if err != nil {
-		httpjson.HandleError(slog.Default(), w, err)
-		return
-	}
-
-	subm, err := h.submSrvc.GetSubm.Handle(r.Context(), submqueries.GetSubmParams{
-		SubmUUID: submUUID,
-	})
+	subm, err := h.submSrvc.GetSubm(r.Context(), submUUID)
 	if err != nil {
 		httpjson.HandleError(slog.Default(), w, err)
 		return
