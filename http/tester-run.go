@@ -1,6 +1,7 @@
 package http
 
 import (
+	"context"
 	"encoding/json"
 	"log/slog"
 	"net/http"
@@ -49,15 +50,20 @@ func (httpserver *HttpServer) testerRun(w http.ResponseWriter, r *http.Request) 
 		}
 	}
 
-	uuid, err := httpserver.evalSrvc.Enqueue(execsrvc.CodeWithLang{
-		SrcCode: req.SrcCode,
-		LangId:  req.ProgLangId,
-	}, tests, execsrvc.TesterParams{
-		CpuMs:      req.CpuMs,
-		MemKiB:     req.MemKib,
-		Checker:    req.Checker,
-		Interactor: req.Interactor,
-	})
+	execUuid := uuid.New()
+	err := httpserver.execSrvc.Enqueue(
+		context.Background(),
+		execUuid,
+		req.SrcCode,
+		req.ProgLangId,
+		tests,
+		execsrvc.TestingParams{
+			CpuMs:      req.CpuMs,
+			MemKiB:     req.MemKib,
+			Checker:    req.Checker,
+			Interactor: req.Interactor,
+		},
+	)
 	if err != nil {
 		httpjson.HandleError(slog.Default(), w, err)
 		return
@@ -68,7 +74,7 @@ func (httpserver *HttpServer) testerRun(w http.ResponseWriter, r *http.Request) 
 	}
 
 	res := &response{
-		EvalUUID: uuid.String(),
+		EvalUUID: execUuid.String(),
 	}
 
 	httpjson.WriteSuccessJson(w, res)
@@ -76,7 +82,7 @@ func (httpserver *HttpServer) testerRun(w http.ResponseWriter, r *http.Request) 
 
 func (httpserver *HttpServer) testerListen(w http.ResponseWriter, r *http.Request) {
 	type request struct {
-		EvalUUID string `json:"eval_uuid"`
+		ExecUuid string `json:"exec_uuid"`
 	}
 
 	var req request
@@ -85,13 +91,13 @@ func (httpserver *HttpServer) testerListen(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	evalUuid, err := uuid.Parse(req.EvalUUID)
+	execUuid, err := uuid.Parse(req.ExecUuid)
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
 
-	ch, err := httpserver.evalSrvc.Listen(evalUuid)
+	ch, err := httpserver.execSrvc.Listen(context.Background(), execUuid)
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return

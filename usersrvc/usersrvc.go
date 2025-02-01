@@ -25,11 +25,11 @@ func NewUserService() *UserSrvc {
 	}
 }
 
-func (s *UserSrvc) GetUserByUsername(ctx context.Context, username string) (res *User, err error) {
+func (s *UserSrvc) GetUserByUsername(ctx context.Context, username string) (res User, err error) {
 	allUsers, err := selectAllUsers(s.postgres)
 	if err != nil {
 		errMsg := fmt.Errorf("error listing users: %w", err)
-		return nil, newErrInternalSE().SetDebug(errMsg)
+		return User{}, newErrInternalSE().SetDebug(errMsg)
 	}
 
 	var resSlice []User = make([]User, 0)
@@ -38,7 +38,7 @@ func (s *UserSrvc) GetUserByUsername(ctx context.Context, username string) (res 
 			if len(resSlice) == 1 {
 				format := "multiple users with the same username: %s"
 				errMsg := fmt.Errorf(format, username)
-				return nil, newErrInternalSE().SetDebug(errMsg)
+				return User{}, newErrInternalSE().SetDebug(errMsg)
 			}
 
 			genUser := User{
@@ -55,18 +55,18 @@ func (s *UserSrvc) GetUserByUsername(ctx context.Context, username string) (res 
 		format := "user with username %s not found"
 		errMsg := fmt.Errorf(format, username)
 		errRes := newErrUserNotFound().SetDebug(errMsg)
-		return nil, errRes
+		return User{}, errRes
 	}
 
-	return &resSlice[0], nil
+	return resSlice[0], nil
 }
 
-func (s *UserSrvc) GetUserByUUID(ctx context.Context, uuid uuid.UUID) (res *User, err error) {
+func (s *UserSrvc) GetUserByUUID(ctx context.Context, uuid uuid.UUID) (res User, err error) {
 	// Start Generation Here
 	allUsers, err := selectAllUsers(s.postgres)
 	if err != nil {
 		errMsg := fmt.Errorf("error listing users: %w", err)
-		return nil, newErrInternalSE().SetDebug(errMsg)
+		return User{}, newErrInternalSE().SetDebug(errMsg)
 	}
 
 	var resSlice []User
@@ -75,7 +75,7 @@ func (s *UserSrvc) GetUserByUUID(ctx context.Context, uuid uuid.UUID) (res *User
 			if len(resSlice) == 1 {
 				format := "multiple users with the same UUID: %s"
 				errMsg := fmt.Errorf(format, uuid)
-				return nil, newErrInternalSE().SetDebug(errMsg)
+				return User{}, newErrInternalSE().SetDebug(errMsg)
 			}
 
 			genUser := User{
@@ -92,10 +92,10 @@ func (s *UserSrvc) GetUserByUUID(ctx context.Context, uuid uuid.UUID) (res *User
 		format := "user with UUID %s not found"
 		errMsg := fmt.Errorf(format, uuid)
 		errRes := newErrUserNotFound().SetDebug(errMsg)
-		return nil, errRes
+		return User{}, errRes
 	}
 
-	return &resSlice[0], nil
+	return resSlice[0], nil
 }
 
 func (s *UserSrvc) GetUsernames(ctx context.Context,

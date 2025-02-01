@@ -1,14 +1,18 @@
 package main
 
 import (
+	"context"
 	"log"
 	"log/slog"
 	"os"
 
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
+	"github.com/programme-lv/backend/conf"
 	"github.com/programme-lv/backend/execsrvc"
 	"github.com/programme-lv/backend/http"
-	"github.com/programme-lv/backend/http/submhttp"
+	"github.com/programme-lv/backend/subm/submhttp"
+	"github.com/programme-lv/backend/subm/submpgrepo"
 	"github.com/programme-lv/backend/subm/submsrvc"
 	"github.com/programme-lv/backend/tasksrvc"
 	"github.com/programme-lv/backend/usersrvc"
@@ -32,23 +36,38 @@ func main() {
 		os.Exit(1)
 	}
 
-	evalSrvc := execsrvc.NewExecSrvc()
+	execSrvc := execsrvc.NewExecSrvc()
 	userSrvc := usersrvc.NewUserService()
 
 	taskSrvc, err := tasksrvc.NewTaskSrvc()
 	if err != nil {
 		log.Fatalf("error creating task service: %v", err)
 	}
-	submSrvc, err := submsrvc.NewSubmSrvc(userSrvc, taskSrvc, evalSrvc)
-	if err != nil {
-		log.Fatalf("error creating submission service: %v", err)
-	}
-	submHttpServer := submhttp.NewSubmHttpHandler(submSrvc, taskSrvc, userSrvc)
-	httpServer := http.NewHttpServer(submHttpServer, submSrvc, userSrvc, taskSrvc, evalSrvc,
-		[]byte(jwtKey))
+
+	submHttpServer := newSubmHttpHandler(userSrvc, taskSrvc, execSrvc)
+
+	httpServer := http.NewHttpServer(submHttpServer, userSrvc, taskSrvc, execSrvc, []byte(jwtKey))
 
 	address := ":8080"
 	slog.Info("starting server", "address", address)
 	err = httpServer.Start(":8080")
 	slog.Info("server stopped", "error", err)
+}
+
+func newSubmHttpHandler(userSrvc *usersrvc.UserSrvc, taskSrvc *tasksrvc.TaskSrvc, execSrvc *execsrvc.ExecSrvc) *submhttp.SubmHttpHandler {
+	pool, err := pgxpool.New(context.Background(), conf.GetPgConnStrFromEnv())
+	if err != nil {
+		log.Fatalf("failed to create pg pool: %v", err)
+	}
+
+	submPgRepo := submpgrepo.NewPgSubmRepo(pool)
+	evalPgRepo := submpgrepo.NewPgEvalRepo(pool)
+	submSrvc := submsrvc.NewSubmSrvc(userSrvc, taskSrvc, execSrvc, submPgRepo, evalPgRepo)
+	if err != nil {
+		log.Fatalf("error creating submission service: %v", err)
+	}
+
+	submHttpServer := submhttp.NewSubmHttpHandler(submSrvc, taskSrvc, userSrvc)
+
+	return submHttpServer
 }

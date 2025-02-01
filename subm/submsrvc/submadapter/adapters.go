@@ -31,6 +31,6 @@ type TaskSrvcFacade interface {
 }
 
 type ExecSrvcFacade interface {
-	Enqueue(ctx context.Context, execUuid uuid.UUID, srcCode string, prLangId string, tests []execsrvc.TestFile, cpuMs int, memKiB int, checker *string, interactor *string) error
-	Subscribe(ctx context.Context, evalUuid uuid.UUID) (<-chan execsrvc.Event, error)
+	Enqueue(ctx context.Context, execUuid uuid.UUID, srcCode string, prLangId string, tests []execsrvc.TestFile, params execsrvc.TestingParams) error
+	Listen(ctx context.Context, execUuid uuid.UUID) (<-chan execsrvc.Event, error)
 }

@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/joho/godotenv"
 	"github.com/programme-lv/backend/execsrvc"
 	"github.com/stretchr/testify/require"
@@ -40,20 +41,18 @@ func TestEvalServiceCmpListenNoCompile(t *testing.T) {
 
 	// 1. enqueue a submission
 	srvc := execsrvc.NewExecSrvc()
-	evalId, err := srvc.Enqueue(execsrvc.CodeWithLang{
-		SrcCode: "a=int(input());b=int(input());print(a+b)",
-		LangId:  "python3.11",
-	}, []execsrvc.TestFile{
+	execUuid := uuid.New()
+	err := srvc.Enqueue(context.Background(), execUuid, "a=int(input());b=int(input());print(a+b)", "python3.11", []execsrvc.TestFile{
 		{InContent: strPtr("1 2"), AnsContent: strPtr("3")},
 		{InContent: strPtr("3 4"), AnsContent: strPtr("6")},
-	}, execsrvc.TesterParams{
+	}, execsrvc.TestingParams{
 		CpuMs:  1000,
 		MemKiB: 1024,
 	})
 	require.NoError(t, err)
 
 	// 2. start listening to eval uuid
-	ch, err := srvc.Listen(evalId)
+	ch, err := srvc.Listen(context.Background(), execUuid)
 	require.NoError(t, err)
 
 	timeout := time.After(30 * time.Second)
@@ -87,20 +86,18 @@ hello:
 func TestEvalServiceCmpListenWithCompile(t *testing.T) {
 	// 1. enqueue a submission
 	srvc := execsrvc.NewExecSrvc()
-	evalId, err := srvc.Enqueue(execsrvc.CodeWithLang{
-		SrcCode: "#include <iostream>\nint main() {int a,b;std::cin>>a>>b;std::cout<<a+b<<std::endl;}",
-		LangId:  "cpp17",
-	}, []execsrvc.TestFile{
+	execUuid := uuid.New()
+	err := srvc.Enqueue(context.Background(), execUuid, "#include <iostream>\nint main() {int a,b;std::cin>>a>>b;std::cout<<a+b<<std::endl;}", "cpp17", []execsrvc.TestFile{
 		{InContent: strPtr("1 2"), AnsContent: strPtr("3")},
 		{InContent: strPtr("3 4"), AnsContent: strPtr("6")},
-	}, execsrvc.TesterParams{
+	}, execsrvc.TestingParams{
 		CpuMs:  1000,
 		MemKiB: 1024,
 	})
 	require.NoError(t, err)
 
 	// 2. start listening to eval uuid
-	ch, err := srvc.Listen(evalId)
+	ch, err := srvc.Listen(context.Background(), execUuid)
 	require.NoError(t, err)
 
 	timeout := time.After(30 * time.Second)
@@ -140,13 +137,11 @@ hello:
 // test the asynchronocity of the Get() method and persistence after closing the srvc
 func TestEvalServiceCmpGet(t *testing.T) {
 	srvc := execsrvc.NewExecSrvc()
-	evalId, err := srvc.Enqueue(execsrvc.CodeWithLang{
-		SrcCode: "a=int(input());b=int(input());print(a+b)",
-		LangId:  "python3.10",
-	}, []execsrvc.TestFile{
+	execUuid := uuid.New()
+	err := srvc.Enqueue(context.Background(), execUuid, "a=int(input());b=int(input());print(a+b)", "python3.10", []execsrvc.TestFile{
 		{InContent: strPtr("1\n2\n"), AnsContent: strPtr("3\n")},
 		{InContent: strPtr("3\n4\n"), AnsContent: strPtr("6\n")},
-	}, execsrvc.TesterParams{
+	}, execsrvc.TestingParams{
 		CpuMs:  1000,
 		MemKiB: 20024,
 	})
@@ -154,7 +149,7 @@ func TestEvalServiceCmpGet(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	eval, err := srvc.Get(ctx, evalId)
+	eval, err := srvc.Get(ctx, execUuid)
 	require.NoError(t, err)
 	srvc.Close()
 	require.Equal(t, eval.Stage, execsrvc.StageFinished)
@@ -168,7 +163,7 @@ func TestEvalServiceCmpGet(t *testing.T) {
 	require.Equal(t, int64(0), eval.TestRes[0].Checker.ExitCode)
 	require.Equal(t, int64(0), eval.TestRes[0].Subm.ExitCode)
 	srvc2 := execsrvc.NewExecSrvc()
-	eval2, err := srvc2.Get(ctx, evalId)
+	eval2, err := srvc2.Get(ctx, execUuid)
 	require.NoError(t, err)
 	require.Equal(t, eval, eval2)
 
@@ -205,10 +200,8 @@ func BenchmarkEvalServiceMemoryConsumption(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		srvc := execsrvc.NewExecSrvc()
-		evalId, err := srvc.Enqueue(execsrvc.CodeWithLang{
-			SrcCode: "#include <iostream>\nint main() {int a,b;std::cin>>a>>b;std::cout<<a+b<<std::endl;}",
-			LangId:  "cpp17",
-		}, hundredTestFiles, execsrvc.TesterParams{
+		execUuid := uuid.New()
+		err := srvc.Enqueue(context.Background(), execUuid, "#include <iostream>\nint main() {int a,b;std::cin>>a>>b;std::cout<<a+b<<std::endl;}", "cpp17", hundredTestFiles, execsrvc.TestingParams{
 			CpuMs:  1000,
 			MemKiB: 20024,
 		})
@@ -217,7 +210,7 @@ func BenchmarkEvalServiceMemoryConsumption(b *testing.B) {
 		}
 
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-		eval, err := srvc.Get(ctx, evalId)
+		eval, err := srvc.Get(ctx, execUuid)
 		if err != nil {
 			b.Fatal(err)
 		}

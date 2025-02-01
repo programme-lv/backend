@@ -10,18 +10,16 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
 	"github.com/programme-lv/backend/execsrvc"
-	"github.com/programme-lv/backend/http/submhttp"
-	"github.com/programme-lv/backend/subm/submsrvc"
+	"github.com/programme-lv/backend/subm/submhttp"
 	"github.com/programme-lv/backend/tasksrvc"
 	"github.com/programme-lv/backend/usersrvc"
 )
 
 type HttpServer struct {
 	submHttpServer *submhttp.SubmHttpHandler
-	submSrvc       *submsrvc.SubmSrvc
 	userSrvc       *usersrvc.UserSrvc
 	taskSrvc       *tasksrvc.TaskSrvc
-	evalSrvc       *execsrvc.ExecSrvc
+	execSrvc       *execsrvc.ExecSrvc
 	router         *chi.Mux
 	JwtKey         []byte
 }
@@ -99,7 +97,6 @@ func (sl *statsLogger) middleware(next http.Handler) http.Handler {
 
 func NewHttpServer(
 	submHttpServer *submhttp.SubmHttpHandler,
-	submSrvc *submsrvc.SubmSrvc,
 	userSrvc *usersrvc.UserSrvc,
 	taskSrvc *tasksrvc.TaskSrvc,
 	evalSrvc *execsrvc.ExecSrvc,
@@ -123,10 +120,9 @@ func NewHttpServer(
 
 	server := &HttpServer{
 		submHttpServer: submHttpServer,
-		submSrvc:       submSrvc,
 		userSrvc:       userSrvc,
 		taskSrvc:       taskSrvc,
-		evalSrvc:       evalSrvc,
+		execSrvc:       evalSrvc,
 		router:         router,
 		JwtKey:         jwtKey,
 	}
@@ -152,7 +148,7 @@ func (httpserver *HttpServer) routes() {
 	r.Get("/tasks/{taskId}", httpserver.getTask)
 	r.Get("/programming-languages", httpserver.listProgrammingLangs)
 	r.Get("/langs", httpserver.listProgrammingLangs)
-	// r.Get("/subm-updates", httpserver.listenToSubmListUpdates)
+	r.Get("/subm-updates", httpserver.submHttpServer.ListenToSubmListUpdates)
 	r.Post("/tester/run", httpserver.testerRun)
 	r.Get("/tester/run/{evalUuid}", httpserver.testerListen)
 	r.Get("/exec/{execUuid}", httpserver.execGet)
