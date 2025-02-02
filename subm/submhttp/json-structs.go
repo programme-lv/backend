@@ -50,8 +50,8 @@ type ScoreInfo struct {
 		Yellow int `json:"yellow"`
 		Purple int `json:"purple"`
 	} `json:"score_bar"`
-	ReceivedScore int `json:"received_score"`
-	PossibleScore int `json:"possible_score"`
+	ReceivedScore int `json:"received"`
+	PossibleScore int `json:"possible"`
 	MaxCpuMs      int `json:"max_cpu_ms"`
 	MaxMemMiB     int `json:"max_mem_mib"` // mebibytes
 }

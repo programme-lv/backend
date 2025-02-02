@@ -45,7 +45,13 @@ func mapSubmListEntry(
 	scoreInfo := eval.CalculateScore()
 	status := string(eval.Stage)
 	if eval.Error != nil {
-		status = string(eval.Error.Type)
+		if eval.Error.Type == subm.ErrorTypeCompilation {
+			status = "compile_error"
+		} else if eval.Error.Type == subm.ErrorTypeInternal {
+			status = "internal_error"
+		} else {
+			status = string(eval.Error.Type)
+		}
 	}
 
 	return SubmListEntry{
