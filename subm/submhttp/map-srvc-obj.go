@@ -298,11 +298,11 @@ func mapSubmEval(eval subm.Eval) Eval {
 	}
 
 	return Eval{
-		EvalUUID:  eval.UUID.String(),
-		EvalStage: string(eval.Stage),
-		ScoreUnit: string(eval.ScoreUnit),
-		EvalError: errType,
-		// ErrorMsg:   errMsg,
+		EvalUUID:   eval.UUID.String(),
+		SubmUUID:   eval.SubmUUID.String(),
+		EvalStage:  string(eval.Stage),
+		ScoreUnit:  string(eval.ScoreUnit),
+		EvalError:  errType,
 		Subtasks:   subtasks,
 		TestGroups: testGroups,
 		Verdicts:   verdicts,

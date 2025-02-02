@@ -27,12 +27,23 @@ func (r *pgEvalRepo) StoreEval(ctx context.Context, eval subm.Eval) error {
 	}
 	defer tx.Rollback(ctx)
 
-	// Insert Evaluation
-	evaluationInsertQuery := `
+	// Upsert Evaluation
+	evaluationUpsertQuery := `
 		INSERT INTO evaluations (
-			uuid, stage, score_unit, checker, interactor,
+			uuid, subm_uuid, stage, score_unit, checker, interactor,
 			cpu_lim_ms, mem_lim_kib, error_type, error_message, created_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+		ON CONFLICT (uuid) DO UPDATE SET
+			subm_uuid = EXCLUDED.subm_uuid,
+			stage = EXCLUDED.stage,
+			score_unit = EXCLUDED.score_unit,
+			checker = EXCLUDED.checker,
+			interactor = EXCLUDED.interactor,
+			cpu_lim_ms = EXCLUDED.cpu_lim_ms,
+			mem_lim_kib = EXCLUDED.mem_lim_kib,
+			error_type = EXCLUDED.error_type,
+			error_message = EXCLUDED.error_message,
+			created_at = EXCLUDED.created_at
 	`
 	var errorType *string
 	var errorMessage *string
@@ -42,8 +53,9 @@ func (r *pgEvalRepo) StoreEval(ctx context.Context, eval subm.Eval) error {
 		errorMessage = eval.Error.Message
 	}
 
-	_, err = tx.Exec(ctx, evaluationInsertQuery,
+	_, err = tx.Exec(ctx, evaluationUpsertQuery,
 		eval.UUID,
+		eval.SubmUUID,
 		eval.Stage,
 		eval.ScoreUnit,
 		eval.Checker,
@@ -55,7 +67,20 @@ func (r *pgEvalRepo) StoreEval(ctx context.Context, eval subm.Eval) error {
 		eval.CreatedAt,
 	)
 	if err != nil {
-		return fmt.Errorf("failed to insert evaluation: %w", err)
+		return fmt.Errorf("failed to upsert evaluation: %w", err)
+	}
+
+	// Delete existing related data first to avoid duplicates
+	deleteQueries := []string{
+		`DELETE FROM subtasks WHERE evaluation_uuid = $1`,
+		`DELETE FROM test_groups WHERE evaluation_uuid = $1`,
+		`DELETE FROM tests WHERE evaluation_uuid = $1`,
+	}
+	for _, query := range deleteQueries {
+		_, err = tx.Exec(ctx, query, eval.UUID)
+		if err != nil {
+			return fmt.Errorf("failed to delete existing data: %w", err)
+		}
 	}
 
 	// Insert Subtasks
@@ -98,8 +123,9 @@ func (r *pgEvalRepo) StoreEval(ctx context.Context, eval subm.Eval) error {
 	for _, test := range eval.Tests {
 		testInsertQuery := `
 			INSERT INTO tests (
-				evaluation_uuid, ac, wa, tle, mle, re, ig, reached, finished
-			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+				evaluation_uuid, ac, wa, tle, mle, re, ig, reached, finished,
+				inp_sha256, ans_sha256
+			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 		`
 		_, err = tx.Exec(ctx, testInsertQuery,
 			eval.UUID,
@@ -111,6 +137,8 @@ func (r *pgEvalRepo) StoreEval(ctx context.Context, eval subm.Eval) error {
 			test.Ig,
 			test.Reached,
 			test.Finished,
+			nullableString(test.InpSha256),
+			nullableString(test.AnsSha256),
 		)
 		if err != nil {
 			return fmt.Errorf("failed to insert test: %w", err)
@@ -128,7 +156,7 @@ func (r *pgEvalRepo) StoreEval(ctx context.Context, eval subm.Eval) error {
 func (r *pgEvalRepo) GetEval(ctx context.Context, evalUUID uuid.UUID) (subm.Eval, error) {
 	// Fetch Evaluation
 	evalQuery := `
-		SELECT uuid, stage, score_unit, checker, interactor, cpu_lim_ms, mem_lim_kib,
+		SELECT uuid, subm_uuid, stage, score_unit, checker, interactor, cpu_lim_ms, mem_lim_kib,
 			   error_type, error_message, created_at
 		FROM evaluations
 		WHERE uuid = $1
@@ -138,6 +166,7 @@ func (r *pgEvalRepo) GetEval(ctx context.Context, evalUUID uuid.UUID) (subm.Eval
 	var errorMessage *string
 	err := r.pool.QueryRow(ctx, evalQuery, evalUUID).Scan(
 		&eval.UUID,
+		&eval.SubmUUID,
 		&eval.Stage,
 		&eval.ScoreUnit,
 		&eval.Checker,
@@ -214,7 +243,7 @@ func (r *pgEvalRepo) GetEval(ctx context.Context, evalUUID uuid.UUID) (subm.Eval
 
 	// Fetch Tests
 	testsQuery := `
-		SELECT ac, wa, tle, mle, re, ig, reached, finished
+		SELECT ac, wa, tle, mle, re, ig, reached, finished, inp_sha256, ans_sha256
 		FROM tests
 		WHERE evaluation_uuid = $1
 	`
@@ -226,6 +255,7 @@ func (r *pgEvalRepo) GetEval(ctx context.Context, evalUUID uuid.UUID) (subm.Eval
 
 	for testRows.Next() {
 		var test subm.Test
+		var inpSha256, ansSha256 *string
 		err := testRows.Scan(
 			&test.Ac,
 			&test.Wa,
@@ -235,9 +265,17 @@ func (r *pgEvalRepo) GetEval(ctx context.Context, evalUUID uuid.UUID) (subm.Eval
 			&test.Ig,
 			&test.Reached,
 			&test.Finished,
+			&inpSha256,
+			&ansSha256,
 		)
 		if err != nil {
 			return subm.Eval{}, fmt.Errorf("failed to scan test: %w", err)
+		}
+		if inpSha256 != nil {
+			test.InpSha256 = *inpSha256
+		}
+		if ansSha256 != nil {
+			test.AnsSha256 = *ansSha256
 		}
 		eval.Tests = append(eval.Tests, test)
 	}
@@ -246,6 +284,14 @@ func (r *pgEvalRepo) GetEval(ctx context.Context, evalUUID uuid.UUID) (subm.Eval
 	}
 
 	return eval, nil
+}
+
+// Helper function to handle nullable strings
+func nullableString(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
 }
 
 type pgSubmRepo struct {

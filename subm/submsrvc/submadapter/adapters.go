@@ -28,6 +28,7 @@ type UserSrvcFacade interface {
 
 type TaskSrvcFacade interface {
 	GetTask(ctx context.Context, shortId string) (tasksrvc.Task, error)
+	GetTestDownlUrl(ctx context.Context, testFileSha256 string) (string, error)
 }
 
 type ExecSrvcFacade interface {
