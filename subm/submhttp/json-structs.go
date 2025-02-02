@@ -11,35 +11,22 @@ type DetailedSubmView struct {
 	CreatedAt string `json:"created_at"`
 }
 
-type SubmListEntry struct {
-	SubmUuid   string `json:"subm_uuid"`
-	Username   string `json:"username"`
-	TaskId     string `json:"task_id"`
-	TaskName   string `json:"task_name"`
-	PrLangId   string `json:"pr_lang_id"`
-	PrLangName string `json:"pr_lang_name"`
-
-	ScoreBar struct {
-		Green  int `json:"green"`
-		Red    int `json:"red"`
-		Gray   int `json:"gray"`
-		Yellow int `json:"yellow"`
-		Purple int `json:"purple"`
-	} `json:"score_bar"`
-	ReceivedScore int `json:"received_score"`
-	PossibleScore int `json:"possible_score"`
-
-	Status    string `json:"status"`
-	CreatedAt string `json:"created_at"`
-
-	MaxCpuMs  int `json:"max_cpu_ms"`
-	MaxMemMiB int `json:"max_mem_mib"` // mebibytes
-}
-
 type PrLang struct {
 	ShortID  string `json:"short_id"`
 	Display  string `json:"display"`
 	MonacoID string `json:"monaco_id"`
+}
+
+type SubmListEntry struct {
+	SubmUuid   string    `json:"subm_uuid"`
+	Username   string    `json:"username"`
+	TaskId     string    `json:"task_id"`
+	TaskName   string    `json:"task_name"`
+	PrLangId   string    `json:"pr_lang_id"`
+	PrLangName string    `json:"pr_lang_name"`
+	ScoreInfo  ScoreInfo `json:"score_info"`
+	Status     string    `json:"status"`
+	CreatedAt  string    `json:"created_at"`
 }
 
 type Eval struct {
@@ -52,6 +39,21 @@ type Eval struct {
 	Subtasks   []Subtask   `json:"subtasks"`
 	TestGroups []TestGroup `json:"test_groups"`
 	Verdicts   string      `json:"verdicts"` // q,ac,wa,tle,mle,re,ig -> "QAWTMRI"
+	ScoreInfo  ScoreInfo   `json:"score_info"`
+}
+
+type ScoreInfo struct {
+	ScoreBar struct {
+		Green  int `json:"green"`
+		Red    int `json:"red"`
+		Gray   int `json:"gray"`
+		Yellow int `json:"yellow"`
+		Purple int `json:"purple"`
+	} `json:"score_bar"`
+	ReceivedScore int `json:"received_score"`
+	PossibleScore int `json:"possible_score"`
+	MaxCpuMs      int `json:"max_cpu_ms"`
+	MaxMemMiB     int `json:"max_mem_mib"` // mebibytes
 }
 
 type Subtask struct {

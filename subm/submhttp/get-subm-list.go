@@ -1,7 +1,6 @@
 package submhttp
 
 import (
-	"log"
 	"log/slog"
 	"net/http"
 
@@ -23,7 +22,6 @@ func (h *SubmHttpHandler) GetSubmList(w http.ResponseWriter, r *http.Request) {
 	mapSubmList := func(subms []subm.Subm) []SubmListEntry {
 		response := make([]SubmListEntry, 0)
 		for _, subm := range subms {
-			log.Printf("subm: %+v", subm.UUID)
 			entry, err := h.mapSubmListEntry(r.Context(), subm)
 			if err != nil {
 				slog.Default().Warn("failed to map subm list entry", "error", err)

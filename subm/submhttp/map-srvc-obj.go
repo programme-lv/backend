@@ -42,92 +42,11 @@ func mapSubmListEntry(
 		return SubmListEntry{}, err
 	}
 
-	gotScore := 0
-	maxScore := 0
-	green := 0
-	red := 0
-	gray := 0
-	yellow := 0
-	purple := 0
-	if eval.ScoreUnit == subm.ScoreUnitTestGroup {
-		for _, testGroup := range eval.Groups {
-			maxScore += testGroup.Points
-		}
-		if eval.Error == nil {
-			for _, testGroup := range eval.Groups {
-				allUncreached := true
-				allAccepted := true
-				hasWrong := false
-				for _, testIdx := range testGroup.TgTests {
-					test := eval.Tests[testIdx-1]
-					if test.Reached {
-						allUncreached = false
-					}
-					if !test.Ac {
-						allAccepted = false
-					}
-					if test.Wa || test.Tle || test.Mle || test.Re {
-						hasWrong = true
-					}
-				}
-				if allUncreached {
-					gray += testGroup.Points
-				} else if allAccepted {
-					green += testGroup.Points
-					gotScore += testGroup.Points
-				} else if hasWrong {
-					red += testGroup.Points
-				} else {
-					yellow += testGroup.Points
-				}
-			}
-		} else {
-			purple = 100
-		}
-	} else if eval.ScoreUnit == subm.ScoreUnitTest {
-		maxScore += len(eval.Tests)
-		if eval.Error == nil {
-			for _, test := range eval.Tests {
-				if test.Ac {
-					green += 1
-					gotScore += 1
-				} else if test.Wa || test.Tle || test.Mle || test.Re {
-					red += 1
-				} else if test.Reached {
-					yellow += 1
-				} else {
-					gray += 1
-				}
-			}
-		} else {
-			purple = 100
-		}
-	}
-
+	scoreInfo := eval.CalculateScore()
 	status := string(eval.Stage)
 	if eval.Error != nil {
 		status = string(eval.Error.Type)
 	}
-
-	// maxCpuMs := 0
-	// maxMemMiB := 0
-
-	// for _, test := range eval.Tests {
-	// 	if test.CpuLimMs > maxCpuMs {
-	// 		maxCpuMs = test.CpuLimMs
-	// 	}
-	// 	if test.MemLimKiB > maxMemMiB {
-	// 		maxMemMiB = test.MemLimKiB
-	// 	}
-	// }
-
-	// green red gray yellow purple should sum up to 100
-	total := green + red + gray + yellow + purple
-	green = green * 100 / total
-	red = red * 100 / total
-	yellow = yellow * 100 / total
-	purple = purple * 100 / total
-	gray = 100 - green - red - yellow - purple
 
 	return SubmListEntry{
 		SubmUuid:   s.UUID.String(),
@@ -136,25 +55,27 @@ func mapSubmListEntry(
 		TaskName:   taskName,
 		PrLangId:   prLang.ShortID,
 		PrLangName: prLang.Display,
-		ScoreBar: struct {
-			Green  int `json:"green"`
-			Red    int `json:"red"`
-			Gray   int `json:"gray"`
-			Yellow int `json:"yellow"`
-			Purple int `json:"purple"`
-		}{
-			Green:  green,
-			Red:    red,
-			Gray:   gray,
-			Yellow: yellow,
-			Purple: purple,
+		ScoreInfo: ScoreInfo{
+			ScoreBar: struct {
+				Green  int `json:"green"`
+				Red    int `json:"red"`
+				Gray   int `json:"gray"`
+				Yellow int `json:"yellow"`
+				Purple int `json:"purple"`
+			}{
+				Green:  scoreInfo.ScoreBar.Green,
+				Red:    scoreInfo.ScoreBar.Red,
+				Gray:   scoreInfo.ScoreBar.Gray,
+				Yellow: scoreInfo.ScoreBar.Yellow,
+				Purple: scoreInfo.ScoreBar.Purple,
+			},
+			ReceivedScore: scoreInfo.ReceivedScore,
+			PossibleScore: scoreInfo.PossibleScore,
+			MaxCpuMs:      scoreInfo.MaxCpuMs,
+			MaxMemMiB:     scoreInfo.MaxMemMiB,
 		},
-		ReceivedScore: gotScore,
-		PossibleScore: maxScore,
-		Status:        status,
-		CreatedAt:     s.CreatedAt.Format(time.RFC3339),
-		MaxCpuMs:      0,
-		MaxMemMiB:     0,
+		Status:    status,
+		CreatedAt: s.CreatedAt.Format(time.RFC3339),
 	}, nil
 }
 
@@ -202,31 +123,9 @@ func mapSubm(
 
 func mapSubmEval(eval subm.Eval) Eval {
 	errType := ""
-	// errMsg := ""
 	if eval.Error != nil {
 		errType = string(eval.Error.Type)
-		// if eval.Error.Message != nil {
-		// 	errMsg = *eval.Error.Message
-		// }
 	}
-
-	// subtasks := []Subtask{}
-	// for _, subtask := range eval.Subtasks {
-	// 	subtasks = append(subtasks, Subtask{
-	// 		Points:      subtask.Points,
-	// 		Description: subtask.Description,
-	// 		StTests:     subtask.StTests,
-	// 	})
-	// }
-
-	// testGroups := []TestGroup{}
-	// for _, testGroup := range eval.Groups {
-	// 	testGroups = append(testGroups, TestGroup{
-	// 		Points:   testGroup.Points,
-	// 		Subtasks: testGroup.Subtasks,
-	// 		TgTests:  testGroup.TgTests,
-	// 	})
-	// }
 
 	subtasks := []Subtask{}
 	for _, subtask := range eval.Subtasks {
@@ -297,6 +196,8 @@ func mapSubmEval(eval subm.Eval) Eval {
 		}
 	}
 
+	scoreInfo := eval.CalculateScore()
+
 	return Eval{
 		EvalUUID:   eval.UUID.String(),
 		SubmUUID:   eval.SubmUUID.String(),
@@ -306,5 +207,24 @@ func mapSubmEval(eval subm.Eval) Eval {
 		Subtasks:   subtasks,
 		TestGroups: testGroups,
 		Verdicts:   verdicts,
+		ScoreInfo: ScoreInfo{
+			ScoreBar: struct {
+				Green  int `json:"green"`
+				Red    int `json:"red"`
+				Gray   int `json:"gray"`
+				Yellow int `json:"yellow"`
+				Purple int `json:"purple"`
+			}{
+				Green:  scoreInfo.ScoreBar.Green,
+				Red:    scoreInfo.ScoreBar.Red,
+				Gray:   scoreInfo.ScoreBar.Gray,
+				Yellow: scoreInfo.ScoreBar.Yellow,
+				Purple: scoreInfo.ScoreBar.Purple,
+			},
+			ReceivedScore: scoreInfo.ReceivedScore,
+			PossibleScore: scoreInfo.PossibleScore,
+			MaxCpuMs:      scoreInfo.MaxCpuMs,
+			MaxMemMiB:     scoreInfo.MaxMemMiB,
+		},
 	}
 }
