@@ -37,6 +37,8 @@ type submSrvc struct {
 
 	newEvalUpdListenerLock sync.Mutex
 	newEvalUpdListeners    map[chan<- subm.Eval]struct{}
+
+	inProgrEval map[uuid.UUID]subm.Eval
 }
 
 func NewSubmSrvc(
@@ -55,7 +57,77 @@ func NewSubmSrvc(
 
 		newSubmListeners:    make(map[chan<- subm.Subm]struct{}),
 		newEvalUpdListeners: make(map[chan<- subm.Eval]struct{}),
+
+		inProgrEval: make(map[uuid.UUID]subm.Eval),
 	}
+}
+
+func (s *submSrvc) procExecEv(ctx context.Context, p submcmd.ProcExecEvParams) error {
+	procExecEvCmd := submcmd.ProcExecEvCmdHandler{
+		StoreEval:     s.evalRepo.StoreEval,
+		BcastEvalUpd:  s.broadcastEvalUpdate,
+		GetEvalByUuid: s.evalRepo.GetEval,
+		InProgrEval:   s.inProgrEval,
+	}
+	return procExecEvCmd.Handle(ctx, p)
+}
+
+func (s *submSrvc) broadcastEvalUpdate(eval subm.Eval) {
+	s.newEvalUpdListenerLock.Lock()
+	defer s.newEvalUpdListenerLock.Unlock()
+	for ch := range s.newEvalUpdListeners {
+		ch <- eval
+	}
+}
+
+func (s *submSrvc) broadcastSubmCreated(subm subm.Subm) {
+	s.newSubmChListenerLock.Lock()
+	defer s.newSubmChListenerLock.Unlock()
+	for ch := range s.newSubmListeners {
+		ch <- subm
+	}
+}
+
+func (s *submSrvc) enqueueEvalExecAndListen(ctx context.Context, eval subm.Eval, srcCode string, prLangId string) error {
+	enqueueEvalCmd := submcmd.EnqueueEvalCmdHandler{
+		EnqueueExec:     s.execSrvc.Enqueue,
+		GetTestDownlUrl: s.taskSrvc.GetTestDownlUrl,
+	}
+
+	// Add eval to in-progress map before enqueueing
+	s.inProgrEval[eval.UUID] = eval
+
+	err := enqueueEvalCmd.Handle(ctx, submcmd.EnqueueEvalParams{
+		Eval:     eval,
+		SrcCode:  srcCode,
+		PrLangId: prLangId,
+	})
+	if err != nil {
+		delete(s.inProgrEval, eval.UUID) // Remove from map if enqueue fails
+		return fmt.Errorf("failed to enqueue evaluation: %w", err)
+	}
+
+	ch, err := s.execSrvc.Listen(ctx, eval.UUID)
+	if err != nil {
+		delete(s.inProgrEval, eval.UUID) // Remove from map if listen fails
+		return fmt.Errorf("failed to subscribe to evaluation: %w", err)
+	}
+
+	// Create a new background context for the event processing goroutine
+	processCtx := context.Background()
+	go func(execEvCh <-chan execsrvc.Event) {
+		for ev := range execEvCh {
+			err := s.procExecEv(processCtx, submcmd.ProcExecEvParams{
+				Eval:  eval,
+				Event: ev,
+			})
+			if err != nil {
+				slog.Error("failed to process execution event", "error", err)
+			}
+		}
+	}(ch)
+
+	return nil
 }
 
 func (s *submSrvc) SubmitSol(ctx context.Context, p submcmd.SubmitSolParams) error {
@@ -67,38 +139,11 @@ func (s *submSrvc) SubmitSol(ctx context.Context, p submcmd.SubmitSolParams) err
 			}
 			return user.UUID == uuid, nil
 		},
-		GetTask:   s.taskSrvc.GetTask,
-		StoreSubm: s.submRepo.StoreSubm,
-		StoreEval: s.evalRepo.StoreEval,
-		BcastSubmCreated: func(subm subm.Subm) {
-			slog.Info("submitted solution", "subm", subm)
-			s.newSubmChListenerLock.Lock()
-			for ch := range s.newSubmListeners {
-				ch <- subm
-			}
-			s.newSubmChListenerLock.Unlock()
-		},
-		EnqueueEvalExec: func(ctx context.Context, eval subm.Eval, srcCode string, prLangId string) error {
-			err := s.execSrvc.Enqueue(ctx, eval.UUID, srcCode, prLangId, nil, execsrvc.TestingParams{
-				CpuMs:      eval.CpuLimMs,
-				MemKiB:     eval.MemLimKiB,
-				Checker:    eval.Checker,
-				Interactor: eval.Interactor,
-			})
-			if err != nil {
-				return fmt.Errorf("failed to enqueue evaluation: %w", err)
-			}
-			ch, err := s.execSrvc.Listen(ctx, eval.UUID)
-			if err != nil {
-				return fmt.Errorf("failed to subscribe to evaluation: %w", err)
-			}
-			go func(execEvCh <-chan execsrvc.Event) {
-				for ev := range execEvCh {
-					slog.Info("received execution event", "ev", ev)
-				}
-			}(ch)
-			return nil
-		},
+		GetTask:          s.taskSrvc.GetTask,
+		StoreSubm:        s.submRepo.StoreSubm,
+		StoreEval:        s.evalRepo.StoreEval,
+		BcastSubmCreated: s.broadcastSubmCreated,
+		EnqueueEvalExec:  s.enqueueEvalExecAndListen,
 	}
 
 	return submitSolCmd.Handle(ctx, p)
@@ -117,6 +162,9 @@ func (s *submSrvc) ListSubms(ctx context.Context, filter submquery.ListSubmsPara
 }
 
 func (s *submSrvc) GetEval(ctx context.Context, uuid uuid.UUID) (subm.Eval, error) {
+	if eval, ok := s.inProgrEval[uuid]; ok {
+		return eval, nil
+	}
 	return s.evalRepo.GetEval(ctx, uuid)
 }
 

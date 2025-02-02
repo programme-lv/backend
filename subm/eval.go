@@ -104,8 +104,19 @@ func NewEval(uuid uuid.UUID, submUuid uuid.UUID, task tasksrvc.Task) Eval {
 	}
 
 	tests := []Test{}
-	for range task.Tests {
-		tests = append(tests, Test{})
+	for _, test := range task.Tests {
+		tests = append(tests, Test{
+			Ac:        false,
+			Wa:        false,
+			Tle:       false,
+			Mle:       false,
+			Re:        false,
+			Ig:        false,
+			Reached:   false,
+			Finished:  false,
+			InpSha256: test.InpSha2,
+			AnsSha256: test.AnsSha2,
+		})
 	}
 
 	scoreUnit := ScoreUnitTest

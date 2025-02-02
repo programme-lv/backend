@@ -19,7 +19,7 @@ type EnqueueEvalParams struct {
 }
 
 type EnqueueEvalCmdHandler struct {
-	EnqueueExec     func(ctx context.Context, execUuid uuid.UUID, srcCode string, prLangId string, tests []execsrvc.TestFile, cpuMs int, memKiB int, checker *string, interactor *string) error
+	EnqueueExec     func(ctx context.Context, execUuid uuid.UUID, srcCode string, prLangId string, tests []execsrvc.TestFile, params execsrvc.TestingParams) error
 	GetTestDownlUrl func(ctx context.Context, testFileSha256 string) (string, error)
 }
 
@@ -30,10 +30,12 @@ func (h EnqueueEvalCmdHandler) Handle(ctx context.Context, p EnqueueEvalParams) 
 		p.SrcCode,
 		p.PrLangId,
 		h.evalReqTests(ctx, p.Eval),
-		p.Eval.CpuLimMs,
-		p.Eval.MemLimKiB,
-		p.Eval.Checker,
-		p.Eval.Interactor,
+		execsrvc.TestingParams{
+			CpuMs:      p.Eval.CpuLimMs,
+			MemKiB:     p.Eval.MemLimKiB,
+			Checker:    p.Eval.Checker,
+			Interactor: p.Eval.Interactor,
+		},
 	)
 }
 

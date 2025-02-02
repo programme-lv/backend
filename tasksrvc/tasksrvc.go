@@ -1,6 +1,7 @@
 package tasksrvc
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -18,6 +19,15 @@ type TaskSrvc struct {
 	s3PublicBucket   *s3bucket.S3Bucket
 	s3TestfileBucket *s3bucket.S3Bucket
 	s3TaskBucket     *s3bucket.S3Bucket
+}
+
+// GetTestDownlUrl implements submadapter.TaskSrvcFacade.
+func (ts *TaskSrvc) GetTestDownlUrl(ctx context.Context, testFileSha256 string) (string, error) {
+	presignedUrl, err := ts.s3TestfileBucket.PresignedURL(testFileSha256, time.Hour*24)
+	if err != nil {
+		return "", fmt.Errorf("failed to get presigned URL: %w", err)
+	}
+	return presignedUrl, nil
 }
 
 func NewTaskSrvc() (*TaskSrvc, error) {

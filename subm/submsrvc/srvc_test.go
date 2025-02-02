@@ -73,6 +73,10 @@ func TestSubmitSolution(t *testing.T) {
 			t.Logf("getTask called with shortId: %s", shortId)
 			return tasksrvc.Task{}, nil
 		},
+		getTestDownlUrl: func(ctx context.Context, testFileSha256 string) (string, error) {
+			t.Logf("getTestDownlUrl called with testFileSha256: %s", testFileSha256)
+			return "", nil
+		},
 	}
 
 	execSrvcMock := execSrvcMock{
@@ -142,7 +146,7 @@ func TestSubmitSolution(t *testing.T) {
 		Submission:  "print(sum([int(x) for x in input().split()]))",
 		ProgrLangID: "python3.12",
 		TaskShortID: "aplusb",
-		AuthorUUID:  uuid.New(),
+		AuthorUUID:  mockUserUuid,
 	})
 	require.NoError(t, err)
 
@@ -214,11 +218,16 @@ func (u userSrvcMock) GetUserByUUID(ctx context.Context, uuid uuid.UUID) (usersr
 }
 
 type taskSrvcMock struct {
-	getTask func(ctx context.Context, shortId string) (tasksrvc.Task, error)
+	getTask         func(ctx context.Context, shortId string) (tasksrvc.Task, error)
+	getTestDownlUrl func(ctx context.Context, testFileSha256 string) (string, error)
 }
 
 func (t taskSrvcMock) GetTask(ctx context.Context, shortId string) (tasksrvc.Task, error) {
 	return t.getTask(ctx, shortId)
+}
+
+func (t taskSrvcMock) GetTestDownlUrl(ctx context.Context, testFileSha256 string) (string, error) {
+	return t.getTestDownlUrl(ctx, testFileSha256)
 }
 
 type execSrvcMock struct {
