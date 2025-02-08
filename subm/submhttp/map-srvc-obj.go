@@ -234,3 +234,12 @@ func mapSubmEval(eval submdomain.Eval) Eval {
 		},
 	}
 }
+
+func mapMaxScore(m submdomain.MaxScore) MaxScore {
+	return MaxScore{
+		SubmUuid:  m.SubmUuid.String(),
+		Received:  m.Received,
+		Possible:  m.Possible,
+		CreatedAt: m.CreatedAt.Format(time.RFC3339),
+	}
+}
