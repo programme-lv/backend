@@ -4,7 +4,7 @@ import (
 	"context"
 
 	decorator "github.com/programme-lv/backend/srvccqs"
-	"github.com/programme-lv/backend/subm"
+	subm "github.com/programme-lv/backend/subm/submdomain"
 )
 
 type ListSubmsQuery decorator.QueryHandler[ListSubmsParams, []subm.Subm]

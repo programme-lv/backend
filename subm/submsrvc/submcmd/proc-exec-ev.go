@@ -8,7 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/programme-lv/backend/execsrvc"
 	decorator "github.com/programme-lv/backend/srvccqs"
-	"github.com/programme-lv/backend/subm"
+	subm "github.com/programme-lv/backend/subm/submdomain"
 )
 
 type ProcExecEvCmd decorator.CmdHandler[ProcExecEvParams]
@@ -85,9 +85,16 @@ func applyExecEventToEval(eval subm.Eval, event execsrvc.Event) subm.Eval {
 			Message: u.ErrorMsg,
 		}
 	case execsrvc.ReachedTest:
+		if u.TestId > len(eval.Tests) {
+			slog.Error("reached test out of bounds", "test_id", u.TestId, "eval", fmt.Sprintf("%+v", eval))
+			return eval
+		}
 		eval.Tests[u.TestId-1].Reached = true
 	case execsrvc.FinishedTest:
-
+		if u.TestID > len(eval.Tests) {
+			slog.Error("finished test out of bounds", "test_id", u.TestID, "eval", fmt.Sprintf("%+v", eval))
+			return eval
+		}
 		eval.Tests[u.TestID-1].Finished = true
 		if u.Subm != nil {
 			if u.Subm.ExitCode != 0 {
@@ -109,6 +116,10 @@ func applyExecEventToEval(eval subm.Eval, event execsrvc.Event) subm.Eval {
 			}
 		}
 	case execsrvc.IgnoredTest:
+		if u.TestId > len(eval.Tests) {
+			slog.Error("ignored test out of bounds", "test_id", u.TestId, "eval", fmt.Sprintf("%+v", eval))
+			return eval
+		}
 		eval.Tests[u.TestId-1].Ig = true
 	}
 	return eval

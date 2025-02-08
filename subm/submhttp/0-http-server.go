@@ -5,7 +5,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/programme-lv/backend/planglist"
-	"github.com/programme-lv/backend/subm"
+	"github.com/programme-lv/backend/subm/submdomain"
 	"github.com/programme-lv/backend/subm/submsrvc"
 	"github.com/programme-lv/backend/tasksrvc"
 	"github.com/programme-lv/backend/usersrvc"
@@ -31,7 +31,7 @@ func NewSubmHttpHandler(
 
 func (h SubmHttpHandler) mapSubm(
 	ctx context.Context,
-	s subm.Subm,
+	s submdomain.Subm,
 ) (*DetailedSubmView, error) {
 	return mapSubm(
 		ctx,
@@ -45,7 +45,7 @@ func (h SubmHttpHandler) mapSubm(
 
 func (h *SubmHttpHandler) mapSubmListEntry(
 	ctx context.Context,
-	s subm.Subm,
+	s submdomain.Subm,
 ) (SubmListEntry, error) {
 	return mapSubmListEntry(
 		ctx,
@@ -85,6 +85,6 @@ func (h *SubmHttpHandler) getPrLang(ctx context.Context, shortID string) (PrLang
 	}, nil
 }
 
-func (h *SubmHttpHandler) getEval(ctx context.Context, evalUuid uuid.UUID) (subm.Eval, error) {
+func (h *SubmHttpHandler) getEval(ctx context.Context, evalUuid uuid.UUID) (submdomain.Eval, error) {
 	return h.submSrvc.GetEval(ctx, evalUuid)
 }

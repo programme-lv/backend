@@ -4,7 +4,7 @@ import (
 	"context"
 
 	decorator "github.com/programme-lv/backend/srvccqs"
-	"github.com/programme-lv/backend/subm"
+	subm "github.com/programme-lv/backend/subm/submdomain"
 )
 
 type SubsEvalUpd decorator.QueryHandler[SubsEvalUpdParams, <-chan subm.Eval]

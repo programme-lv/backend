@@ -7,7 +7,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/programme-lv/backend/execsrvc"
 	decorator "github.com/programme-lv/backend/srvccqs"
-	"github.com/programme-lv/backend/subm"
+	subm "github.com/programme-lv/backend/subm/submdomain"
 )
 
 type EnqueueEvalCmd decorator.CmdHandler[EnqueueEvalParams]
