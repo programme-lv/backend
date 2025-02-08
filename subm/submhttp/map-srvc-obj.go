@@ -6,16 +6,16 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/programme-lv/backend/subm"
+	"github.com/programme-lv/backend/subm/submdomain"
 )
 
 func mapSubmListEntry(
 	ctx context.Context,
-	s subm.Subm,
+	s submdomain.Subm,
 	getTaskName func(ctx context.Context, shortID string) (string, error),
 	getUsername func(ctx context.Context, userUuid uuid.UUID) (string, error),
 	getPrLang func(ctx context.Context, shortID string) (PrLang, error),
-	getEval func(ctx context.Context, evalUuid uuid.UUID) (subm.Eval, error),
+	getEval func(ctx context.Context, evalUuid uuid.UUID) (submdomain.Eval, error),
 ) (SubmListEntry, error) {
 
 	username, err := getUsername(ctx, s.AuthorUUID)
@@ -45,9 +45,9 @@ func mapSubmListEntry(
 	scoreInfo := eval.CalculateScore()
 	status := string(eval.Stage)
 	if eval.Error != nil {
-		if eval.Error.Type == subm.ErrorTypeCompilation {
+		if eval.Error.Type == submdomain.ErrorTypeCompilation {
 			status = "compile_error"
-		} else if eval.Error.Type == subm.ErrorTypeInternal {
+		} else if eval.Error.Type == submdomain.ErrorTypeInternal {
 			status = "internal_error"
 		} else {
 			status = string(eval.Error.Type)
@@ -87,11 +87,11 @@ func mapSubmListEntry(
 
 func mapSubm(
 	ctx context.Context,
-	subm subm.Subm,
+	subm submdomain.Subm,
 	getTaskName func(ctx context.Context, shortID string) (string, error),
 	getUsername func(ctx context.Context, userUuid uuid.UUID) (string, error),
 	getPrLang func(ctx context.Context, shortID string) (PrLang, error),
-	getEval func(ctx context.Context, evalUuid uuid.UUID) (subm.Eval, error),
+	getEval func(ctx context.Context, evalUuid uuid.UUID) (submdomain.Eval, error),
 ) (*DetailedSubmView, error) {
 	taskName, err := getTaskName(ctx, subm.TaskShortID)
 	if err != nil {
@@ -127,7 +127,7 @@ func mapSubm(
 
 }
 
-func mapSubmEval(eval subm.Eval) Eval {
+func mapSubmEval(eval submdomain.Eval) Eval {
 	errType := ""
 	if eval.Error != nil {
 		errType = string(eval.Error.Type)

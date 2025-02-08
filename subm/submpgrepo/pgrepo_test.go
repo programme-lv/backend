@@ -10,7 +10,7 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/peterldowns/pgtestdb"
 	"github.com/peterldowns/pgtestdb/migrators/golangmigrator"
-	"github.com/programme-lv/backend/subm"
+	"github.com/programme-lv/backend/subm/submdomain"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -96,8 +96,8 @@ func TestPgDbSchemaVersion(t *testing.T) {
 }
 
 // getSampleSubmEntityWithoutEval creates a SubmissionEntity with sample data.
-func getSampleSubmEntityWithoutEval() subm.Subm {
-	return subm.Subm{
+func getSampleSubmEntityWithoutEval() submdomain.Subm {
+	return submdomain.Subm{
 		UUID:         uuid.New(),
 		Content:      "Sample submission content",
 		AuthorUUID:   existingAuthorUuid, // author must pre-exist in the db
@@ -195,7 +195,7 @@ func TestSubmRepo_List_MultipleEntries(t *testing.T) {
 
 	// Create and store multiple entities
 	numEntries := 5
-	entities := make([]subm.Subm, numEntries)
+	entities := make([]submdomain.Subm, numEntries)
 	for i := 0; i < numEntries; i++ {
 		entities[i] = getSampleSubmEntityWithoutEval()
 	}
@@ -244,7 +244,7 @@ func TestSubmRepo_Store_MissingFields(t *testing.T) {
 	repo := NewPgSubmRepo(NewSampleDB(t))
 
 	// Example: Missing Content and AuthorUUID
-	invalidEntities := []subm.Subm{
+	invalidEntities := []submdomain.Subm{
 		{
 			UUID:        uuid.New(),
 			Content:     "",

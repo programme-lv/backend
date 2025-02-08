@@ -20,13 +20,13 @@ func (h *SubmHttpHandler) ListenToSubmListUpdates(w http.ResponseWriter, r *http
 		return
 	}
 
-	submCreatedCh, err := h.submSrvc.SubsNewSubm(r.Context())
+	submCreatedCh, err := h.submSrvc.SubscribeNewSubms(r.Context())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	evalUpdateCh, err := h.submSrvc.SubsEvalUpd(r.Context())
+	evalUpdateCh, err := h.submSrvc.SubscribeEvalUpds(r.Context())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

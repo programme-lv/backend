@@ -14,19 +14,394 @@ import (
 	"github.com/peterldowns/pgtestdb"
 	"github.com/peterldowns/pgtestdb/migrators/golangmigrator"
 	"github.com/programme-lv/backend/execsrvc"
-	"github.com/programme-lv/backend/subm"
+	submadaptermock "github.com/programme-lv/backend/mocks/submadapter"
+	"github.com/programme-lv/backend/subm/submdomain"
 	"github.com/programme-lv/backend/subm/submpgrepo"
 	"github.com/programme-lv/backend/subm/submsrvc"
+	"github.com/programme-lv/backend/subm/submsrvc/submadapter"
 	"github.com/programme-lv/backend/subm/submsrvc/submcmd"
+	"github.com/programme-lv/backend/subm/submsrvc/submquery"
 	"github.com/programme-lv/backend/tasksrvc"
 	"github.com/programme-lv/backend/usersrvc"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
 var mockUserUuid = uuid.New()
 
-// newPgDb returns a connection pool to a unique and isolated test database fully migrated and ready for testing
-func newPgDb(t *testing.T) *pgxpool.Pool {
+type testSetup struct {
+	userSrvc *submadaptermock.MockUserSrvcFacade
+	taskSrvc *submadaptermock.MockTaskSrvcFacade
+	execSrvc *submadaptermock.MockExecSrvcFacade
+	submRepo submadapter.SubmRepo
+	evalRepo submadapter.EvalRepo
+	srvc     submsrvc.SubmSrvcClient
+}
+
+func setupSubmSrvc(t *testing.T) *testSetup {
+	t.Helper()
+	t.Log("Setting up test dependencies...")
+
+	db := newPgMigratedTestDbConn(t)
+	submRepo := submpgrepo.NewPgSubmRepo(db)
+	evalRepo := submpgrepo.NewPgEvalRepo(db)
+
+	setup := &testSetup{
+		userSrvc: submadaptermock.NewMockUserSrvcFacade(t),
+		taskSrvc: submadaptermock.NewMockTaskSrvcFacade(t),
+		execSrvc: submadaptermock.NewMockExecSrvcFacade(t),
+		submRepo: submRepo,
+		evalRepo: evalRepo,
+	}
+
+	setup.srvc = submsrvc.NewSubmSrvc(
+		setup.userSrvc,
+		setup.taskSrvc,
+		setup.execSrvc,
+		setup.submRepo,
+		setup.evalRepo,
+	)
+
+	return setup
+}
+
+// submitSolution is a helper to submit a solution and return its UUID
+func (s *testSetup) submitSolution(t *testing.T, ctx context.Context) uuid.UUID {
+	t.Helper()
+	s.execSrvc.EXPECT().Enqueue(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	s.execSrvc.EXPECT().Listen(mock.Anything, mock.Anything).Return(newMockExecEventChannel(t), nil)
+	s.userSrvc.EXPECT().GetUserByUUID(mock.Anything, mockUserUuid).Return(usersrvc.User{UUID: mockUserUuid}, nil)
+	s.taskSrvc.EXPECT().GetTask(mock.Anything, "aplusb").Return(tasksrvc.Task{ShortId: "aplusb"}, nil)
+	submUUID := uuid.New()
+	err := s.srvc.SubmitSol(ctx, submcmd.SubmitSolParams{
+		UUID:        submUUID,
+		Submission:  "print(sum([int(x) for x in input().split()]))",
+		ProgrLangID: "python3.12",
+		TaskShortID: "aplusb",
+		AuthorUUID:  mockUserUuid,
+	})
+	require.NoError(t, err)
+	return submUUID
+}
+
+// TestSubmitSolutionBasicFlow tests the basic flow of submitting a solution
+// and receiving a notification about it.
+func TestSubmitSolutionBasicFlow(t *testing.T) {
+	setup := setupSubmSrvc(t)
+	bg := context.Background()
+
+	t.Log("Setting up submission channel...")
+	newSubmCh, err := setup.srvc.SubscribeNewSubms(bg)
+	require.NoError(t, err)
+
+	t.Log("Submitting solution...")
+	submUUID := setup.submitSolution(t, bg)
+
+	t.Log("Waiting for submission notification...")
+	submFromCh := <-newSubmCh
+	require.Equal(t, submFromCh.UUID, submUUID)
+
+	t.Log("Fetching submission details...")
+	submFromGet, err := setup.srvc.GetSubm(bg, submUUID)
+	require.NoError(t, err)
+
+	t.Log("Verifying submission details...")
+	require.Less(t, math.Abs(submFromCh.CreatedAt.Sub(submFromGet.CreatedAt).Seconds()), 1.0)
+	submFromCh.CreatedAt = submFromGet.CreatedAt
+	require.Equal(t, submFromCh, submFromGet)
+}
+
+// TestSubmitSolutionPersistence tests that submissions are correctly persisted
+// and can be retrieved by a new service instance.
+func TestSubmitSolutionPersistence(t *testing.T) {
+	setup := setupSubmSrvc(t)
+	bg := context.Background()
+
+	t.Log("Submitting solution...")
+	submUUID := setup.submitSolution(t, bg)
+
+	t.Log("Fetching original submission...")
+	origSubm, err := setup.srvc.GetSubm(bg, submUUID)
+	require.NoError(t, err)
+
+	t.Log("Creating new service instance...")
+	newSrvc := submsrvc.NewSubmSrvc(
+		setup.userSrvc,
+		setup.taskSrvc,
+		setup.execSrvc,
+		setup.submRepo,
+		setup.evalRepo,
+	)
+
+	t.Log("Verifying submission persistence...")
+	persistedSubm, err := newSrvc.GetSubm(bg, submUUID)
+	require.NoError(t, err)
+	require.Equal(t, origSubm, persistedSubm)
+
+	t.Log("Verifying evaluation persistence...")
+	evalFromGet, err := newSrvc.GetEval(bg, origSubm.CurrEvalUUID)
+	require.NoError(t, err)
+	require.Equal(t, origSubm.CurrEvalUUID, evalFromGet.UUID)
+}
+
+// TestSubmitSolutionEvaluation tests the evaluation update flow for a submission.
+func TestSubmitSolutionEvaluation(t *testing.T) {
+	setup := setupSubmSrvc(t)
+	bg := context.Background()
+
+	evalUpdCh, err := setup.srvc.SubscribeEvalUpds(bg)
+	require.NoError(t, err)
+
+	t.Log("Submitting solution...")
+	submUUID := setup.submitSolution(t, bg)
+
+	t.Log("Fetching submission to get evaluation UUID...")
+	subm, err := setup.srvc.GetSubm(bg, submUUID)
+	require.NoError(t, err)
+
+	updates := []submdomain.Eval{}
+	for update := range evalUpdCh {
+		updates = append(updates, update)
+		if update.UUID == subm.CurrEvalUUID {
+			if update.Stage == submdomain.EvalStageFinished {
+				break
+			}
+		}
+	}
+
+	// Verify the sequence of evaluation stages
+	expectedStages := []string{
+		"waiting",
+		"compiling",
+		"compiling",
+		"testing",
+		"testing",
+		"testing",
+		"testing",
+		"testing",
+		"finished",
+	}
+
+	for i, update := range updates {
+		require.Equal(t, expectedStages[i], string(update.Stage), "Unexpected evaluation stage at index %d", i)
+	}
+}
+
+// TestUserMaxScores tests that GetMaxScorePerTask correctly calculates maximum scores
+func TestUserMaxScores(t *testing.T) {
+	setup := setupSubmSrvc(t)
+	bg := context.Background()
+
+	// Initially there should be no scores
+	scores, err := setup.srvc.GetMaxScorePerTask(bg, mockUserUuid)
+	require.NoError(t, err)
+	require.Equal(t, scores, map[string]submdomain.MaxScore{})
+
+	// Submit a solution that will get 50% score (1 out of 2 tests pass)
+	setup.execSrvc.EXPECT().Enqueue(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	mockCh := make(chan execsrvc.Event, 10)
+	setup.execSrvc.EXPECT().Listen(mock.Anything, mock.Anything).Return(mockCh, nil).Once()
+	setup.userSrvc.EXPECT().GetUserByUUID(mock.Anything, mockUserUuid).Return(usersrvc.User{UUID: mockUserUuid}, nil).Once()
+	setup.taskSrvc.EXPECT().GetTask(mock.Anything, "aplusb").Return(newAplusBTask(t), nil).Once()
+	setup.taskSrvc.EXPECT().GetTestDownlUrl(mock.Anything, mock.Anything).Return("", nil)
+
+	submUUID := uuid.New()
+	err = setup.srvc.SubmitSol(bg, submcmd.SubmitSolParams{
+		UUID:        submUUID,
+		Submission:  "print(sum([int(x) for x in input().split()]))",
+		ProgrLangID: "python3.12",
+		TaskShortID: "aplusb",
+		AuthorUUID:  mockUserUuid,
+	})
+	require.NoError(t, err)
+
+	subm, err := setup.srvc.GetSubm(bg, submUUID)
+	require.NoError(t, err)
+
+	// Simulate evaluation events
+	mockCh <- execsrvc.ReceivedSubmission{SysInfo: "test", StartedAt: time.Now()}
+	mockCh <- execsrvc.StartedTesting{}
+	mockCh <- execsrvc.ReachedTest{TestId: 1}
+	mockCh <- execsrvc.FinishedTest{TestID: 1, Subm: &execsrvc.RunData{ExitCode: 0}, Checker: &execsrvc.RunData{ExitCode: 0}} // AC
+	mockCh <- execsrvc.ReachedTest{TestId: 2}
+	mockCh <- execsrvc.FinishedTest{TestID: 2, Subm: &execsrvc.RunData{ExitCode: 0}, Checker: &execsrvc.RunData{ExitCode: 1}} // WA
+	mockCh <- execsrvc.FinishedTesting{}
+	close(mockCh)
+
+	err = setup.srvc.WaitForEvalFinish(bg, subm.CurrEvalUUID)
+	require.NoError(t, err)
+
+	subms, err := setup.srvc.ListSubms(bg, submquery.ListSubmsParams{
+		Limit:  10000,
+		Offset: 0,
+	})
+	require.NoError(t, err)
+	require.Len(t, subms, 1)
+	require.Equal(t, subms[0].UUID, subm.UUID)
+
+	eval, err := setup.srvc.GetEval(bg, subm.CurrEvalUUID)
+	require.NoError(t, err)
+	require.Equal(t, eval.Stage, submdomain.EvalStageFinished)
+
+	score := eval.CalculateScore()
+	require.Equal(t, score.ReceivedScore, 1)
+	require.Equal(t, score.PossibleScore, 2)
+
+	// Check scores - should have 50% on aplusb
+	scores, err = setup.srvc.GetMaxScorePerTask(bg, mockUserUuid)
+	require.NoError(t, err)
+	require.Equal(t, map[string]submdomain.MaxScore{
+		"aplusb": {
+			SubmUuid: subm.UUID,
+			Received: 1,
+			Possible: 2,
+		},
+	}, scores)
+
+	// Submit another solution that gets 100% score
+	mockCh2 := make(chan execsrvc.Event, 10)
+	setup.execSrvc.EXPECT().Enqueue(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	setup.execSrvc.EXPECT().Listen(mock.Anything, mock.Anything).Return(mockCh2, nil).Once()
+	setup.userSrvc.EXPECT().GetUserByUUID(mock.Anything, mockUserUuid).Return(usersrvc.User{UUID: mockUserUuid}, nil)
+	setup.taskSrvc.EXPECT().GetTask(mock.Anything, "aplusb").Return(newAplusBTask(t), nil)
+	setup.taskSrvc.EXPECT().GetTestDownlUrl(mock.Anything, mock.Anything).Return("", nil)
+
+	submUUID2 := uuid.New()
+	err = setup.srvc.SubmitSol(bg, submcmd.SubmitSolParams{
+		UUID:        submUUID2,
+		Submission:  "print(sum([int(x) for x in input().split()]))", // Same code but this time both tests pass
+		ProgrLangID: "python3.12",
+		TaskShortID: "aplusb",
+		AuthorUUID:  mockUserUuid,
+	})
+	require.NoError(t, err)
+
+	subm2, err := setup.srvc.GetSubm(bg, submUUID2)
+	require.NoError(t, err)
+
+	// Simulate evaluation events - both tests pass this time
+	mockCh2 <- execsrvc.ReceivedSubmission{SysInfo: "test", StartedAt: time.Now()}
+	mockCh2 <- execsrvc.StartedTesting{}
+	mockCh2 <- execsrvc.ReachedTest{TestId: 1}
+	mockCh2 <- execsrvc.FinishedTest{TestID: 1, Subm: &execsrvc.RunData{ExitCode: 0}, Checker: &execsrvc.RunData{ExitCode: 0}} // AC
+	mockCh2 <- execsrvc.ReachedTest{TestId: 2}
+	mockCh2 <- execsrvc.FinishedTest{TestID: 2, Subm: &execsrvc.RunData{ExitCode: 0}, Checker: &execsrvc.RunData{ExitCode: 0}} // AC
+	mockCh2 <- execsrvc.FinishedTesting{}
+	close(mockCh2)
+
+	err = setup.srvc.WaitForEvalFinish(bg, subm2.CurrEvalUUID)
+	require.NoError(t, err)
+
+	eval2, err := setup.srvc.GetEval(bg, subm2.CurrEvalUUID)
+	require.NoError(t, err)
+	require.Equal(t, eval2.Stage, submdomain.EvalStageFinished)
+
+	score2 := eval2.CalculateScore()
+	require.Equal(t, score2.ReceivedScore, 2)
+	require.Equal(t, score2.PossibleScore, 2)
+
+	// Check scores - should now have 100% on aplusb
+	scores, err = setup.srvc.GetMaxScorePerTask(bg, mockUserUuid)
+	require.NoError(t, err)
+	require.Equal(t, map[string]submdomain.MaxScore{
+		"aplusb": {
+			SubmUuid: subm2.UUID, // Should be the second submission since it has a higher score
+			Received: 2,
+			Possible: 2,
+		},
+	}, scores)
+}
+
+func newAplusBTask(t *testing.T) tasksrvc.Task {
+	t.Helper()
+	return tasksrvc.Task{
+		ShortId:         "aplusb",
+		MemLimMegabytes: 256,
+		CpuTimeLimSecs:  1,
+		Tests: []tasksrvc.Test{
+			{
+				InpSha2: "a8692502350d26305a557cf6277fe8594130c73b7aaeb24ed5413335dd6daa8c",
+				AnsSha2: "030e27d5723736abfbdd64046cfeacf2d9f6f52c3fb1638a0cdcbe95d1ab87c2",
+			},
+			{
+				InpSha2: "07bf895436232279171deb4fda0fe2b11e3df5e8d309d4a0be1841ea4f942e61",
+				AnsSha2: "f44e60ad9601f0c79ec56031c81f07cdd27cf3dab473005d3c1abbd451140036",
+			},
+		},
+	}
+}
+
+// newMockExecEventChannel creates and returns a channel that simulates the execution service events
+func newMockExecEventChannel(t *testing.T) <-chan execsrvc.Event {
+	t.Helper()
+	t.Log("Creating mock execution event channel...")
+	mockCh := make(chan execsrvc.Event, 1)
+	go func() {
+		defer close(mockCh)
+		events := []execsrvc.Event{
+			execsrvc.ReceivedSubmission{
+				SysInfo:   "some sys info",
+				StartedAt: time.Now(),
+			},
+			execsrvc.StartedCompiling{},
+			execsrvc.FinishedCompiling{
+				RuntimeData: getExampleRunData(),
+			},
+			execsrvc.StartedTesting{},
+			execsrvc.ReachedTest{
+				TestId: 1,
+				In:     getExampleStrPtr(),
+				Ans:    getExampleStrPtr(),
+			},
+			execsrvc.FinishedTest{
+				TestID:  1,
+				Subm:    getExampleRunData(),
+				Checker: getExampleRunData(),
+			},
+			execsrvc.ReachedTest{
+				TestId: 2,
+				In:     getExampleStrPtr(),
+				Ans:    getExampleStrPtr(),
+			},
+			execsrvc.FinishedTest{
+				TestID:  2,
+				Subm:    getExampleRunData(),
+				Checker: getExampleRunData(),
+			},
+			execsrvc.FinishedTesting{},
+		}
+		for _, event := range events {
+			t.Logf("Sending mock event: %T", event)
+			mockCh <- event
+		}
+	}()
+	return mockCh
+}
+
+// Helper that generates random run data for tests
+func getExampleRunData() *execsrvc.RunData {
+	return &execsrvc.RunData{
+		StdIn:    "some std in",
+		StdOut:   "some std out",
+		StdErr:   "some std err",
+		CpuMs:    1 + int64(rand.IntN(100)),
+		WallMs:   2 + int64(rand.IntN(100)),
+		MemKiB:   3 + int64(rand.IntN(100)),
+		ExitCode: 4 + int64(rand.IntN(100)),
+		CtxSwV:   rand.Int64(),
+		CtxSwF:   rand.Int64(),
+		Signal:   nil,
+	}
+}
+
+// Helper that generates random string pointer
+func getExampleStrPtr() *string {
+	s := strconv.Itoa(rand.IntN(100))
+	return &s
+}
+
+// newPgMigratedTestDbConn returns a connection pool to a unique and isolated test database fully migrated and ready for testing
+func newPgMigratedTestDbConn(t *testing.T) *pgxpool.Pool {
 	t.Helper()
 	ctx := context.Background()
 	conf := pgtestdb.Config{
@@ -58,223 +433,4 @@ func newPgDb(t *testing.T) *pgxpool.Pool {
 	)
 
 	return pool
-}
-
-func TestSubmitSolution(t *testing.T) {
-	userSrvcMock := userSrvcMock{
-		getUserByUUID: func(ctx context.Context, uuid uuid.UUID) (usersrvc.User, error) {
-			t.Logf("getUserByUUID called with uuid: %s", uuid)
-			return usersrvc.User{UUID: mockUserUuid}, nil
-		},
-	}
-
-	taskSrvcMock := taskSrvcMock{
-		getTask: func(ctx context.Context, shortId string) (tasksrvc.Task, error) {
-			t.Logf("getTask called with shortId: %s", shortId)
-			return tasksrvc.Task{}, nil
-		},
-		getTestDownlUrl: func(ctx context.Context, testFileSha256 string) (string, error) {
-			t.Logf("getTestDownlUrl called with testFileSha256: %s", testFileSha256)
-			return "", nil
-		},
-	}
-
-	execSrvcMock := execSrvcMock{
-		enqueue: func(ctx context.Context, execUuid uuid.UUID, srcCode string, prLangId string, tests []execsrvc.TestFile, params execsrvc.TestingParams) error {
-			cpuMs := params.CpuMs
-			memKiB := params.MemKiB
-			checker := params.Checker
-			interactor := params.Interactor
-			t.Logf("enqueue called with execUuid: %s, srcCode: %s, prLangId: %s, tests: %v, cpuMs: %d, memKiB: %d, checker: %v, interactor: %v", execUuid, srcCode, prLangId, tests, cpuMs, memKiB, checker, interactor)
-			return nil
-		},
-		listen: func(ctx context.Context, evalUuid uuid.UUID) (<-chan execsrvc.Event, error) {
-			mockCh := make(chan execsrvc.Event, 1000)
-			go func() {
-				defer close(mockCh)
-				events := []execsrvc.Event{
-					execsrvc.ReceivedSubmission{ // 1st update to user
-						SysInfo:   "some sys info",
-						StartedAt: time.Now(),
-					},
-					execsrvc.StartedCompiling{}, // 2nd update to user
-					execsrvc.FinishedCompiling{
-						RuntimeData: getExampleRunData(),
-					},
-					execsrvc.StartedTesting{}, // 3rd update to user
-					execsrvc.ReachedTest{ // 4th update to user
-						TestId: 1,
-						In:     getExampleStrPtr(),
-						Ans:    getExampleStrPtr(),
-					},
-					execsrvc.FinishedTest{ // 5th update to user
-						TestID:  1,
-						Subm:    getExampleRunData(),
-						Checker: getExampleRunData(),
-					},
-					execsrvc.ReachedTest{ // 6th update to user
-						TestId: 2,
-						In:     getExampleStrPtr(),
-						Ans:    getExampleStrPtr(),
-					},
-					execsrvc.FinishedTest{ // 7th update to user
-						TestID:  2,
-						Subm:    getExampleRunData(),
-						Checker: getExampleRunData(),
-					},
-					execsrvc.FinishedTesting{}, // 8th update to user
-				}
-				for _, event := range events {
-					mockCh <- event
-				}
-			}()
-			return mockCh, nil
-		},
-	}
-
-	pgPool := newPgDb(t)
-	submRepo := submpgrepo.NewPgSubmRepo(pgPool)
-	evalRepo := submpgrepo.NewPgEvalRepo(pgPool)
-	srvc := submsrvc.NewSubmSrvc(userSrvcMock, taskSrvcMock, execSrvcMock, submRepo, evalRepo)
-	require.NotNil(t, srvc)
-
-	bg := context.Background()
-
-	submUUID := uuid.New()
-	err := srvc.SubmitSol(bg, submcmd.SubmitSolParams{
-		UUID:        submUUID,
-		Submission:  "print(sum([int(x) for x in input().split()]))",
-		ProgrLangID: "python3.12",
-		TaskShortID: "aplusb",
-		AuthorUUID:  mockUserUuid,
-	})
-	require.NoError(t, err)
-
-	newSubmCh, err := srvc.SubsNewSubm(bg)
-	require.NoError(t, err)
-
-	// okay so the next step is to listen for evaluation execution events
-	// we have to do that on the original service, because it has the events in mem
-	evalUpdCh, err := srvc.SubsEvalUpd(bg)
-	require.NoError(t, err)
-
-	submUUID = uuid.New()
-	err = srvc.SubmitSol(bg, submcmd.SubmitSolParams{
-		UUID:        submUUID,
-		Submission:  "print(sum([int(x) for x in input().split()]))",
-		ProgrLangID: "python3.12",
-		TaskShortID: "aplusb",
-		AuthorUUID:  mockUserUuid,
-	})
-	require.NoError(t, err)
-
-	submFromCh := <-newSubmCh
-	require.Equal(t, submFromCh.UUID, submUUID)
-
-	submFromGet, err := srvc.GetSubm(bg, submUUID)
-	require.NoError(t, err)
-
-	require.Less(t, math.Abs(submFromCh.CreatedAt.Sub(submFromGet.CreatedAt).Seconds()), 1.0)
-	submFromCh.CreatedAt = submFromGet.CreatedAt
-	require.Equal(t, submFromCh, submFromGet)
-	require.Equal(t, submFromCh.UUID, submUUID)
-
-	require.NotEqual(t, submFromCh.CurrEvalUUID, uuid.Nil)
-
-	newSubmSrvc := submsrvc.NewSubmSrvc(userSrvcMock, taskSrvcMock, execSrvcMock, submRepo, evalRepo)
-	require.NotNil(t, newSubmSrvc)
-
-	submFromGet2, err := newSubmSrvc.GetSubm(bg, submUUID)
-	require.NoError(t, err)
-	require.Equal(t, submFromGet, submFromGet2)
-
-	evalFromGet, err := newSubmSrvc.GetEval(bg, submFromGet.CurrEvalUUID)
-	require.NoError(t, err)
-	require.Equal(t, submFromGet.CurrEvalUUID, evalFromGet.UUID)
-	evalUpdates := []subm.Eval{}
-	timeout := time.After(5 * time.Second)
-	for {
-		select {
-		case e, ok := <-evalUpdCh:
-			if !ok {
-				goto done
-			}
-			evalUpdates = append(evalUpdates, e)
-		case <-timeout:
-			t.Fatal("timed out waiting for eval updates")
-		}
-	}
-done:
-	require.Equal(t, 8, len(evalUpdates))
-
-}
-
-type userSrvcMock struct {
-	getUserByUUID func(ctx context.Context, uuid uuid.UUID) (usersrvc.User, error)
-}
-
-func (u userSrvcMock) GetUserByUUID(ctx context.Context, uuid uuid.UUID) (usersrvc.User, error) {
-	return u.getUserByUUID(ctx, uuid)
-}
-
-type taskSrvcMock struct {
-	getTask         func(ctx context.Context, shortId string) (tasksrvc.Task, error)
-	getTestDownlUrl func(ctx context.Context, testFileSha256 string) (string, error)
-}
-
-func (t taskSrvcMock) GetTask(ctx context.Context, shortId string) (tasksrvc.Task, error) {
-	return t.getTask(ctx, shortId)
-}
-
-func (t taskSrvcMock) GetTestDownlUrl(ctx context.Context, testFileSha256 string) (string, error) {
-	return t.getTestDownlUrl(ctx, testFileSha256)
-}
-
-type execSrvcMock struct {
-	enqueue func(
-		ctx context.Context,
-		execUuid uuid.UUID,
-		srcCode string,
-		prLangId string,
-		tests []execsrvc.TestFile,
-		params execsrvc.TestingParams,
-	) error
-	listen func(ctx context.Context, evalUuid uuid.UUID) (<-chan execsrvc.Event, error)
-}
-
-func (e execSrvcMock) Enqueue(
-	ctx context.Context,
-	execUuid uuid.UUID,
-	srcCode string,
-	prLangId string,
-	tests []execsrvc.TestFile,
-	params execsrvc.TestingParams,
-) error {
-	return e.enqueue(ctx, execUuid, srcCode, prLangId, tests, params)
-}
-
-func (e execSrvcMock) Listen(ctx context.Context, evalUuid uuid.UUID) (<-chan execsrvc.Event, error) {
-	return e.listen(ctx, evalUuid)
-}
-
-// Helper that generates random run data for tests
-func getExampleRunData() *execsrvc.RunData {
-	return &execsrvc.RunData{
-		StdIn:    "some std in",
-		StdOut:   "some std out",
-		StdErr:   "some std err",
-		CpuMs:    1 + int64(rand.IntN(100)),
-		WallMs:   2 + int64(rand.IntN(100)),
-		MemKiB:   3 + int64(rand.IntN(100)),
-		ExitCode: 4 + int64(rand.IntN(100)),
-		CtxSwV:   rand.Int64(),
-		CtxSwF:   rand.Int64(),
-		Signal:   nil,
-	}
-}
-
-// Helper that generates random string pointer
-func getExampleStrPtr() *string {
-	s := strconv.Itoa(rand.IntN(100))
-	return &s
 }
