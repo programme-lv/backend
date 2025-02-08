@@ -142,6 +142,7 @@ func (httpserver *HttpServer) routes() {
 	// r.Post("/reevaluate", httpserver.reevaluateSubmissions)
 	r.Get("/subm", httpserver.submHttpServer.GetSubmList)
 	r.Get("/subm/{subm-uuid}", httpserver.submHttpServer.GetFullSubm)
+	r.Get("/subm/scores/{username}", httpserver.submHttpServer.GetMaxScorePerTask)
 	r.Post("/auth/login", httpserver.authLogin)
 	r.Post("/users", httpserver.authRegister)
 	r.Get("/tasks", httpserver.listTasks)
