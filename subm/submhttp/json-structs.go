@@ -71,8 +71,9 @@ type TestGroup struct {
 }
 
 type MaxScore struct {
-	SubmUuid  string `json:"subm_uuid"`
-	Received  int    `json:"received"`
-	Possible  int    `json:"possible"`
-	CreatedAt string `json:"created_at"`
+	SubmUuid     string `json:"subm_uuid"`
+	Received     int    `json:"received"`
+	Possible     int    `json:"possible"`
+	CreatedAt    string `json:"created_at"`
+	TaskFullName string `json:"task_full_name"`
 }

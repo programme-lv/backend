@@ -235,11 +235,20 @@ func mapSubmEval(eval submdomain.Eval) Eval {
 	}
 }
 
-func mapMaxScore(m submdomain.MaxScore) MaxScore {
-	return MaxScore{
-		SubmUuid:  m.SubmUuid.String(),
-		Received:  m.Received,
-		Possible:  m.Possible,
-		CreatedAt: m.CreatedAt.Format(time.RFC3339),
+func (h *SubmHttpHandler) mapMaxScore(ctx context.Context, taskShortID string, m submdomain.MaxScore) (MaxScore, error) {
+	taskFullNames, err := h.taskSrvc.GetTaskFullNames(ctx, []string{taskShortID})
+	if err != nil {
+		return MaxScore{}, err
 	}
+	taskFullName := taskFullNames[0]
+	if taskFullName == "" {
+		taskFullName = taskShortID
+	}
+	return MaxScore{
+		SubmUuid:     m.SubmUuid.String(),
+		Received:     m.Received,
+		Possible:     m.Possible,
+		CreatedAt:    m.CreatedAt.Format(time.RFC3339),
+		TaskFullName: taskFullName,
+	}, nil
 }

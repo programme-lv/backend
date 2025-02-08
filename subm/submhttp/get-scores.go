@@ -24,7 +24,11 @@ func (h *SubmHttpHandler) GetMaxScorePerTask(w http.ResponseWriter, r *http.Requ
 
 	scoresJson := make(map[string]MaxScore)
 	for taskId, score := range scores {
-		scoresJson[taskId] = mapMaxScore(score)
+		scoresJson[taskId], err = h.mapMaxScore(r.Context(), taskId, score)
+		if err != nil {
+			httpjson.HandleError(slog.Default(), w, err)
+			return
+		}
 	}
 
 	httpjson.WriteSuccessJson(w, scoresJson)
