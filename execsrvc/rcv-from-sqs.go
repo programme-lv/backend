@@ -27,15 +27,16 @@ func StartReceivingResultsFromSqs(ctx context.Context,
 			return ctx.Err()
 		default:
 			wg2 := sync.WaitGroup{}
-			wg2.Add(10)
-			for i := 0; i < 10; i++ {
+			parallel := 3
+			wg2.Add(parallel)
+			for i := 0; i < parallel; i++ {
 				go func() {
 					defer wg2.Done()
 
 					output, err := client.ReceiveMessage(ctx, &sqs.ReceiveMessageInput{
 						QueueUrl:            aws.String(sqsUrl),
 						MaxNumberOfMessages: 10,
-						WaitTimeSeconds:     1,
+						WaitTimeSeconds:     10,
 					})
 					if err != nil {
 						if errors.Is(err, context.Canceled) {
