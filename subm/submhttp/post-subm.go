@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/programme-lv/backend/auth"
@@ -36,6 +37,18 @@ func (h *SubmHttpHandler) PostSubm(w http.ResponseWriter, r *http.Request) {
 		httpjson.HandleError(slog.Default(), w, submerror.ErrUnauthorizedUsernameMismatch())
 		return
 	}
+
+	// Check submission rate limit (at least 10 seconds between submissions)
+	h.rateLock.Lock()
+	lastTime, exists := h.lastSubmTime[request.Username]
+	now := time.Now()
+	if exists && now.Sub(lastTime) < 10*time.Second {
+		h.rateLock.Unlock()
+		httpjson.HandleError(slog.Default(), w, submerror.ErrSubmissionTooFrequent(10))
+		return
+	}
+	h.lastSubmTime[request.Username] = now
+	h.rateLock.Unlock()
 
 	slog.Default().Info(
 		"post subm request",

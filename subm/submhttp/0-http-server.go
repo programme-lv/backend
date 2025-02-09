@@ -2,6 +2,8 @@ package submhttp
 
 import (
 	"context"
+	"sync"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/programme-lv/backend/planglist"
@@ -15,6 +17,10 @@ type SubmHttpHandler struct {
 	submSrvc submsrvc.SubmSrvcClient
 	taskSrvc *tasksrvc.TaskSrvc
 	userSrvc *usersrvc.UserSrvc
+
+	// solution submission rate limit
+	lastSubmTime map[string]time.Time // username -> last submission time
+	rateLock     sync.Mutex
 }
 
 func NewSubmHttpHandler(
@@ -23,13 +29,14 @@ func NewSubmHttpHandler(
 	userSrvc *usersrvc.UserSrvc,
 ) *SubmHttpHandler {
 	return &SubmHttpHandler{
-		submSrvc: submSrvc,
-		taskSrvc: taskSrvc,
-		userSrvc: userSrvc,
+		submSrvc:     submSrvc,
+		taskSrvc:     taskSrvc,
+		userSrvc:     userSrvc,
+		lastSubmTime: make(map[string]time.Time),
 	}
 }
 
-func (h SubmHttpHandler) mapSubm(
+func (h *SubmHttpHandler) mapSubm(
 	ctx context.Context,
 	s submdomain.Subm,
 ) (*DetailedSubmView, error) {
@@ -57,7 +64,7 @@ func (h *SubmHttpHandler) mapSubmListEntry(
 	)
 }
 
-func (h SubmHttpHandler) getTaskFullName(ctx context.Context, shortID string) (string, error) {
+func (h *SubmHttpHandler) getTaskFullName(ctx context.Context, shortID string) (string, error) {
 	task, err := h.taskSrvc.GetTask(ctx, shortID)
 	if err != nil {
 		return "", err

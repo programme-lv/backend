@@ -16,6 +16,15 @@ func ErrSubmissionTooLong(maxSubmLengthKB int) *srvcerror.Error {
 	).SetHttpStatusCode(http.StatusBadRequest)
 }
 
+const ErrCodeSubmissionTooFrequent = "submission_too_frequent"
+
+func ErrSubmissionTooFrequent(delaySeconds int) *srvcerror.Error {
+	return srvcerror.New(
+		ErrCodeSubmissionTooFrequent,
+		fmt.Sprintf("Lūdzu, uzgaidiet %d sekundes pirms nākamā iesūtījuma!", delaySeconds),
+	).SetHttpStatusCode(http.StatusTooManyRequests)
+}
+
 const ErrCodeTaskNotFound = "task_not_found"
 
 func ErrTaskNotFound() *srvcerror.Error {
