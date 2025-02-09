@@ -6,7 +6,9 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
+	"github.com/programme-lv/backend/auth"
 	"github.com/programme-lv/backend/httpjson"
+	"github.com/programme-lv/backend/subm/submerror"
 	"github.com/programme-lv/backend/subm/submsrvc/submcmd"
 )
 
@@ -18,9 +20,20 @@ func (h *SubmHttpHandler) PostSubm(w http.ResponseWriter, r *http.Request) {
 		TaskCodeID        string `json:"task_code_id"`
 	}
 
+	claims := r.Context().Value(auth.CtxJwtClaimsKey).(*auth.JwtClaims)
+	if claims == nil {
+		httpjson.HandleError(slog.Default(), w, submerror.ErrJwtTokenMissing())
+		return
+	}
+
 	var request createSubmissionRequest
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	if claims.Username != request.Username {
+		httpjson.HandleError(slog.Default(), w, submerror.ErrUnauthorizedUsernameMismatch())
 		return
 	}
 
