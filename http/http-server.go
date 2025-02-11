@@ -11,14 +11,14 @@ import (
 	"github.com/go-chi/cors"
 	"github.com/programme-lv/backend/execsrvc"
 	"github.com/programme-lv/backend/subm/submhttp"
-	"github.com/programme-lv/backend/tasksrvc"
+	"github.com/programme-lv/backend/task"
 	"github.com/programme-lv/backend/usersrvc"
 )
 
 type HttpServer struct {
 	submHttpServer *submhttp.SubmHttpHandler
 	userSrvc       *usersrvc.UserSrvc
-	taskSrvc       *tasksrvc.TaskSrvc
+	taskSrvc       *task.TaskSrvc
 	execSrvc       *execsrvc.ExecSrvc
 	router         *chi.Mux
 	JwtKey         []byte
@@ -98,7 +98,7 @@ func (sl *statsLogger) middleware(next http.Handler) http.Handler {
 func NewHttpServer(
 	submHttpServer *submhttp.SubmHttpHandler,
 	userSrvc *usersrvc.UserSrvc,
-	taskSrvc *tasksrvc.TaskSrvc,
+	taskSrvc *task.TaskSrvc,
 	evalSrvc *execsrvc.ExecSrvc,
 	jwtKey []byte,
 ) *HttpServer {

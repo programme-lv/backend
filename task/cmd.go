@@ -1,4 +1,4 @@
-package tasksrvc
+package task
 
 import (
 	"crypto/sha256"

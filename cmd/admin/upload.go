@@ -16,7 +16,7 @@ import (
 	"github.com/google/uuid" // Import UUID package
 	"github.com/nfnt/resize"
 	"github.com/programme-lv/backend/fstask"
-	"github.com/programme-lv/backend/tasksrvc"
+	"github.com/programme-lv/backend/task"
 	"github.com/rs/zerolog/log"
 	"github.com/wailsapp/mimetype"
 	"golang.org/x/sync/errgroup"
@@ -25,7 +25,7 @@ import (
 func uploadTask(fsTask *fstask.Task, shortId string) error {
 	log.Info().Str("shortId", shortId).Str("taskName", fsTask.FullName).Msg("Starting uploadTask")
 
-	taskSrvc, err := tasksrvc.NewTaskSrvc()
+	taskSrvc, err := task.NewTaskSrvc()
 	if err != nil {
 		log.Error().Err(err).Msg("Error creating task service")
 		return fmt.Errorf("error creating task service: %w", err)
@@ -73,9 +73,9 @@ func uploadTask(fsTask *fstask.Task, shortId string) error {
 	}
 
 	// Process Origin Notes
-	originNotes := make([]tasksrvc.OriginNote, 0)
+	originNotes := make([]task.OriginNote, 0)
 	for k, v := range fsTask.OriginNotes {
-		originNotes = append(originNotes, tasksrvc.OriginNote{
+		originNotes = append(originNotes, task.OriginNote{
 			Lang: k,
 			Info: v,
 		})
@@ -85,7 +85,7 @@ func uploadTask(fsTask *fstask.Task, shortId string) error {
 		Msg("Processed origin notes")
 
 	// Process Markdown Statements
-	mdStatements := make([]tasksrvc.MarkdownStatement, 0)
+	mdStatements := make([]task.MarkdownStatement, 0)
 	for _, mdStatement := range fsTask.MarkdownStatements {
 		processedMdStatement, err := processMdStatement(taskSrvc, fsTask, &mdStatement)
 		if err != nil {
@@ -101,7 +101,7 @@ func uploadTask(fsTask *fstask.Task, shortId string) error {
 		Msg("Processed markdown statements")
 
 	// Process PDF Statements
-	pdfStatements := make([]tasksrvc.PdfStatement, 0)
+	pdfStatements := make([]task.PdfStatement, 0)
 	for _, pdfStatement := range fsTask.PdfStatements {
 		pdfURL, err := taskSrvc.UploadStatementPdf(pdfStatement.Content)
 		if err != nil {
@@ -113,7 +113,7 @@ func uploadTask(fsTask *fstask.Task, shortId string) error {
 		log.Info().
 			Str("url", pdfURL).
 			Msg("Uploaded statement pdf")
-		pdfStatements = append(pdfStatements, tasksrvc.PdfStatement{
+		pdfStatements = append(pdfStatements, task.PdfStatement{
 			LangIso639: pdfStatement.Language,
 			ObjectUrl:  pdfURL,
 		})
@@ -123,9 +123,9 @@ func uploadTask(fsTask *fstask.Task, shortId string) error {
 		Msg("Processed PDF statements")
 
 	// Process Examples
-	examples := make([]tasksrvc.Example, 0)
+	examples := make([]task.Example, 0)
 	for _, e := range fsTask.Examples {
-		examples = append(examples, tasksrvc.Example{
+		examples = append(examples, task.Example{
 			Input:  string(e.Input),
 			Output: string(e.Output),
 			MdNote: string(e.MdNote),
@@ -136,7 +136,7 @@ func uploadTask(fsTask *fstask.Task, shortId string) error {
 		Msg("Processed examples")
 
 	// Process Tests Concurrently
-	tests := make([]tasksrvc.Test, len(fsTask.Tests))
+	tests := make([]task.Test, len(fsTask.Tests))
 
 	// Mutex to protect access to the tests slice
 	var testsMu sync.Mutex
@@ -198,7 +198,7 @@ func uploadTask(fsTask *fstask.Task, shortId string) error {
 				Msg("Uploaded test answer")
 
 			// Create the Test struct
-			test := tasksrvc.Test{
+			test := task.Test{
 				InpSha2: inpSha2,
 				AnsSha2: ansSha2,
 			}
@@ -228,9 +228,9 @@ func uploadTask(fsTask *fstask.Task, shortId string) error {
 		Msg("Uploaded tests")
 
 	// Process Test Groups
-	testGroups := make([]tasksrvc.TestGroup, 0)
+	testGroups := make([]task.TestGroup, 0)
 	for _, testGroup := range fsTask.TestGroups {
-		testGroups = append(testGroups, tasksrvc.TestGroup{
+		testGroups = append(testGroups, task.TestGroup{
 			Points:  testGroup.Points,
 			Public:  testGroup.Public,
 			TestIDs: testGroup.TestIDs,
@@ -240,16 +240,16 @@ func uploadTask(fsTask *fstask.Task, shortId string) error {
 		Int("count", len(testGroups)).
 		Msg("Processed test groups")
 
-	subtasks := make([]tasksrvc.Subtask, 0)
+	subtasks := make([]task.Subtask, 0)
 	for _, subtask := range fsTask.Subtasks {
-		subtasks = append(subtasks, tasksrvc.Subtask{
+		subtasks = append(subtasks, task.Subtask{
 			Score:        subtask.Points,
 			TestIDs:      subtask.TestIDs,
 			Descriptions: subtask.Descriptions,
 		})
 	}
 
-	visInpSubtasks := make([]tasksrvc.VisibleInputSubtask, 0)
+	visInpSubtasks := make([]task.VisibleInputSubtask, 0)
 	for _, visInputSubtask := range fsTask.VisibleInputSubtasks {
 		if len(subtasks) < visInputSubtask {
 			log.Error().
@@ -258,7 +258,7 @@ func uploadTask(fsTask *fstask.Task, shortId string) error {
 			return fmt.Errorf("invalid subtask ID: %v", visInputSubtask)
 		}
 		subtask := subtasks[visInputSubtask-1]
-		testsVis := make([]tasksrvc.VisInpSubtaskTest, 0)
+		testsVis := make([]task.VisInpSubtaskTest, 0)
 		for _, testId := range subtask.TestIDs {
 			if len(fsTask.Tests) < testId {
 				log.Error().
@@ -267,19 +267,19 @@ func uploadTask(fsTask *fstask.Task, shortId string) error {
 					Msg("Invalid test ID")
 				return fmt.Errorf("invalid test ID: %v", testId)
 			}
-			testsVis = append(testsVis, tasksrvc.VisInpSubtaskTest{
+			testsVis = append(testsVis, task.VisInpSubtaskTest{
 				TestId: testId,
 				Input:  string(fsTask.Tests[testId-1].Input),
 			})
 		}
-		visInpSubtasks = append(visInpSubtasks, tasksrvc.VisibleInputSubtask{
+		visInpSubtasks = append(visInpSubtasks, task.VisibleInputSubtask{
 			SubtaskId: visInputSubtask,
 			Tests:     testsVis,
 		})
 	}
 
 	// Assemble the Task struct
-	task := &tasksrvc.Task{
+	task := &task.Task{
 		ShortId:          shortId,
 		FullName:         fsTask.FullName,
 		IllustrImgUrl:    illstrImgUrl,
@@ -387,7 +387,7 @@ func resizeImage(imgData []byte, maxWidth uint) ([]byte, int, int, error) {
 	return buf.Bytes(), newWidth, newHeight, nil
 }
 
-func processMdStatement(taskSrvc *tasksrvc.TaskSrvc, fsTask *fstask.Task, mdStatement *fstask.MarkdownStatement) (*tasksrvc.MarkdownStatement, error) {
+func processMdStatement(taskSrvc *task.TaskSrvc, fsTask *fstask.Task, mdStatement *fstask.MarkdownStatement) (*task.MarkdownStatement, error) {
 	sttmntImgUuidToUrl := make(map[string]string)
 	// Replace images in all relevant markdown fields
 	modifiedStory, err := replaceImages(mdStatement.Story, sttmntImgUuidToUrl)
@@ -445,7 +445,7 @@ func processMdStatement(taskSrvc *tasksrvc.TaskSrvc, fsTask *fstask.Task, mdStat
 	var mu sync.Mutex
 	var uploadErr error
 
-	images := make([]tasksrvc.MdImgInfo, 0)
+	images := make([]task.MdImgInfo, 0)
 
 	// Iterate through the uuidToAsset map
 	for uuidKey, originalURL := range sttmntImgUuidToUrl {
@@ -549,7 +549,7 @@ func processMdStatement(taskSrvc *tasksrvc.TaskSrvc, fsTask *fstask.Task, mdStat
 			}
 
 			mu.Lock()
-			images = append(images, tasksrvc.MdImgInfo{
+			images = append(images, task.MdImgInfo{
 				Uuid:     uKey,
 				WidthPx:  newWidth,
 				HeightPx: newHeight,
@@ -568,7 +568,7 @@ func processMdStatement(taskSrvc *tasksrvc.TaskSrvc, fsTask *fstask.Task, mdStat
 		return nil, uploadErr
 	}
 	// Append the modified MarkdownStatement
-	return &tasksrvc.MarkdownStatement{
+	return &task.MarkdownStatement{
 		LangIso639: mdStatement.Language,
 		Story:      modifiedStory,
 		Input:      modifiedInput,

@@ -1,20 +1,29 @@
-package tasksrvc
+package task
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
 	"log/slog"
-	"sync"
 	"time"
 
 	"github.com/programme-lv/backend/s3bucket"
 )
 
+type TaskSrvcClient interface {
+	GetTask(ctx context.Context, id string) (Task, error)
+	ListTasks(ctx context.Context) ([]Task, error)
+	GetTaskFullNames(ctx context.Context, shortIDs []string) ([]string, error)
+	GetTestDownlUrl(ctx context.Context, testFileSha256 string) (string, error)
+	UploadStatementPdf(ctx context.Context, body []byte) (string, error)
+	UploadIllustrationImg(ctx context.Context, mimeType string, body []byte) (string, error)
+	UploadMarkdownImage(ctx context.Context, mimeType string, body []byte) (string, error)
+	UploadTestFile(ctx context.Context, body []byte) error
+	PutTask(ctx context.Context, task *Task) error
+}
+
 type TaskSrvc struct {
 	tasks []Task
-
-	testFileCache sync.Map
 
 	s3PublicBucket   *s3bucket.S3Bucket
 	s3TestfileBucket *s3bucket.S3Bucket
@@ -72,8 +81,6 @@ func NewTaskSrvc() (*TaskSrvc, error) {
 
 	return &TaskSrvc{
 		tasks: tasks,
-
-		testFileCache: sync.Map{},
 
 		s3PublicBucket:   publicBucket,
 		s3TestfileBucket: testFileBucket,
