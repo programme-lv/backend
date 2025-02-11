@@ -14,7 +14,7 @@ import (
 	"github.com/programme-lv/backend/subm/submhttp"
 	"github.com/programme-lv/backend/subm/submpgrepo"
 	"github.com/programme-lv/backend/subm/submsrvc"
-	"github.com/programme-lv/backend/tasksrvc"
+	"github.com/programme-lv/backend/task"
 	"github.com/programme-lv/backend/usersrvc"
 )
 
@@ -39,7 +39,7 @@ func main() {
 	execSrvc := execsrvc.NewExecSrvc()
 	userSrvc := usersrvc.NewUserService()
 
-	taskSrvc, err := tasksrvc.NewTaskSrvc()
+	taskSrvc, err := task.NewTaskSrvc()
 	if err != nil {
 		log.Fatalf("error creating task service: %v", err)
 	}
@@ -54,7 +54,7 @@ func main() {
 	slog.Info("server stopped", "error", err)
 }
 
-func newSubmHttpHandler(userSrvc *usersrvc.UserSrvc, taskSrvc *tasksrvc.TaskSrvc, execSrvc *execsrvc.ExecSrvc) *submhttp.SubmHttpHandler {
+func newSubmHttpHandler(userSrvc *usersrvc.UserSrvc, taskSrvc *task.TaskSrvc, execSrvc *execsrvc.ExecSrvc) *submhttp.SubmHttpHandler {
 	pool, err := pgxpool.New(context.Background(), conf.GetPgConnStrFromEnv())
 	if err != nil {
 		log.Fatalf("failed to create pg pool: %v", err)

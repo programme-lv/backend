@@ -9,13 +9,13 @@ import (
 	"github.com/programme-lv/backend/planglist"
 	"github.com/programme-lv/backend/subm/submdomain"
 	"github.com/programme-lv/backend/subm/submsrvc"
-	"github.com/programme-lv/backend/tasksrvc"
+	"github.com/programme-lv/backend/task"
 	"github.com/programme-lv/backend/usersrvc"
 )
 
 type SubmHttpHandler struct {
 	submSrvc submsrvc.SubmSrvcClient
-	taskSrvc *tasksrvc.TaskSrvc
+	taskSrvc *task.TaskSrvc
 	userSrvc *usersrvc.UserSrvc
 
 	// solution submission rate limit
@@ -25,7 +25,7 @@ type SubmHttpHandler struct {
 
 func NewSubmHttpHandler(
 	submSrvc submsrvc.SubmSrvcClient,
-	taskSrvc *tasksrvc.TaskSrvc,
+	taskSrvc *task.TaskSrvc,
 	userSrvc *usersrvc.UserSrvc,
 ) *SubmHttpHandler {
 	return &SubmHttpHandler{

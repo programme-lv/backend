@@ -10,7 +10,7 @@ import (
 	decorator "github.com/programme-lv/backend/srvccqs"
 	subm "github.com/programme-lv/backend/subm/submdomain"
 	"github.com/programme-lv/backend/subm/submerror"
-	"github.com/programme-lv/backend/tasksrvc"
+	"github.com/programme-lv/backend/task"
 )
 
 type SubmitSolCmd decorator.CmdHandler[SubmitSolParams]
@@ -25,7 +25,7 @@ type SubmitSolParams struct {
 
 type SubmitSolCmdHandler struct {
 	DoesUserExist    func(ctx context.Context, uuid uuid.UUID) (bool, error)
-	GetTask          func(ctx context.Context, shortId string) (tasksrvc.Task, error)
+	GetTask          func(ctx context.Context, shortId string) (task.Task, error)
 	StoreSubm        func(ctx context.Context, subm subm.Subm) error
 	StoreEval        func(ctx context.Context, eval subm.Eval) error
 	BcastSubmCreated func(subm subm.Subm)
