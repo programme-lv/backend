@@ -15,7 +15,7 @@ import (
 
 type SubmHttpHandler struct {
 	submSrvc submsrvc.SubmSrvcClient
-	taskSrvc *task.TaskSrvc
+	taskSrvc task.TaskSrvcClient
 	userSrvc *usersrvc.UserSrvc
 
 	// solution submission rate limit
@@ -25,7 +25,7 @@ type SubmHttpHandler struct {
 
 func NewSubmHttpHandler(
 	submSrvc submsrvc.SubmSrvcClient,
-	taskSrvc *task.TaskSrvc,
+	taskSrvc task.TaskSrvcClient,
 	userSrvc *usersrvc.UserSrvc,
 ) *SubmHttpHandler {
 	return &SubmHttpHandler{

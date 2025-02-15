@@ -7,27 +7,38 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/programme-lv/backend/conf"
 	"github.com/programme-lv/backend/s3bucket"
 )
 
 type TaskSrvcClient interface {
-	GetTask(ctx context.Context, id string) (Task, error)
-	ListTasks(ctx context.Context) ([]Task, error)
-	GetTaskFullNames(ctx context.Context, shortIDs []string) ([]string, error)
 	GetTestDownlUrl(ctx context.Context, testFileSha256 string) (string, error)
 	UploadStatementPdf(ctx context.Context, body []byte) (string, error)
 	UploadIllustrationImg(ctx context.Context, mimeType string, body []byte) (string, error)
 	UploadMarkdownImage(ctx context.Context, mimeType string, body []byte) (string, error)
 	UploadTestFile(ctx context.Context, body []byte) error
 	PutTask(ctx context.Context, task *Task) error
+	GetTask(ctx context.Context, shortId string) (Task, error)
+	GetTaskFullNames(ctx context.Context, shortIds []string) ([]string, error)
+	ListTasks(ctx context.Context) ([]Task, error)
+}
+
+type S3BucketFacade interface {
+	Upload(content []byte, key string, mediaType string) (string, error)
+	PresignedURL(key string, duration time.Duration) (string, error)
+	Exists(key string) (bool, error)
+	ListAndGetAllFiles(prefix string) ([]s3bucket.FileData, error)
 }
 
 type TaskSrvc struct {
 	tasks []Task
 
-	s3PublicBucket   *s3bucket.S3Bucket
-	s3TestfileBucket *s3bucket.S3Bucket
-	s3TaskBucket     *s3bucket.S3Bucket
+	s3PublicBucket   S3BucketFacade
+	s3TestfileBucket S3BucketFacade
+	s3TaskBucket     S3BucketFacade
+
+	pg *pgxpool.Pool
 }
 
 // GetTestDownlUrl implements submadapter.TaskSrvcFacade.
@@ -39,32 +50,14 @@ func (ts *TaskSrvc) GetTestDownlUrl(ctx context.Context, testFileSha256 string) 
 	return presignedUrl, nil
 }
 
-func NewTaskSrvc() (*TaskSrvc, error) {
-	publicBucket, err := s3bucket.NewS3Bucket("eu-central-1", "proglv-public")
-	if err != nil {
-		format := "failed to create S3 bucket: %w"
-		return nil, fmt.Errorf(format, err)
-	}
-	testFileBucket, err := s3bucket.NewS3Bucket("eu-central-1", "proglv-tests")
-	if err != nil {
-		format := "failed to create S3 bucket: %w"
-		return nil, fmt.Errorf(format, err)
-	}
-	taskBucket, err := s3bucket.NewS3Bucket("eu-central-1", "proglv-tasks")
-	if err != nil {
-		format := "failed to create S3 bucket: %w"
-		return nil, fmt.Errorf(format, err)
-	}
-
+func NewTaskSrvc(pg *pgxpool.Pool, publicS3, testS3, taskS3 S3BucketFacade) (TaskSrvcClient, error) {
 	start := time.Now()
-	slog.Info("downloading tasks from S3", "bucket", taskBucket.Bucket())
-	taskFiles, err := taskBucket.ListAndGetAllFiles("")
+	taskFiles, err := taskS3.ListAndGetAllFiles("")
 	if err != nil {
 		return nil, fmt.Errorf("failed to list task files: %w", err)
 	}
 	elapsed := time.Since(start)
 	slog.Info("downloaded tasks from S3",
-		"bucket", taskBucket.Bucket(),
 		"count", len(taskFiles),
 		"time_ms", elapsed.Milliseconds())
 
@@ -82,8 +75,33 @@ func NewTaskSrvc() (*TaskSrvc, error) {
 	return &TaskSrvc{
 		tasks: tasks,
 
-		s3PublicBucket:   publicBucket,
-		s3TestfileBucket: testFileBucket,
-		s3TaskBucket:     taskBucket,
+		s3PublicBucket:   publicS3,
+		s3TestfileBucket: testS3,
+		s3TaskBucket:     taskS3,
 	}, nil
+}
+
+func NewDefaultTaskSrvc() (TaskSrvcClient, error) {
+	publicS3, err := s3bucket.NewS3Bucket("eu-central-1", "proglv-public")
+	if err != nil {
+		format := "failed to create S3 bucket: %w"
+		return nil, fmt.Errorf(format, err)
+	}
+	testS3, err := s3bucket.NewS3Bucket("eu-central-1", "proglv-tests")
+	if err != nil {
+		format := "failed to create S3 bucket: %w"
+		return nil, fmt.Errorf(format, err)
+	}
+	taskS3, err := s3bucket.NewS3Bucket("eu-central-1", "proglv-tasks")
+	if err != nil {
+		format := "failed to create S3 bucket: %w"
+		return nil, fmt.Errorf(format, err)
+	}
+
+	pg, err := pgxpool.New(context.Background(), conf.GetPgConnStrFromEnv())
+	if err != nil {
+		return nil, fmt.Errorf("failed to create pg pool: %w", err)
+	}
+
+	return NewTaskSrvc(pg, publicS3, testS3, taskS3)
 }
