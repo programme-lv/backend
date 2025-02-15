@@ -18,7 +18,7 @@ import (
 type HttpServer struct {
 	submHttpServer *submhttp.SubmHttpHandler
 	userSrvc       *usersrvc.UserSrvc
-	taskSrvc       *task.TaskSrvc
+	taskSrvc       task.TaskSrvcClient
 	execSrvc       *execsrvc.ExecSrvc
 	router         *chi.Mux
 	JwtKey         []byte
@@ -98,7 +98,7 @@ func (sl *statsLogger) middleware(next http.Handler) http.Handler {
 func NewHttpServer(
 	submHttpServer *submhttp.SubmHttpHandler,
 	userSrvc *usersrvc.UserSrvc,
-	taskSrvc *task.TaskSrvc,
+	taskSrvc task.TaskSrvcClient,
 	evalSrvc *execsrvc.ExecSrvc,
 	jwtKey []byte,
 ) *HttpServer {

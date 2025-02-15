@@ -1,6 +1,7 @@
 package task
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
@@ -9,7 +10,7 @@ import (
 	"github.com/klauspost/compress/zstd"
 )
 
-func (ts *TaskSrvc) PutTask(task *Task) error {
+func (ts *TaskSrvc) PutTask(ctx context.Context, task *Task) error {
 	key := fmt.Sprintf("%s.json", task.ShortId)
 
 	data, err := json.Marshal(task)
@@ -27,7 +28,7 @@ func (ts *TaskSrvc) PutTask(task *Task) error {
 
 // S3 bucket: "proglv-public" (as of 2024-09-29)
 // S3 key format: "task-pdf-statements/<sha2>.pdf"
-func (ts *TaskSrvc) UploadStatementPdf(body []byte) (string, error) {
+func (ts *TaskSrvc) UploadStatementPdf(ctx context.Context, body []byte) (string, error) {
 	shaHex := ts.Sha2Hex(body)
 	s3Key := fmt.Sprintf("%s/%s.pdf", "task-pdf-statements", shaHex)
 	return ts.s3PublicBucket.Upload(body, s3Key, "application/pdf")
@@ -35,7 +36,7 @@ func (ts *TaskSrvc) UploadStatementPdf(body []byte) (string, error) {
 
 // S3 bucket: "proglv-public" (as of 2024-09-29)
 // S3 key format: "task-illustrations/<sha2>.<ext>"
-func (ts *TaskSrvc) UploadIllustrationImg(mimeType string, body []byte) (url string, err error) {
+func (ts *TaskSrvc) UploadIllustrationImg(ctx context.Context, mimeType string, body []byte) (url string, err error) {
 	sha2 := ts.Sha2Hex(body)
 	exts, err := mime.ExtensionsByType(mimeType)
 	if err != nil {
@@ -50,7 +51,7 @@ func (ts *TaskSrvc) UploadIllustrationImg(mimeType string, body []byte) (url str
 }
 
 // S3 key format: "task-md-images/<sha2>.<extension>"
-func (ts *TaskSrvc) UploadMarkdownImage(mimeType string, body []byte) (url string, err error) {
+func (ts *TaskSrvc) UploadMarkdownImage(ctx context.Context, mimeType string, body []byte) (url string, err error) {
 	sha2 := ts.Sha2Hex(body)
 	exts, err := mime.ExtensionsByType(mimeType)
 	if err != nil {
@@ -68,7 +69,7 @@ func (ts *TaskSrvc) UploadMarkdownImage(mimeType string, body []byte) (url strin
 // If The test already exists, it returns no error and does nothing.
 //
 // The S3 key is the SHA256 hash of the uncompressed body with a .zst extension.
-func (ts *TaskSrvc) UploadTestFile(body []byte) error {
+func (ts *TaskSrvc) UploadTestFile(ctx context.Context, body []byte) error {
 	shaHex := ts.Sha2Hex(body)
 	s3Key := fmt.Sprintf("%s.zst", shaHex)
 	mediaType := "application/zstd"

@@ -3,6 +3,8 @@ package main
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"image"
 	"image/jpeg"
@@ -25,7 +27,7 @@ import (
 func uploadTask(fsTask *fstask.Task, shortId string) error {
 	log.Info().Str("shortId", shortId).Str("taskName", fsTask.FullName).Msg("Starting uploadTask")
 
-	taskSrvc, err := task.NewTaskSrvc()
+	taskSrvc, err := task.NewDefaultTaskSrvc()
 	if err != nil {
 		log.Error().Err(err).Msg("Error creating task service")
 		return fmt.Errorf("error creating task service: %w", err)
@@ -60,7 +62,7 @@ func uploadTask(fsTask *fstask.Task, shortId string) error {
 				Msg("Detected MIME type for image")
 		}
 
-		illstrImgUrl, err = taskSrvc.UploadIllustrationImg(mType, compressedImage)
+		illstrImgUrl, err = taskSrvc.UploadIllustrationImg(context.Background(), mType, compressedImage)
 		if err != nil {
 			log.Error().
 				Err(err).
@@ -103,7 +105,7 @@ func uploadTask(fsTask *fstask.Task, shortId string) error {
 	// Process PDF Statements
 	pdfStatements := make([]task.PdfStatement, 0)
 	for _, pdfStatement := range fsTask.PdfStatements {
-		pdfURL, err := taskSrvc.UploadStatementPdf(pdfStatement.Content)
+		pdfURL, err := taskSrvc.UploadStatementPdf(context.Background(), pdfStatement.Content)
 		if err != nil {
 			log.Error().
 				Err(err).
@@ -170,11 +172,15 @@ func uploadTask(fsTask *fstask.Task, shortId string) error {
 				Msg("Uploading test files")
 
 			// Compute SHA2 hashes
-			inpSha2 := taskSrvc.Sha2Hex(t.Input)
-			ansSha2 := taskSrvc.Sha2Hex(t.Answer)
+			h := sha256.New()
+			h.Write(t.Input)
+			inpSha2 := hex.EncodeToString(h.Sum(nil))
+			h.Reset()
+			h.Write(t.Answer)
+			ansSha2 := hex.EncodeToString(h.Sum(nil))
 
 			// Upload test input
-			if err := taskSrvc.UploadTestFile(t.Input); err != nil {
+			if err := taskSrvc.UploadTestFile(ctx, t.Input); err != nil {
 				log.Error().
 					Int("testID", i+1).
 					Err(err).
@@ -186,7 +192,7 @@ func uploadTask(fsTask *fstask.Task, shortId string) error {
 				Msg("Uploaded test input")
 
 			// Upload test answer
-			if err := taskSrvc.UploadTestFile(t.Answer); err != nil {
+			if err := taskSrvc.UploadTestFile(ctx, t.Answer); err != nil {
 				log.Error().
 					Int("testID", i+1).
 					Err(err).
@@ -302,7 +308,7 @@ func uploadTask(fsTask *fstask.Task, shortId string) error {
 		Str("shortId", shortId).
 		Msg("Task struct assembled")
 
-	err = taskSrvc.PutTask(task)
+	err = taskSrvc.PutTask(context.Background(), task)
 	if err != nil {
 		log.Error().
 			Str("shortId", shortId).
@@ -387,7 +393,7 @@ func resizeImage(imgData []byte, maxWidth uint) ([]byte, int, int, error) {
 	return buf.Bytes(), newWidth, newHeight, nil
 }
 
-func processMdStatement(taskSrvc *task.TaskSrvc, fsTask *fstask.Task, mdStatement *fstask.MarkdownStatement) (*task.MarkdownStatement, error) {
+func processMdStatement(taskSrvc task.TaskSrvcClient, fsTask *fstask.Task, mdStatement *fstask.MarkdownStatement) (*task.MarkdownStatement, error) {
 	sttmntImgUuidToUrl := make(map[string]string)
 	// Replace images in all relevant markdown fields
 	modifiedStory, err := replaceImages(mdStatement.Story, sttmntImgUuidToUrl)
@@ -522,7 +528,7 @@ func processMdStatement(taskSrvc *task.TaskSrvc, fsTask *fstask.Task, mdStatemen
 			}
 
 			// Upload the resized image using UploadMarkdownImage
-			s3Url, err := taskSrvc.UploadMarkdownImage(mType, resizedContent)
+			s3Url, err := taskSrvc.UploadMarkdownImage(context.Background(), mType, resizedContent)
 			if err != nil {
 				log.Error().
 					Str("uuid", uKey).
