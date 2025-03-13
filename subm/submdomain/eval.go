@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/programme-lv/backend/task"
+	"github.com/programme-lv/backend/task/taskdomain"
 )
 
 type ScoreUnit string
@@ -84,7 +84,7 @@ type TestGroup struct {
 	TgTests  []int // test group tests
 }
 
-func NewEval(uuid uuid.UUID, submUuid uuid.UUID, task task.Task) Eval {
+func NewEval(uuid uuid.UUID, submUuid uuid.UUID, task taskdomain.Task) Eval {
 	subtasks := []Subtask{}
 	for _, subtask := range task.Subtasks {
 		subtasks = append(subtasks, Subtask{

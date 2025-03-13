@@ -1,0 +1,540 @@
+package taskpgrepo
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/programme-lv/backend/task/taskdomain"
+)
+
+type taskPgRepo struct {
+	pool *pgxpool.Pool
+}
+
+func NewTaskPgRepo(pool *pgxpool.Pool) *taskPgRepo {
+	return &taskPgRepo{pool: pool}
+}
+
+func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (taskdomain.Task, error) {
+	var t taskdomain.Task
+
+	// Load main task row.
+	err := r.pool.QueryRow(ctx, `
+		SELECT short_id, full_name, illustr_img_url, mem_lim_megabytes, cpu_time_lim_secs, origin_olympiad, difficulty_rating, checker, interactor
+		FROM tasks
+		WHERE short_id = $1
+	`, shortId).Scan(
+		&t.ShortId,
+		&t.FullName,
+		&t.IllustrImgUrl,
+		&t.MemLimMegabytes,
+		&t.CpuTimeLimSecs,
+		&t.OriginOlympiad,
+		&t.DifficultyRating,
+		&t.Checker,
+		&t.Interactor,
+	)
+	if err != nil {
+		return t, err
+	}
+
+	// Load OriginNotes.
+	originRows, err := r.pool.Query(ctx, `
+		SELECT lang, info 
+		FROM task_origin_notes 
+		WHERE task_short_id = $1
+	`, shortId)
+	if err != nil {
+		return t, err
+	}
+	for originRows.Next() {
+		var note taskdomain.OriginNote
+		if err := originRows.Scan(&note.Lang, &note.Info); err != nil {
+			originRows.Close()
+			return t, err
+		}
+		t.OriginNotes = append(t.OriginNotes, note)
+	}
+	originRows.Close()
+
+	// Load Markdown statements and their images.
+	mdStmtRows, err := r.pool.Query(ctx, `
+		SELECT id, lang_iso639, story, input, output, notes, scoring, talk, example 
+		FROM task_md_statements 
+		WHERE task_short_id = $1
+	`, shortId)
+	if err != nil {
+		return t, err
+	}
+	var mdStatements []taskdomain.MarkdownStatement
+	for mdStmtRows.Next() {
+		var md taskdomain.MarkdownStatement
+		var mdStmtID int
+		if err := mdStmtRows.Scan(&mdStmtID, &md.LangIso639, &md.Story, &md.Input, &md.Output, &md.Notes, &md.Scoring, &md.Talk, &md.Example); err != nil {
+			mdStmtRows.Close()
+			return t, err
+		}
+
+		// For each markdown statement, load associated images.
+		imgRows, err := r.pool.Query(ctx, `
+			SELECT uuid, s3_url, width_px, height_px, width_em 
+			FROM task_md_statement_images 
+			WHERE md_statement_id = $1
+		`, mdStmtID)
+		if err != nil {
+			mdStmtRows.Close()
+			return t, err
+		}
+		var images []taskdomain.MdImgInfo
+		for imgRows.Next() {
+			var img taskdomain.MdImgInfo
+			if err := imgRows.Scan(&img.Uuid, &img.S3Url, &img.WidthPx, &img.HeightPx, &img.WidthEm); err != nil {
+				imgRows.Close()
+				mdStmtRows.Close()
+				return t, err
+			}
+			images = append(images, img)
+		}
+		imgRows.Close()
+		md.Images = images
+		mdStatements = append(mdStatements, md)
+	}
+	mdStmtRows.Close()
+	t.MdStatements = mdStatements
+
+	// Load PDF statements.
+	pdfRows, err := r.pool.Query(ctx, `
+		SELECT lang_iso639, object_url 
+		FROM task_pdf_statements 
+		WHERE task_short_id = $1
+	`, shortId)
+	if err != nil {
+		return t, err
+	}
+	var pdfStatements []taskdomain.PdfStatement
+	for pdfRows.Next() {
+		var pdf taskdomain.PdfStatement
+		if err := pdfRows.Scan(&pdf.LangIso639, &pdf.ObjectUrl); err != nil {
+			pdfRows.Close()
+			return t, err
+		}
+		pdfStatements = append(pdfStatements, pdf)
+	}
+	pdfRows.Close()
+	t.PdfStatements = pdfStatements
+
+	// Load Visible Input Subtasks and their tests.
+	visRows, err := r.pool.Query(ctx, `
+		SELECT id, external_subtask_id 
+		FROM task_vis_inp_subtasks 
+		WHERE task_short_id = $1
+	`, shortId)
+	if err != nil {
+		return t, err
+	}
+	var visInpSubtasks []taskdomain.VisibleInputSubtask
+	for visRows.Next() {
+		var subtask taskdomain.VisibleInputSubtask
+		var dbSubtaskID int
+		if err := visRows.Scan(&dbSubtaskID, &subtask.SubtaskId); err != nil {
+			visRows.Close()
+			return t, err
+		}
+
+		// Load tests for this visible input subtask.
+		testRows, err := r.pool.Query(ctx, `
+			SELECT test_id, input 
+			FROM task_vis_inp_subtask_tests 
+			WHERE subtask_id = $1
+		`, dbSubtaskID)
+		if err != nil {
+			visRows.Close()
+			return t, err
+		}
+		var visTests []taskdomain.VisInpSubtaskTest
+		for testRows.Next() {
+			var vt taskdomain.VisInpSubtaskTest
+			if err := testRows.Scan(&vt.TestId, &vt.Input); err != nil {
+				testRows.Close()
+				visRows.Close()
+				return t, err
+			}
+			visTests = append(visTests, vt)
+		}
+		testRows.Close()
+		subtask.Tests = visTests
+		visInpSubtasks = append(visInpSubtasks, subtask)
+	}
+	visRows.Close()
+	t.VisInpSubtasks = visInpSubtasks
+
+	// Load Examples.
+	exRows, err := r.pool.Query(ctx, `
+		SELECT input, output, md_note 
+		FROM task_examples 
+		WHERE task_short_id = $1
+	`, shortId)
+	if err != nil {
+		return t, err
+	}
+	var examples []taskdomain.Example
+	for exRows.Next() {
+		var ex taskdomain.Example
+		if err := exRows.Scan(&ex.Input, &ex.Output, &ex.MdNote); err != nil {
+			exRows.Close()
+			return t, err
+		}
+		examples = append(examples, ex)
+	}
+	exRows.Close()
+	t.Examples = examples
+
+	// Load Evaluation Tests.
+	testEvalRows, err := r.pool.Query(ctx, `
+		SELECT inp_sha2, ans_sha2 
+		FROM task_tests 
+		WHERE task_short_id = $1
+	`, shortId)
+	if err != nil {
+		return t, err
+	}
+	var tests []taskdomain.Test
+	for testEvalRows.Next() {
+		var test taskdomain.Test
+		if err := testEvalRows.Scan(&test.InpSha2, &test.AnsSha2); err != nil {
+			testEvalRows.Close()
+			return t, err
+		}
+		tests = append(tests, test)
+	}
+	testEvalRows.Close()
+	t.Tests = tests
+
+	// Load Scoring Subtasks and their test IDs.
+	subtaskRows, err := r.pool.Query(ctx, `
+		SELECT id, score, descriptions 
+		FROM task_subtasks 
+		WHERE task_short_id = $1
+	`, shortId)
+	if err != nil {
+		return t, err
+	}
+	var subtasks []taskdomain.Subtask
+	for subtaskRows.Next() {
+		var st taskdomain.Subtask
+		var stID int
+		// descriptions is stored as JSONB. We scan it into a byte slice and unmarshal.
+		var descBytes []byte
+		if err := subtaskRows.Scan(&stID, &st.Score, &descBytes); err != nil {
+			subtaskRows.Close()
+			return t, err
+		}
+		if err := json.Unmarshal(descBytes, &st.Descriptions); err != nil {
+			subtaskRows.Close()
+			return t, fmt.Errorf("unmarshal descriptions: %w", err)
+		}
+
+		// Load associated test IDs for this subtask.
+		testIdRows, err := r.pool.Query(ctx, `
+			SELECT test_id 
+			FROM task_subtask_test_ids 
+			WHERE subtask_id = $1
+		`, stID)
+		if err != nil {
+			subtaskRows.Close()
+			return t, err
+		}
+		var testIDs []int
+		for testIdRows.Next() {
+			var tid int
+			if err := testIdRows.Scan(&tid); err != nil {
+				testIdRows.Close()
+				subtaskRows.Close()
+				return t, err
+			}
+			testIDs = append(testIDs, tid)
+		}
+		testIdRows.Close()
+		st.TestIDs = testIDs
+		subtasks = append(subtasks, st)
+	}
+	subtaskRows.Close()
+	t.Subtasks = subtasks
+
+	// Load Test Groups and their test IDs.
+	tgRows, err := r.pool.Query(ctx, `
+		SELECT id, points, public 
+		FROM task_test_groups 
+		WHERE task_short_id = $1
+	`, shortId)
+	if err != nil {
+		return t, err
+	}
+	var testGroups []taskdomain.TestGroup
+	for tgRows.Next() {
+		var tg taskdomain.TestGroup
+		var tgID int
+		if err := tgRows.Scan(&tgID, &tg.Points, &tg.Public); err != nil {
+			tgRows.Close()
+			return t, err
+		}
+		// Load test IDs for this test group.
+		tgTestRows, err := r.pool.Query(ctx, `
+			SELECT test_id 
+			FROM task_test_group_test_ids 
+			WHERE test_group_id = $1
+		`, tgID)
+		if err != nil {
+			tgRows.Close()
+			return t, err
+		}
+		var tgTestIDs []int
+		for tgTestRows.Next() {
+			var tid int
+			if err := tgTestRows.Scan(&tid); err != nil {
+				tgTestRows.Close()
+				tgRows.Close()
+				return t, err
+			}
+			tgTestIDs = append(tgTestIDs, tid)
+		}
+		tgTestRows.Close()
+		tg.TestIDs = tgTestIDs
+		testGroups = append(testGroups, tg)
+	}
+	tgRows.Close()
+	t.TestGroups = testGroups
+
+	return t, nil
+}
+
+func (r *taskPgRepo) ListTasks(ctx context.Context, limit int, offset int) ([]taskdomain.Task, error) {
+	// For simplicity, first load the short_ids and then call GetTask for each.
+	rows, err := r.pool.Query(ctx, `
+		SELECT short_id 
+		FROM tasks 
+		ORDER BY short_id 
+		LIMIT $1 OFFSET $2
+	`, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var tasks []taskdomain.Task
+	for rows.Next() {
+		var shortId string
+		if err := rows.Scan(&shortId); err != nil {
+			return nil, err
+		}
+		task, err := r.GetTask(ctx, shortId)
+		if err != nil {
+			return nil, err
+		}
+		tasks = append(tasks, task)
+	}
+	return tasks, nil
+}
+
+func (r *taskPgRepo) ResolveNames(ctx context.Context, shortIds []string) ([]string, error) {
+	rows, err := r.pool.Query(ctx, `
+		SELECT full_name 
+		FROM tasks 
+		WHERE short_id = ANY($1)
+		ORDER BY short_id
+	`, shortIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var names []string
+	for rows.Next() {
+		var fullName string
+		if err := rows.Scan(&fullName); err != nil {
+			return nil, err
+		}
+		names = append(names, fullName)
+	}
+	return names, nil
+}
+
+func (r *taskPgRepo) Exists(ctx context.Context, shortId string) (bool, error) {
+	var exists bool
+	err := r.pool.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM tasks WHERE short_id = $1)", shortId).Scan(&exists)
+	return exists, err
+}
+
+// CreateTask creates a new task and all its nested entities, if it does not exist yet.
+func (r *taskPgRepo) CreateTask(ctx context.Context, t taskdomain.Task) error {
+	// Check if the task already exists.
+	exists, err := r.Exists(ctx, t.ShortId)
+	if err != nil {
+		return err
+	}
+	if exists {
+		return fmt.Errorf("task %s already exists", t.ShortId)
+	}
+
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	// Ensure proper transaction handling.
+	defer func() {
+		if err != nil {
+			_ = tx.Rollback(ctx)
+		} else {
+			err = tx.Commit(ctx)
+		}
+	}()
+
+	// Insert main task.
+	_, err = tx.Exec(ctx, `
+		INSERT INTO tasks (short_id, full_name, illustr_img_url, mem_lim_megabytes, cpu_time_lim_secs, origin_olympiad, difficulty_rating, checker, interactor)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+	`, t.ShortId, t.FullName, t.IllustrImgUrl, t.MemLimMegabytes, t.CpuTimeLimSecs, t.OriginOlympiad, t.DifficultyRating, t.Checker, t.Interactor)
+	if err != nil {
+		return err
+	}
+
+	// Insert origin notes.
+	for _, note := range t.OriginNotes {
+		_, err = tx.Exec(ctx, `
+			INSERT INTO task_origin_notes (task_short_id, lang, info)
+			VALUES ($1, $2, $3)
+		`, t.ShortId, note.Lang, note.Info)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Insert markdown statements and associated images.
+	for _, md := range t.MdStatements {
+		var mdStmtID int
+		err = tx.QueryRow(ctx, `
+			INSERT INTO task_md_statements (task_short_id, lang_iso639, story, input, output, notes, scoring, talk, example)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+			RETURNING id
+		`, t.ShortId, md.LangIso639, md.Story, md.Input, md.Output, md.Notes, md.Scoring, md.Talk, md.Example).Scan(&mdStmtID)
+		if err != nil {
+			return err
+		}
+		for _, img := range md.Images {
+			_, err = tx.Exec(ctx, `
+				INSERT INTO task_md_statement_images (md_statement_id, uuid, s3_url, width_px, height_px, width_em)
+				VALUES ($1, $2, $3, $4, $5, $6)
+			`, mdStmtID, img.Uuid, img.S3Url, img.WidthPx, img.HeightPx, img.WidthEm)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	// Insert PDF statements.
+	for _, pdf := range t.PdfStatements {
+		_, err = tx.Exec(ctx, `
+			INSERT INTO task_pdf_statements (task_short_id, lang_iso639, object_url)
+			VALUES ($1, $2, $3)
+		`, t.ShortId, pdf.LangIso639, pdf.ObjectUrl)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Insert visible input subtasks and their tests.
+	for _, vis := range t.VisInpSubtasks {
+		var visSubtaskID int
+		err = tx.QueryRow(ctx, `
+			INSERT INTO task_vis_inp_subtasks (task_short_id, external_subtask_id)
+			VALUES ($1, $2)
+			RETURNING id
+		`, t.ShortId, vis.SubtaskId).Scan(&visSubtaskID)
+		if err != nil {
+			return err
+		}
+		for _, visTest := range vis.Tests {
+			_, err = tx.Exec(ctx, `
+				INSERT INTO task_vis_inp_subtask_tests (subtask_id, test_id, input)
+				VALUES ($1, $2, $3)
+			`, visSubtaskID, visTest.TestId, visTest.Input)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	// Insert examples.
+	for _, ex := range t.Examples {
+		_, err = tx.Exec(ctx, `
+			INSERT INTO task_examples (task_short_id, input, output, md_note)
+			VALUES ($1, $2, $3, $4)
+		`, t.ShortId, ex.Input, ex.Output, ex.MdNote)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Insert evaluation tests.
+	for _, test := range t.Tests {
+		_, err = tx.Exec(ctx, `
+			INSERT INTO task_tests (task_short_id, inp_sha2, ans_sha2)
+			VALUES ($1, $2, $3)
+		`, t.ShortId, test.InpSha2, test.AnsSha2)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Insert scoring subtasks and their test IDs.
+	for _, st := range t.Subtasks {
+		descBytes, err := json.Marshal(st.Descriptions)
+		if err != nil {
+			return fmt.Errorf("failed to marshal subtask descriptions: %w", err)
+		}
+		var subtaskID int
+		err = tx.QueryRow(ctx, `
+			INSERT INTO task_subtasks (task_short_id, score, descriptions)
+			VALUES ($1, $2, $3)
+			RETURNING id
+		`, t.ShortId, st.Score, descBytes).Scan(&subtaskID)
+		if err != nil {
+			return err
+		}
+		for _, tid := range st.TestIDs {
+			_, err = tx.Exec(ctx, `
+				INSERT INTO task_subtask_test_ids (subtask_id, test_id)
+				VALUES ($1, $2)
+			`, subtaskID, tid)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	// Insert test groups and their test IDs.
+	for _, tg := range t.TestGroups {
+		var tgID int
+		err = tx.QueryRow(ctx, `
+			INSERT INTO task_test_groups (task_short_id, points, public)
+			VALUES ($1, $2, $3)
+			RETURNING id
+		`, t.ShortId, tg.Points, tg.Public).Scan(&tgID)
+		if err != nil {
+			return err
+		}
+		for _, tid := range tg.TestIDs {
+			_, err = tx.Exec(ctx, `
+				INSERT INTO task_test_group_test_ids (test_group_id, test_id)
+				VALUES ($1, $2)
+			`, tgID, tid)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}

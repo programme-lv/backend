@@ -1,4 +1,4 @@
-package task
+package tasksrvc
 
 import (
 	"context"
@@ -8,9 +8,10 @@ import (
 	"mime"
 
 	"github.com/klauspost/compress/zstd"
+	"github.com/programme-lv/backend/task/taskdomain"
 )
 
-func (ts *TaskSrvc) PutTask(ctx context.Context, task *Task) error {
+func (ts *TaskSrvc) PutTask(ctx context.Context, task *taskdomain.Task) error {
 	key := fmt.Sprintf("%s.json", task.ShortId)
 
 	data, err := json.Marshal(task)
