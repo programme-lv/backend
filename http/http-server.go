@@ -1,109 +1,156 @@
 package http
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
+	"net"
 	"net/http"
-	"sync"
+	"strings"
 	"time"
 
+	"github.com/felixge/httpsnoop"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
+	"github.com/google/uuid"
 	"github.com/programme-lv/backend/execsrvc"
 	"github.com/programme-lv/backend/subm/submhttp"
-	"github.com/programme-lv/backend/task/tasksrvc"
+	"github.com/programme-lv/backend/task/taskhttp"
 	"github.com/programme-lv/backend/usersrvc"
 )
 
-type HttpServer struct {
-	submHttpServer *submhttp.SubmHttpHandler
-	userSrvc       *usersrvc.UserSrvc
-	taskSrvc       tasksrvc.TaskSrvcClient
-	execSrvc       *execsrvc.ExecSrvc
-	router         *chi.Mux
-	JwtKey         []byte
+// HttpReqInfo describes info about HTTP request
+type HttpReqInfo struct {
+	method    string
+	uri       string
+	referer   string
+	ipaddr    string
+	requestID string
+	code      int
+	written   int64
+	duration  time.Duration
+	userAgent string
+	protocol  string
+	tls       bool
 }
 
-type endpointStats struct {
-	count       int
-	totalTime   time.Duration
-	lastPrinted time.Time
+type HttpIpResolver struct {
+	TrustXForwardedFor bool
+	TrustXRealIP       bool
 }
 
-type statsLogger struct {
-	stats         map[string]*endpointStats
-	mu            sync.Mutex
-	flushInterval time.Duration
-}
+// resolveIp extracts the client IP address from the request
+func (r *HttpIpResolver) resolveIp(req *http.Request) string {
+	// Start with RemoteAddr as the most trusted source
+	ip, _, _ := net.SplitHostPort(req.RemoteAddr)
 
-func newStatsLogger() *statsLogger {
-	sl := &statsLogger{
-		stats:         make(map[string]*endpointStats),
-		flushInterval: 5 * time.Second, // Print stats every 5 seconds
-	}
-	go sl.periodicFlush()
-	return sl
-}
-
-func (sl *statsLogger) periodicFlush() {
-	ticker := time.NewTicker(sl.flushInterval)
-	for range ticker.C {
-		sl.flushStats()
-	}
-}
-
-func (sl *statsLogger) flushStats() {
-	sl.mu.Lock()
-	defer sl.mu.Unlock()
-
-	now := time.Now()
-	for endpoint, stats := range sl.stats {
-		if stats.count > 0 && now.Sub(stats.lastPrinted) >= sl.flushInterval {
-			// Convert to float64 and round to 2 decimal places
-			avgTimeMs := float64(stats.totalTime.Microseconds()) / float64(stats.count) / 1000.0
-
-			slog.Info("endpoint stats",
-				"endpoint", endpoint,
-				"count", stats.count,
-				"avg_time_ms", fmt.Sprintf("%.2f", avgTimeMs),
-				"period", sl.flushInterval,
-			)
-			// Reset stats after printing
-			stats.count = 0
-			stats.totalTime = 0
-			stats.lastPrinted = now
+	// Check X-Real-IP header if trusted
+	if r.TrustXRealIP {
+		if realIP := req.Header.Get("X-Real-IP"); realIP != "" {
+			ip = realIP
 		}
 	}
+
+	// Check X-Forwarded-For header if trusted
+	if r.TrustXForwardedFor {
+		if forwardedFor := req.Header.Get("X-Forwarded-For"); forwardedFor != "" {
+			// X-Forwarded-For can contain multiple IPs: client, proxy1, proxy2
+			// First address is the original client
+			ips := strings.Split(forwardedFor, ",")
+			ip = strings.TrimSpace(ips[0])
+		}
+	}
+
+	return ip
 }
 
-func (sl *statsLogger) middleware(next http.Handler) http.Handler {
+// logHTTPReq logs information about the HTTP request
+func logHTTPReq(ri *HttpReqInfo) {
+	logLevel := slog.LevelInfo
+	if ri.code >= 400 {
+		logLevel = slog.LevelWarn
+	}
+
+	slog.Log(context.Background(), logLevel, "http req info",
+		"req-id", ri.requestID,
+		"method", ri.method,
+		"uri", ri.uri,
+		"status", ri.code,
+		"written", fmt.Sprintf("%dB", ri.written),
+		"duration", ri.duration,
+		"ip", ri.ipaddr,
+		"referer", ri.referer,
+		"user-agent", ri.userAgent,
+		"protocol", ri.protocol,
+		"tls", ri.tls,
+	)
+}
+
+// requestLoggerMiddleware returns a middleware that logs HTTP requests
+func requestLoggerMiddleware(next http.Handler) http.Handler {
+	ipResolver := &HttpIpResolver{
+		TrustXForwardedFor: true,
+		TrustXRealIP:       true,
+	}
+
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		endpoint := fmt.Sprintf("%s %s", r.Method, r.URL.Path)
-		start := time.Now()
+		// Generate request ID
+		requestID := uuid.New().String()
 
-		next.ServeHTTP(w, r)
+		// Add request ID to response headers
+		w.Header().Set("X-Request-ID", requestID)
 
-		duration := time.Since(start)
-
-		sl.mu.Lock()
-		if _, exists := sl.stats[endpoint]; !exists {
-			sl.stats[endpoint] = &endpointStats{}
+		reqInfo := &HttpReqInfo{
+			method:    r.Method,
+			uri:       r.URL.String(),
+			referer:   r.Header.Get("Referer"),
+			userAgent: r.Header.Get("User-Agent"),
+			requestID: requestID,
+			protocol:  r.Proto,
+			tls:       r.TLS != nil,
 		}
-		sl.stats[endpoint].count++
-		sl.stats[endpoint].totalTime += duration
-		sl.mu.Unlock()
+
+		reqInfo.ipaddr = ipResolver.resolveIp(r)
+
+		// Add request ID to context
+		ctx := context.WithValue(r.Context(), "requestID", requestID)
+		r = r.WithContext(ctx)
+
+		// Capture metrics about the request
+		metrics := httpsnoop.CaptureMetrics(next, w, r)
+
+		// Update request info with response data
+		reqInfo.code = metrics.Code
+		reqInfo.written = metrics.Written
+		reqInfo.duration = metrics.Duration
+
+		// Log the request
+		logHTTPReq(reqInfo)
 	})
 }
 
+type HttpServer struct {
+	submHttpHandler *submhttp.SubmHttpHandler
+	taskHttpHandler *taskhttp.TaskHttpHandler
+	userSrvc        *usersrvc.UserSrvc
+	execSrvc        *execsrvc.ExecSrvc
+	router          *chi.Mux
+	JwtKey          []byte
+}
+
 func NewHttpServer(
-	submHttpServer *submhttp.SubmHttpHandler,
+	submHttpHandler *submhttp.SubmHttpHandler,
+	taskHttpHandler *taskhttp.TaskHttpHandler,
 	userSrvc *usersrvc.UserSrvc,
-	taskSrvc tasksrvc.TaskSrvcClient,
 	evalSrvc *execsrvc.ExecSrvc,
 	jwtKey []byte,
 ) *HttpServer {
 	router := chi.NewRouter()
 
+	// Add request logger middleware
+	router.Use(requestLoggerMiddleware)
+
+	// Add stats logger middleware
 	statsLogger := newStatsLogger()
 	router.Use(statsLogger.middleware)
 
@@ -119,12 +166,12 @@ func NewHttpServer(
 	router.Use(getJwtAuthMiddleware(jwtKey))
 
 	server := &HttpServer{
-		submHttpServer: submHttpServer,
-		userSrvc:       userSrvc,
-		taskSrvc:       taskSrvc,
-		execSrvc:       evalSrvc,
-		router:         router,
-		JwtKey:         jwtKey,
+		submHttpHandler: submHttpHandler,
+		userSrvc:        userSrvc,
+		taskHttpHandler: taskHttpHandler,
+		execSrvc:        evalSrvc,
+		router:          router,
+		JwtKey:          jwtKey,
 	}
 
 	server.routes()
@@ -138,18 +185,18 @@ func (httpserver *HttpServer) Start(address string) error {
 
 func (httpserver *HttpServer) routes() {
 	r := httpserver.router
-	r.Post("/subm", httpserver.submHttpServer.PostSubm)
+	r.Post("/subm", httpserver.submHttpHandler.PostSubm)
 	// r.Post("/reevaluate", httpserver.reevaluateSubmissions)
-	r.Get("/subm", httpserver.submHttpServer.GetSubmList)
-	r.Get("/subm/{subm-uuid}", httpserver.submHttpServer.GetFullSubm)
-	r.Get("/subm/scores/{username}", httpserver.submHttpServer.GetMaxScorePerTask)
+	r.Get("/subm", httpserver.submHttpHandler.GetSubmList)
+	r.Get("/subm/{subm-uuid}", httpserver.submHttpHandler.GetFullSubm)
+	r.Get("/subm/scores/{username}", httpserver.submHttpHandler.GetMaxScorePerTask)
 	r.Post("/auth/login", httpserver.authLogin)
 	r.Post("/users", httpserver.authRegister)
-	r.Get("/tasks", httpserver.listTasks)
-	r.Get("/tasks/{taskId}", httpserver.getTask)
+	r.Get("/tasks", httpserver.taskHttpHandler.ListTasks)
+	r.Get("/tasks/{taskId}", httpserver.taskHttpHandler.GetTask)
 	r.Get("/programming-languages", httpserver.listProgrammingLangs)
 	r.Get("/langs", httpserver.listProgrammingLangs)
-	r.Get("/subm-updates", httpserver.submHttpServer.ListenToSubmListUpdates)
+	r.Get("/subm-updates", httpserver.submHttpHandler.ListenToSubmListUpdates)
 	r.Post("/tester/run", httpserver.testerRun)
 	r.Get("/tester/run/{evalUuid}", httpserver.testerListen)
 	r.Get("/exec/{execUuid}", httpserver.execGet)

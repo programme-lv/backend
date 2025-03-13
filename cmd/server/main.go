@@ -5,23 +5,30 @@ import (
 	"log"
 	"log/slog"
 	"os"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
+	"github.com/lmittmann/tint"
 	"github.com/programme-lv/backend/conf"
 	"github.com/programme-lv/backend/execsrvc"
 	"github.com/programme-lv/backend/http"
 	"github.com/programme-lv/backend/subm/submhttp"
 	"github.com/programme-lv/backend/subm/submpgrepo"
 	"github.com/programme-lv/backend/subm/submsrvc"
+	"github.com/programme-lv/backend/task/taskhttp"
 	"github.com/programme-lv/backend/task/tasksrvc"
 	"github.com/programme-lv/backend/usersrvc"
 )
 
 func main() {
+	w := os.Stderr
+
+	// set global logger with custom options
 	slog.SetDefault(slog.New(
-		slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
-			Level: slog.LevelDebug,
+		tint.NewHandler(w, &tint.Options{
+			Level:      slog.LevelDebug,
+			TimeFormat: time.Kitchen,
 		}),
 	))
 
@@ -44,9 +51,10 @@ func main() {
 		log.Fatalf("error creating task service: %v", err)
 	}
 
-	submHttpServer := newSubmHttpHandler(userSrvc, taskSrvc, execSrvc)
+	submHttpHandler := newSubmHttpHandler(userSrvc, taskSrvc, execSrvc)
+	taskHttpHandler := taskhttp.NewTaskHttpHandler(taskSrvc)
 
-	httpServer := http.NewHttpServer(submHttpServer, userSrvc, taskSrvc, execSrvc, []byte(jwtKey))
+	httpServer := http.NewHttpServer(submHttpHandler, taskHttpHandler, userSrvc, execSrvc, []byte(jwtKey))
 
 	address := ":8080"
 	slog.Info("starting server", "address", address)
