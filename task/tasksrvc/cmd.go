@@ -3,7 +3,6 @@ package tasksrvc
 import (
 	"context"
 	"crypto/sha256"
-	"encoding/json"
 	"fmt"
 	"mime"
 
@@ -11,20 +10,8 @@ import (
 	"github.com/programme-lv/backend/task/taskdomain"
 )
 
-func (ts *TaskSrvc) PutTask(ctx context.Context, task *taskdomain.Task) error {
-	key := fmt.Sprintf("%s.json", task.ShortId)
-
-	data, err := json.Marshal(task)
-	if err != nil {
-		return fmt.Errorf("failed to marshal task: %w", err)
-	}
-
-	_, err = ts.s3TaskBucket.Upload(data, key, "application/json")
-	if err != nil {
-		return fmt.Errorf("failed to upload task: %w", err)
-	}
-
-	return nil
+func (ts *TaskSrvc) CreateTask(ctx context.Context, task taskdomain.Task) error {
+	return ts.repo.CreateTask(ctx, task)
 }
 
 // S3 bucket: "proglv-public" (as of 2024-09-29)

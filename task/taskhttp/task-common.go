@@ -1,4 +1,4 @@
-package http
+package taskhttp
 
 import (
 	"strings"

@@ -18,10 +18,10 @@ type TaskSrvcClient interface {
 	UploadIllustrationImg(ctx context.Context, mimeType string, body []byte) (string, error)
 	UploadMarkdownImage(ctx context.Context, mimeType string, body []byte) (string, error)
 	UploadTestFile(ctx context.Context, body []byte) error
-	PutTask(ctx context.Context, task *taskdomain.Task) error
 	GetTask(ctx context.Context, shortId string) (taskdomain.Task, error)
 	GetTaskFullNames(ctx context.Context, shortIds []string) ([]string, error)
 	ListTasks(ctx context.Context) ([]taskdomain.Task, error)
+	CreateTask(ctx context.Context, task taskdomain.Task) error
 }
 
 type S3BucketFacade interface {
@@ -36,6 +36,7 @@ type TaskPgRepo interface {
 	ListTasks(ctx context.Context, limit int, offset int) ([]taskdomain.Task, error)
 	ResolveNames(ctx context.Context, shortIds []string) ([]string, error)
 	Exists(ctx context.Context, shortId string) (bool, error)
+	CreateTask(ctx context.Context, task taskdomain.Task) error
 }
 
 type TaskSrvc struct {

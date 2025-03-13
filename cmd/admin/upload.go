@@ -286,7 +286,7 @@ func uploadTask(fsTask *fstask.Task, shortId string) error {
 	}
 
 	// Assemble the Task struct
-	task := &taskdomain.Task{
+	task := taskdomain.Task{
 		ShortId:          shortId,
 		FullName:         fsTask.FullName,
 		IllustrImgUrl:    illstrImgUrl,
@@ -309,7 +309,7 @@ func uploadTask(fsTask *fstask.Task, shortId string) error {
 		Str("shortId", shortId).
 		Msg("Task struct assembled")
 
-	err = taskSrvc.PutTask(context.Background(), task)
+	err = taskSrvc.CreateTask(context.Background(), task)
 	if err != nil {
 		log.Error().
 			Str("shortId", shortId).
