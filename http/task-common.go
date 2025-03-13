@@ -3,7 +3,7 @@ package http
 import (
 	"strings"
 
-	"github.com/programme-lv/backend/task"
+	"github.com/programme-lv/backend/task/taskdomain"
 )
 
 type Example struct {
@@ -65,7 +65,7 @@ type SubtaskOverview struct {
 
 const PublicCloudfrontEndpoint = "https://dvhk4hiwp1rmf.cloudfront.net/"
 
-func mapTaskMdStatement(md *task.MarkdownStatement) MdStatement {
+func mapTaskMdStatement(md *taskdomain.MarkdownStatement) MdStatement {
 	if md == nil {
 		return MdStatement{}
 	}
@@ -95,7 +95,7 @@ func mapTaskMdStatement(md *task.MarkdownStatement) MdStatement {
 	}
 }
 
-func mapTaskExamples(examples []task.Example) []Example {
+func mapTaskExamples(examples []taskdomain.Example) []Example {
 	response := make([]Example, len(examples))
 	for i, e := range examples {
 		response[i] = Example{
@@ -107,7 +107,7 @@ func mapTaskExamples(examples []task.Example) []Example {
 	return response
 }
 
-func mapTaskResponse(task *task.Task) *Task {
+func mapTaskResponse(task *taskdomain.Task) *Task {
 	illstrImgUrl := new(string)
 	if task.IllustrImgUrl != "" {
 		illstrImgUrl = new(string)
@@ -204,7 +204,7 @@ func mapTaskResponse(task *task.Task) *Task {
 	return response
 }
 
-func mapTasksResponse(tasks []task.Task) []*Task {
+func mapTasksResponse(tasks []taskdomain.Task) []*Task {
 	response := make([]*Task, len(tasks))
 	for i, task := range tasks {
 		response[i] = mapTaskResponse(&task)

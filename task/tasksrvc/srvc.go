@@ -1,15 +1,15 @@
-package task
+package tasksrvc
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"log/slog"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/programme-lv/backend/conf"
 	"github.com/programme-lv/backend/s3bucket"
+	"github.com/programme-lv/backend/task/taskdomain"
+	"github.com/programme-lv/backend/task/taskpgrepo"
 )
 
 type TaskSrvcClient interface {
@@ -18,10 +18,10 @@ type TaskSrvcClient interface {
 	UploadIllustrationImg(ctx context.Context, mimeType string, body []byte) (string, error)
 	UploadMarkdownImage(ctx context.Context, mimeType string, body []byte) (string, error)
 	UploadTestFile(ctx context.Context, body []byte) error
-	PutTask(ctx context.Context, task *Task) error
-	GetTask(ctx context.Context, shortId string) (Task, error)
+	PutTask(ctx context.Context, task *taskdomain.Task) error
+	GetTask(ctx context.Context, shortId string) (taskdomain.Task, error)
 	GetTaskFullNames(ctx context.Context, shortIds []string) ([]string, error)
-	ListTasks(ctx context.Context) ([]Task, error)
+	ListTasks(ctx context.Context) ([]taskdomain.Task, error)
 }
 
 type S3BucketFacade interface {
@@ -31,14 +31,19 @@ type S3BucketFacade interface {
 	ListAndGetAllFiles(prefix string) ([]s3bucket.FileData, error)
 }
 
-type TaskSrvc struct {
-	tasks []Task
+type TaskPgRepo interface {
+	GetTask(ctx context.Context, shortId string) (taskdomain.Task, error)
+	ListTasks(ctx context.Context, limit int, offset int) ([]taskdomain.Task, error)
+	ResolveNames(ctx context.Context, shortIds []string) ([]string, error)
+	Exists(ctx context.Context, shortId string) (bool, error)
+}
 
+type TaskSrvc struct {
 	s3PublicBucket   S3BucketFacade
 	s3TestfileBucket S3BucketFacade
 	s3TaskBucket     S3BucketFacade
 
-	pg *pgxpool.Pool
+	repo TaskPgRepo
 }
 
 // GetTestDownlUrl implements submadapter.TaskSrvcFacade.
@@ -48,37 +53,6 @@ func (ts *TaskSrvc) GetTestDownlUrl(ctx context.Context, testFileSha256 string) 
 		return "", fmt.Errorf("failed to get presigned URL: %w", err)
 	}
 	return presignedUrl, nil
-}
-
-func NewTaskSrvc(pg *pgxpool.Pool, publicS3, testS3, taskS3 S3BucketFacade) (TaskSrvcClient, error) {
-	start := time.Now()
-	taskFiles, err := taskS3.ListAndGetAllFiles("")
-	if err != nil {
-		return nil, fmt.Errorf("failed to list task files: %w", err)
-	}
-	elapsed := time.Since(start)
-	slog.Info("downloaded tasks from S3",
-		"count", len(taskFiles),
-		"time_ms", elapsed.Milliseconds())
-
-	// unmarshall jsons in taskFiles to tasks
-	tasks := []Task{}
-	for _, taskFile := range taskFiles {
-		task := Task{}
-		err = json.Unmarshal(taskFile.Content, &task)
-		if err != nil {
-			return nil, fmt.Errorf("failed to unmarshal task: %w", err)
-		}
-		tasks = append(tasks, task)
-	}
-
-	return &TaskSrvc{
-		tasks: tasks,
-
-		s3PublicBucket:   publicS3,
-		s3TestfileBucket: testS3,
-		s3TaskBucket:     taskS3,
-	}, nil
 }
 
 func NewDefaultTaskSrvc() (TaskSrvcClient, error) {
@@ -103,5 +77,12 @@ func NewDefaultTaskSrvc() (TaskSrvcClient, error) {
 		return nil, fmt.Errorf("failed to create pg pool: %w", err)
 	}
 
-	return NewTaskSrvc(pg, publicS3, testS3, taskS3)
+	repo := taskpgrepo.NewTaskPgRepo(pg)
+
+	return &TaskSrvc{
+		s3PublicBucket:   publicS3,
+		s3TestfileBucket: testS3,
+		s3TaskBucket:     taskS3,
+		repo:             repo,
+	}, nil
 }

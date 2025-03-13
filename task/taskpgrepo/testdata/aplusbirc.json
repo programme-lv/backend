@@ -1,0 +1,126 @@
+{
+  "ShortId": "aplusbirc",
+  "FullName": "A+B=C",
+  "IllustrImgUrl": "",
+  "MemLimMegabytes": 256,
+  "CpuTimeLimSecs": 0.6,
+  "OriginOlympiad": "LIO",
+  "DifficultyRating": 3,
+  "OriginNotes": [
+    {
+      "Lang": "lv",
+      "Info": "Uzdevums no Latvijas 38. (2024./2025. m. g.) informātikas olimpiādes (LIO) novada kārtas; jaunākajai (8.-10. klašu) grupai."
+    }
+  ],
+  "MdStatements": [
+    {
+      "LangIso639": "lv",
+      "Story": "Dotas $N$ kartītes. Uz katras kartītes uzrakstīts kāds vesels skaitlis. Uz vairākām kartītēm var būt uzrakstīti vienādi skaitļi.\n\nNepieciešams noteikt, vai no dotajām iespējams izvēlēties trīs atšķirīgas kartītes (nosauksim tās par $A$, $B$ un $C$), ka uz kartītēm $A$ un $B$ uzrakstīto skaitļu summa ir vienāda ar uz kartītes $C$ uzrakstīto skaitli.\n\nPiemēram, no skaitļiem $1, 3, 6, 3, -1, 4$ kā $A$, $B$ un $C$ var izvēlēties kartītes ar uz tām uzrakstītiem skaitļiem $3, 3, 6$ ($3+3=6$) vai $4, -1, 3$ ($4+(-1)=3$).\n\nUzrakstiet datorprogrammu, kas atrod šādu kartīšu trijnieku, vai arī nosaka, ka tādu atrast nav iespējams!",
+      "Input": "Ievaddatu pirmajā rindā dots naturāls skaitlis - kartīšu skaits $N (N \\leq 5000)$.\n\nNākamajā ievaddatu rindā doti $N$ veseli skaitļi - uz kartītēm uzrakstītie skaitļi. Zināms, ka uz kartītēm uzrakstītie skaitļi ir robežās no $-10^9$ līdz $10^9$.\n\nStarps katriem diviem blakus skaitļiem ievaddatos ir tukšumzīme.",
+      "Output": "Ja trīs kartītes ar aprakstītajām īpašībām starp dotajām atrast ir iespējams, izvaddatu pirmajā rindā jāizvada $1$, bet otrajā - trīs veseli skaitļi - uz kartītēm $A$, $B$ un $C$ uzrakstītie skaitļi. Ja iespējams atrast vairākus kartīšu trijniekus, jāizvada informācija par jebkuru no tiem. Starp katriem diviem blakus skaitļiem izvaddatos jāizvadīt tukšumzīme.\n\nJa trīs kartītes ar aprakstītajām īpašībām starp dotajām atrast nav iespējams, izvaddatu vienīgajā rindā jāizvada $0$.",
+      "Notes": "",
+      "Scoring": "",
+      "Talk": "",
+      "Example": "",
+      "Images": []
+    }
+  ],
+  "PdfStatements": [
+    {
+      "LangIso639": "lv",
+      "ObjectUrl": "https://proglv-public.s3.eu-central-1.amazonaws.com/task-pdf-statements/7a25c752637f3b913bac77e962e80c153b52caf1cd824f4b81da0c31df7f5f19.pdf"
+    }
+  ],
+  "VisInpSubtasks": [
+    {
+      "SubtaskId": 1,
+      "Tests": [
+        { "TestId": 1, "Input": "12\r\n2 3 7 8 3 8 14 28 3 28 2 8\r\n" },
+        { "TestId": 2, "Input": "14\r\n9 8 7 29 8 6 9 8 5 9 7 24 9 8\r\n" },
+        {
+          "TestId": 3,
+          "Input": "20\r\n-99 68 97 -68 13 -8 53 -38 93 -48 33 37 23 -3 -22 52 8 47 58 -62\r\n"
+        }
+      ]
+    }
+  ],
+  "Examples": [
+    {
+      "Input": "6\r\n1 3 6 3 -1 4\r\n",
+      "Output": "1\r\n-1 4 3\r\n",
+      "MdNote": ""
+    },
+    { "Input": "5\r\n6 -1 13 -8 20\r\n", "Output": "0\r\n", "MdNote": "" }
+  ],
+  "Tests": [
+    {
+      "InpSha2": "c21d04a1cb0bc201602720f10cbdda6319140e031de2b9753509f589a63d4339",
+      "AnsSha2": "13bf7b3039c63bf5a50491fa3cfd8eb4e699d1ba1436315aef9cbe5711530354"
+    }
+  ],
+  "Checker": "#include",
+  "Interactor": "",
+  "Subtasks": [
+    {
+      "Score": 2,
+      "TestIDs": [1, 2, 3],
+      "Descriptions": { "lv": "Uzdevuma tekstā dotie trīs testi" }
+    },
+    {
+      "Score": 18,
+      "TestIDs": [
+        4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23
+      ],
+      "Descriptions": { "lv": "$N \\leq 100$" }
+    },
+    {
+      "Score": 25,
+      "TestIDs": [
+        24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41,
+        42, 43
+      ],
+      "Descriptions": {
+        "lv": "Uz kartītēm uzrakstītie skaitļi ir savā starpā atšķirīgi"
+      }
+    },
+    {
+      "Score": 25,
+      "TestIDs": [
+        44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61,
+        62, 63
+      ],
+      "Descriptions": { "lv": "Uz kartītēm uzrakstītie skaitļi ir nenegatīvi" }
+    },
+    {
+      "Score": 30,
+      "TestIDs": [
+        64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81,
+        82, 83
+      ],
+      "Descriptions": { "lv": "Bez papildu ierobežojumiem" }
+    }
+  ],
+  "TestGroups": [
+    { "Points": 2, "Public": true, "TestIDs": [1, 2, 3] },
+    { "Points": 2, "Public": false, "TestIDs": [4, 5, 6, 7] },
+    { "Points": 4, "Public": true, "TestIDs": [8, 9, 10, 11] },
+    { "Points": 4, "Public": false, "TestIDs": [12, 13, 14, 15] },
+    { "Points": 4, "Public": false, "TestIDs": [16, 17, 18, 19] },
+    { "Points": 4, "Public": false, "TestIDs": [20, 21, 22, 23] },
+    { "Points": 5, "Public": false, "TestIDs": [24, 25, 26, 27] },
+    { "Points": 5, "Public": false, "TestIDs": [28, 29, 30, 31] },
+    { "Points": 5, "Public": true, "TestIDs": [32, 33, 34, 35] },
+    { "Points": 5, "Public": false, "TestIDs": [36, 37, 38, 39] },
+    { "Points": 5, "Public": false, "TestIDs": [40, 41, 42, 43] },
+    { "Points": 5, "Public": false, "TestIDs": [44, 45, 46, 47] },
+    { "Points": 5, "Public": false, "TestIDs": [48, 49, 50, 51] },
+    { "Points": 5, "Public": true, "TestIDs": [52, 53, 54, 55] },
+    { "Points": 5, "Public": false, "TestIDs": [56, 57, 58, 59] },
+    { "Points": 5, "Public": false, "TestIDs": [60, 61, 62, 63] },
+    { "Points": 6, "Public": false, "TestIDs": [64, 65, 66, 67] },
+    { "Points": 6, "Public": true, "TestIDs": [68, 69, 70, 71] },
+    { "Points": 6, "Public": false, "TestIDs": [72, 73, 74, 75] },
+    { "Points": 6, "Public": false, "TestIDs": [76, 77, 78, 79] },
+    { "Points": 6, "Public": false, "TestIDs": [80, 81, 82, 83] }
+  ]
+}
