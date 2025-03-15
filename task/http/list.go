@@ -1,4 +1,4 @@
-package taskhttp
+package http
 
 import (
 	"context"

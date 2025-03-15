@@ -1,27 +1,25 @@
-package tasksrvc
+package srvc
 
 import (
 	"context"
-
-	"github.com/programme-lv/backend/task/taskdomain"
 )
 
-func (ts *TaskSrvc) GetTask(ctx context.Context, id string) (res taskdomain.Task, err error) {
+func (ts *TaskSrvc) GetTask(ctx context.Context, id string) (res Task, err error) {
 	exists, err := ts.repo.Exists(ctx, id)
 	if err != nil {
-		return taskdomain.Task{}, err
+		return Task{}, err
 	}
 	if !exists {
-		return taskdomain.Task{}, NewErrorTaskNotFound(id)
+		return Task{}, NewErrorTaskNotFound(id)
 	}
 	task, err := ts.repo.GetTask(ctx, id)
 	if err != nil {
-		return taskdomain.Task{}, err
+		return Task{}, err
 	}
 	return task, nil
 }
 
-func (ts *TaskSrvc) ListTasks(ctx context.Context) ([]taskdomain.Task, error) {
+func (ts *TaskSrvc) ListTasks(ctx context.Context) ([]Task, error) {
 	tasks, err := ts.repo.ListTasks(ctx, 100, 0)
 	if err != nil {
 		return nil, err

@@ -21,7 +21,7 @@ import (
 	"github.com/programme-lv/backend/subm/submsrvc/submadapter"
 	"github.com/programme-lv/backend/subm/submsrvc/submcmd"
 	"github.com/programme-lv/backend/subm/submsrvc/submquery"
-	"github.com/programme-lv/backend/task/taskdomain"
+	"github.com/programme-lv/backend/task/srvc"
 	"github.com/programme-lv/backend/usersrvc"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -71,7 +71,7 @@ func (s *testSetup) submitSolution(t *testing.T, ctx context.Context) uuid.UUID 
 	s.execSrvc.EXPECT().Enqueue(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	s.execSrvc.EXPECT().Listen(mock.Anything, mock.Anything).Return(newMockExecEventChannel(t), nil)
 	s.userSrvc.EXPECT().GetUserByUUID(mock.Anything, mockUserUuid).Return(usersrvc.User{UUID: mockUserUuid}, nil)
-	s.taskSrvc.EXPECT().GetTask(mock.Anything, "aplusb").Return(taskdomain.Task{ShortId: "aplusb"}, nil)
+	s.taskSrvc.EXPECT().GetTask(mock.Anything, "aplusb").Return(srvc.Task{ShortId: "aplusb"}, nil)
 	submUUID := uuid.New()
 	err := s.srvc.SubmitSol(ctx, submcmd.SubmitSolParams{
 		UUID:        submUUID,
@@ -312,13 +312,13 @@ func TestUserMaxScores(t *testing.T) {
 	}, scores)
 }
 
-func newAplusBTask(t *testing.T) taskdomain.Task {
+func newAplusBTask(t *testing.T) srvc.Task {
 	t.Helper()
-	return taskdomain.Task{
+	return srvc.Task{
 		ShortId:         "aplusb",
 		MemLimMegabytes: 256,
 		CpuTimeLimSecs:  1,
-		Tests: []taskdomain.Test{
+		Tests: []srvc.Test{
 			{
 				InpSha2: "a8692502350d26305a557cf6277fe8594130c73b7aaeb24ed5413335dd6daa8c",
 				AnsSha2: "030e27d5723736abfbdd64046cfeacf2d9f6f52c3fb1638a0cdcbe95d1ab87c2",
