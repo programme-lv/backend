@@ -30,6 +30,7 @@ func main() {
 		tint.NewHandler(w, &tint.Options{
 			Level:      slog.LevelDebug,
 			TimeFormat: time.Kitchen,
+			AddSource:  true,
 		}),
 	))
 

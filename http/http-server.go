@@ -14,6 +14,7 @@ import (
 	"github.com/go-chi/cors"
 	"github.com/google/uuid"
 	"github.com/programme-lv/backend/execsrvc"
+	"github.com/programme-lv/backend/logger"
 	http1 "github.com/programme-lv/backend/subm/http"
 	taskhttp "github.com/programme-lv/backend/task/http"
 	"github.com/programme-lv/backend/usersrvc"
@@ -112,8 +113,12 @@ func requestLoggerMiddleware(next http.Handler) http.Handler {
 
 		reqInfo.ipaddr = ipResolver.resolveIp(r)
 
-		// Add request ID to context
+		// Create a logger with request ID
+		reqLogger := slog.Default().With("req-id", requestID)
+
+		// Add request ID and logger to context
 		ctx := context.WithValue(r.Context(), "requestID", requestID)
+		ctx = logger.WithLogger(ctx, reqLogger)
 		r = r.WithContext(ctx)
 
 		// Capture metrics about the request

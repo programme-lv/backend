@@ -2,6 +2,7 @@ package http
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -65,11 +66,11 @@ func (h *SubmHttpHandler) mapSubmListEntry(
 }
 
 func (h *SubmHttpHandler) getTaskFullName(ctx context.Context, shortID string) (string, error) {
-	task, err := h.taskSrvc.GetTask(ctx, shortID)
+	taskNames, err := h.taskSrvc.ResolveNames(ctx, []string{shortID})
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to resolve task name: %w", err)
 	}
-	return task.FullName, nil
+	return taskNames[0], nil
 }
 
 func (h *SubmHttpHandler) getUsername(ctx context.Context, userUuid uuid.UUID) (string, error) {

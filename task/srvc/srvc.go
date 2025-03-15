@@ -18,6 +18,7 @@ type TaskSrvcClient interface {
 	GetTaskFullNames(ctx context.Context, shortIds []string) ([]string, error)
 	ListTasks(ctx context.Context) ([]Task, error)
 	CreateTask(ctx context.Context, task Task) error
+	ResolveNames(ctx context.Context, shortIds []string) ([]string, error)
 }
 
 type S3BucketFacade interface {
@@ -41,6 +42,15 @@ type TaskSrvc struct {
 	s3TaskBucket     S3BucketFacade
 
 	repo TaskPgRepo
+}
+
+// ResolveNames implements TaskSrvcClient.
+func (ts *TaskSrvc) ResolveNames(ctx context.Context, shortIds []string) ([]string, error) {
+	names, err := ts.repo.ResolveNames(ctx, shortIds)
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve names: %w", err)
+	}
+	return names, nil
 }
 
 // GetTestDownlUrl implements submadapter.TaskSrvcFacade.

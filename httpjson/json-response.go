@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/programme-lv/backend/logger"
 	"github.com/programme-lv/backend/srvcerror"
 )
 
@@ -61,4 +62,10 @@ func HandleError(logger *slog.Logger, w http.ResponseWriter, err error) {
 		logger.Error("internal server error", "error", err)
 		writeInternalErrorJson(w)
 	}
+}
+
+// HandleErrorWithContext is a convenience function that extracts the logger from the context
+func HandleErrorWithContext(ctx http.Request, w http.ResponseWriter, err error) {
+	log := logger.FromContext(ctx.Context())
+	HandleError(log, w, err)
 }
