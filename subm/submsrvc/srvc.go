@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 	_ "github.com/lib/pq"
 	"github.com/programme-lv/backend/execsrvc"
+	"github.com/programme-lv/backend/logger"
 	"github.com/programme-lv/backend/subm/domain"
 	"github.com/programme-lv/backend/subm/submsrvc/submadapter"
 	"github.com/programme-lv/backend/subm/submsrvc/submcmd"
@@ -208,10 +209,14 @@ func (s *submSrvc) ReEvalSubm(ctx context.Context, p submcmd.ReEvalSubmParams) e
 }
 
 func (s *submSrvc) GetSubm(ctx context.Context, uuid uuid.UUID) (domain.Subm, error) {
+	log := logger.FromContext(ctx)
+	log.Debug("getting submission", "subm_uuid", uuid)
 	return s.submRepo.GetSubm(ctx, uuid)
 }
 
 func (s *submSrvc) ListSubms(ctx context.Context, filter submquery.ListSubmsParams) ([]domain.Subm, error) {
+	log := logger.FromContext(ctx)
+	log.Debug("listing submissions", "limit", filter.Limit, "offset", filter.Offset)
 	return s.submRepo.ListSubms(ctx, filter.Limit, filter.Offset)
 }
 
