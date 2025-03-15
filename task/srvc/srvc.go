@@ -52,7 +52,7 @@ func (ts *TaskSrvc) GetTestDownlUrl(ctx context.Context, testFileSha256 string) 
 	return presignedUrl, nil
 }
 
-func NewDefaultTaskSrvc(repo TaskPgRepo) (TaskSrvcClient, error) {
+func NewTaskSrvc(repo TaskPgRepo) (TaskSrvcClient, error) {
 	publicS3, err := s3bucket.NewS3Bucket("eu-central-1", "proglv-public")
 	if err != nil {
 		format := "failed to create S3 bucket: %w"
