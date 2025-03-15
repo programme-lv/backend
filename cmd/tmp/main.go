@@ -10,8 +10,8 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 	"github.com/programme-lv/backend/conf"
-	"github.com/programme-lv/backend/task/taskdomain"
-	"github.com/programme-lv/backend/task/taskpgrepo"
+	"github.com/programme-lv/backend/task/pgrepo"
+	"github.com/programme-lv/backend/task/srvc"
 )
 
 func main() {
@@ -26,7 +26,7 @@ func main() {
 		log.Fatalf("failed to create pg pool: %v", err)
 	}
 
-	repo := taskpgrepo.NewTaskPgRepo(pool)
+	repo := pgrepo.NewTaskPgRepo(pool)
 
 	taskJsonL, err := os.ReadFile("./all_tasks.jsonl")
 	if err != nil {
@@ -45,7 +45,7 @@ func main() {
 		}
 
 		// Unmarshal the JSON line into a task
-		var task taskdomain.Task
+		var task srvc.Task
 		if err := json.Unmarshal(line, &task); err != nil {
 			log.Printf("Error unmarshalling task at line %d: %v", i+1, err)
 			continue

@@ -15,7 +15,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/programme-lv/backend/execsrvc"
 	"github.com/programme-lv/backend/subm/submhttp"
-	"github.com/programme-lv/backend/task/taskhttp"
+	taskhttp "github.com/programme-lv/backend/task/http"
 	"github.com/programme-lv/backend/usersrvc"
 )
 

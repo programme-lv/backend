@@ -1,4 +1,4 @@
-package tasksrvc
+package srvc
 
 import (
 	"fmt"

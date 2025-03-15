@@ -1,4 +1,4 @@
-package tasksrvc
+package srvc
 
 import (
 	"context"
@@ -7,10 +7,9 @@ import (
 	"mime"
 
 	"github.com/klauspost/compress/zstd"
-	"github.com/programme-lv/backend/task/taskdomain"
 )
 
-func (ts *TaskSrvc) CreateTask(ctx context.Context, task taskdomain.Task) error {
+func (ts *TaskSrvc) CreateTask(ctx context.Context, task Task) error {
 	return ts.repo.CreateTask(ctx, task)
 }
 

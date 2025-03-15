@@ -1,4 +1,4 @@
-package taskpgrepo
+package pgrepo
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/programme-lv/backend/task/taskdomain"
+	"github.com/programme-lv/backend/task/srvc"
 )
 
 type taskPgRepo struct {
@@ -17,8 +17,8 @@ func NewTaskPgRepo(pool *pgxpool.Pool) *taskPgRepo {
 	return &taskPgRepo{pool: pool}
 }
 
-func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (taskdomain.Task, error) {
-	var t taskdomain.Task
+func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, error) {
+	var t srvc.Task
 
 	// Load main task row.
 	err := r.pool.QueryRow(ctx, `
@@ -50,7 +50,7 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (taskdomain.Ta
 		return t, err
 	}
 	for originRows.Next() {
-		var note taskdomain.OriginNote
+		var note srvc.OriginNote
 		if err := originRows.Scan(&note.Lang, &note.Info); err != nil {
 			originRows.Close()
 			return t, err
@@ -68,9 +68,9 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (taskdomain.Ta
 	if err != nil {
 		return t, err
 	}
-	var mdStatements []taskdomain.MarkdownStatement
+	var mdStatements []srvc.MarkdownStatement
 	for mdStmtRows.Next() {
-		var md taskdomain.MarkdownStatement
+		var md srvc.MarkdownStatement
 		var mdStmtID int
 		if err := mdStmtRows.Scan(&mdStmtID, &md.LangIso639, &md.Story, &md.Input, &md.Output, &md.Notes, &md.Scoring, &md.Talk, &md.Example); err != nil {
 			mdStmtRows.Close()
@@ -87,9 +87,9 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (taskdomain.Ta
 			mdStmtRows.Close()
 			return t, err
 		}
-		var images []taskdomain.MdImgInfo
+		var images []srvc.MdImgInfo
 		for imgRows.Next() {
-			var img taskdomain.MdImgInfo
+			var img srvc.MdImgInfo
 			if err := imgRows.Scan(&img.Uuid, &img.S3Url, &img.WidthPx, &img.HeightPx, &img.WidthEm); err != nil {
 				imgRows.Close()
 				mdStmtRows.Close()
@@ -113,9 +113,9 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (taskdomain.Ta
 	if err != nil {
 		return t, err
 	}
-	var pdfStatements []taskdomain.PdfStatement
+	var pdfStatements []srvc.PdfStatement
 	for pdfRows.Next() {
-		var pdf taskdomain.PdfStatement
+		var pdf srvc.PdfStatement
 		if err := pdfRows.Scan(&pdf.LangIso639, &pdf.ObjectUrl); err != nil {
 			pdfRows.Close()
 			return t, err
@@ -134,9 +134,9 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (taskdomain.Ta
 	if err != nil {
 		return t, err
 	}
-	var visInpSubtasks []taskdomain.VisibleInputSubtask
+	var visInpSubtasks []srvc.VisibleInputSubtask
 	for visRows.Next() {
-		var subtask taskdomain.VisibleInputSubtask
+		var subtask srvc.VisibleInputSubtask
 		var dbSubtaskID int
 		if err := visRows.Scan(&dbSubtaskID, &subtask.SubtaskId); err != nil {
 			visRows.Close()
@@ -153,9 +153,9 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (taskdomain.Ta
 			visRows.Close()
 			return t, err
 		}
-		var visTests []taskdomain.VisInpSubtaskTest
+		var visTests []srvc.VisInpSubtaskTest
 		for testRows.Next() {
-			var vt taskdomain.VisInpSubtaskTest
+			var vt srvc.VisInpSubtaskTest
 			if err := testRows.Scan(&vt.TestId, &vt.Input); err != nil {
 				testRows.Close()
 				visRows.Close()
@@ -179,9 +179,9 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (taskdomain.Ta
 	if err != nil {
 		return t, err
 	}
-	var examples []taskdomain.Example
+	var examples []srvc.Example
 	for exRows.Next() {
-		var ex taskdomain.Example
+		var ex srvc.Example
 		if err := exRows.Scan(&ex.Input, &ex.Output, &ex.MdNote); err != nil {
 			exRows.Close()
 			return t, err
@@ -200,9 +200,9 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (taskdomain.Ta
 	if err != nil {
 		return t, err
 	}
-	var tests []taskdomain.Test
+	var tests []srvc.Test
 	for testEvalRows.Next() {
-		var test taskdomain.Test
+		var test srvc.Test
 		if err := testEvalRows.Scan(&test.InpSha2, &test.AnsSha2); err != nil {
 			testEvalRows.Close()
 			return t, err
@@ -221,9 +221,9 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (taskdomain.Ta
 	if err != nil {
 		return t, err
 	}
-	var subtasks []taskdomain.Subtask
+	var subtasks []srvc.Subtask
 	for subtaskRows.Next() {
-		var st taskdomain.Subtask
+		var st srvc.Subtask
 		var stID int
 		// descriptions is stored as JSONB. We scan it into a byte slice and unmarshal.
 		var descBytes []byte
@@ -272,9 +272,9 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (taskdomain.Ta
 	if err != nil {
 		return t, err
 	}
-	var testGroups []taskdomain.TestGroup
+	var testGroups []srvc.TestGroup
 	for tgRows.Next() {
-		var tg taskdomain.TestGroup
+		var tg srvc.TestGroup
 		var tgID int
 		if err := tgRows.Scan(&tgID, &tg.Points, &tg.Public); err != nil {
 			tgRows.Close()
@@ -310,7 +310,7 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (taskdomain.Ta
 	return t, nil
 }
 
-func (r *taskPgRepo) ListTasks(ctx context.Context, limit int, offset int) ([]taskdomain.Task, error) {
+func (r *taskPgRepo) ListTasks(ctx context.Context, limit int, offset int) ([]srvc.Task, error) {
 	// For simplicity, first load the short_ids and then call GetTask for each.
 	rows, err := r.pool.Query(ctx, `
 		SELECT short_id 
@@ -323,7 +323,7 @@ func (r *taskPgRepo) ListTasks(ctx context.Context, limit int, offset int) ([]ta
 	}
 	defer rows.Close()
 
-	var tasks []taskdomain.Task
+	var tasks []srvc.Task
 	for rows.Next() {
 		var shortId string
 		if err := rows.Scan(&shortId); err != nil {
@@ -368,7 +368,7 @@ func (r *taskPgRepo) Exists(ctx context.Context, shortId string) (bool, error) {
 }
 
 // CreateTask creates a new task and all its nested entities, if it does not exist yet.
-func (r *taskPgRepo) CreateTask(ctx context.Context, t taskdomain.Task) error {
+func (r *taskPgRepo) CreateTask(ctx context.Context, t srvc.Task) error {
 	// Check if the task already exists.
 	exists, err := r.Exists(ctx, t.ShortId)
 	if err != nil {

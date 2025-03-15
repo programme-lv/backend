@@ -6,7 +6,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/programme-lv/backend/execsrvc"
 	subm "github.com/programme-lv/backend/subm/submdomain"
-	"github.com/programme-lv/backend/task/taskdomain"
+	"github.com/programme-lv/backend/task/srvc"
 	"github.com/programme-lv/backend/usersrvc"
 )
 
@@ -27,7 +27,7 @@ type UserSrvcFacade interface {
 }
 
 type TaskSrvcFacade interface {
-	GetTask(ctx context.Context, shortId string) (taskdomain.Task, error)
+	GetTask(ctx context.Context, shortId string) (srvc.Task, error)
 	GetTestDownlUrl(ctx context.Context, testFileSha256 string) (string, error)
 }
 

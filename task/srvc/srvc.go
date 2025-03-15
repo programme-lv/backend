@@ -1,15 +1,11 @@
-package tasksrvc
+package srvc
 
 import (
 	"context"
 	"fmt"
 	"time"
 
-	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/programme-lv/backend/conf"
 	"github.com/programme-lv/backend/s3bucket"
-	"github.com/programme-lv/backend/task/taskdomain"
-	"github.com/programme-lv/backend/task/taskpgrepo"
 )
 
 type TaskSrvcClient interface {
@@ -18,10 +14,10 @@ type TaskSrvcClient interface {
 	UploadIllustrationImg(ctx context.Context, mimeType string, body []byte) (string, error)
 	UploadMarkdownImage(ctx context.Context, mimeType string, body []byte) (string, error)
 	UploadTestFile(ctx context.Context, body []byte) error
-	GetTask(ctx context.Context, shortId string) (taskdomain.Task, error)
+	GetTask(ctx context.Context, shortId string) (Task, error)
 	GetTaskFullNames(ctx context.Context, shortIds []string) ([]string, error)
-	ListTasks(ctx context.Context) ([]taskdomain.Task, error)
-	CreateTask(ctx context.Context, task taskdomain.Task) error
+	ListTasks(ctx context.Context) ([]Task, error)
+	CreateTask(ctx context.Context, task Task) error
 }
 
 type S3BucketFacade interface {
@@ -32,11 +28,11 @@ type S3BucketFacade interface {
 }
 
 type TaskPgRepo interface {
-	GetTask(ctx context.Context, shortId string) (taskdomain.Task, error)
-	ListTasks(ctx context.Context, limit int, offset int) ([]taskdomain.Task, error)
+	GetTask(ctx context.Context, shortId string) (Task, error)
+	ListTasks(ctx context.Context, limit int, offset int) ([]Task, error)
 	ResolveNames(ctx context.Context, shortIds []string) ([]string, error)
 	Exists(ctx context.Context, shortId string) (bool, error)
-	CreateTask(ctx context.Context, task taskdomain.Task) error
+	CreateTask(ctx context.Context, task Task) error
 }
 
 type TaskSrvc struct {
@@ -56,7 +52,7 @@ func (ts *TaskSrvc) GetTestDownlUrl(ctx context.Context, testFileSha256 string) 
 	return presignedUrl, nil
 }
 
-func NewDefaultTaskSrvc() (TaskSrvcClient, error) {
+func NewDefaultTaskSrvc(repo TaskPgRepo) (TaskSrvcClient, error) {
 	publicS3, err := s3bucket.NewS3Bucket("eu-central-1", "proglv-public")
 	if err != nil {
 		format := "failed to create S3 bucket: %w"
@@ -72,13 +68,6 @@ func NewDefaultTaskSrvc() (TaskSrvcClient, error) {
 		format := "failed to create S3 bucket: %w"
 		return nil, fmt.Errorf(format, err)
 	}
-
-	pg, err := pgxpool.New(context.Background(), conf.GetPgConnStrFromEnv())
-	if err != nil {
-		return nil, fmt.Errorf("failed to create pg pool: %w", err)
-	}
-
-	repo := taskpgrepo.NewTaskPgRepo(pg)
 
 	return &TaskSrvc{
 		s3PublicBucket:   publicS3,

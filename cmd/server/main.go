@@ -16,8 +16,9 @@ import (
 	"github.com/programme-lv/backend/subm/submhttp"
 	"github.com/programme-lv/backend/subm/submpgrepo"
 	"github.com/programme-lv/backend/subm/submsrvc"
-	"github.com/programme-lv/backend/task/taskhttp"
-	"github.com/programme-lv/backend/task/tasksrvc"
+	http1 "github.com/programme-lv/backend/task/http"
+	"github.com/programme-lv/backend/task/pgrepo"
+	"github.com/programme-lv/backend/task/srvc"
 	"github.com/programme-lv/backend/usersrvc"
 )
 
@@ -46,13 +47,19 @@ func main() {
 	execSrvc := execsrvc.NewExecSrvc()
 	userSrvc := usersrvc.NewUserService()
 
-	taskSrvc, err := tasksrvc.NewDefaultTaskSrvc()
+	pg, err := pgxpool.New(context.Background(), conf.GetPgConnStrFromEnv())
+	if err != nil {
+		log.Fatalf("failed to create pg pool: %v", err)
+	}
+
+	repo := pgrepo.NewTaskPgRepo(pg)
+	taskSrvc, err := srvc.NewDefaultTaskSrvc(repo)
 	if err != nil {
 		log.Fatalf("error creating task service: %v", err)
 	}
 
 	submHttpHandler := newSubmHttpHandler(userSrvc, taskSrvc, execSrvc)
-	taskHttpHandler := taskhttp.NewTaskHttpHandler(taskSrvc)
+	taskHttpHandler := http1.NewTaskHttpHandler(taskSrvc)
 
 	httpServer := http.NewHttpServer(submHttpHandler, taskHttpHandler, userSrvc, execSrvc, []byte(jwtKey))
 
@@ -62,7 +69,7 @@ func main() {
 	slog.Info("server stopped", "error", err)
 }
 
-func newSubmHttpHandler(userSrvc *usersrvc.UserSrvc, taskSrvc tasksrvc.TaskSrvcClient, execSrvc *execsrvc.ExecSrvc) *submhttp.SubmHttpHandler {
+func newSubmHttpHandler(userSrvc *usersrvc.UserSrvc, taskSrvc srvc.TaskSrvcClient, execSrvc *execsrvc.ExecSrvc) *submhttp.SubmHttpHandler {
 	pool, err := pgxpool.New(context.Background(), conf.GetPgConnStrFromEnv())
 	if err != nil {
 		log.Fatalf("failed to create pg pool: %v", err)

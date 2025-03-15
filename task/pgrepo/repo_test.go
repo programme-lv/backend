@@ -1,4 +1,4 @@
-package taskpgrepo
+package pgrepo
 
 import (
 	"context"
@@ -10,7 +10,7 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/peterldowns/pgtestdb"
 	"github.com/peterldowns/pgtestdb/migrators/golangmigrator"
-	"github.com/programme-lv/backend/task/taskdomain"
+	"github.com/programme-lv/backend/task/srvc"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -44,7 +44,7 @@ func NewDB(t *testing.T) *pgxpool.Pool {
 
 func TestTaskPgRepo(t *testing.T) {
 	// read the testdata/aplusbirc.json file
-	// parse it into a taskdomain.Task struct
+	// parse it into a tasksrvc.Task struct
 	// insert the task into the database
 	// read the task from the database
 	// compare the task with manual inspection
@@ -57,7 +57,7 @@ func TestTaskPgRepo(t *testing.T) {
 		t.Fatalf("Failed to read testdata/aplusbirc.json: %v", err)
 	}
 
-	var task taskdomain.Task
+	var task srvc.Task
 	err = json.Unmarshal(taskJson, &task)
 	if err != nil {
 		t.Fatalf("Failed to unmarshal task: %v", err)
