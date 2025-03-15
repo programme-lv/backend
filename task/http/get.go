@@ -1,7 +1,6 @@
 package http
 
 import (
-	"context"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -12,7 +11,15 @@ import (
 
 const taskGetCacheKeyPrefix = "task_get:"
 
+// GetTask returns a task by ID
 func (httpserver *TaskHttpHandler) GetTask(w http.ResponseWriter, r *http.Request) {
+	// Apply middleware to the handler
+	handler := httpserver.wrapMiddleware(httpserver.getTaskHandler)
+	handler(w, r)
+}
+
+// getTaskHandler is the actual implementation of GetTask
+func (httpserver *TaskHttpHandler) getTaskHandler(w http.ResponseWriter, r *http.Request) {
 	taskId := chi.URLParam(r, "taskId")
 	cacheKey := fmt.Sprintf("%s%s", taskGetCacheKeyPrefix, taskId)
 
@@ -25,7 +32,7 @@ func (httpserver *TaskHttpHandler) GetTask(w http.ResponseWriter, r *http.Reques
 	}
 
 	// If not in cache or invalid cache, get from service
-	task, err := httpserver.taskSrvc.GetTask(context.TODO(), taskId)
+	task, err := httpserver.taskSrvc.GetTask(r.Context(), taskId)
 	if err != nil {
 		httpjson.HandleError(slog.Default(), w, err)
 		return

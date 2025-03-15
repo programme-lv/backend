@@ -38,7 +38,7 @@ func uploadTask(fsTask *fstask.Task, shortId string) error {
 	defer pg.Close()
 
 	repo := pgrepo.NewTaskPgRepo(pg)
-	taskSrvc, err := srvc.NewDefaultTaskSrvc(repo)
+	taskSrvc, err := srvc.NewTaskSrvc(repo)
 	if err != nil {
 		log.Error().Err(err).Msg("Error creating task service")
 		return fmt.Errorf("error creating task service: %w", err)
