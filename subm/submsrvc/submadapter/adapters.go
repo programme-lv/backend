@@ -5,7 +5,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/programme-lv/backend/execsrvc"
-	subm "github.com/programme-lv/backend/subm/submdomain"
+	subm "github.com/programme-lv/backend/subm/domain"
 	"github.com/programme-lv/backend/task/srvc"
 	"github.com/programme-lv/backend/usersrvc"
 )

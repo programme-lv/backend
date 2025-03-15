@@ -1,4 +1,4 @@
-package submdomain
+package domain
 
 // ScoreBarInfo contains the percentage distribution of test results
 type ScoreBarInfo struct {

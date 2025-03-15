@@ -1,11 +1,11 @@
-package submhttp
+package http
 
 import (
 	"log/slog"
 	"net/http"
 
 	"github.com/programme-lv/backend/httpjson"
-	"github.com/programme-lv/backend/subm/submdomain"
+	"github.com/programme-lv/backend/subm/domain"
 	"github.com/programme-lv/backend/subm/submsrvc/submquery"
 )
 
@@ -19,7 +19,7 @@ func (h *SubmHttpHandler) GetSubmList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	mapSubmList := func(subms []submdomain.Subm) []SubmListEntry {
+	mapSubmList := func(subms []domain.Subm) []SubmListEntry {
 		response := make([]SubmListEntry, 0)
 		for _, subm := range subms {
 			entry, err := h.mapSubmListEntry(r.Context(), subm)

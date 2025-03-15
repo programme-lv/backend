@@ -7,7 +7,7 @@ import (
 
 	mock "github.com/stretchr/testify/mock"
 
-	submdomain "github.com/programme-lv/backend/subm/submdomain"
+	submdomain "github.com/programme-lv/backend/subm/domain"
 
 	uuid "github.com/google/uuid"
 )

@@ -1,4 +1,4 @@
-package submhttp
+package http
 
 type DetailedSubmView struct {
 	SubmUUID  string `json:"subm_uuid"`

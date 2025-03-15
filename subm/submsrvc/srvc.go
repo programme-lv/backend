@@ -10,7 +10,7 @@ import (
 	"github.com/google/uuid"
 	_ "github.com/lib/pq"
 	"github.com/programme-lv/backend/execsrvc"
-	"github.com/programme-lv/backend/subm/submdomain"
+	"github.com/programme-lv/backend/subm/domain"
 	"github.com/programme-lv/backend/subm/submsrvc/submadapter"
 	"github.com/programme-lv/backend/subm/submsrvc/submcmd"
 	"github.com/programme-lv/backend/subm/submsrvc/submquery"
@@ -19,13 +19,13 @@ import (
 type SubmSrvcClient interface {
 	SubmitSol(ctx context.Context, p submcmd.SubmitSolParams) error
 	ReEvalSubm(ctx context.Context, p submcmd.ReEvalSubmParams) error
-	GetSubm(ctx context.Context, uuid uuid.UUID) (submdomain.Subm, error)
-	ListSubms(ctx context.Context, filter submquery.ListSubmsParams) ([]submdomain.Subm, error)
-	GetEval(ctx context.Context, uuid uuid.UUID) (submdomain.Eval, error)
-	SubscribeNewSubms(ctx context.Context) (<-chan submdomain.Subm, error)
-	SubscribeEvalUpds(ctx context.Context) (<-chan submdomain.Eval, error)
+	GetSubm(ctx context.Context, uuid uuid.UUID) (domain.Subm, error)
+	ListSubms(ctx context.Context, filter submquery.ListSubmsParams) ([]domain.Subm, error)
+	GetEval(ctx context.Context, uuid uuid.UUID) (domain.Eval, error)
+	SubscribeNewSubms(ctx context.Context) (<-chan domain.Subm, error)
+	SubscribeEvalUpds(ctx context.Context) (<-chan domain.Eval, error)
 	WaitForEvalFinish(ctx context.Context, evalUUID uuid.UUID) error
-	GetMaxScorePerTask(ctx context.Context, userUUID uuid.UUID) (map[string]submdomain.MaxScore, error)
+	GetMaxScorePerTask(ctx context.Context, userUUID uuid.UUID) (map[string]domain.MaxScore, error)
 }
 
 type submSrvc struct {
@@ -36,16 +36,16 @@ type submSrvc struct {
 	evalRepo submadapter.EvalRepo
 
 	newSubmChListenerLock sync.Mutex
-	newSubmListeners      map[chan submdomain.Subm]struct{}
+	newSubmListeners      map[chan domain.Subm]struct{}
 
 	newEvalUpdListenerLock sync.Mutex
-	newEvalUpdListeners    map[chan submdomain.Eval]struct{}
+	newEvalUpdListeners    map[chan domain.Eval]struct{}
 
-	inProgrEval map[uuid.UUID]submdomain.Eval
+	inProgrEval map[uuid.UUID]domain.Eval
 }
 
 // GetMaxScorePerTask implements SubmSrvcClient.
-func (s *submSrvc) GetMaxScorePerTask(ctx context.Context, userUUID uuid.UUID) (map[string]submdomain.MaxScore, error) {
+func (s *submSrvc) GetMaxScorePerTask(ctx context.Context, userUUID uuid.UUID) (map[string]domain.MaxScore, error) {
 	// Get all submissions
 	subms, err := s.submRepo.ListSubms(ctx, 10000, 0)
 	if err != nil {
@@ -57,7 +57,7 @@ func (s *submSrvc) GetMaxScorePerTask(ctx context.Context, userUUID uuid.UUID) (
 	}
 
 	// Filter submissions by user and collect evaluations
-	userSubmsWithEval := make([]submdomain.SubmJoinEval, 0)
+	userSubmsWithEval := make([]domain.SubmJoinEval, 0)
 	for _, subm := range subms {
 		if subm.AuthorUUID != userUUID {
 			continue
@@ -75,14 +75,14 @@ func (s *submSrvc) GetMaxScorePerTask(ctx context.Context, userUUID uuid.UUID) (
 			continue
 		}
 
-		userSubmsWithEval = append(userSubmsWithEval, submdomain.SubmJoinEval{
+		userSubmsWithEval = append(userSubmsWithEval, domain.SubmJoinEval{
 			Subm: subm,
 			Eval: eval,
 		})
 	}
 
 	// Calculate max scores using the domain logic
-	return submdomain.CalcMaxScores(userSubmsWithEval), nil
+	return domain.CalcMaxScores(userSubmsWithEval), nil
 }
 
 func NewSubmSrvc(
@@ -99,10 +99,10 @@ func NewSubmSrvc(
 		submRepo: submRepo,
 		evalRepo: evalRepo,
 
-		newSubmListeners:    make(map[chan submdomain.Subm]struct{}),
-		newEvalUpdListeners: make(map[chan submdomain.Eval]struct{}),
+		newSubmListeners:    make(map[chan domain.Subm]struct{}),
+		newEvalUpdListeners: make(map[chan domain.Eval]struct{}),
 
-		inProgrEval: make(map[uuid.UUID]submdomain.Eval),
+		inProgrEval: make(map[uuid.UUID]domain.Eval),
 	}
 }
 
@@ -116,7 +116,7 @@ func (s *submSrvc) procExecEv(ctx context.Context, p submcmd.ProcExecEvParams) e
 	return procExecEvCmd.Handle(ctx, p)
 }
 
-func (s *submSrvc) broadcastEvalUpdate(eval submdomain.Eval) {
+func (s *submSrvc) broadcastEvalUpdate(eval domain.Eval) {
 	s.newEvalUpdListenerLock.Lock()
 	defer s.newEvalUpdListenerLock.Unlock()
 	for ch := range s.newEvalUpdListeners {
@@ -129,7 +129,7 @@ func (s *submSrvc) broadcastEvalUpdate(eval submdomain.Eval) {
 	}
 }
 
-func (s *submSrvc) broadcastSubmCreated(subm submdomain.Subm) {
+func (s *submSrvc) broadcastSubmCreated(subm domain.Subm) {
 	s.newSubmChListenerLock.Lock()
 	defer s.newSubmChListenerLock.Unlock()
 	for ch := range s.newSubmListeners {
@@ -142,7 +142,7 @@ func (s *submSrvc) broadcastSubmCreated(subm submdomain.Subm) {
 	}
 }
 
-func (s *submSrvc) enqueueEvalExecAndListen(ctx context.Context, eval submdomain.Eval, srcCode string, prLangId string) error {
+func (s *submSrvc) enqueueEvalExecAndListen(ctx context.Context, eval domain.Eval, srcCode string, prLangId string) error {
 	enqueueEvalCmd := submcmd.EnqueueEvalCmdHandler{
 		EnqueueExec:     s.execSrvc.Enqueue,
 		GetTestDownlUrl: s.taskSrvc.GetTestDownlUrl,
@@ -207,23 +207,23 @@ func (s *submSrvc) ReEvalSubm(ctx context.Context, p submcmd.ReEvalSubmParams) e
 	panic("not implemented")
 }
 
-func (s *submSrvc) GetSubm(ctx context.Context, uuid uuid.UUID) (submdomain.Subm, error) {
+func (s *submSrvc) GetSubm(ctx context.Context, uuid uuid.UUID) (domain.Subm, error) {
 	return s.submRepo.GetSubm(ctx, uuid)
 }
 
-func (s *submSrvc) ListSubms(ctx context.Context, filter submquery.ListSubmsParams) ([]submdomain.Subm, error) {
+func (s *submSrvc) ListSubms(ctx context.Context, filter submquery.ListSubmsParams) ([]domain.Subm, error) {
 	return s.submRepo.ListSubms(ctx, filter.Limit, filter.Offset)
 }
 
-func (s *submSrvc) GetEval(ctx context.Context, uuid uuid.UUID) (submdomain.Eval, error) {
+func (s *submSrvc) GetEval(ctx context.Context, uuid uuid.UUID) (domain.Eval, error) {
 	if eval, ok := s.inProgrEval[uuid]; ok {
 		return eval, nil
 	}
 	return s.evalRepo.GetEval(ctx, uuid)
 }
 
-func (s *submSrvc) SubscribeNewSubms(ctx context.Context) (<-chan submdomain.Subm, error) {
-	ch := make(chan submdomain.Subm, 10)
+func (s *submSrvc) SubscribeNewSubms(ctx context.Context) (<-chan domain.Subm, error) {
+	ch := make(chan domain.Subm, 10)
 	s.newSubmChListenerLock.Lock()
 	s.newSubmListeners[ch] = struct{}{}
 	s.newSubmChListenerLock.Unlock()
@@ -237,8 +237,8 @@ func (s *submSrvc) SubscribeNewSubms(ctx context.Context) (<-chan submdomain.Sub
 	return ch, nil
 }
 
-func (s *submSrvc) SubscribeEvalUpds(ctx context.Context) (<-chan submdomain.Eval, error) {
-	ch := make(chan submdomain.Eval, 10)
+func (s *submSrvc) SubscribeEvalUpds(ctx context.Context) (<-chan domain.Eval, error) {
+	ch := make(chan domain.Eval, 10)
 	s.newEvalUpdListenerLock.Lock()
 	s.newEvalUpdListeners[ch] = struct{}{}
 	s.newEvalUpdListenerLock.Unlock()
@@ -265,7 +265,7 @@ func (s *submSrvc) WaitForEvalFinish(ctx context.Context, evalUUID uuid.UUID) er
 		return fmt.Errorf("failed to get evaluation: %w", err)
 	}
 
-	if eval.Stage == submdomain.EvalStageFinished {
+	if eval.Stage == domain.EvalStageFinished {
 		return nil
 	}
 
@@ -279,7 +279,7 @@ func (s *submSrvc) WaitForEvalFinish(ctx context.Context, evalUUID uuid.UUID) er
 			if e.UUID != evalUUID {
 				continue
 			}
-			if e.Stage == submdomain.EvalStageFinished {
+			if e.Stage == domain.EvalStageFinished {
 				return nil
 			}
 			// extend timeout

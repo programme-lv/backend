@@ -5,7 +5,7 @@ import (
 
 	"github.com/google/uuid"
 	decorator "github.com/programme-lv/backend/srvccqs"
-	subm "github.com/programme-lv/backend/subm/submdomain"
+	subm "github.com/programme-lv/backend/subm/domain"
 )
 
 type GetEvalQuery decorator.QueryHandler[GetEvalParams, subm.Eval]

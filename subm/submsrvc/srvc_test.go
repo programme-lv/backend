@@ -15,8 +15,8 @@ import (
 	"github.com/peterldowns/pgtestdb/migrators/golangmigrator"
 	"github.com/programme-lv/backend/execsrvc"
 	submadaptermock "github.com/programme-lv/backend/mocks/submadapter"
-	"github.com/programme-lv/backend/subm/submdomain"
-	"github.com/programme-lv/backend/subm/submpgrepo"
+	"github.com/programme-lv/backend/subm/domain"
+	"github.com/programme-lv/backend/subm/pgrepo"
 	"github.com/programme-lv/backend/subm/submsrvc"
 	"github.com/programme-lv/backend/subm/submsrvc/submadapter"
 	"github.com/programme-lv/backend/subm/submsrvc/submcmd"
@@ -43,8 +43,8 @@ func setupSubmSrvc(t *testing.T) *testSetup {
 	t.Log("Setting up test dependencies...")
 
 	db := newPgMigratedTestDbConn(t)
-	submRepo := submpgrepo.NewPgSubmRepo(db)
-	evalRepo := submpgrepo.NewPgEvalRepo(db)
+	submRepo := pgrepo.NewPgSubmRepo(db)
+	evalRepo := pgrepo.NewPgEvalRepo(db)
 
 	setup := &testSetup{
 		userSrvc: submadaptermock.NewMockUserSrvcFacade(t),
@@ -159,11 +159,11 @@ func TestSubmitSolutionEvaluation(t *testing.T) {
 	subm, err := setup.srvc.GetSubm(bg, submUUID)
 	require.NoError(t, err)
 
-	updates := []submdomain.Eval{}
+	updates := []domain.Eval{}
 	for update := range evalUpdCh {
 		updates = append(updates, update)
 		if update.UUID == subm.CurrEvalUUID {
-			if update.Stage == submdomain.EvalStageFinished {
+			if update.Stage == domain.EvalStageFinished {
 				break
 			}
 		}
@@ -195,7 +195,7 @@ func TestUserMaxScores(t *testing.T) {
 	// Initially there should be no scores
 	scores, err := setup.srvc.GetMaxScorePerTask(bg, mockUserUuid)
 	require.NoError(t, err)
-	require.Equal(t, scores, map[string]submdomain.MaxScore{})
+	require.Equal(t, scores, map[string]domain.MaxScore{})
 
 	// Submit a solution that will get 50% score (1 out of 2 tests pass)
 	setup.execSrvc.EXPECT().Enqueue(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
@@ -241,7 +241,7 @@ func TestUserMaxScores(t *testing.T) {
 
 	eval, err := setup.srvc.GetEval(bg, subm.CurrEvalUUID)
 	require.NoError(t, err)
-	require.Equal(t, eval.Stage, submdomain.EvalStageFinished)
+	require.Equal(t, eval.Stage, domain.EvalStageFinished)
 
 	score := eval.CalculateScore()
 	require.Equal(t, score.ReceivedScore, 1)
@@ -250,7 +250,7 @@ func TestUserMaxScores(t *testing.T) {
 	// Check scores - should have 50% on aplusb
 	scores, err = setup.srvc.GetMaxScorePerTask(bg, mockUserUuid)
 	require.NoError(t, err)
-	require.Equal(t, map[string]submdomain.MaxScore{
+	require.Equal(t, map[string]domain.MaxScore{
 		"aplusb": {
 			SubmUuid: subm.UUID,
 			Received: 1,
@@ -294,7 +294,7 @@ func TestUserMaxScores(t *testing.T) {
 
 	eval2, err := setup.srvc.GetEval(bg, subm2.CurrEvalUUID)
 	require.NoError(t, err)
-	require.Equal(t, eval2.Stage, submdomain.EvalStageFinished)
+	require.Equal(t, eval2.Stage, domain.EvalStageFinished)
 
 	score2 := eval2.CalculateScore()
 	require.Equal(t, score2.ReceivedScore, 2)
@@ -303,7 +303,7 @@ func TestUserMaxScores(t *testing.T) {
 	// Check scores - should now have 100% on aplusb
 	scores, err = setup.srvc.GetMaxScorePerTask(bg, mockUserUuid)
 	require.NoError(t, err)
-	require.Equal(t, map[string]submdomain.MaxScore{
+	require.Equal(t, map[string]domain.MaxScore{
 		"aplusb": {
 			SubmUuid: subm2.UUID, // Should be the second submission since it has a higher score
 			Received: 2,

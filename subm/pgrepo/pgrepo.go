@@ -1,4 +1,4 @@
-package submpgrepo
+package pgrepo
 
 import (
 	"context"
@@ -8,7 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/programme-lv/backend/subm/submdomain"
+	"github.com/programme-lv/backend/subm/domain"
 )
 
 type pgEvalRepo struct {
@@ -19,7 +19,7 @@ func NewPgEvalRepo(pool *pgxpool.Pool) *pgEvalRepo {
 	return &pgEvalRepo{pool: pool}
 }
 
-func (r *pgEvalRepo) StoreEval(ctx context.Context, eval submdomain.Eval) error {
+func (r *pgEvalRepo) StoreEval(ctx context.Context, eval domain.Eval) error {
 	// Start a transaction
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
@@ -153,7 +153,7 @@ func (r *pgEvalRepo) StoreEval(ctx context.Context, eval submdomain.Eval) error 
 	return nil
 }
 
-func (r *pgEvalRepo) GetEval(ctx context.Context, evalUUID uuid.UUID) (submdomain.Eval, error) {
+func (r *pgEvalRepo) GetEval(ctx context.Context, evalUUID uuid.UUID) (domain.Eval, error) {
 	// Fetch Evaluation
 	evalQuery := `
 		SELECT uuid, subm_uuid, stage, score_unit, checker, interactor, cpu_lim_ms, mem_lim_kib,
@@ -161,7 +161,7 @@ func (r *pgEvalRepo) GetEval(ctx context.Context, evalUUID uuid.UUID) (submdomai
 		FROM evaluations
 		WHERE uuid = $1
 	`
-	var eval submdomain.Eval
+	var eval domain.Eval
 	var errorType *string
 	var errorMessage *string
 	err := r.pool.QueryRow(ctx, evalQuery, evalUUID).Scan(
@@ -179,15 +179,15 @@ func (r *pgEvalRepo) GetEval(ctx context.Context, evalUUID uuid.UUID) (submdomai
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return submdomain.Eval{}, fmt.Errorf("evaluation not found: %w", err)
+			return domain.Eval{}, fmt.Errorf("evaluation not found: %w", err)
 		}
-		return submdomain.Eval{}, fmt.Errorf("failed to query evaluation: %w", err)
+		return domain.Eval{}, fmt.Errorf("failed to query evaluation: %w", err)
 	}
 
 	// Handle EvaluationError
 	if errorType != nil {
-		et := submdomain.EvalErrorType(*errorType)
-		eval.Error = &submdomain.EvalError{
+		et := domain.EvalErrorType(*errorType)
+		eval.Error = &domain.EvalError{
 			Type:    et,
 			Message: errorMessage,
 		}
@@ -201,20 +201,20 @@ func (r *pgEvalRepo) GetEval(ctx context.Context, evalUUID uuid.UUID) (submdomai
 	`
 	subtaskRows, err := r.pool.Query(ctx, subtasksQuery, evalUUID)
 	if err != nil {
-		return submdomain.Eval{}, fmt.Errorf("failed to query subtasks: %w", err)
+		return domain.Eval{}, fmt.Errorf("failed to query subtasks: %w", err)
 	}
 	defer subtaskRows.Close()
 
 	for subtaskRows.Next() {
-		var st submdomain.Subtask
+		var st domain.Subtask
 		err := subtaskRows.Scan(&st.Points, &st.Description, &st.StTests)
 		if err != nil {
-			return submdomain.Eval{}, fmt.Errorf("failed to scan subtask: %w", err)
+			return domain.Eval{}, fmt.Errorf("failed to scan subtask: %w", err)
 		}
 		eval.Subtasks = append(eval.Subtasks, st)
 	}
 	if err := subtaskRows.Err(); err != nil {
-		return submdomain.Eval{}, fmt.Errorf("error iterating subtasks: %w", err)
+		return domain.Eval{}, fmt.Errorf("error iterating subtasks: %w", err)
 	}
 
 	// Fetch TestGroups
@@ -225,20 +225,20 @@ func (r *pgEvalRepo) GetEval(ctx context.Context, evalUUID uuid.UUID) (submdomai
 	`
 	groupRows, err := r.pool.Query(ctx, testGroupsQuery, evalUUID)
 	if err != nil {
-		return submdomain.Eval{}, fmt.Errorf("failed to query test groups: %w", err)
+		return domain.Eval{}, fmt.Errorf("failed to query test groups: %w", err)
 	}
 	defer groupRows.Close()
 
 	for groupRows.Next() {
-		var tg submdomain.TestGroup
+		var tg domain.TestGroup
 		err := groupRows.Scan(&tg.Points, &tg.Subtasks, &tg.TgTests)
 		if err != nil {
-			return submdomain.Eval{}, fmt.Errorf("failed to scan test group: %w", err)
+			return domain.Eval{}, fmt.Errorf("failed to scan test group: %w", err)
 		}
 		eval.Groups = append(eval.Groups, tg)
 	}
 	if err := groupRows.Err(); err != nil {
-		return submdomain.Eval{}, fmt.Errorf("error iterating test groups: %w", err)
+		return domain.Eval{}, fmt.Errorf("error iterating test groups: %w", err)
 	}
 
 	// Fetch Tests
@@ -249,12 +249,12 @@ func (r *pgEvalRepo) GetEval(ctx context.Context, evalUUID uuid.UUID) (submdomai
 	`
 	testRows, err := r.pool.Query(ctx, testsQuery, evalUUID)
 	if err != nil {
-		return submdomain.Eval{}, fmt.Errorf("failed to query tests: %w", err)
+		return domain.Eval{}, fmt.Errorf("failed to query tests: %w", err)
 	}
 	defer testRows.Close()
 
 	for testRows.Next() {
-		var test submdomain.Test
+		var test domain.Test
 		var inpSha256, ansSha256 *string
 		err := testRows.Scan(
 			&test.Ac,
@@ -269,7 +269,7 @@ func (r *pgEvalRepo) GetEval(ctx context.Context, evalUUID uuid.UUID) (submdomai
 			&ansSha256,
 		)
 		if err != nil {
-			return submdomain.Eval{}, fmt.Errorf("failed to scan test: %w", err)
+			return domain.Eval{}, fmt.Errorf("failed to scan test: %w", err)
 		}
 		if inpSha256 != nil {
 			test.InpSha256 = *inpSha256
@@ -280,7 +280,7 @@ func (r *pgEvalRepo) GetEval(ctx context.Context, evalUUID uuid.UUID) (submdomai
 		eval.Tests = append(eval.Tests, test)
 	}
 	if err := testRows.Err(); err != nil {
-		return submdomain.Eval{}, fmt.Errorf("error iterating tests: %w", err)
+		return domain.Eval{}, fmt.Errorf("error iterating tests: %w", err)
 	}
 
 	return eval, nil
@@ -303,7 +303,7 @@ func NewPgSubmRepo(pool *pgxpool.Pool) *pgSubmRepo {
 }
 
 // StoreSubm inserts a new SubmissionEntity into the database.
-func (r *pgSubmRepo) StoreSubm(ctx context.Context, subm submdomain.Subm) error {
+func (r *pgSubmRepo) StoreSubm(ctx context.Context, subm domain.Subm) error {
 	submissionInsertQuery := `
 		INSERT INTO submissions (
 			uuid, content, author_uuid, task_shortid, lang_shortid, curr_eval_uuid, created_at
@@ -344,13 +344,13 @@ func (r *pgSubmRepo) AssignEval(ctx context.Context, submUuid uuid.UUID, evalUui
 }
 
 // GetSubm retrieves a SubmissionEntity by UUID
-func (r *pgSubmRepo) GetSubm(ctx context.Context, id uuid.UUID) (submdomain.Subm, error) {
+func (r *pgSubmRepo) GetSubm(ctx context.Context, id uuid.UUID) (domain.Subm, error) {
 	submissionQuery := `
 		SELECT uuid, content, author_uuid, task_shortid, lang_shortid, curr_eval_uuid, created_at
 		FROM submissions
 		WHERE uuid = $1
 	`
-	var s submdomain.Subm
+	var s domain.Subm
 	err := r.pool.QueryRow(ctx, submissionQuery, id).Scan(
 		&s.UUID,
 		&s.Content,
@@ -362,16 +362,16 @@ func (r *pgSubmRepo) GetSubm(ctx context.Context, id uuid.UUID) (submdomain.Subm
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return submdomain.Subm{}, fmt.Errorf("submission not found: %w", err)
+			return domain.Subm{}, fmt.Errorf("submission not found: %w", err)
 		}
-		return submdomain.Subm{}, fmt.Errorf("failed to query submission: %w", err)
+		return domain.Subm{}, fmt.Errorf("failed to query submission: %w", err)
 	}
 
 	return s, nil
 }
 
 // ListSubms retrieves all SubmissionEntities from the database
-func (r *pgSubmRepo) ListSubms(ctx context.Context, limit int, offset int) ([]submdomain.Subm, error) {
+func (r *pgSubmRepo) ListSubms(ctx context.Context, limit int, offset int) ([]domain.Subm, error) {
 	submissionsQuery := `
 			SELECT uuid, content, author_uuid, task_shortid, lang_shortid, curr_eval_uuid, created_at
 			FROM submissions
@@ -384,9 +384,9 @@ func (r *pgSubmRepo) ListSubms(ctx context.Context, limit int, offset int) ([]su
 	}
 	defer rows.Close()
 
-	var submissions []submdomain.Subm
+	var submissions []domain.Subm
 	for rows.Next() {
-		var subm submdomain.Subm
+		var subm domain.Subm
 		err := rows.Scan(
 			&subm.UUID,
 			&subm.Content,

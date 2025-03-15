@@ -1,4 +1,4 @@
-package submdomain
+package domain
 
 import (
 	"time"

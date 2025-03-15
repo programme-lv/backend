@@ -8,7 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/programme-lv/backend/planglist"
 	decorator "github.com/programme-lv/backend/srvccqs"
-	subm "github.com/programme-lv/backend/subm/submdomain"
+	subm "github.com/programme-lv/backend/subm/domain"
 	"github.com/programme-lv/backend/subm/submerror"
 	"github.com/programme-lv/backend/task/srvc"
 )
