@@ -1,4 +1,4 @@
-package submhttp
+package http
 
 import (
 	"context"
@@ -6,16 +6,16 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/programme-lv/backend/subm/submdomain"
+	"github.com/programme-lv/backend/subm/domain"
 )
 
 func mapSubmListEntry(
 	ctx context.Context,
-	s submdomain.Subm,
+	s domain.Subm,
 	getTaskName func(ctx context.Context, shortID string) (string, error),
 	getUsername func(ctx context.Context, userUuid uuid.UUID) (string, error),
 	getPrLang func(ctx context.Context, shortID string) (PrLang, error),
-	getEval func(ctx context.Context, evalUuid uuid.UUID) (submdomain.Eval, error),
+	getEval func(ctx context.Context, evalUuid uuid.UUID) (domain.Eval, error),
 ) (SubmListEntry, error) {
 
 	username, err := getUsername(ctx, s.AuthorUUID)
@@ -45,9 +45,9 @@ func mapSubmListEntry(
 	scoreInfo := eval.CalculateScore()
 	status := string(eval.Stage)
 	if eval.Error != nil {
-		if eval.Error.Type == submdomain.ErrorTypeCompilation {
+		if eval.Error.Type == domain.ErrorTypeCompilation {
 			status = "compile_error"
-		} else if eval.Error.Type == submdomain.ErrorTypeInternal {
+		} else if eval.Error.Type == domain.ErrorTypeInternal {
 			status = "internal_error"
 		} else {
 			status = string(eval.Error.Type)
@@ -87,11 +87,11 @@ func mapSubmListEntry(
 
 func mapSubm(
 	ctx context.Context,
-	subm submdomain.Subm,
+	subm domain.Subm,
 	getTaskName func(ctx context.Context, shortID string) (string, error),
 	getUsername func(ctx context.Context, userUuid uuid.UUID) (string, error),
 	getPrLang func(ctx context.Context, shortID string) (PrLang, error),
-	getEval func(ctx context.Context, evalUuid uuid.UUID) (submdomain.Eval, error),
+	getEval func(ctx context.Context, evalUuid uuid.UUID) (domain.Eval, error),
 ) (*DetailedSubmView, error) {
 	taskName, err := getTaskName(ctx, subm.TaskShortID)
 	if err != nil {
@@ -127,7 +127,7 @@ func mapSubm(
 
 }
 
-func mapSubmEval(eval submdomain.Eval) Eval {
+func mapSubmEval(eval domain.Eval) Eval {
 	errType := ""
 	if eval.Error != nil {
 		errType = string(eval.Error.Type)
@@ -235,7 +235,7 @@ func mapSubmEval(eval submdomain.Eval) Eval {
 	}
 }
 
-func (h *SubmHttpHandler) mapMaxScore(ctx context.Context, taskShortID string, m submdomain.MaxScore) (MaxScore, error) {
+func (h *SubmHttpHandler) mapMaxScore(ctx context.Context, taskShortID string, m domain.MaxScore) (MaxScore, error) {
 	taskFullNames, err := h.taskSrvc.GetTaskFullNames(ctx, []string{taskShortID})
 	if err != nil {
 		return MaxScore{}, err

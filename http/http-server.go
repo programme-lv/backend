@@ -14,7 +14,7 @@ import (
 	"github.com/go-chi/cors"
 	"github.com/google/uuid"
 	"github.com/programme-lv/backend/execsrvc"
-	"github.com/programme-lv/backend/subm/submhttp"
+	http1 "github.com/programme-lv/backend/subm/http"
 	taskhttp "github.com/programme-lv/backend/task/http"
 	"github.com/programme-lv/backend/usersrvc"
 )
@@ -130,7 +130,7 @@ func requestLoggerMiddleware(next http.Handler) http.Handler {
 }
 
 type HttpServer struct {
-	submHttpHandler *submhttp.SubmHttpHandler
+	submHttpHandler *http1.SubmHttpHandler
 	taskHttpHandler *taskhttp.TaskHttpHandler
 	userSrvc        *usersrvc.UserSrvc
 	execSrvc        *execsrvc.ExecSrvc
@@ -139,7 +139,7 @@ type HttpServer struct {
 }
 
 func NewHttpServer(
-	submHttpHandler *submhttp.SubmHttpHandler,
+	submHttpHandler *http1.SubmHttpHandler,
 	taskHttpHandler *taskhttp.TaskHttpHandler,
 	userSrvc *usersrvc.UserSrvc,
 	evalSrvc *execsrvc.ExecSrvc,

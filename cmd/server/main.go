@@ -13,8 +13,8 @@ import (
 	"github.com/programme-lv/backend/conf"
 	"github.com/programme-lv/backend/execsrvc"
 	"github.com/programme-lv/backend/http"
-	"github.com/programme-lv/backend/subm/submhttp"
-	"github.com/programme-lv/backend/subm/submpgrepo"
+	http2 "github.com/programme-lv/backend/subm/http"
+	pgrepo1 "github.com/programme-lv/backend/subm/pgrepo"
 	"github.com/programme-lv/backend/subm/submsrvc"
 	http1 "github.com/programme-lv/backend/task/http"
 	"github.com/programme-lv/backend/task/pgrepo"
@@ -73,20 +73,20 @@ func main() {
 	slog.Info("server stopped", "error", err)
 }
 
-func newSubmHttpHandler(userSrvc *usersrvc.UserSrvc, taskSrvc srvc.TaskSrvcClient, execSrvc *execsrvc.ExecSrvc) *submhttp.SubmHttpHandler {
+func newSubmHttpHandler(userSrvc *usersrvc.UserSrvc, taskSrvc srvc.TaskSrvcClient, execSrvc *execsrvc.ExecSrvc) *http2.SubmHttpHandler {
 	pool, err := pgxpool.New(context.Background(), conf.GetPgConnStrFromEnv())
 	if err != nil {
 		log.Fatalf("failed to create pg pool: %v", err)
 	}
 
-	submPgRepo := submpgrepo.NewPgSubmRepo(pool)
-	evalPgRepo := submpgrepo.NewPgEvalRepo(pool)
+	submPgRepo := pgrepo1.NewPgSubmRepo(pool)
+	evalPgRepo := pgrepo1.NewPgEvalRepo(pool)
 	submSrvc := submsrvc.NewSubmSrvc(userSrvc, taskSrvc, execSrvc, submPgRepo, evalPgRepo)
 	if err != nil {
 		log.Fatalf("error creating submission service: %v", err)
 	}
 
-	submHttpServer := submhttp.NewSubmHttpHandler(submSrvc, taskSrvc, userSrvc)
+	submHttpServer := http2.NewSubmHttpHandler(submSrvc, taskSrvc, userSrvc)
 
 	return submHttpServer
 }

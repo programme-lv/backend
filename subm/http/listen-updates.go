@@ -1,4 +1,4 @@
-package submhttp
+package http
 
 import (
 	"encoding/json"
