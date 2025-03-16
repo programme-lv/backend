@@ -7,11 +7,13 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/patrickmn/go-cache"
 	"github.com/programme-lv/backend/planglist"
 	"github.com/programme-lv/backend/subm/domain"
 	"github.com/programme-lv/backend/subm/submsrvc"
 	"github.com/programme-lv/backend/task/srvc"
 	"github.com/programme-lv/backend/usersrvc"
+	"golang.org/x/sync/singleflight"
 )
 
 type SubmHttpHandler struct {
@@ -22,6 +24,10 @@ type SubmHttpHandler struct {
 	// solution submission rate limit
 	lastSubmTime map[string]time.Time // username -> last submission time
 	rateLock     sync.Mutex
+
+	// cache and singleflight for preventing cache stampedes
+	cache   *cache.Cache
+	sfGroup singleflight.Group
 }
 
 func NewSubmHttpHandler(
@@ -29,11 +35,15 @@ func NewSubmHttpHandler(
 	taskSrvc srvc.TaskSrvcClient,
 	userSrvc *usersrvc.UserSrvc,
 ) *SubmHttpHandler {
+	// Create a cache with 1 second default expiration and 2 minute cleanup interval
+	c := cache.New(1*time.Second, 2*time.Minute)
 	return &SubmHttpHandler{
 		submSrvc:     submSrvc,
 		taskSrvc:     taskSrvc,
 		userSrvc:     userSrvc,
 		lastSubmTime: make(map[string]time.Time),
+		cache:        c,
+		// singleflight.Group doesn't need initialization
 	}
 }
 
