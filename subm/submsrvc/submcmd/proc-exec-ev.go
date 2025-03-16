@@ -114,6 +114,10 @@ func applyExecEventToEval(eval subm.Eval, event execsrvc.Event) subm.Eval {
 					eval.Tests[u.TestID-1].Wa = true
 				}
 			}
+			cpuMs := int(u.Subm.CpuMs)
+			eval.Tests[u.TestID-1].CpuMs = &cpuMs
+			memKiB := int(u.Subm.MemKiB)
+			eval.Tests[u.TestID-1].MemKiB = &memKiB
 		}
 	case execsrvc.IgnoredTest:
 		if u.TestId > len(eval.Tests) {
