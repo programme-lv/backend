@@ -55,7 +55,7 @@ func (ts *TaskSrvc) ResolveNames(ctx context.Context, shortIds []string) ([]stri
 
 // GetTestDownlUrl implements submadapter.TaskSrvcFacade.
 func (ts *TaskSrvc) GetTestDownlUrl(ctx context.Context, testFileSha256 string) (string, error) {
-	presignedUrl, err := ts.s3TestfileBucket.PresignedURL(testFileSha256, time.Hour*24)
+	presignedUrl, err := ts.s3TestfileBucket.PresignedURL(fmt.Sprintf("%s.zst", testFileSha256), time.Hour*24)
 	if err != nil {
 		return "", fmt.Errorf("failed to get presigned URL: %w", err)
 	}
