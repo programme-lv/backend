@@ -12,7 +12,7 @@ import (
 
 // PaginatedResponse represents a paginated response with data and pagination metadata
 type PaginatedResponse struct {
-	Data       interface{} `json:"data"`
+	Page       interface{} `json:"page"`
 	Pagination Pagination  `json:"pagination"`
 }
 
@@ -90,7 +90,7 @@ func (h *SubmHttpHandler) GetSubmList(w http.ResponseWriter, r *http.Request) {
 	// Create paginated response
 	hasMore := offset+len(submEntries) < totalCount
 	paginatedResponse := PaginatedResponse{
-		Data: submEntries,
+		Page: submEntries,
 		Pagination: Pagination{
 			Total:   totalCount,
 			Offset:  offset,
