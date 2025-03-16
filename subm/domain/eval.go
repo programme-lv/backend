@@ -70,6 +70,9 @@ type Test struct {
 
 	InpSha256 string
 	AnsSha256 string
+
+	CpuMs  *int // cpu exec 'user' time in milliseconds (nullable)
+	MemKiB *int // rss memory in kibibytes (nullable)
 }
 
 type Subtask struct {
