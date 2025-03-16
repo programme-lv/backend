@@ -55,7 +55,7 @@ func (h *SubmHttpHandler) GetSubmList(w http.ResponseWriter, r *http.Request) {
 	cacheKey := fmt.Sprintf("subm_list:%d:%d", limit, offset)
 
 	// Try to get from cache first
-	if cachedResponse, found := h.cache.Get(cacheKey); found {
+	if cachedResponse, found := h.submCache.Get(cacheKey); found {
 		if response, ok := cachedResponse.(PaginatedResponse); ok {
 			log.Info("returning cached submission list", "limit", limit, "offset", offset)
 			httpjson.WriteSuccessJson(w, response)
@@ -67,7 +67,7 @@ func (h *SubmHttpHandler) GetSubmList(w http.ResponseWriter, r *http.Request) {
 	// from all hitting the database at the same time
 	result, err, _ := h.sfGroup.Do(cacheKey, func() (interface{}, error) {
 		// Check cache again in case another request already populated it while we were waiting
-		if cachedResponse, found := h.cache.Get(cacheKey); found {
+		if cachedResponse, found := h.submCache.Get(cacheKey); found {
 			if response, ok := cachedResponse.(PaginatedResponse); ok {
 				return response, nil
 			}
@@ -121,7 +121,7 @@ func (h *SubmHttpHandler) GetSubmList(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Store in cache for future requests
-		h.cache.Set(cacheKey, paginatedResponse, 0) // Use default expiration time
+		h.submCache.Set(cacheKey, paginatedResponse, 0) // Use default expiration time
 
 		return paginatedResponse, nil
 	})

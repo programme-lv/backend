@@ -25,9 +25,9 @@ type SubmHttpHandler struct {
 	lastSubmTime map[string]time.Time // username -> last submission time
 	rateLock     sync.Mutex
 
-	// cache and singleflight for preventing cache stampedes
-	cache   *cache.Cache
-	sfGroup singleflight.Group
+	// submCache and singleflight for preventing submCache stampedes
+	submCache *cache.Cache
+	sfGroup   singleflight.Group
 }
 
 func NewSubmHttpHandler(
@@ -35,14 +35,14 @@ func NewSubmHttpHandler(
 	taskSrvc srvc.TaskSrvcClient,
 	userSrvc *usersrvc.UserSrvc,
 ) *SubmHttpHandler {
-	// Create a cache with 1 second default expiration and 2 minute cleanup interval
-	c := cache.New(1*time.Second, 2*time.Minute)
+	// Create a cache with 1 second default expiration and 1 minute cleanup interval
+	c := cache.New(1*time.Second, 1*time.Minute)
 	return &SubmHttpHandler{
 		submSrvc:     submSrvc,
 		taskSrvc:     taskSrvc,
 		userSrvc:     userSrvc,
 		lastSubmTime: make(map[string]time.Time),
-		cache:        c,
+		submCache:    c,
 		// singleflight.Group doesn't need initialization
 	}
 }
