@@ -487,3 +487,21 @@ func (r *pgSubmRepo) ListSubms(ctx context.Context, limit int, offset int) ([]do
 	log.Debug("successfully retrieved submissions", "count", len(submissions))
 	return submissions, nil
 }
+
+// CountSubms returns the total number of submissions in the database
+func (r *pgSubmRepo) CountSubms(ctx context.Context) (int, error) {
+	log := logger.FromContext(ctx)
+	log.Debug("executing CountSubms query")
+
+	countQuery := `SELECT COUNT(*) FROM submissions`
+
+	var count int
+	err := r.pool.QueryRow(ctx, countQuery).Scan(&count)
+	if err != nil {
+		log.Debug("failed to count submissions", "error", err)
+		return 0, fmt.Errorf("failed to count submissions: %w", err)
+	}
+
+	log.Debug("counted submissions", "count", count)
+	return count, nil
+}

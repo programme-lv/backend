@@ -27,6 +27,7 @@ type SubmSrvcClient interface {
 	SubscribeEvalUpds(ctx context.Context) (<-chan domain.Eval, error)
 	WaitForEvalFinish(ctx context.Context, evalUUID uuid.UUID) error
 	GetMaxScorePerTask(ctx context.Context, userUUID uuid.UUID) (map[string]domain.MaxScore, error)
+	CountSubms(ctx context.Context) (int, error)
 }
 
 type submSrvc struct {
@@ -295,4 +296,18 @@ func (s *submSrvc) WaitForEvalFinish(ctx context.Context, evalUUID uuid.UUID) er
 			return ctx.Err()
 		}
 	}
+}
+
+// CountSubms returns the total number of submissions
+func (s *submSrvc) CountSubms(ctx context.Context) (int, error) {
+	log := logger.FromContext(ctx)
+	log.Debug("counting submissions")
+
+	count, err := s.submRepo.CountSubms(ctx)
+	if err != nil {
+		log.Error("failed to count submissions", "error", err)
+		return 0, err
+	}
+
+	return count, nil
 }
