@@ -16,6 +16,8 @@ type ScoreInfo struct {
 	PossibleScore int
 	MaxCpuMs      int
 	MaxMemKiB     int
+	ExceededCpu   bool
+	ExceededMem   bool
 }
 
 // CalculateScore calculates scoring information from an evaluation
@@ -106,6 +108,22 @@ func (e *Eval) CalculateScore() ScoreInfo {
 		}
 	}
 
+	exceededCpu := false
+	exceededMem := false
+	if maxCpuMs > e.CpuLimMs {
+		exceededCpu = true
+	}
+	if maxMemKiB > e.MemLimKiB {
+		exceededMem = true
+	}
+
+	if exceededCpu {
+		maxCpuMs = e.CpuLimMs
+	}
+	if exceededMem {
+		maxMemKiB = e.MemLimKiB
+	}
+
 	return ScoreInfo{
 		ScoreBar: ScoreBarInfo{
 			Green:  green,
@@ -118,5 +136,7 @@ func (e *Eval) CalculateScore() ScoreInfo {
 		PossibleScore: maxScore,
 		MaxCpuMs:      maxCpuMs,
 		MaxMemKiB:     maxMemKiB,
+		ExceededCpu:   exceededCpu,
+		ExceededMem:   exceededMem,
 	}
 }
