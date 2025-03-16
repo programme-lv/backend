@@ -135,15 +135,16 @@ func (r *pgEvalRepo) StoreEval(ctx context.Context, eval domain.Eval) error {
 
 	// Insert Tests
 	log.Debug("inserting tests", "count", len(eval.Tests))
-	for _, test := range eval.Tests {
+	for i, test := range eval.Tests {
 		testInsertQuery := `
 			INSERT INTO eval_test_results (
-				evaluation_uuid, ac, wa, tle, mle, re, ig, reached, finished,
+				evaluation_uuid, test_id, ac, wa, tle, mle, re, ig, reached, finished,
 				inp_sha256, ans_sha256, cpu_ms, mem_kib
-			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
 		`
 		_, err = tx.Exec(ctx, testInsertQuery,
 			eval.UUID,
+			i+1,
 			test.Ac,
 			test.Wa,
 			test.Tle,

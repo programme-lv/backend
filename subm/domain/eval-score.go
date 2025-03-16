@@ -93,6 +93,19 @@ func (e *Eval) CalculateScore() ScoreInfo {
 		gray = 100 - green - red - yellow - purple
 	}
 
+	maxCpuMs := 0
+	maxMemMiB := 0
+	for _, test := range e.Tests {
+		if test.CpuMs != nil && *test.CpuMs > maxCpuMs {
+			maxCpuMs = *test.CpuMs
+		}
+	}
+	for _, test := range e.Tests {
+		if test.MemKiB != nil && *test.MemKiB > maxMemMiB {
+			maxMemMiB = *test.MemKiB
+		}
+	}
+
 	return ScoreInfo{
 		ScoreBar: ScoreBarInfo{
 			Green:  green,
@@ -103,7 +116,7 @@ func (e *Eval) CalculateScore() ScoreInfo {
 		},
 		ReceivedScore: gotScore,
 		PossibleScore: maxScore,
-		MaxCpuMs:      0, // TODO: calculate from test limits
-		MaxMemMiB:     0, // TODO: calculate from test limits
+		MaxCpuMs:      maxCpuMs,
+		MaxMemMiB:     maxMemMiB,
 	}
 }

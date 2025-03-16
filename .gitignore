@@ -3,3 +3,4 @@
 .aider*
 submsrvc-old
 local-pg/prod-pg.dump
+tmp

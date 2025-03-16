@@ -52,7 +52,7 @@ type ScoreInfo struct {
 	} `json:"score_bar"`
 	ReceivedScore int `json:"received"`
 	PossibleScore int `json:"possible"`
-	MaxCpuMs      int `json:"max_cpu_ms"`
+	MaxCpuMs      int `json:"max_cpu_ms"`  // milliseconds
 	MaxMemMiB     int `json:"max_mem_mib"` // mebibytes
 }
 
