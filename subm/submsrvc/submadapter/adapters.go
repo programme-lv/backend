@@ -15,6 +15,7 @@ type SubmRepo interface {
 	GetSubm(ctx context.Context, id uuid.UUID) (subm.Subm, error)
 	ListSubms(ctx context.Context, limit int, offset int) ([]subm.Subm, error)
 	StoreSubm(ctx context.Context, subm subm.Subm) error
+	CountSubms(ctx context.Context) (int, error)
 }
 
 type EvalRepo interface {

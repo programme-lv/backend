@@ -237,6 +237,60 @@ func (_c *MockSubmRepo_StoreSubm_Call) RunAndReturn(run func(context.Context, su
 	return _c
 }
 
+// CountSubms provides a mock function with given fields: ctx
+func (_m *MockSubmRepo) CountSubms(ctx context.Context) (int, error) {
+	ret := _m.Called(ctx)
+
+	var r0 int
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context) (int, error)); ok {
+		return rf(ctx)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context) int); ok {
+		r0 = rf(ctx)
+	} else {
+		r0 = ret.Get(0).(int)
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context) error); ok {
+		r1 = rf(ctx)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// CountSubms provides a mock expectation object
+func (_e *MockSubmRepo_Expecter) CountSubms(ctx interface{}) *MockSubmRepo_CountSubms_Call {
+	return &MockSubmRepo_CountSubms_Call{Call: _e.mock.On("CountSubms", ctx)}
+}
+
+// MockSubmRepo_CountSubms_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CountSubms'
+type MockSubmRepo_CountSubms_Call struct {
+	*mock.Call
+}
+
+// Run sets up a mock for CountSubms to run a function
+func (_c *MockSubmRepo_CountSubms_Call) Run(run func(ctx context.Context)) *MockSubmRepo_CountSubms_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context))
+	})
+	return _c
+}
+
+// Return sets up a mock for CountSubms to return
+func (_c *MockSubmRepo_CountSubms_Call) Return(count int, err error) *MockSubmRepo_CountSubms_Call {
+	_c.Call.Return(count, err)
+	return _c
+}
+
+// RunAndReturn sets up a mock for CountSubms to run a function and return the result
+func (_c *MockSubmRepo_CountSubms_Call) RunAndReturn(run func(context.Context) (int, error)) *MockSubmRepo_CountSubms_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // NewMockSubmRepo creates a new instance of MockSubmRepo. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
 // The first argument is typically a *testing.T value.
 func NewMockSubmRepo(t interface {
