@@ -1,6 +1,7 @@
 package http
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -50,54 +51,87 @@ func (h *SubmHttpHandler) GetSubmList(w http.ResponseWriter, r *http.Request) {
 
 	log.Debug("pagination parameters", "limit", limit, "offset", offset)
 
-	// Get total count of submissions
-	totalCount, err := h.submSrvc.CountSubms(r.Context())
-	if err != nil {
-		log.Error("failed to count submissions", "error", err)
-		httpjson.HandleErrorWithContext(*r, w, err)
-		return
-	}
+	// Create a cache key based on pagination parameters
+	cacheKey := fmt.Sprintf("subm_list:%d:%d", limit, offset)
 
-	// Get paginated submissions
-	subms, err := h.submSrvc.ListSubms(r.Context(), submquery.ListSubmsParams{
-		Limit:  limit,
-		Offset: offset,
-	})
-	if err != nil {
-		log.Error("failed to list submissions", "error", err)
-		httpjson.HandleErrorWithContext(*r, w, err)
-		return
-	}
-
-	log.Debug("submissions retrieved successfully", "count", len(subms))
-
-	mapSubmList := func(subms []domain.Subm) []SubmListEntry {
-		response := make([]SubmListEntry, 0)
-		for _, subm := range subms {
-			entry, err := h.mapSubmListEntry(r.Context(), subm)
-			if err != nil {
-				log.Warn("failed to map subm list entry", "error", err)
-				continue
-			}
-			response = append(response, entry)
+	// Try to get from cache first
+	if cachedResponse, found := h.cache.Get(cacheKey); found {
+		if response, ok := cachedResponse.(PaginatedResponse); ok {
+			log.Info("returning cached submission list", "limit", limit, "offset", offset)
+			httpjson.WriteSuccessJson(w, response)
+			return
 		}
-		return response
 	}
 
-	submEntries := mapSubmList(subms)
-	log.Info("returning submission list", "count", len(submEntries), "total", totalCount)
+	// If not in cache or invalid cache, use singleflight to prevent multiple concurrent requests
+	// from all hitting the database at the same time
+	result, err, _ := h.sfGroup.Do(cacheKey, func() (interface{}, error) {
+		// Check cache again in case another request already populated it while we were waiting
+		if cachedResponse, found := h.cache.Get(cacheKey); found {
+			if response, ok := cachedResponse.(PaginatedResponse); ok {
+				return response, nil
+			}
+		}
 
-	// Create paginated response
-	hasMore := offset+len(submEntries) < totalCount
-	paginatedResponse := PaginatedResponse{
-		Page: submEntries,
-		Pagination: Pagination{
-			Total:   totalCount,
-			Offset:  offset,
-			Limit:   limit,
-			HasMore: hasMore,
-		},
+		// Get total count of submissions
+		totalCount, err := h.submSrvc.CountSubms(r.Context())
+		if err != nil {
+			log.Error("failed to count submissions", "error", err)
+			return nil, err
+		}
+
+		// Get paginated submissions
+		subms, err := h.submSrvc.ListSubms(r.Context(), submquery.ListSubmsParams{
+			Limit:  limit,
+			Offset: offset,
+		})
+		if err != nil {
+			log.Error("failed to list submissions", "error", err)
+			return nil, err
+		}
+
+		log.Debug("submissions retrieved successfully", "count", len(subms))
+
+		mapSubmList := func(subms []domain.Subm) []SubmListEntry {
+			response := make([]SubmListEntry, 0)
+			for _, subm := range subms {
+				entry, err := h.mapSubmListEntry(r.Context(), subm)
+				if err != nil {
+					log.Warn("failed to map subm list entry", "error", err)
+					continue
+				}
+				response = append(response, entry)
+			}
+			return response
+		}
+
+		submEntries := mapSubmList(subms)
+		log.Info("processed submission list", "count", len(submEntries), "total", totalCount)
+
+		// Create paginated response
+		hasMore := offset+len(submEntries) < totalCount
+		paginatedResponse := PaginatedResponse{
+			Page: submEntries,
+			Pagination: Pagination{
+				Total:   totalCount,
+				Offset:  offset,
+				Limit:   limit,
+				HasMore: hasMore,
+			},
+		}
+
+		// Store in cache for future requests
+		h.cache.Set(cacheKey, paginatedResponse, 0) // Use default expiration time
+
+		return paginatedResponse, nil
+	})
+
+	if err != nil {
+		httpjson.HandleErrorWithContext(*r, w, err)
+		return
 	}
 
-	httpjson.WriteSuccessJson(w, paginatedResponse)
+	response := result.(PaginatedResponse)
+	log.Info("returning submission list", "count", len(response.Page.([]SubmListEntry)), "total", response.Pagination.Total)
+	httpjson.WriteSuccessJson(w, response)
 }

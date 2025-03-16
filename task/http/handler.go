@@ -6,12 +6,14 @@ import (
 
 	"github.com/patrickmn/go-cache"
 	"github.com/programme-lv/backend/task/srvc"
+	"golang.org/x/sync/singleflight"
 )
 
 type TaskHttpHandler struct {
 	taskSrvc   srvc.TaskSrvcClient
 	cache      *cache.Cache
 	middleware []func(http.Handler) http.Handler
+	sfGroup    singleflight.Group // Added singleflight group to prevent cache stampedes
 }
 
 func NewTaskHttpHandler(taskSrvc srvc.TaskSrvcClient) *TaskHttpHandler {
@@ -21,6 +23,7 @@ func NewTaskHttpHandler(taskSrvc srvc.TaskSrvcClient) *TaskHttpHandler {
 		taskSrvc:   taskSrvc,
 		cache:      c,
 		middleware: []func(http.Handler) http.Handler{},
+		// singleflight.Group doesn't need initialization
 	}
 }
 
