@@ -91,6 +91,58 @@ func ParseLio2024TaskDir(dirPath string) (*fstask.Task, error) {
 		})
 	}
 
+	subtaskToTestIDs := map[int][]int{}
+	subtaskToPoints := map[int]int{}
+	minSubtaskID := 9999
+	maxSubtaskID := -1
+	for _, g := range parsedYaml.TestGroups {
+		if g.GroupID == 0 {
+			continue // examples
+		}
+		if g.Subtask == 0 {
+			panic("only group id 0 (examples) can have subtask id 0")
+		}
+		if _, ok := subtaskToTestIDs[g.Subtask]; !ok {
+			subtaskToTestIDs[g.Subtask] = []int{}
+		}
+		if _, ok := subtaskToPoints[g.Subtask]; !ok {
+			subtaskToPoints[g.Subtask] = 0
+		}
+		subtaskToTestIDs[g.Subtask] = append(subtaskToTestIDs[g.Subtask], mapTestsToTestGroups[g.GroupID]...)
+		subtaskToPoints[g.Subtask] += g.Points
+		if g.Subtask < minSubtaskID {
+			minSubtaskID = g.Subtask
+		}
+		if g.Subtask > maxSubtaskID {
+			maxSubtaskID = g.Subtask
+		}
+	}
+
+	for i := minSubtaskID; i <= maxSubtaskID; i++ {
+		if _, ok := subtaskToTestIDs[i]; !ok {
+			return nil, fmt.Errorf("subtask id %d does not have any tests", i)
+		}
+		if _, ok := subtaskToPoints[i]; !ok {
+			return nil, fmt.Errorf("subtask id %d does not have any points", i)
+		}
+		task.Subtasks = append(task.Subtasks, fstask.Subtask{
+			Points:  subtaskToPoints[i],
+			TestIDs: subtaskToTestIDs[i],
+			Descriptions: map[string]string{
+				"lv": "",
+			},
+		})
+	}
+
+	// verify that subtask points sum up to 100
+	totalPoints := 0
+	for _, subtask := range task.Subtasks {
+		totalPoints += subtask.Points
+	}
+	if totalPoints != 100 {
+		return nil, fmt.Errorf("subtask points do not sum up to 100")
+	}
+
 	task.CPUTimeLimitSeconds = parsedYaml.CpuTimeLimitInSeconds
 	task.MemoryLimitMegabytes = parsedYaml.MemoryLimitInMegabytes
 
@@ -139,7 +191,7 @@ func ParseLio2024TaskDir(dirPath string) (*fstask.Task, error) {
 		})
 	}
 
-	ignore := []string{"testi/tests.zip", "risin/*"}
+	ignore := []string{"testi/tests.zip"}
 
 	// get all files recursively
 	filepath.WalkDir(dirPath, func(path string, d fs.DirEntry, err error) error {
