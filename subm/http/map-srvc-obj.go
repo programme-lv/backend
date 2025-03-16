@@ -79,6 +79,8 @@ func mapSubmListEntry(
 			PossibleScore: scoreInfo.PossibleScore,
 			MaxCpuMs:      scoreInfo.MaxCpuMs,
 			MaxMemKiB:     scoreInfo.MaxMemKiB,
+			ExceededCpu:   scoreInfo.ExceededCpu,
+			ExceededMem:   scoreInfo.ExceededMem,
 		},
 		Status:    status,
 		CreatedAt: s.CreatedAt.Format(time.RFC3339),
@@ -231,6 +233,8 @@ func mapSubmEval(eval domain.Eval) Eval {
 			PossibleScore: scoreInfo.PossibleScore,
 			MaxCpuMs:      scoreInfo.MaxCpuMs,
 			MaxMemKiB:     scoreInfo.MaxMemKiB,
+			ExceededCpu:   scoreInfo.ExceededCpu,
+			ExceededMem:   scoreInfo.ExceededMem,
 		},
 	}
 }

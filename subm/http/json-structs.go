@@ -50,10 +50,12 @@ type ScoreInfo struct {
 		Yellow int `json:"yellow"`
 		Purple int `json:"purple"`
 	} `json:"score_bar"`
-	ReceivedScore int `json:"received"`
-	PossibleScore int `json:"possible"`
-	MaxCpuMs      int `json:"max_cpu_ms"`  // milliseconds
-	MaxMemKiB     int `json:"max_mem_kib"` // kibibytes
+	ReceivedScore int  `json:"received"`
+	PossibleScore int  `json:"possible"`
+	MaxCpuMs      int  `json:"max_cpu_ms"`  // milliseconds
+	MaxMemKiB     int  `json:"max_mem_kib"` // kibibytes
+	ExceededCpu   bool `json:"exceeded_cpu"`
+	ExceededMem   bool `json:"exceeded_mem"`
 }
 
 type Subtask struct {
