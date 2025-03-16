@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/joho/godotenv"
 	"github.com/programme-lv/backend/fstask" // Assuming fstask is defined here
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -19,6 +20,11 @@ var (
 )
 
 func main() {
+	err := godotenv.Load()
+	if err != nil {
+		panic("Error loading .env file")
+	}
+
 	var rootCmd = &cobra.Command{
 		Use:   "proglv",
 		Short: "Admin CLI tool for programme.lv",

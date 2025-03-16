@@ -217,6 +217,7 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 		SELECT id, score, descriptions 
 		FROM task_subtasks 
 		WHERE task_short_id = $1
+		ORDER BY id
 	`, shortId)
 	if err != nil {
 		return t, err
