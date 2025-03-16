@@ -81,8 +81,8 @@ func (r *pgEvalRepo) StoreEval(ctx context.Context, eval domain.Eval) error {
 	// Delete existing related data first to avoid duplicates
 	deleteQueries := []string{
 		`DELETE FROM subtasks WHERE evaluation_uuid = $1`,
-		`DELETE FROM test_groups WHERE evaluation_uuid = $1`,
-		`DELETE FROM tests WHERE evaluation_uuid = $1`,
+		`DELETE FROM eval_test_groups WHERE evaluation_uuid = $1`,
+		`DELETE FROM eval_test_results WHERE evaluation_uuid = $1`,
 	}
 	for _, query := range deleteQueries {
 		log.Debug("executing delete query", "query", query)
@@ -117,7 +117,7 @@ func (r *pgEvalRepo) StoreEval(ctx context.Context, eval domain.Eval) error {
 	log.Debug("inserting test groups", "count", len(eval.Groups))
 	for _, group := range eval.Groups {
 		groupInsertQuery := `
-			INSERT INTO test_groups (
+			INSERT INTO eval_test_groups (
 				evaluation_uuid, points, subtasks, tg_tests
 			) VALUES ($1, $2, $3, $4)
 		`
@@ -251,7 +251,7 @@ func (r *pgEvalRepo) GetEval(ctx context.Context, evalUUID uuid.UUID) (domain.Ev
 	// Fetch TestGroups
 	testGroupsQuery := `
 		SELECT points, subtasks, tg_tests
-		FROM test_groups
+		FROM eval_test_groups
 		WHERE evaluation_uuid = $1
 	`
 	log.Debug("executing test groups query", "query", testGroupsQuery)
@@ -280,7 +280,7 @@ func (r *pgEvalRepo) GetEval(ctx context.Context, evalUUID uuid.UUID) (domain.Ev
 	// Fetch Tests
 	testsQuery := `
 		SELECT ac, wa, tle, mle, re, ig, reached, finished, inp_sha256, ans_sha256
-		FROM tests
+		FROM eval_test_results
 		WHERE evaluation_uuid = $1
 	`
 	log.Debug("executing tests query", "query", testsQuery)
