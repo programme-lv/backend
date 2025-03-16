@@ -15,7 +15,7 @@ type ScoreInfo struct {
 	ReceivedScore int
 	PossibleScore int
 	MaxCpuMs      int
-	MaxMemMiB     int
+	MaxMemKiB     int
 }
 
 // CalculateScore calculates scoring information from an evaluation
@@ -94,15 +94,15 @@ func (e *Eval) CalculateScore() ScoreInfo {
 	}
 
 	maxCpuMs := 0
-	maxMemMiB := 0
+	maxMemKiB := 0
 	for _, test := range e.Tests {
 		if test.CpuMs != nil && *test.CpuMs > maxCpuMs {
 			maxCpuMs = *test.CpuMs
 		}
 	}
 	for _, test := range e.Tests {
-		if test.MemKiB != nil && *test.MemKiB > maxMemMiB {
-			maxMemMiB = *test.MemKiB
+		if test.MemKiB != nil && *test.MemKiB > maxMemKiB {
+			maxMemKiB = *test.MemKiB
 		}
 	}
 
@@ -117,6 +117,6 @@ func (e *Eval) CalculateScore() ScoreInfo {
 		ReceivedScore: gotScore,
 		PossibleScore: maxScore,
 		MaxCpuMs:      maxCpuMs,
-		MaxMemMiB:     maxMemMiB,
+		MaxMemKiB:     maxMemKiB,
 	}
 }
