@@ -198,7 +198,7 @@ func mapSubmEval(eval domain.Eval) Eval {
 				verdicts += "U" // unknown
 			}
 		} else if test.Reached {
-			verdicts += "T" // testing
+			verdicts += "X" // testing
 		} else {
 			verdicts += "Q" // queued
 		}
