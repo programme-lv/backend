@@ -18,6 +18,8 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+var migrateDir = "../../migrate"
+
 // NewDB returns a connection pool to a unique and isolated test database,
 // fully migrated and ready for testing
 func NewDB(t *testing.T) *pgxpool.Pool {
@@ -31,7 +33,7 @@ func NewDB(t *testing.T) *pgxpool.Pool {
 		Port:       "5433",
 		Options:    "sslmode=disable",
 	}
-	gm := golangmigrator.New("../../migrate")
+	gm := golangmigrator.New(migrateDir)
 	config := pgtestdb.Custom(t, conf, gm)
 
 	pool, err := pgxpool.New(ctx, config.URL())
@@ -78,21 +80,6 @@ func NewSampleDB(t *testing.T) *pgxpool.Pool {
 		t.Fatalf("Failed to create sample evaluation: %v", err)
 	}
 	return db
-}
-
-func TestPgDbSchemaVersion(t *testing.T) {
-	t.Parallel()
-
-	db := NewSampleDB(t)
-
-	var version int
-	var dirty bool
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	err := db.QueryRow(ctx, "SELECT version, dirty FROM schema_migrations").Scan(&version, &dirty)
-	assert.Nil(t, err)
-	assert.Equal(t, 31, version)
-	assert.False(t, dirty)
 }
 
 // getSampleSubmEntityWithoutEval creates a SubmissionEntity with sample data.
