@@ -285,6 +285,7 @@ func (r *pgEvalRepo) GetEval(ctx context.Context, evalUUID uuid.UUID) (domain.Ev
 		SELECT ac, wa, tle, mle, re, ig, reached, finished, inp_sha256, ans_sha256, cpu_ms, mem_kib
 		FROM eval_test_results
 		WHERE evaluation_uuid = $1
+		ORDER BY id ASC
 	`
 	log.Debug("executing tests query", "query", testsQuery)
 	testRows, err := r.pool.Query(ctx, testsQuery, evalUUID)
