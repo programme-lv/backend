@@ -15,7 +15,7 @@ func (httpserver *UserHttpHandler) Logout(w http.ResponseWriter, r *http.Request
 		Path:     "/",
 		MaxAge:   -1,
 		HttpOnly: true,
-		SameSite: http.SameSiteStrictMode,
+		SameSite: http.SameSiteNoneMode,
 		Secure:   r.TLS != nil,
 	}
 	http.SetCookie(w, &cookie)

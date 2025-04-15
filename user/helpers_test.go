@@ -110,6 +110,18 @@ func login(t *testing.T, handler http.Handler, loginData map[string]interface{})
 	return w
 }
 
+func whoami(t *testing.T, handler http.Handler, token string) *httptest.ResponseRecorder {
+	t.Helper()
+	req, err := newJsonReq(http.MethodGet, "/whoami", nil)
+	if err != nil {
+		t.Fatalf("Failed to create request: %v", err)
+	}
+
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+	return w
+}
+
 // getRole sends a request to the role endpoint and returns the role from the response
 func getRole(t *testing.T, handler http.Handler, token string) string {
 	t.Helper()
