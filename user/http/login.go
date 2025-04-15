@@ -50,7 +50,8 @@ func (httpserver *UserHttpHandler) Login(w http.ResponseWriter, r *http.Request)
 		Expires:  expirationTime,
 		HttpOnly: true,
 		Path:     "",
-		SameSite: http.SameSiteNoneMode,
+		Domain:   "programme.lv",
+		SameSite: http.SameSiteDefaultMode,
 		Secure:   r.TLS != nil, // Set Secure flag if using HTTPS
 	}
 	http.SetCookie(w, &cookie)
