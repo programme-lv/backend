@@ -36,10 +36,23 @@ func TestLoginHttp(t *testing.T) {
 	// Check status code
 	assert.Equal(t, http.StatusOK, w.Code, "Response body: %s", w.Body.String())
 
+	// Check for auth_token cookie
+	cookies := w.Result().Cookies()
+	var authCookie *http.Cookie
+	for _, cookie := range cookies {
+		if cookie.Name == "auth_token" {
+			authCookie = cookie
+			break
+		}
+	}
+	require.NotNil(t, authCookie, "No auth_token cookie found in response")
+	assert.True(t, authCookie.HttpOnly, "Cookie should be HttpOnly")
+	assert.NotEmpty(t, authCookie.Value, "Cookie value should not be empty")
+
 	// Parse the response body
 	var responseWrapper struct {
-		Status string `json:"status"`
-		Data   string `json:"data"` // JWT token is a string
+		Status string            `json:"status"`
+		Data   map[string]string `json:"data"`
 	}
 
 	err := json.Unmarshal(w.Body.Bytes(), &responseWrapper)
@@ -47,7 +60,7 @@ func TestLoginHttp(t *testing.T) {
 
 	// Verify response structure
 	assert.Equal(t, "success", responseWrapper.Status)
-	assert.NotEmpty(t, responseWrapper.Data, "JWT token should not be empty")
+	assert.Equal(t, "Login successful", responseWrapper.Data["message"])
 }
 
 func TestLoginHttpInvalidCredentials(t *testing.T) {
