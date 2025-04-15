@@ -1,10 +1,13 @@
 package auth
 
 import (
+	"context"
 	"errors"
+	"net/http"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/golang-jwt/jwt/v5/request"
 	"github.com/google/uuid"
 )
 
@@ -55,4 +58,32 @@ func ValidateJWT(tokenStr string, jwtKey []byte) (*JwtClaims, error) {
 	}
 
 	return claims, nil
+}
+
+// GetJwtAuthMiddleware validates JWT token and adds the claims to the request context
+func GetJwtAuthMiddleware(jwtKey []byte) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		hfn := func(w http.ResponseWriter, r *http.Request) {
+			token, err := request.BearerExtractor{}.ExtractToken(r)
+			if err != nil {
+				if errors.Is(err, request.ErrNoTokenInRequest) {
+					ctx := context.WithValue(r.Context(), CtxJwtClaimsKey, (*JwtClaims)(nil))
+					next.ServeHTTP(w, r.WithContext(ctx))
+					return
+				}
+				http.Error(w, err.Error(), http.StatusUnauthorized)
+				return
+			}
+
+			claims, err := ValidateJWT(token, jwtKey)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusUnauthorized)
+				return
+			}
+
+			ctx := context.WithValue(r.Context(), CtxJwtClaimsKey, (*JwtClaims)(claims))
+			next.ServeHTTP(w, r.WithContext(ctx))
+		}
+		return http.HandlerFunc(hfn)
+	}
 }

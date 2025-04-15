@@ -7,12 +7,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-type LoginParams struct {
-	Username string
-	Password string
-}
-
-func (s *UserSrvc) Login(ctx context.Context, p *LoginParams) (res *User, err error) {
+func (s *UserSrvc) Login(ctx context.Context, username string, password string) (res *User, err error) {
 	allUsers, err := selectAllUsers(s.postgres)
 	if err != nil {
 		errMsg := fmt.Errorf("error listing users: %w", err)
@@ -20,8 +15,8 @@ func (s *UserSrvc) Login(ctx context.Context, p *LoginParams) (res *User, err er
 	}
 
 	for _, user := range allUsers {
-		if user.Username == p.Username {
-			err = bcrypt.CompareHashAndPassword([]byte(user.BcryptPwd), []byte(p.Password))
+		if user.Username == username {
+			err = bcrypt.CompareHashAndPassword([]byte(user.BcryptPwd), []byte(password))
 			if err == nil {
 				return &User{
 					UUID:      user.UUID,

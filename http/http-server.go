@@ -17,6 +17,7 @@ import (
 	"github.com/programme-lv/backend/logger"
 	http1 "github.com/programme-lv/backend/subm/http"
 	taskhttp "github.com/programme-lv/backend/task/http"
+	"github.com/programme-lv/backend/user/auth"
 	userhttp "github.com/programme-lv/backend/user/http"
 )
 
@@ -168,7 +169,7 @@ func NewHttpServer(
 		MaxAge:           3000,
 	}))
 
-	router.Use(getJwtAuthMiddleware(jwtKey))
+	router.Use(auth.GetJwtAuthMiddleware(jwtKey))
 
 	server := &HttpServer{
 		submHttpHandler: submHttpHandler,
