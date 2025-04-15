@@ -21,7 +21,7 @@ func TestRegisterHttp(t *testing.T) {
 		"password":  "password123",
 	}
 
-	w := registerUser(t, userHandler, userData)
+	w := register(t, userHandler, userData)
 
 	// Check status code
 	assert.Equal(t, http.StatusOK, w.Code, "Response body: %s", w.Body.String())
@@ -54,7 +54,7 @@ func TestRegisterHttpDuplicateUsername(t *testing.T) {
 		"password":  "password123",
 	}
 
-	w := registerUser(t, userHandler, firstUserData)
+	w := register(t, userHandler, firstUserData)
 	require.Equal(t, http.StatusOK, w.Code, "First registration failed: %s", w.Body.String())
 
 	// Try to register a second user with the same username
@@ -66,7 +66,7 @@ func TestRegisterHttpDuplicateUsername(t *testing.T) {
 		"password":  "password456",
 	}
 
-	w = registerUser(t, userHandler, secondUserData)
+	w = register(t, userHandler, secondUserData)
 	assertErrorInHttpResponse(t, w, "username_exists")
 }
 
@@ -82,7 +82,7 @@ func TestRegisterHttpDuplicateEmail(t *testing.T) {
 		"password":  "password123",
 	}
 
-	w := registerUser(t, userHandler, firstUserData)
+	w := register(t, userHandler, firstUserData)
 	require.Equal(t, http.StatusOK, w.Code, "First registration failed: %s", w.Body.String())
 
 	// Try to register a second user with the same email
@@ -94,6 +94,6 @@ func TestRegisterHttpDuplicateEmail(t *testing.T) {
 		"password":  "password456",
 	}
 
-	w = registerUser(t, userHandler, secondUserData)
+	w = register(t, userHandler, secondUserData)
 	assertErrorInHttpResponse(t, w, "email_exists")
 }

@@ -199,8 +199,7 @@ func (httpserver *HttpServer) routes() {
 	r.Get("/subm/scores/{username}", httpserver.submHttpHandler.GetMaxScorePerTask)
 
 	// user module
-	r.Post("/auth/login", httpserver.userHttpHandler.Login)
-	r.Post("/users", httpserver.userHttpHandler.Register)
+	httpserver.userHttpHandler.RegisterRoutes(r)
 
 	// task module
 	r.Get("/tasks", httpserver.taskHttpHandler.ListTasks)

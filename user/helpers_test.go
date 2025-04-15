@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/peterldowns/pgtestdb"
 	"github.com/peterldowns/pgtestdb/migrators/golangmigrator"
@@ -42,15 +43,16 @@ func newTestPgDb(t *testing.T) *pgxpool.Pool {
 	return pool
 }
 
-// setupUserHttpHandler creates a test environment with a user HTTP handler
-func setupUserHttpHandler(t *testing.T) *userhttp.UserHttpHandler {
+func setupUserHttpHandler(t *testing.T) http.Handler {
 	pg := newTestPgDb(t)
 	userSrvc := user.NewUserService(pg)
-	return userhttp.NewUserHttpHandler(userSrvc, []byte("test"))
+	userHandler := userhttp.NewUserHttpHandler(userSrvc, []byte("test"))
+	chi := chi.NewRouter()
+	userHandler.RegisterRoutes(chi)
+	return chi
 }
 
-// createTestRequestJson creates a new HTTP request with the given body
-func createTestRequestJson(method, path string, body map[string]interface{}) (*http.Request, error) {
+func newJsonReq(method, path string, body map[string]interface{}) (*http.Request, error) {
 	jsonBody, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
@@ -61,20 +63,18 @@ func createTestRequestJson(method, path string, body map[string]interface{}) (*h
 	return req, nil
 }
 
-// registerUser performs a user registration request and returns the response
-func registerUser(t *testing.T, handler *userhttp.UserHttpHandler, userData map[string]interface{}) *httptest.ResponseRecorder {
+func register(t *testing.T, handler http.Handler, userData map[string]interface{}) *httptest.ResponseRecorder {
 	t.Helper()
-	req, err := createTestRequestJson(http.MethodPost, "/users", userData)
+	req, err := newJsonReq(http.MethodPost, "/users", userData)
 	if err != nil {
 		t.Fatalf("Failed to create request: %v", err)
 	}
 
 	w := httptest.NewRecorder()
-	handler.Register(w, req)
+	handler.ServeHTTP(w, req)
 	return w
 }
 
-// assertErrorInHttpResponse checks that the response is an error with the expected code
 func assertErrorInHttpResponse(t *testing.T, w *httptest.ResponseRecorder, expectedCode string) {
 	t.Helper()
 
@@ -95,4 +95,17 @@ func assertErrorInHttpResponse(t *testing.T, w *httptest.ResponseRecorder, expec
 	assert.Equal(t, "error", errorResponse.Status, "Expected status to be 'error'")
 	assert.Equal(t, expectedCode, errorResponse.Code, "Incorrect error code")
 	assert.NotEmpty(t, errorResponse.Message, "Expected non-empty error message")
+}
+
+// login performs a user login request and returns the response
+func login(t *testing.T, handler http.Handler, loginData map[string]interface{}) *httptest.ResponseRecorder {
+	t.Helper()
+	req, err := newJsonReq(http.MethodPost, "/login", loginData)
+	if err != nil {
+		t.Fatalf("Failed to create request: %v", err)
+	}
+
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+	return w
 }
