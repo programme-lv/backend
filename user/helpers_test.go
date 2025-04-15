@@ -114,9 +114,15 @@ func login(t *testing.T, handler http.Handler, loginData map[string]interface{})
 func getRole(t *testing.T, handler http.Handler, token string) string {
 	t.Helper()
 	req := httptest.NewRequest(http.MethodGet, "/role", nil)
+
+	// Add token as cookie instead of Authorization header
 	if token != "" {
-		req.Header.Set("Authorization", "Bearer "+token)
+		req.AddCookie(&http.Cookie{
+			Name:  "auth_token",
+			Value: token,
+		})
 	}
+
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, req)
 
@@ -137,7 +143,7 @@ func getRole(t *testing.T, handler http.Handler, token string) string {
 }
 
 // registerAndLogin registers a new user with the given username and logs them in,
-// returning the JWT token
+// returning the JWT token from the cookie
 func registerAndLogin(t *testing.T, handler http.Handler, username string) string {
 	t.Helper()
 	// Register user
@@ -159,12 +165,15 @@ func registerAndLogin(t *testing.T, handler http.Handler, username string) strin
 	w = login(t, handler, loginData)
 	require.Equal(t, http.StatusOK, w.Code)
 
-	// Extract token
-	var loginResponse struct {
-		Status string `json:"status"`
-		Data   string `json:"data"` // JWT token
+	// Extract token from cookie
+	cookies := w.Result().Cookies()
+	var authCookie *http.Cookie
+	for _, cookie := range cookies {
+		if cookie.Name == "auth_token" {
+			authCookie = cookie
+			break
+		}
 	}
-	err := json.Unmarshal(w.Body.Bytes(), &loginResponse)
-	require.NoError(t, err)
-	return loginResponse.Data
+	require.NotNil(t, authCookie, "No auth_token cookie found in response")
+	return authCookie.Value
 }

@@ -24,5 +24,6 @@ func (h *UserHttpHandler) RegisterRoutes(r *chi.Mux) {
 		r.Post("/login", h.Login)
 		r.Post("/users", h.Register)
 		r.Get("/role", h.GetRole)
+		r.Post("/logout", h.Logout)
 	})
 }

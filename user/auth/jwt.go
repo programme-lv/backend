@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/golang-jwt/jwt/v5/request"
 	"github.com/google/uuid"
 )
 
@@ -25,8 +24,8 @@ type ClaimsKeyType string
 
 var CtxJwtClaimsKey ClaimsKeyType = "jwtClaims"
 
-func GenerateJWT(username, email string, uuid uuid.UUID, firstname, lastname *string, jwtKey []byte) (string, error) {
-	expirationTime := time.Now().Add(24 * time.Hour)
+func GenerateJWT(username, email string, uuid uuid.UUID, firstname, lastname *string, jwtKey []byte, validFor time.Duration) (string, error) {
+	expirationTime := time.Now().Add(validFor)
 
 	claims := &JwtClaims{
 		Username:         username,
@@ -65,24 +64,33 @@ func ValidateJWT(tokenStr string, jwtKey []byte) (*JwtClaims, error) {
 func GetJwtAuthMiddleware(jwtKey []byte) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		hfn := func(w http.ResponseWriter, r *http.Request) {
-			token, err := request.BearerExtractor{}.ExtractToken(r)
+			// Get token from cookie instead of Authorization header
+			cookie, err := r.Cookie("auth_token")
 			if err != nil {
-				if errors.Is(err, request.ErrNoTokenInRequest) {
-					ctx := context.WithValue(r.Context(), CtxJwtClaimsKey, (*JwtClaims)(nil))
-					next.ServeHTTP(w, r.WithContext(ctx))
-					return
-				}
-				http.Error(w, err.Error(), http.StatusUnauthorized)
+				// No cookie found, continue as unauthenticated user
+				ctx := context.WithValue(r.Context(), CtxJwtClaimsKey, (*JwtClaims)(nil))
+				next.ServeHTTP(w, r.WithContext(ctx))
 				return
 			}
 
+			token := cookie.Value
 			claims, err := ValidateJWT(token, jwtKey)
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusUnauthorized)
+				// Invalid token, continue as unauthenticated user
+				// Optionally, clear the invalid cookie
+				http.SetCookie(w, &http.Cookie{
+					Name:     "auth_token",
+					Value:    "",
+					Path:     "/",
+					MaxAge:   -1,
+					HttpOnly: true,
+				})
+				ctx := context.WithValue(r.Context(), CtxJwtClaimsKey, (*JwtClaims)(nil))
+				next.ServeHTTP(w, r.WithContext(ctx))
 				return
 			}
 
-			ctx := context.WithValue(r.Context(), CtxJwtClaimsKey, (*JwtClaims)(claims))
+			ctx := context.WithValue(r.Context(), CtxJwtClaimsKey, claims)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		}
 		return http.HandlerFunc(hfn)
