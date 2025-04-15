@@ -12,10 +12,10 @@ func (httpserver *UserHttpHandler) Logout(w http.ResponseWriter, r *http.Request
 	cookie := http.Cookie{
 		Name:     "auth_token",
 		Value:    "",
-		Path:     "/",
+		Path:     "",
 		MaxAge:   -1,
 		HttpOnly: true,
-		SameSite: http.SameSiteNoneMode,
+		SameSite: http.SameSiteDefaultMode,
 		Secure:   r.TLS != nil,
 	}
 	http.SetCookie(w, &cookie)
