@@ -1,7 +1,6 @@
 package http
 
 import (
-	"errors"
 	"log/slog"
 	"net/http"
 
@@ -13,7 +12,7 @@ import (
 func (h *UserHttpHandler) WhoAmI(w http.ResponseWriter, r *http.Request) {
 	claims, ok := r.Context().Value(auth.CtxJwtClaimsKey).(*auth.JwtClaims)
 	if !ok || claims == nil {
-		httpjson.HandleError(slog.Default(), w, errors.New("not authenticated"))
+		httpjson.WriteSuccessJson(w, nil)
 		return
 	}
 
