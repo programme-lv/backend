@@ -1,15 +1,13 @@
 package http
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/http"
 
-	"github.com/programme-lv/backend/auth"
 	"github.com/programme-lv/backend/httpjson"
-	"github.com/programme-lv/backend/user"
+	"github.com/programme-lv/backend/user/auth"
 )
 
 func (httpserver *UserHttpHandler) Login(w http.ResponseWriter, r *http.Request) {
@@ -24,10 +22,7 @@ func (httpserver *UserHttpHandler) Login(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	user, err := httpserver.userSrvc.Login(context.TODO(), &user.LoginParams{
-		Username: request.Username,
-		Password: request.Password,
-	})
+	user, err := httpserver.userSrvc.Login(r.Context(), request.Username, request.Password)
 	if err != nil {
 		httpjson.HandleError(slog.Default(), w, err)
 		return
