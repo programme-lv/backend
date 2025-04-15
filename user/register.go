@@ -5,11 +5,8 @@ import (
 	"net/mail"
 	"time"
 
-	"github.com/go-jet/jet/v2/postgres"
 	"github.com/google/uuid"
-	"github.com/jmoiron/sqlx"
-	"github.com/programme-lv/backend/gen/postgres/public/model"
-	"github.com/programme-lv/backend/gen/postgres/public/table"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -21,32 +18,24 @@ type CreateUserParams struct {
 	Password  string
 }
 
-func (s *UserSrvc) CreateUser(ctx context.Context,
-	p CreateUserParams) (res *User, err error) {
-
-	var (
-		username  Username = Username(p.Username)
-		email     Email    = Email(p.Email)
-		password  Password = Password(p.Password)
-		firstname Firstname
-		lastname  Lastname
-	)
-
+func (s *UserSrvc) CreateUser(ctx context.Context, p CreateUserParams) (res *User, err error) {
+	// Validate all fields
+	if err := validateUsername(p.Username); err != nil {
+		return nil, err
+	}
+	if err := validateEmail(p.Email); err != nil {
+		return nil, err
+	}
+	if err := validatePassword(p.Password); err != nil {
+		return nil, err
+	}
 	if p.Firstname != nil {
-		firstname = Firstname(*p.Firstname)
-	}
-
-	if p.Lastname != nil {
-		lastname = Lastname(*p.Lastname)
-	}
-
-	for _, v := range []interface{ IsValid() error }{
-		username, email, password, firstname, lastname,
-	} {
-		if v == nil {
-			continue
+		if err := validateFirstname(*p.Firstname); err != nil {
+			return nil, err
 		}
-		if err := v.IsValid(); err != nil {
+	}
+	if p.Lastname != nil {
+		if err := validateLastname(*p.Lastname); err != nil {
 			return nil, err
 		}
 	}
@@ -73,12 +62,22 @@ func (s *UserSrvc) CreateUser(ctx context.Context,
 		return nil, newErrInternalSE().SetDebug(err)
 	}
 
-	row := &model.Users{
+	firstname := ""
+	if p.Firstname != nil {
+		firstname = *p.Firstname
+	}
+
+	lastname := ""
+	if p.Lastname != nil {
+		lastname = *p.Lastname
+	}
+
+	row := &dbUser{
 		UUID:      uuid.New(),
-		Firstname: string(firstname),
-		Lastname:  string(lastname),
-		Username:  string(username),
-		Email:     string(email),
+		Firstname: firstname,
+		Lastname:  lastname,
+		Username:  p.Username,
+		Email:     p.Email,
 		BcryptPwd: string(bcryptPwd),
 		CreatedAt: time.Now(),
 	}
@@ -99,59 +98,91 @@ func (s *UserSrvc) CreateUser(ctx context.Context,
 	return res, nil
 }
 
-func selectAllUsers(pg *sqlx.DB) ([]model.Users, error) {
-	selectStmt := postgres.
-		SELECT(table.Users.AllColumns).
-		FROM(table.Users)
+type dbUser struct {
+	UUID      uuid.UUID
+	Firstname string
+	Lastname  string
+	Username  string
+	Email     string
+	BcryptPwd string
+	CreatedAt time.Time
+}
 
-	var users []model.Users
-	err := selectStmt.Query(pg, &users)
+func selectAllUsers(pg *pgxpool.Pool) ([]dbUser, error) {
+	rows, err := pg.Query(context.Background(), `
+		SELECT uuid, firstname, lastname, username, email, bcrypt_pwd, created_at
+		FROM users
+	`)
 	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var users []dbUser
+	for rows.Next() {
+		var user dbUser
+		err := rows.Scan(
+			&user.UUID,
+			&user.Firstname,
+			&user.Lastname,
+			&user.Username,
+			&user.Email,
+			&user.BcryptPwd,
+			&user.CreatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+		users = append(users, user)
+	}
+
+	if err := rows.Err(); err != nil {
 		return nil, err
 	}
 
 	return users, nil
 }
 
-func insertUser(pg *sqlx.DB, row *model.Users) error {
-	insertStmt := table.Users.INSERT(table.Users.AllColumns).
-		MODEL(row)
-
-	_, err := insertStmt.Exec(pg)
+func insertUser(pg *pgxpool.Pool, user *dbUser) error {
+	_, err := pg.Exec(context.Background(), `
+		INSERT INTO users (uuid, firstname, lastname, username, email, bcrypt_pwd, created_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
+	`,
+		user.UUID,
+		user.Firstname,
+		user.Lastname,
+		user.Username,
+		user.Email,
+		user.BcryptPwd,
+		user.CreatedAt,
+	)
 	return err
 }
 
-type Username string
-
-func (u Username) IsValid() error {
+// Validation functions
+func validateUsername(username string) error {
 	const minUsernameLength = 2
 	const maxUsernameLength = 32
-	if len(string(u)) < minUsernameLength {
+	if len(username) < minUsernameLength {
 		return newErrUsernameTooShort(minUsernameLength)
 	}
-	if len(string(u)) > maxUsernameLength {
+	if len(username) > maxUsernameLength {
 		return newErrUsernameTooLong()
 	}
 	return nil
 }
 
-func (u Username) String() string {
-	return string(u)
-}
-
-type Email string
-
-func (e Email) IsValid() error {
+func validateEmail(email string) error {
 	const maxEmailLength = 320
-	if len(string(e)) > maxEmailLength {
+	if len(email) > maxEmailLength {
 		return newErrEmailTooLong()
 	}
 
-	if len(string(e)) == 0 {
+	if len(email) == 0 {
 		return newErrEmailEmpty()
 	}
 
-	_, err := mail.ParseAddress(string(e))
+	_, err := mail.ParseAddress(email)
 	if err != nil {
 		return newErrEmailInvalid()
 	}
@@ -159,38 +190,28 @@ func (e Email) IsValid() error {
 	return nil
 }
 
-func (e Email) String() string {
-	return string(e)
-}
-
-type Password string
-
-func (p Password) IsValid() error {
+func validatePassword(password string) error {
 	const minPasswordLength = 8
-	if len(string(p)) < minPasswordLength {
+	if len(password) < minPasswordLength {
 		return newErrPasswordTooShort(minPasswordLength)
 	}
-	if len(string(p)) > 1024 {
+	if len(password) > 1024 {
 		return newErrPasswordTooLong()
 	}
 	return nil
 }
 
-type Firstname string
-
-func (f Firstname) IsValid() error {
+func validateFirstname(firstname string) error {
 	const maxFirstnameLength = 35
-	if len(f) > maxFirstnameLength {
+	if len(firstname) > maxFirstnameLength {
 		return newErrFirstnameTooLong(maxFirstnameLength)
 	}
 	return nil
 }
 
-type Lastname string
-
-func (l Lastname) IsValid() error {
+func validateLastname(lastname string) error {
 	const maxLastnameLength = 35
-	if len(l) > maxLastnameLength {
+	if len(lastname) > maxLastnameLength {
 		return newErrLastnameTooLong(maxLastnameLength)
 	}
 	return nil
