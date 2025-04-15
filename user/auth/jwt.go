@@ -27,6 +27,7 @@ var CtxJwtClaimsKey ClaimsKeyType = "jwtClaims"
 
 func GenerateJWT(username, email string, uuid uuid.UUID, firstname, lastname *string, jwtKey []byte) (string, error) {
 	expirationTime := time.Now().Add(24 * time.Hour)
+
 	claims := &JwtClaims{
 		Username:         username,
 		Firstname:        firstname,
