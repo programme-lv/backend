@@ -6,22 +6,16 @@ import (
 
 	// assuming custom Latvian translations
 	"github.com/google/uuid"
-	"github.com/jmoiron/sqlx"
-	"github.com/programme-lv/backend/conf"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type UserSrvc struct {
-	postgres *sqlx.DB
+	postgres *pgxpool.Pool
 }
 
-func NewUserService() *UserSrvc {
-	postgresConnStr := conf.GetPgConnStrFromEnv()
-	db, err := sqlx.Connect("postgres", postgresConnStr)
-	if err != nil {
-		panic(fmt.Sprintf("failed to connect to postgres: %v", err))
-	}
+func NewUserService(pg *pgxpool.Pool) *UserSrvc {
 	return &UserSrvc{
-		postgres: db,
+		postgres: pg,
 	}
 }
 

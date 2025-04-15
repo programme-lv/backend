@@ -47,12 +47,12 @@ func main() {
 	}
 
 	execSrvc := execsrvc.NewExecSrvc()
-	userSrvc := user.NewUserService()
 
 	pg, err := pgxpool.New(context.Background(), conf.GetPgConnStrFromEnv())
 	if err != nil {
 		log.Fatalf("failed to create pg pool: %v", err)
 	}
+	userSrvc := user.NewUserService(pg)
 
 	repo := pgrepo.NewTaskPgRepo(pg)
 
