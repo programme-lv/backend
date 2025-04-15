@@ -96,7 +96,3 @@ func TestLoginHttpInvalidCredentials(t *testing.T) {
 		})
 	}
 }
-
-func TestGetRoleHttp(t *testing.T) {
-
-}
