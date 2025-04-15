@@ -49,12 +49,17 @@ func (httpserver *UserHttpHandler) Login(w http.ResponseWriter, r *http.Request)
 		Value:    token,
 		Expires:  expirationTime,
 		HttpOnly: true,
-		Path:     "/",
-		SameSite: http.SameSiteStrictMode,
+		Path:     "",
+		SameSite: http.SameSiteDefaultMode,
 		Secure:   r.TLS != nil, // Set Secure flag if using HTTPS
 	}
 	http.SetCookie(w, &cookie)
 
-	// Send success response without including the token in the body
-	httpjson.WriteSuccessJson(w, map[string]string{"message": "Login successful"})
+	httpjson.WriteSuccessJson(w, User{
+		UUID:      user.UUID.String(),
+		Username:  user.Username,
+		Email:     user.Email,
+		Firstname: user.Firstname,
+		Lastname:  user.Lastname,
+	})
 }

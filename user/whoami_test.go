@@ -3,6 +3,7 @@ package user_test
 import (
 	"encoding/json"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
@@ -10,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestLoginHttp(t *testing.T) {
+func TestWhoAmIHttpAuthenticated(t *testing.T) {
 	userHandler := setupUserHttpHandler(t)
 
 	// Register a user first
@@ -25,29 +26,38 @@ func TestLoginHttp(t *testing.T) {
 	w := register(t, userHandler, userData)
 	require.Equal(t, http.StatusOK, w.Code, "Registration failed: %s", w.Body.String())
 
-	// Now try to login
+	// Login to get auth token
 	loginData := map[string]interface{}{
 		"username": "testuser",
 		"password": "password123",
 	}
 
 	w = login(t, userHandler, loginData)
+	require.Equal(t, http.StatusOK, w.Code, "Login failed: %s", w.Body.String())
 
-	// Check status code
-	assert.Equal(t, http.StatusOK, w.Code, "Response body: %s", w.Body.String())
-
-	// Check for auth_token cookie
+	// Extract auth token from cookie
 	cookies := w.Result().Cookies()
-	var authCookie *http.Cookie
+	var authToken string
 	for _, cookie := range cookies {
 		if cookie.Name == "auth_token" {
-			authCookie = cookie
+			authToken = cookie.Value
 			break
 		}
 	}
-	require.NotNil(t, authCookie, "No auth_token cookie found in response")
-	assert.True(t, authCookie.HttpOnly, "Cookie should be HttpOnly")
-	assert.NotEmpty(t, authCookie.Value, "Cookie value should not be empty")
+	require.NotEmpty(t, authToken, "No auth_token cookie found in response")
+
+	// Make whoami request with auth token
+	req := httptest.NewRequest(http.MethodGet, "/whoami", nil)
+	req.AddCookie(&http.Cookie{
+		Name:  "auth_token",
+		Value: authToken,
+	})
+
+	w = httptest.NewRecorder()
+	userHandler.ServeHTTP(w, req)
+
+	// Check status code
+	assert.Equal(t, http.StatusOK, w.Code, "Response body: %s", w.Body.String())
 
 	// Parse the response body
 	var responseWrapper struct {
@@ -61,7 +71,7 @@ func TestLoginHttp(t *testing.T) {
 	// Verify response structure
 	assert.Equal(t, "success", responseWrapper.Status)
 
-	// Parse user data from the response
+	// Parse the user data
 	var userData2 struct {
 		UUID      string  `json:"uuid"`
 		Username  string  `json:"username"`
@@ -76,52 +86,35 @@ func TestLoginHttp(t *testing.T) {
 	// Verify user data
 	assert.Equal(t, "testuser", userData2.Username)
 	assert.Equal(t, "test@example.com", userData2.Email)
+	assert.NotNil(t, userData2.Firstname)
+	assert.Equal(t, "Test", *userData2.Firstname)
+	assert.NotNil(t, userData2.Lastname)
+	assert.Equal(t, "User", *userData2.Lastname)
 	assert.NotEmpty(t, userData2.UUID)
 }
 
-func TestLoginHttpInvalidCredentials(t *testing.T) {
+func TestWhoAmIHttpUnauthenticated(t *testing.T) {
 	userHandler := setupUserHttpHandler(t)
 
-	// Register a user first
-	userData := map[string]interface{}{
-		"username":  "testuser",
-		"email":     "test@example.com",
-		"firstname": "Test",
-		"lastname":  "User",
-		"password":  "password123",
+	// Make whoami request without auth token
+	req := httptest.NewRequest(http.MethodGet, "/whoami", nil)
+	w := httptest.NewRecorder()
+	userHandler.ServeHTTP(w, req)
+
+	// Check that the status code is not OK
+	assert.NotEqual(t, http.StatusOK, w.Code, "Expected error status code")
+
+	// Parse the error response
+	var errorResponse struct {
+		Status  string `json:"status"`
+		Code    string `json:"code"`
+		Message string `json:"message"`
 	}
 
-	w := register(t, userHandler, userData)
-	require.Equal(t, http.StatusOK, w.Code, "Registration failed: %s", w.Body.String())
+	err := json.Unmarshal(w.Body.Bytes(), &errorResponse)
+	require.NoError(t, err, "Failed to unmarshal error response body")
 
-	// Test cases for invalid login attempts
-	testCases := []struct {
-		name      string
-		loginData map[string]interface{}
-		errorCode string
-	}{
-		{
-			name: "Wrong Password",
-			loginData: map[string]interface{}{
-				"username": "testuser",
-				"password": "wrongpassword",
-			},
-			errorCode: "username_or_password_incorrect",
-		},
-		{
-			name: "Non-existent Username",
-			loginData: map[string]interface{}{
-				"username": "nonexistentuser",
-				"password": "password123",
-			},
-			errorCode: "username_or_password_incorrect",
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			w := login(t, userHandler, tc.loginData)
-			assertErrorInHttpResponse(t, w, tc.errorCode)
-		})
-	}
+	// Check error response fields
+	assert.Equal(t, "error", errorResponse.Status, "Expected status to be 'error'")
+	assert.Equal(t, "Internal Server Error", errorResponse.Message)
 }
