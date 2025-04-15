@@ -50,7 +50,7 @@ func (httpserver *UserHttpHandler) Login(w http.ResponseWriter, r *http.Request)
 		Expires:  expirationTime,
 		HttpOnly: true,
 		Path:     "",
-		SameSite: http.SameSiteDefaultMode,
+		SameSite: http.SameSiteNoneMode,
 		Secure:   r.TLS != nil, // Set Secure flag if using HTTPS
 	}
 	http.SetCookie(w, &cookie)
