@@ -12,7 +12,7 @@ import (
 
 type JsonResponse struct {
 	Status  string `json:"status"` // "success" or "error"
-	Data    any    `json:"data,omitempty"`
+	Data    any    `json:"data"`
 	ErrCode string `json:"code,omitempty"`
 	ErrMsg  string `json:"message,omitempty"`
 }
