@@ -1,6 +1,7 @@
 package http
 
 import (
+	"github.com/go-chi/chi/v5"
 	"github.com/programme-lv/backend/user"
 )
 
@@ -14,4 +15,9 @@ func NewUserHttpHandler(userSrvc *user.UserSrvc, jwtKey []byte) *UserHttpHandler
 		userSrvc: userSrvc,
 		JwtKey:   jwtKey,
 	}
+}
+
+func (h *UserHttpHandler) RegisterRoutes(r *chi.Mux) {
+	r.Post("/login", h.Login)
+	r.Post("/users", h.Register)
 }
