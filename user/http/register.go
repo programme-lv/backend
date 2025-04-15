@@ -7,10 +7,10 @@ import (
 	"net/http"
 
 	"github.com/programme-lv/backend/httpjson"
-	"github.com/programme-lv/backend/usersrvc"
+	"github.com/programme-lv/backend/user"
 )
 
-func (httpserver *HttpServer) authRegister(w http.ResponseWriter, r *http.Request) {
+func (httpserver *UserHttpHandler) Register(w http.ResponseWriter, r *http.Request) {
 	type registerRequest struct {
 		Username  string  `json:"username"`
 		Email     string  `json:"email"`
@@ -33,7 +33,7 @@ func (httpserver *HttpServer) authRegister(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	user, err := httpserver.userSrvc.CreateUser(context.TODO(), usersrvc.CreateUserParams{
+	user, err := httpserver.userSrvc.CreateUser(context.TODO(), user.CreateUserParams{
 		Username:  request.Username,
 		Email:     request.Email,
 		Firstname: request.Firstname,

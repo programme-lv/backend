@@ -1,4 +1,4 @@
-package usersrvc
+package user
 
 import "github.com/google/uuid"
 

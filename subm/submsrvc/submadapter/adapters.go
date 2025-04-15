@@ -7,7 +7,7 @@ import (
 	"github.com/programme-lv/backend/execsrvc"
 	subm "github.com/programme-lv/backend/subm/domain"
 	"github.com/programme-lv/backend/task/srvc"
-	"github.com/programme-lv/backend/usersrvc"
+	"github.com/programme-lv/backend/user"
 )
 
 type SubmRepo interface {
@@ -24,7 +24,7 @@ type EvalRepo interface {
 }
 
 type UserSrvcFacade interface {
-	GetUserByUUID(ctx context.Context, uuid uuid.UUID) (usersrvc.User, error)
+	GetUserByUUID(ctx context.Context, uuid uuid.UUID) (user.User, error)
 }
 
 type TaskSrvcFacade interface {

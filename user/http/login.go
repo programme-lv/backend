@@ -9,10 +9,10 @@ import (
 
 	"github.com/programme-lv/backend/auth"
 	"github.com/programme-lv/backend/httpjson"
-	"github.com/programme-lv/backend/usersrvc"
+	"github.com/programme-lv/backend/user"
 )
 
-func (httpserver *HttpServer) authLogin(w http.ResponseWriter, r *http.Request) {
+func (httpserver *UserHttpHandler) Login(w http.ResponseWriter, r *http.Request) {
 	type loginRequest struct {
 		Username string `json:"username"`
 		Password string `json:"password"`
@@ -24,7 +24,7 @@ func (httpserver *HttpServer) authLogin(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	user, err := httpserver.userSrvc.Login(context.TODO(), &usersrvc.LoginParams{
+	user, err := httpserver.userSrvc.Login(context.TODO(), &user.LoginParams{
 		Username: request.Username,
 		Password: request.Password,
 	})
