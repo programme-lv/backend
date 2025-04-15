@@ -7,7 +7,7 @@ import (
 
 	mock "github.com/stretchr/testify/mock"
 
-	usersrvc "github.com/programme-lv/backend/usersrvc"
+	usersrvc "github.com/programme-lv/backend/user"
 
 	uuid "github.com/google/uuid"
 )

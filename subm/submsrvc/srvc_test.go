@@ -22,7 +22,7 @@ import (
 	"github.com/programme-lv/backend/subm/submsrvc/submcmd"
 	"github.com/programme-lv/backend/subm/submsrvc/submquery"
 	"github.com/programme-lv/backend/task/srvc"
-	"github.com/programme-lv/backend/usersrvc"
+	"github.com/programme-lv/backend/user"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
@@ -70,7 +70,7 @@ func (s *testSetup) submitSolution(t *testing.T, ctx context.Context) uuid.UUID 
 	t.Helper()
 	s.execSrvc.EXPECT().Enqueue(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	s.execSrvc.EXPECT().Listen(mock.Anything, mock.Anything).Return(newMockExecEventChannel(t), nil)
-	s.userSrvc.EXPECT().GetUserByUUID(mock.Anything, mockUserUuid).Return(usersrvc.User{UUID: mockUserUuid}, nil)
+	s.userSrvc.EXPECT().GetUserByUUID(mock.Anything, mockUserUuid).Return(user.User{UUID: mockUserUuid}, nil)
 	s.taskSrvc.EXPECT().GetTask(mock.Anything, "aplusb").Return(srvc.Task{ShortId: "aplusb"}, nil)
 	submUUID := uuid.New()
 	err := s.srvc.SubmitSol(ctx, submcmd.SubmitSolParams{
@@ -201,7 +201,7 @@ func TestUserMaxScores(t *testing.T) {
 	setup.execSrvc.EXPECT().Enqueue(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	mockCh := make(chan execsrvc.Event, 10)
 	setup.execSrvc.EXPECT().Listen(mock.Anything, mock.Anything).Return(mockCh, nil).Once()
-	setup.userSrvc.EXPECT().GetUserByUUID(mock.Anything, mockUserUuid).Return(usersrvc.User{UUID: mockUserUuid}, nil).Once()
+	setup.userSrvc.EXPECT().GetUserByUUID(mock.Anything, mockUserUuid).Return(user.User{UUID: mockUserUuid}, nil).Once()
 	setup.taskSrvc.EXPECT().GetTask(mock.Anything, "aplusb").Return(newAplusBTask(t), nil).Once()
 	setup.taskSrvc.EXPECT().GetTestDownlUrl(mock.Anything, mock.Anything).Return("", nil)
 
@@ -262,7 +262,7 @@ func TestUserMaxScores(t *testing.T) {
 	mockCh2 := make(chan execsrvc.Event, 10)
 	setup.execSrvc.EXPECT().Enqueue(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	setup.execSrvc.EXPECT().Listen(mock.Anything, mock.Anything).Return(mockCh2, nil).Once()
-	setup.userSrvc.EXPECT().GetUserByUUID(mock.Anything, mockUserUuid).Return(usersrvc.User{UUID: mockUserUuid}, nil)
+	setup.userSrvc.EXPECT().GetUserByUUID(mock.Anything, mockUserUuid).Return(user.User{UUID: mockUserUuid}, nil)
 	setup.taskSrvc.EXPECT().GetTask(mock.Anything, "aplusb").Return(newAplusBTask(t), nil)
 	setup.taskSrvc.EXPECT().GetTestDownlUrl(mock.Anything, mock.Anything).Return("", nil)
 

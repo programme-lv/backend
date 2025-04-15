@@ -19,7 +19,8 @@ import (
 	http1 "github.com/programme-lv/backend/task/http"
 	"github.com/programme-lv/backend/task/pgrepo"
 	"github.com/programme-lv/backend/task/srvc"
-	"github.com/programme-lv/backend/usersrvc"
+	"github.com/programme-lv/backend/user"
+	userhttp "github.com/programme-lv/backend/user/http"
 )
 
 func main() {
@@ -46,7 +47,7 @@ func main() {
 	}
 
 	execSrvc := execsrvc.NewExecSrvc()
-	userSrvc := usersrvc.NewUserService()
+	userSrvc := user.NewUserService()
 
 	pg, err := pgxpool.New(context.Background(), conf.GetPgConnStrFromEnv())
 	if err != nil {
@@ -65,8 +66,9 @@ func main() {
 
 	submHttpHandler := newSubmHttpHandler(userSrvc, taskSrvc, execSrvc)
 	taskHttpHandler := http1.NewTaskHttpHandler(taskSrvc)
+	userHttpHandler := userhttp.NewUserHttpHandler(userSrvc, []byte(jwtKey))
 
-	httpServer := http.NewHttpServer(submHttpHandler, taskHttpHandler, userSrvc, execSrvc, []byte(jwtKey))
+	httpServer := http.NewHttpServer(submHttpHandler, taskHttpHandler, userHttpHandler, execSrvc, []byte(jwtKey))
 
 	address := ":8080"
 	slog.Info("starting server", "address", address)
@@ -74,7 +76,7 @@ func main() {
 	slog.Info("server stopped", "error", err)
 }
 
-func newSubmHttpHandler(userSrvc *usersrvc.UserSrvc, taskSrvc srvc.TaskSrvcClient, execSrvc *execsrvc.ExecSrvc) *http2.SubmHttpHandler {
+func newSubmHttpHandler(userSrvc *user.UserSrvc, taskSrvc srvc.TaskSrvcClient, execSrvc *execsrvc.ExecSrvc) *http2.SubmHttpHandler {
 	pool, err := pgxpool.New(context.Background(), conf.GetPgConnStrFromEnv())
 	if err != nil {
 		log.Fatalf("failed to create pg pool: %v", err)

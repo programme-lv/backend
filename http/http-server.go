@@ -17,7 +17,7 @@ import (
 	"github.com/programme-lv/backend/logger"
 	http1 "github.com/programme-lv/backend/subm/http"
 	taskhttp "github.com/programme-lv/backend/task/http"
-	"github.com/programme-lv/backend/usersrvc"
+	userhttp "github.com/programme-lv/backend/user/http"
 )
 
 // HttpReqInfo describes info about HTTP request
@@ -137,7 +137,7 @@ func requestLoggerMiddleware(next http.Handler) http.Handler {
 type HttpServer struct {
 	submHttpHandler *http1.SubmHttpHandler
 	taskHttpHandler *taskhttp.TaskHttpHandler
-	userSrvc        *usersrvc.UserSrvc
+	userHttpHandler *userhttp.UserHttpHandler
 	execSrvc        *execsrvc.ExecSrvc
 	router          *chi.Mux
 	JwtKey          []byte
@@ -146,7 +146,7 @@ type HttpServer struct {
 func NewHttpServer(
 	submHttpHandler *http1.SubmHttpHandler,
 	taskHttpHandler *taskhttp.TaskHttpHandler,
-	userSrvc *usersrvc.UserSrvc,
+	userHttpHandler *userhttp.UserHttpHandler,
 	evalSrvc *execsrvc.ExecSrvc,
 	jwtKey []byte,
 ) *HttpServer {
@@ -172,7 +172,7 @@ func NewHttpServer(
 
 	server := &HttpServer{
 		submHttpHandler: submHttpHandler,
-		userSrvc:        userSrvc,
+		userHttpHandler: userHttpHandler,
 		taskHttpHandler: taskHttpHandler,
 		execSrvc:        evalSrvc,
 		router:          router,
@@ -190,15 +190,22 @@ func (httpserver *HttpServer) Start(address string) error {
 
 func (httpserver *HttpServer) routes() {
 	r := httpserver.router
+
+	// submission module
 	r.Post("/subm", httpserver.submHttpHandler.PostSubm)
-	// r.Post("/reevaluate", httpserver.reevaluateSubmissions)
 	r.Get("/subm", httpserver.submHttpHandler.GetSubmList)
 	r.Get("/subm/{subm-uuid}", httpserver.submHttpHandler.GetFullSubm)
 	r.Get("/subm/scores/{username}", httpserver.submHttpHandler.GetMaxScorePerTask)
-	r.Post("/auth/login", httpserver.authLogin)
-	r.Post("/users", httpserver.authRegister)
+
+	// user module
+	r.Post("/auth/login", httpserver.userHttpHandler.Login)
+	r.Post("/users", httpserver.userHttpHandler.Register)
+
+	// task module
 	r.Get("/tasks", httpserver.taskHttpHandler.ListTasks)
 	r.Get("/tasks/{taskId}", httpserver.taskHttpHandler.GetTask)
+
+	// other
 	r.Get("/programming-languages", httpserver.listProgrammingLangs)
 	r.Get("/langs", httpserver.listProgrammingLangs)
 	r.Get("/subm-updates", httpserver.submHttpHandler.ListenToSubmListUpdates)
