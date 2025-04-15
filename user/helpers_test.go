@@ -109,3 +109,62 @@ func login(t *testing.T, handler http.Handler, loginData map[string]interface{})
 	handler.ServeHTTP(w, req)
 	return w
 }
+
+// getRole sends a request to the role endpoint and returns the role from the response
+func getRole(t *testing.T, handler http.Handler, token string) string {
+	t.Helper()
+	req := httptest.NewRequest(http.MethodGet, "/role", nil)
+	if token != "" {
+		req.Header.Set("Authorization", "Bearer "+token)
+	}
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+
+	var response struct {
+		Status string `json:"status"`
+		Data   struct {
+			Role string `json:"role"`
+		} `json:"data"`
+	}
+
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	if err != nil {
+		t.Fatalf("Failed to unmarshal response: %v. Response body: %s", err, w.Body.String())
+	}
+
+	require.Equal(t, "success", response.Status)
+	return response.Data.Role
+}
+
+// registerAndLogin registers a new user with the given username and logs them in,
+// returning the JWT token
+func registerAndLogin(t *testing.T, handler http.Handler, username string) string {
+	t.Helper()
+	// Register user
+	userData := map[string]interface{}{
+		"username":  username,
+		"email":     username + "@example.com",
+		"firstname": "Test",
+		"lastname":  "User",
+		"password":  "password123",
+	}
+	w := register(t, handler, userData)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	// Login user
+	loginData := map[string]interface{}{
+		"username": username,
+		"password": "password123",
+	}
+	w = login(t, handler, loginData)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	// Extract token
+	var loginResponse struct {
+		Status string `json:"status"`
+		Data   string `json:"data"` // JWT token
+	}
+	err := json.Unmarshal(w.Body.Bytes(), &loginResponse)
+	require.NoError(t, err)
+	return loginResponse.Data
+}

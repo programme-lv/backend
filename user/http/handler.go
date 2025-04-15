@@ -3,6 +3,7 @@ package http
 import (
 	"github.com/go-chi/chi/v5"
 	"github.com/programme-lv/backend/user"
+	"github.com/programme-lv/backend/user/auth"
 )
 
 type UserHttpHandler struct {
@@ -18,6 +19,10 @@ func NewUserHttpHandler(userSrvc *user.UserSrvc, jwtKey []byte) *UserHttpHandler
 }
 
 func (h *UserHttpHandler) RegisterRoutes(r *chi.Mux) {
-	r.Post("/login", h.Login)
-	r.Post("/users", h.Register)
+	r.Group(func(r chi.Router) {
+		r.Use(auth.GetJwtAuthMiddleware(h.JwtKey))
+		r.Post("/login", h.Login)
+		r.Post("/users", h.Register)
+		r.Get("/role", h.GetRole)
+	})
 }

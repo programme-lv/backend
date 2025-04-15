@@ -193,10 +193,7 @@ func (httpserver *HttpServer) routes() {
 	r := httpserver.router
 
 	// submission module
-	r.Post("/subm", httpserver.submHttpHandler.PostSubm)
-	r.Get("/subm", httpserver.submHttpHandler.GetSubmList)
-	r.Get("/subm/{subm-uuid}", httpserver.submHttpHandler.GetFullSubm)
-	r.Get("/subm/scores/{username}", httpserver.submHttpHandler.GetMaxScorePerTask)
+	httpserver.submHttpHandler.RegisterRoutes(r, httpserver.JwtKey)
 
 	// user module
 	httpserver.userHttpHandler.RegisterRoutes(r)
