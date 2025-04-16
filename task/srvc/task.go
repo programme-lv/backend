@@ -193,7 +193,7 @@ type TestGroup struct {
 	TestIDs []int
 }
 
-func (t *Task) FindTestGroupSubtasks(testGroupId int) []int {
+func (t *Task) FindTestgroupSubtasks(testGroupId int) []int {
 	tests := make([]int, 0)
 	tests = append(tests, t.TestGroups[testGroupId-1].TestIDs...)
 

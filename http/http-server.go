@@ -192,15 +192,9 @@ func (httpserver *HttpServer) Start(address string) error {
 func (httpserver *HttpServer) routes() {
 	r := httpserver.router
 
-	// submission module
 	httpserver.submHttpHandler.RegisterRoutes(r, httpserver.JwtKey)
-
-	// user module
 	httpserver.userHttpHandler.RegisterRoutes(r)
-
-	// task module
-	r.Get("/tasks", httpserver.taskHttpHandler.ListTasks)
-	r.Get("/tasks/{taskId}", httpserver.taskHttpHandler.GetTask)
+	httpserver.taskHttpHandler.RegisterRoutes(r)
 
 	// other
 	r.Get("/programming-languages", httpserver.listProgrammingLangs)

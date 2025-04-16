@@ -10,7 +10,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 	"github.com/programme-lv/backend/conf"
-	"github.com/programme-lv/backend/task/pgrepo"
+	"github.com/programme-lv/backend/task/repo"
 	"github.com/programme-lv/backend/task/srvc"
 )
 
@@ -26,7 +26,7 @@ func main() {
 		log.Fatalf("failed to create pg pool: %v", err)
 	}
 
-	repo := pgrepo.NewTaskPgRepo(pool)
+	repo := repo.NewTaskPgRepo(pool)
 
 	taskJsonL, err := os.ReadFile("./all_tasks.jsonl")
 	if err != nil {

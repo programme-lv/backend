@@ -17,7 +17,7 @@ import (
 	pgrepo1 "github.com/programme-lv/backend/subm/pgrepo"
 	"github.com/programme-lv/backend/subm/submsrvc"
 	http1 "github.com/programme-lv/backend/task/http"
-	"github.com/programme-lv/backend/task/pgrepo"
+	"github.com/programme-lv/backend/task/repo"
 	"github.com/programme-lv/backend/task/srvc"
 	"github.com/programme-lv/backend/user"
 	userhttp "github.com/programme-lv/backend/user/http"
@@ -54,7 +54,7 @@ func main() {
 	}
 	userSrvc := user.NewUserService(pg)
 
-	repo := pgrepo.NewTaskPgRepo(pg)
+	repo := repo.NewTaskPgRepo(pg)
 
 	// Create task service
 	var taskSrvc srvc.TaskSrvcClient
