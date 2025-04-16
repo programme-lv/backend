@@ -66,7 +66,8 @@ func main() {
 
 	submHttpHandler := newSubmHttpHandler(userSrvc, taskSrvc, execSrvc)
 	taskHttpHandler := http1.NewTaskHttpHandler(taskSrvc)
-	userHttpHandler := userhttp.NewUserHttpHandler(userSrvc, []byte(jwtKey))
+	cookieDomain := os.Getenv("COOKIE_DOMAIN")
+	userHttpHandler := userhttp.NewUserHttpHandler(userSrvc, []byte(jwtKey), userhttp.WithCookieDomain(cookieDomain))
 
 	httpServer := http.NewHttpServer(submHttpHandler, taskHttpHandler, userHttpHandler, execSrvc, []byte(jwtKey))
 

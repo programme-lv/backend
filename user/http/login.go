@@ -35,7 +35,7 @@ func (httpserver *UserHttpHandler) Login(w http.ResponseWriter, r *http.Request)
 		user.Username,
 		user.Email, user.UUID,
 		user.Firstname, user.Lastname,
-		httpserver.JwtKey, validFor)
+		httpserver.jwtKey, validFor)
 	if err != nil {
 		err = fmt.Errorf("failed to generate JWT: %w", err)
 		httpjson.HandleError(slog.Default(), w, err)
@@ -50,7 +50,7 @@ func (httpserver *UserHttpHandler) Login(w http.ResponseWriter, r *http.Request)
 		Expires:  expirationTime,
 		HttpOnly: true,
 		Path:     "",
-		Domain:   "programme.lv",
+		Domain:   httpserver.cookieDomain,
 		SameSite: http.SameSiteDefaultMode,
 		Secure:   r.TLS != nil, // Set Secure flag if using HTTPS
 	}

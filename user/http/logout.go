@@ -17,7 +17,7 @@ func (httpserver *UserHttpHandler) Logout(w http.ResponseWriter, r *http.Request
 		HttpOnly: true,
 		SameSite: http.SameSiteDefaultMode,
 		Secure:   r.TLS != nil,
-		Domain:   "programme.lv",
+		Domain:   httpserver.cookieDomain,
 	}
 	http.SetCookie(w, &cookie)
 
