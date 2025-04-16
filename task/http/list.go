@@ -11,13 +11,6 @@ const taskListCacheKey = "task_list"
 
 // ListTasks returns a list of all tasks
 func (httpserver *TaskHttpHandler) ListTasks(w http.ResponseWriter, r *http.Request) {
-	// Apply middleware to the handler
-	handler := httpserver.wrapMiddleware(httpserver.listTasksHandler)
-	handler(w, r)
-}
-
-// listTasksHandler is the actual implementation of ListTasks
-func (httpserver *TaskHttpHandler) listTasksHandler(w http.ResponseWriter, r *http.Request) {
 	// Try to get tasks from cache
 	if cachedTasks, found := httpserver.cache.Get(taskListCacheKey); found {
 		if tasks, ok := cachedTasks.([]*Task); ok {

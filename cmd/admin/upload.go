@@ -20,7 +20,7 @@ import (
 	"github.com/nfnt/resize"
 	"github.com/programme-lv/backend/conf"
 	"github.com/programme-lv/backend/fstask"
-	"github.com/programme-lv/backend/task/pgrepo"
+	"github.com/programme-lv/backend/task/repo"
 	"github.com/programme-lv/backend/task/srvc"
 	"github.com/rs/zerolog/log"
 	"github.com/wailsapp/mimetype"
@@ -37,7 +37,7 @@ func uploadTask(fsTask *fstask.Task, shortId string) error {
 	}
 	defer pg.Close()
 
-	repo := pgrepo.NewTaskPgRepo(pg)
+	repo := repo.NewTaskPgRepo(pg)
 	taskSrvc, err := srvc.NewTaskSrvc(repo)
 	if err != nil {
 		log.Error().Err(err).Msg("Error creating task service")

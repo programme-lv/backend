@@ -13,13 +13,6 @@ const taskGetCacheKeyPrefix = "task_get:"
 
 // GetTask returns a task by ID
 func (httpserver *TaskHttpHandler) GetTask(w http.ResponseWriter, r *http.Request) {
-	// Apply middleware to the handler
-	handler := httpserver.wrapMiddleware(httpserver.getTaskHandler)
-	handler(w, r)
-}
-
-// getTaskHandler is the actual implementation of GetTask
-func (httpserver *TaskHttpHandler) getTaskHandler(w http.ResponseWriter, r *http.Request) {
 	taskId := chi.URLParam(r, "taskId")
 	cacheKey := fmt.Sprintf("%s%s", taskGetCacheKeyPrefix, taskId)
 

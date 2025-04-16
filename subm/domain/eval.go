@@ -101,7 +101,7 @@ func NewEval(uuid uuid.UUID, submUuid uuid.UUID, task srvc.Task) Eval {
 	for i, tg := range task.TestGroups {
 		testgroups = append(testgroups, TestGroup{
 			Points:   tg.Points,
-			Subtasks: task.FindTestGroupSubtasks(i + 1),
+			Subtasks: task.FindTestgroupSubtasks(i + 1),
 			TgTests:  tg.TestIDs,
 		})
 	}
