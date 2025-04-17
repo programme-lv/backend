@@ -73,19 +73,7 @@ func TestPutStatementHttpRequest(t *testing.T) {
 	taskHttpHandler := NewTaskHttpHandler(t, ts)
 
 	err := ts.CreateTask(context.Background(), srvc.Task{
-		ShortId:        "aplusb",
-		FullName:       "a+b",
-		OriginNotes:    []srvc.OriginNote{},
-		MdStatements:   []srvc.MarkdownStatement{},
-		MdImages:       []srvc.StatementImage{},
-		PdfStatements:  []srvc.PdfStatement{},
-		VisInpSubtasks: []srvc.VisibleInputSubtask{},
-		Examples:       []srvc.Example{},
-		Tests:          []srvc.Test{},
-		Checker:        "",
-		Interactor:     "",
-		Subtasks:       []srvc.Subtask{},
-		TestGroups:     []srvc.TestGroup{},
+		ShortId: "aplusb",
 	})
 	require.NoError(t, err)
 
