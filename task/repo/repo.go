@@ -13,6 +13,68 @@ type taskPgRepo struct {
 	pool *pgxpool.Pool
 }
 
+// UpdateStatement implements srvc.TaskPgRepo.
+func (r *taskPgRepo) UpdateStatement(ctx context.Context, taskId string, statement srvc.MarkdownStatement) error {
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+
+	// Defer rollback in case of error - transaction is committed later if successful
+	defer tx.Rollback(ctx)
+
+	// Check if the task exists
+	var exists bool
+	err = tx.QueryRow(ctx, `
+		SELECT EXISTS(SELECT 1 FROM tasks WHERE short_id = $1)
+	`, taskId).Scan(&exists)
+	if err != nil {
+		return fmt.Errorf("failed to check if task exists: %w", err)
+	}
+	if !exists {
+		return fmt.Errorf("task with ID %s does not exist", taskId)
+	}
+
+	// Check if statement with this language already exists
+	var statementExists bool
+	err = tx.QueryRow(ctx, `
+		SELECT EXISTS(SELECT 1 FROM task_md_statements WHERE task_short_id = $1 AND lang_iso639 = $2)
+	`, taskId, statement.LangIso639).Scan(&statementExists)
+	if err != nil {
+		return fmt.Errorf("failed to check if statement exists: %w", err)
+	}
+
+	if statementExists {
+		// Update existing statement
+		_, err = tx.Exec(ctx, `
+			UPDATE task_md_statements 
+			SET story = $3, input = $4, output = $5, notes = $6, scoring = $7, talk = $8, example = $9
+			WHERE task_short_id = $1 AND lang_iso639 = $2
+		`, taskId, statement.LangIso639, statement.Story, statement.Input, statement.Output,
+			statement.Notes, statement.Scoring, statement.Talk, statement.Example)
+		if err != nil {
+			return fmt.Errorf("failed to update markdown statement: %w", err)
+		}
+	} else {
+		// Insert new statement
+		_, err = tx.Exec(ctx, `
+			INSERT INTO task_md_statements (task_short_id, lang_iso639, story, input, output, notes, scoring, talk, example)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		`, taskId, statement.LangIso639, statement.Story, statement.Input, statement.Output,
+			statement.Notes, statement.Scoring, statement.Talk, statement.Example)
+		if err != nil {
+			return fmt.Errorf("failed to insert new markdown statement: %w", err)
+		}
+	}
+
+	// Commit the transaction
+	if err = tx.Commit(ctx); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return nil
+}
+
 func NewTaskPgRepo(pool *pgxpool.Pool) *taskPgRepo {
 	return &taskPgRepo{pool: pool}
 }

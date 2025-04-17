@@ -9,14 +9,14 @@ import (
 	"github.com/klauspost/compress/zstd"
 )
 
-// func (ts *TaskSrvc) UpdateStatement(ctx context.Context, taskId string, statement MarkdownStatement) error {
-// 	err := ts.repo.UpdateStatement(ctx, taskId, statement)
-// 	if err != nil {
-// 		return fmt.Errorf("failed to update statement: %w", err)
-// 	}
+func (ts *TaskSrvc) UpdateStatement(ctx context.Context, taskId string, statement MarkdownStatement) error {
+	err := ts.repo.UpdateStatement(ctx, taskId, statement)
+	if err != nil {
+		return fmt.Errorf("failed to update statement: %w", err)
+	}
 
-// 	return nil
-// }
+	return nil
+}
 
 func (ts *TaskSrvc) CreateTask(ctx context.Context, task Task) error {
 	return ts.repo.CreateTask(ctx, task)

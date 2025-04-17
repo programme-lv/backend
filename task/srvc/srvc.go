@@ -19,6 +19,7 @@ type TaskSrvcClient interface {
 	ListTasks(ctx context.Context) ([]Task, error)
 	CreateTask(ctx context.Context, task Task) error
 	ResolveNames(ctx context.Context, shortIds []string) ([]string, error)
+	UpdateStatement(ctx context.Context, taskId string, statement MarkdownStatement) error
 }
 
 type S3BucketFacade interface {
@@ -34,7 +35,7 @@ type TaskPgRepo interface {
 	ResolveNames(ctx context.Context, shortIds []string) ([]string, error)
 	Exists(ctx context.Context, shortId string) (bool, error)
 	CreateTask(ctx context.Context, task Task) error
-	// UpdateStatement(ctx context.Context, taskId string, statement MarkdownStatement) error
+	UpdateStatement(ctx context.Context, taskId string, statement MarkdownStatement) error
 }
 
 type TaskSrvc struct {
