@@ -8,17 +8,17 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-func (h *TaskHttpHandler) UpdateStatement(w http.ResponseWriter, r *http.Request) {
-	type updateStatementRequest struct {
-		Story   string `json:"story"`
-		Input   string `json:"input"`
-		Output  string `json:"output"`
-		Notes   string `json:"notes"`
-		Scoring string `json:"scoring"`
-		Talk    string `json:"talk"`
-		Example string `json:"example"`
-	}
+type PutStatementRequest struct {
+	Story   string `json:"story"`
+	Input   string `json:"input"`
+	Output  string `json:"output"`
+	Notes   string `json:"notes"`
+	Scoring string `json:"scoring"`
+	Talk    string `json:"talk"`
+	Example string `json:"example"`
+}
 
+func (h *TaskHttpHandler) UpdateStatement(w http.ResponseWriter, r *http.Request) {
 	taskId := chi.URLParam(r, "taskId")
 	langIso639 := chi.URLParam(r, "langIso639")
 
@@ -27,7 +27,7 @@ func (h *TaskHttpHandler) UpdateStatement(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	var req updateStatementRequest
+	var req PutStatementRequest
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
