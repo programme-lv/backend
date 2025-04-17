@@ -36,8 +36,6 @@ func (h *TaskHttpHandler) PutStatement(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	slog.Info("updateStatement", "taskId", taskId, "langIso639", langIso639, "req", req)
-
 	err = h.taskSrvc.UpdateStatement(r.Context(), taskId, srvc.MarkdownStatement{
 		LangIso639: langIso639,
 		Story:      req.Story,
@@ -53,5 +51,8 @@ func (h *TaskHttpHandler) PutStatement(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpjson.WriteSuccessJson(w, nil)
+	err = httpjson.WriteSuccessJson(w, nil)
+	if err != nil {
+		slog.Error("failed to write success json", "error", err)
+	}
 }

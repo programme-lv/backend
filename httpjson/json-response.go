@@ -17,17 +17,17 @@ type JsonResponse struct {
 	ErrMsg  string `json:"message,omitempty"`
 }
 
-func WriteSuccessJson(w http.ResponseWriter, data any) {
+func WriteSuccessJson(w http.ResponseWriter, data any) error {
 	resp := JsonResponse{
 		Status: "success",
 		Data:   data,
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(resp)
+	return json.NewEncoder(w).Encode(resp)
 }
 
-func WriteErrorJson(w http.ResponseWriter, errMsg string, statusCode int, errCode string) {
+func WriteErrorJson(w http.ResponseWriter, errMsg string, statusCode int, errCode string) error {
 	resp := JsonResponse{
 		Status:  "error",
 		ErrMsg:  errMsg,
@@ -35,7 +35,7 @@ func WriteErrorJson(w http.ResponseWriter, errMsg string, statusCode int, errCod
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
-	json.NewEncoder(w).Encode(resp)
+	return json.NewEncoder(w).Encode(resp)
 }
 
 func writeInternalErrorJson(w http.ResponseWriter) {
