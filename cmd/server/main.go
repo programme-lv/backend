@@ -16,7 +16,7 @@ import (
 	http2 "github.com/programme-lv/backend/subm/http"
 	pgrepo1 "github.com/programme-lv/backend/subm/pgrepo"
 	"github.com/programme-lv/backend/subm/submsrvc"
-	http1 "github.com/programme-lv/backend/task/http"
+	taskhttp "github.com/programme-lv/backend/task/http"
 	"github.com/programme-lv/backend/task/repo"
 	"github.com/programme-lv/backend/task/srvc"
 	"github.com/programme-lv/backend/user"
@@ -65,7 +65,7 @@ func main() {
 	slog.Info("Task service initialized")
 
 	submHttpHandler := newSubmHttpHandler(userSrvc, taskSrvc, execSrvc)
-	taskHttpHandler := http1.NewTaskHttpHandler(taskSrvc)
+	taskHttpHandler := taskhttp.NewTaskHttpHandler(taskSrvc)
 	cookieDomain := os.Getenv("COOKIE_DOMAIN")
 	userHttpHandler := userhttp.NewUserHttpHandler(userSrvc, []byte(jwtKey), userhttp.WithCookieDomain(cookieDomain))
 
