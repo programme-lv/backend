@@ -11,7 +11,7 @@ import (
 )
 
 func TestLoginHttp(t *testing.T) {
-	userHandler := setupUserHttpHandler(t)
+	userHandler := newUserHttpHandler(t)
 
 	// Register a user first
 	userData := map[string]interface{}{
@@ -80,7 +80,7 @@ func TestLoginHttp(t *testing.T) {
 }
 
 func TestLoginHttpInvalidCredentials(t *testing.T) {
-	userHandler := setupUserHttpHandler(t)
+	userHandler := newUserHttpHandler(t)
 
 	// Register a user first
 	userData := map[string]interface{}{

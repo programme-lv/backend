@@ -43,7 +43,7 @@ func newTestPgDb(t *testing.T) *pgxpool.Pool {
 	return pool
 }
 
-func setupUserHttpHandler(t *testing.T) http.Handler {
+func newUserHttpHandler(t *testing.T) http.Handler {
 	pg := newTestPgDb(t)
 	userSrvc := user.NewUserService(pg)
 	userHandler := userhttp.NewUserHttpHandler(userSrvc, []byte("test"))
@@ -110,18 +110,6 @@ func login(t *testing.T, handler http.Handler, loginData map[string]interface{})
 	return w
 }
 
-func whoami(t *testing.T, handler http.Handler, token string) *httptest.ResponseRecorder {
-	t.Helper()
-	req, err := newJsonReq(http.MethodGet, "/whoami", nil)
-	if err != nil {
-		t.Fatalf("Failed to create request: %v", err)
-	}
-
-	w := httptest.NewRecorder()
-	handler.ServeHTTP(w, req)
-	return w
-}
-
 // getRole sends a request to the role endpoint and returns the role from the response
 func getRole(t *testing.T, handler http.Handler, token string) string {
 	t.Helper()
@@ -156,7 +144,7 @@ func getRole(t *testing.T, handler http.Handler, token string) string {
 
 // registerAndLogin registers a new user with the given username and logs them in,
 // returning the JWT token from the cookie
-func registerAndLogin(t *testing.T, handler http.Handler, username string) string {
+func registerAndLogin(t *testing.T, userHttpHandler http.Handler, username string) string {
 	t.Helper()
 	// Register user
 	userData := map[string]interface{}{
@@ -166,7 +154,7 @@ func registerAndLogin(t *testing.T, handler http.Handler, username string) strin
 		"lastname":  "User",
 		"password":  "password123",
 	}
-	w := register(t, handler, userData)
+	w := register(t, userHttpHandler, userData)
 	require.Equal(t, http.StatusOK, w.Code)
 
 	// Login user
@@ -174,7 +162,7 @@ func registerAndLogin(t *testing.T, handler http.Handler, username string) strin
 		"username": username,
 		"password": "password123",
 	}
-	w = login(t, handler, loginData)
+	w = login(t, userHttpHandler, loginData)
 	require.Equal(t, http.StatusOK, w.Code)
 
 	// Extract token from cookie

@@ -12,7 +12,7 @@ import (
 )
 
 func TestWhoAmIHttpAuthenticated(t *testing.T) {
-	userHandler := setupUserHttpHandler(t)
+	userHandler := newUserHttpHandler(t)
 
 	// Register a user first
 	userData := map[string]interface{}{
@@ -94,7 +94,7 @@ func TestWhoAmIHttpAuthenticated(t *testing.T) {
 }
 
 func TestWhoAmIHttpUnauthenticated(t *testing.T) {
-	userHandler := setupUserHttpHandler(t)
+	userHandler := newUserHttpHandler(t)
 
 	// Make whoami request without auth token
 	req := httptest.NewRequest(http.MethodGet, "/whoami", nil)

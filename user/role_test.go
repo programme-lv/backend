@@ -7,7 +7,7 @@ import (
 )
 
 func TestGetRoleHttp(t *testing.T) {
-	h := setupUserHttpHandler(t)
+	h := newUserHttpHandler(t)
 
 	// Test 1: Guest role (no login)
 	t.Run("Guest Role", func(t *testing.T) {
