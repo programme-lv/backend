@@ -122,5 +122,19 @@
     { "Points": 6, "Public": false, "TestIDs": [72, 73, 74, 75] },
     { "Points": 6, "Public": false, "TestIDs": [76, 77, 78, 79] },
     { "Points": 6, "Public": false, "TestIDs": [80, 81, 82, 83] }
+  ],
+  "MdImages": [
+    {
+      "S3Uri": "https://proglv-public.s3.eu-central-1.amazonaws.com/task-images/aplusbirc/1.png",
+      "Filename": "1.png",
+      "WidthPx": 100,
+      "HeightPx": 100
+    },
+    {
+      "S3Uri": "https://proglv-public.s3.eu-central-1.amazonaws.com/task-images/aplusbirc/2.png",
+      "Filename": "2.png",
+      "WidthPx": 100,
+      "HeightPx": 100
+    }
   ]
 }

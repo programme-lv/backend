@@ -28,4 +28,5 @@ func NewTaskHttpHandler(taskSrvc srvc.TaskSrvcClient) *TaskHttpHandler {
 func (h *TaskHttpHandler) RegisterRoutes(r *chi.Mux) {
 	r.Get("/tasks", h.ListTasks)
 	r.Get("/tasks/{taskId}", h.GetTask)
+	r.Put("/tasks/{taskId}/statements/{langIso639}", h.UpdateStatement)
 }

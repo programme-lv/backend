@@ -462,7 +462,7 @@ func processMdStatement(taskSrvc srvc.TaskSrvcClient, fsTask *fstask.Task, mdSta
 	var mu sync.Mutex
 	var uploadErr error
 
-	images := make([]srvc.MdImgInfo, 0)
+	images := make([]srvc.StatementImage, 0)
 
 	// Iterate through the uuidToAsset map
 	for uuidKey, originalURL := range sttmntImgUuidToUrl {
@@ -556,22 +556,12 @@ func processMdStatement(taskSrvc srvc.TaskSrvcClient, fsTask *fstask.Task, mdSta
 				Str("s3Key", s3Url).
 				Msg("Uploaded markdown image")
 
-			// Optionally, update widthEm based on some logic or markdown parsing
-			widthEm := 0
-			for _, imgInfo := range mdStatement.ImgSizes {
-				if imgInfo.ImgPath == oURL {
-					widthEm = imgInfo.WidthEm
-					break
-				}
-			}
-
 			mu.Lock()
-			images = append(images, srvc.MdImgInfo{
-				Uuid:     uKey,
+			images = append(images, srvc.StatementImage{
 				WidthPx:  newWidth,
 				HeightPx: newHeight,
-				WidthEm:  widthEm,
-				S3Url:    s3Url,
+				S3Uri:    s3Url,
+				Filename: fmt.Sprintf("TODO-%s", uKey), // TODO: implement. the images are not even added anymore to the task.
 			})
 			mu.Unlock()
 		}(uuidKey, originalURL)
@@ -594,7 +584,6 @@ func processMdStatement(taskSrvc srvc.TaskSrvcClient, fsTask *fstask.Task, mdSta
 		Scoring:    modifiedScoring,
 		Talk:       modifiedTalk,
 		Example:    modifiedExample,
-		Images:     images,
 	}, nil
 }
 

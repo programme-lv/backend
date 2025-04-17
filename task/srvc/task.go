@@ -23,6 +23,7 @@ type Task struct {
 
 	// statement
 	MdStatements   []MarkdownStatement
+	MdImages       []StatementImage
 	PdfStatements  []PdfStatement
 	VisInpSubtasks []VisibleInputSubtask
 	Examples       []Example
@@ -77,7 +78,7 @@ type VisInpSubtaskTest struct {
 }
 
 type MarkdownStatement struct {
-	LangIso639 string
+	LangIso639 string // primary key of the statement of task
 
 	Story   string
 	Input   string
@@ -86,17 +87,13 @@ type MarkdownStatement struct {
 	Scoring string
 	Talk    string // communication in interactive tasks
 	Example string // example in interactive tasks
-
-	Images []MdImgInfo
 }
 
-type MdImgInfo struct {
-	Uuid  string
-	S3Url string
-
-	WidthPx  int
-	HeightPx int
-	WidthEm  int
+type StatementImage struct {
+	S3Uri    string // e.g. s3://proglv-public/task-md-images/<sanitized-filename>.png
+	Filename string // filename of the image, e.g., nekoks.png
+	WidthPx  int    // og width [px] stored in s3
+	HeightPx int    // og height [px] stored in s3
 }
 
 type Subtask struct {
