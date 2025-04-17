@@ -37,7 +37,7 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 		&t.Interactor,
 	)
 	if err != nil {
-		return t, err
+		return t, fmt.Errorf("failed to load task: %w", err)
 	}
 
 	// Load OriginNotes.
@@ -47,13 +47,13 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 		WHERE task_short_id = $1
 	`, shortId)
 	if err != nil {
-		return t, err
+		return t, fmt.Errorf("failed to load origin notes: %w", err)
 	}
 	for originRows.Next() {
 		var note srvc.OriginNote
 		if err := originRows.Scan(&note.Lang, &note.Info); err != nil {
 			originRows.Close()
-			return t, err
+			return t, fmt.Errorf("failed to load origin note: %w", err)
 		}
 		t.OriginNotes = append(t.OriginNotes, note)
 	}
@@ -66,7 +66,7 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 		WHERE task_short_id = $1
 	`, shortId)
 	if err != nil {
-		return t, err
+		return t, fmt.Errorf("failed to load markdown statements: %w", err)
 	}
 	var mdStatements []srvc.MarkdownStatement
 	for mdStmtRows.Next() {
@@ -74,35 +74,31 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 		var mdStmtID int
 		if err := mdStmtRows.Scan(&mdStmtID, &md.LangIso639, &md.Story, &md.Input, &md.Output, &md.Notes, &md.Scoring, &md.Talk, &md.Example); err != nil {
 			mdStmtRows.Close()
-			return t, err
+			return t, fmt.Errorf("failed to load markdown statement: %w", err)
 		}
-
-		// For each markdown statement, load associated images.
-		imgRows, err := r.pool.Query(ctx, `
-			SELECT uuid, s3_url, width_px, height_px, width_em 
-			FROM task_md_statement_images 
-			WHERE md_statement_id = $1
-		`, mdStmtID)
-		if err != nil {
-			mdStmtRows.Close()
-			return t, err
-		}
-		var images []srvc.MdImgInfo
-		for imgRows.Next() {
-			var img srvc.MdImgInfo
-			if err := imgRows.Scan(&img.Uuid, &img.S3Url, &img.WidthPx, &img.HeightPx, &img.WidthEm); err != nil {
-				imgRows.Close()
-				mdStmtRows.Close()
-				return t, err
-			}
-			images = append(images, img)
-		}
-		imgRows.Close()
-		md.Images = images
 		mdStatements = append(mdStatements, md)
 	}
 	mdStmtRows.Close()
 	t.MdStatements = mdStatements
+	taskImgsRows, err := r.pool.Query(ctx, `
+		SELECT s3_uri, file_name, width_px, height_px 
+		FROM task_images 
+		WHERE task_short_id = $1
+	`, shortId)
+	if err != nil {
+		return t, fmt.Errorf("failed to load task images: %w", err)
+	}
+	var taskImgs []srvc.StatementImage
+	for taskImgsRows.Next() {
+		var img srvc.StatementImage
+		if err := taskImgsRows.Scan(&img.S3Uri, &img.Filename, &img.WidthPx, &img.HeightPx); err != nil {
+			taskImgsRows.Close()
+			return t, fmt.Errorf("failed to load task image: %w", err)
+		}
+		taskImgs = append(taskImgs, img)
+	}
+	taskImgsRows.Close()
+	t.MdImages = taskImgs
 
 	// Load PDF statements.
 	pdfRows, err := r.pool.Query(ctx, `
@@ -111,14 +107,14 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 		WHERE task_short_id = $1
 	`, shortId)
 	if err != nil {
-		return t, err
+		return t, fmt.Errorf("failed to load pdf statements: %w", err)
 	}
 	var pdfStatements []srvc.PdfStatement
 	for pdfRows.Next() {
 		var pdf srvc.PdfStatement
 		if err := pdfRows.Scan(&pdf.LangIso639, &pdf.ObjectUrl); err != nil {
 			pdfRows.Close()
-			return t, err
+			return t, fmt.Errorf("failed to load pdf statement: %w", err)
 		}
 		pdfStatements = append(pdfStatements, pdf)
 	}
@@ -132,7 +128,7 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 		WHERE task_short_id = $1
 	`, shortId)
 	if err != nil {
-		return t, err
+		return t, fmt.Errorf("failed to load visible input subtasks: %w", err)
 	}
 	var visInpSubtasks []srvc.VisibleInputSubtask
 	for visRows.Next() {
@@ -140,7 +136,7 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 		var dbSubtaskID int
 		if err := visRows.Scan(&dbSubtaskID, &subtask.SubtaskId); err != nil {
 			visRows.Close()
-			return t, err
+			return t, fmt.Errorf("failed to load visible input subtask: %w", err)
 		}
 
 		// Load tests for this visible input subtask.
@@ -151,7 +147,7 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 		`, dbSubtaskID)
 		if err != nil {
 			visRows.Close()
-			return t, err
+			return t, fmt.Errorf("failed to load visible input subtask tests: %w", err)
 		}
 		var visTests []srvc.VisInpSubtaskTest
 		for testRows.Next() {
@@ -177,14 +173,14 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 		WHERE task_short_id = $1
 	`, shortId)
 	if err != nil {
-		return t, err
+		return t, fmt.Errorf("failed to load examples: %w", err)
 	}
 	var examples []srvc.Example
 	for exRows.Next() {
 		var ex srvc.Example
 		if err := exRows.Scan(&ex.Input, &ex.Output, &ex.MdNote); err != nil {
 			exRows.Close()
-			return t, err
+			return t, fmt.Errorf("failed to load example: %w", err)
 		}
 		examples = append(examples, ex)
 	}
@@ -198,14 +194,14 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 		WHERE task_short_id = $1
 	`, shortId)
 	if err != nil {
-		return t, err
+		return t, fmt.Errorf("failed to load evaluation tests: %w", err)
 	}
 	var tests []srvc.Test
 	for testEvalRows.Next() {
 		var test srvc.Test
 		if err := testEvalRows.Scan(&test.InpSha2, &test.AnsSha2); err != nil {
 			testEvalRows.Close()
-			return t, err
+			return t, fmt.Errorf("failed to load evaluation test: %w", err)
 		}
 		tests = append(tests, test)
 	}
@@ -220,7 +216,7 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 		ORDER BY id
 	`, shortId)
 	if err != nil {
-		return t, err
+		return t, fmt.Errorf("failed to load scoring subtasks: %w", err)
 	}
 	var subtasks []srvc.Subtask
 	for subtaskRows.Next() {
@@ -230,11 +226,11 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 		var descBytes []byte
 		if err := subtaskRows.Scan(&stID, &st.Score, &descBytes); err != nil {
 			subtaskRows.Close()
-			return t, err
+			return t, fmt.Errorf("failed to load scoring subtask: %w", err)
 		}
 		if err := json.Unmarshal(descBytes, &st.Descriptions); err != nil {
 			subtaskRows.Close()
-			return t, fmt.Errorf("unmarshal descriptions: %w", err)
+			return t, fmt.Errorf("failed to unmarshal descriptions: %w", err)
 		}
 
 		// Load associated test IDs for this subtask.
@@ -245,7 +241,7 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 		`, stID)
 		if err != nil {
 			subtaskRows.Close()
-			return t, err
+			return t, fmt.Errorf("failed to load subtask test IDs: %w", err)
 		}
 		var testIDs []int
 		for testIdRows.Next() {
@@ -253,7 +249,7 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 			if err := testIdRows.Scan(&tid); err != nil {
 				testIdRows.Close()
 				subtaskRows.Close()
-				return t, err
+				return t, fmt.Errorf("failed to load subtask test ID: %w", err)
 			}
 			testIDs = append(testIDs, tid)
 		}
@@ -271,7 +267,7 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 		WHERE task_short_id = $1
 	`, shortId)
 	if err != nil {
-		return t, err
+		return t, fmt.Errorf("failed to load test groups: %w", err)
 	}
 	var testGroups []srvc.TestGroup
 	for tgRows.Next() {
@@ -279,7 +275,7 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 		var tgID int
 		if err := tgRows.Scan(&tgID, &tg.Points, &tg.Public); err != nil {
 			tgRows.Close()
-			return t, err
+			return t, fmt.Errorf("failed to load test group: %w", err)
 		}
 		// Load test IDs for this test group.
 		tgTestRows, err := r.pool.Query(ctx, `
@@ -289,7 +285,7 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 		`, tgID)
 		if err != nil {
 			tgRows.Close()
-			return t, err
+			return t, fmt.Errorf("failed to load test group test IDs: %w", err)
 		}
 		var tgTestIDs []int
 		for tgTestRows.Next() {
@@ -297,7 +293,7 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 			if err := tgTestRows.Scan(&tid); err != nil {
 				tgTestRows.Close()
 				tgRows.Close()
-				return t, err
+				return t, fmt.Errorf("failed to load test group test ID: %w", err)
 			}
 			tgTestIDs = append(tgTestIDs, tid)
 		}
@@ -320,7 +316,7 @@ func (r *taskPgRepo) ListTasks(ctx context.Context, limit int, offset int) ([]sr
 		LIMIT $1 OFFSET $2
 	`, limit, offset)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to load tasks: %w", err)
 	}
 	defer rows.Close()
 
@@ -328,11 +324,11 @@ func (r *taskPgRepo) ListTasks(ctx context.Context, limit int, offset int) ([]sr
 	for rows.Next() {
 		var shortId string
 		if err := rows.Scan(&shortId); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to load task short ID: %w", err)
 		}
 		task, err := r.GetTask(ctx, shortId)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to load task: %w", err)
 		}
 		tasks = append(tasks, task)
 	}
@@ -347,7 +343,7 @@ func (r *taskPgRepo) ResolveNames(ctx context.Context, shortIds []string) ([]str
 		ORDER BY short_id
 	`, shortIds)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to resolve names: %w", err)
 	}
 	defer rows.Close()
 
@@ -355,7 +351,7 @@ func (r *taskPgRepo) ResolveNames(ctx context.Context, shortIds []string) ([]str
 	for rows.Next() {
 		var fullName string
 		if err := rows.Scan(&fullName); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to load full name: %w", err)
 		}
 		names = append(names, fullName)
 	}
@@ -365,7 +361,10 @@ func (r *taskPgRepo) ResolveNames(ctx context.Context, shortIds []string) ([]str
 func (r *taskPgRepo) Exists(ctx context.Context, shortId string) (bool, error) {
 	var exists bool
 	err := r.pool.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM tasks WHERE short_id = $1)", shortId).Scan(&exists)
-	return exists, err
+	if err != nil {
+		return false, fmt.Errorf("failed to check if task exists: %w", err)
+	}
+	return exists, nil
 }
 
 // CreateTask creates a new task and all its nested entities, if it does not exist yet.
@@ -373,7 +372,7 @@ func (r *taskPgRepo) CreateTask(ctx context.Context, t srvc.Task) error {
 	// Check if the task already exists.
 	exists, err := r.Exists(ctx, t.ShortId)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to check if task exists: %w", err)
 	}
 	if exists {
 		return fmt.Errorf("task %s already exists", t.ShortId)
@@ -381,7 +380,7 @@ func (r *taskPgRepo) CreateTask(ctx context.Context, t srvc.Task) error {
 
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
 	// Ensure proper transaction handling.
 	defer func() {
@@ -398,7 +397,7 @@ func (r *taskPgRepo) CreateTask(ctx context.Context, t srvc.Task) error {
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 	`, t.ShortId, t.FullName, t.IllustrImgUrl, t.MemLimMegabytes, t.CpuTimeLimSecs, t.OriginOlympiad, t.DifficultyRating, t.Checker, t.Interactor)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to insert main task: %w", err)
 	}
 
 	// Insert origin notes.
@@ -408,7 +407,7 @@ func (r *taskPgRepo) CreateTask(ctx context.Context, t srvc.Task) error {
 			VALUES ($1, $2, $3)
 		`, t.ShortId, note.Lang, note.Info)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to insert origin note: %w", err)
 		}
 	}
 
@@ -421,16 +420,16 @@ func (r *taskPgRepo) CreateTask(ctx context.Context, t srvc.Task) error {
 			RETURNING id
 		`, t.ShortId, md.LangIso639, md.Story, md.Input, md.Output, md.Notes, md.Scoring, md.Talk, md.Example).Scan(&mdStmtID)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to insert markdown statement: %w", err)
 		}
-		for _, img := range md.Images {
-			_, err = tx.Exec(ctx, `
-				INSERT INTO task_md_statement_images (md_statement_id, uuid, s3_url, width_px, height_px, width_em)
-				VALUES ($1, $2, $3, $4, $5, $6)
-			`, mdStmtID, img.Uuid, img.S3Url, img.WidthPx, img.HeightPx, img.WidthEm)
-			if err != nil {
-				return err
-			}
+	}
+	for _, img := range t.MdImages {
+		_, err = tx.Exec(ctx, `
+			INSERT INTO task_images (task_short_id, s3_uri, file_name, width_px, height_px)
+			VALUES ($1, $2, $3, $4, $5)
+		`, t.ShortId, img.S3Uri, img.Filename, img.WidthPx, img.HeightPx)
+		if err != nil {
+			return fmt.Errorf("failed to insert markdown image: %w", err)
 		}
 	}
 
@@ -441,7 +440,7 @@ func (r *taskPgRepo) CreateTask(ctx context.Context, t srvc.Task) error {
 			VALUES ($1, $2, $3)
 		`, t.ShortId, pdf.LangIso639, pdf.ObjectUrl)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to insert pdf statement: %w", err)
 		}
 	}
 
@@ -454,7 +453,7 @@ func (r *taskPgRepo) CreateTask(ctx context.Context, t srvc.Task) error {
 			RETURNING id
 		`, t.ShortId, vis.SubtaskId).Scan(&visSubtaskID)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to insert visible input subtask: %w", err)
 		}
 		for _, visTest := range vis.Tests {
 			_, err = tx.Exec(ctx, `
@@ -462,7 +461,7 @@ func (r *taskPgRepo) CreateTask(ctx context.Context, t srvc.Task) error {
 				VALUES ($1, $2, $3)
 			`, visSubtaskID, visTest.TestId, visTest.Input)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to insert visible input subtask test: %w", err)
 			}
 		}
 	}
@@ -474,7 +473,7 @@ func (r *taskPgRepo) CreateTask(ctx context.Context, t srvc.Task) error {
 			VALUES ($1, $2, $3, $4)
 		`, t.ShortId, ex.Input, ex.Output, ex.MdNote)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to insert example: %w", err)
 		}
 	}
 
@@ -485,7 +484,7 @@ func (r *taskPgRepo) CreateTask(ctx context.Context, t srvc.Task) error {
 			VALUES ($1, $2, $3)
 		`, t.ShortId, test.InpSha2, test.AnsSha2)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to insert evaluation test: %w", err)
 		}
 	}
 
@@ -502,7 +501,7 @@ func (r *taskPgRepo) CreateTask(ctx context.Context, t srvc.Task) error {
 			RETURNING id
 		`, t.ShortId, st.Score, descBytes).Scan(&subtaskID)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to insert scoring subtask: %w", err)
 		}
 		for _, tid := range st.TestIDs {
 			_, err = tx.Exec(ctx, `
@@ -510,7 +509,7 @@ func (r *taskPgRepo) CreateTask(ctx context.Context, t srvc.Task) error {
 				VALUES ($1, $2)
 			`, subtaskID, tid)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to insert scoring subtask test ID: %w", err)
 			}
 		}
 	}
@@ -524,7 +523,7 @@ func (r *taskPgRepo) CreateTask(ctx context.Context, t srvc.Task) error {
 			RETURNING id
 		`, t.ShortId, tg.Points, tg.Public).Scan(&tgID)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to insert test group: %w", err)
 		}
 		for _, tid := range tg.TestIDs {
 			_, err = tx.Exec(ctx, `
@@ -532,7 +531,7 @@ func (r *taskPgRepo) CreateTask(ctx context.Context, t srvc.Task) error {
 				VALUES ($1, $2)
 			`, tgID, tid)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to insert test group test ID: %w", err)
 			}
 		}
 	}

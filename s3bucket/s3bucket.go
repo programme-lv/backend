@@ -53,7 +53,7 @@ func NewS3Bucket(region string, bucket string) (*S3Bucket, error) {
 }
 
 // Upload uploads the given content to the S3 bucket with the specified key and media type.
-// It returns the URL of the uploaded object or an error if the upload fails.
+// It returns the URI of the uploaded object or an error if the upload fails.
 //
 // Parameters:
 //   - content: The byte slice containing the content to be uploaded.
@@ -61,7 +61,7 @@ func NewS3Bucket(region string, bucket string) (*S3Bucket, error) {
 //   - mediaType: The MIME type of the content being uploaded.
 //
 // Returns:
-//   - string: The URL of the uploaded object.
+//   - string: The URI of the uploaded object.
 //   - error: An error if the upload fails, otherwise nil.
 func (bucket *S3Bucket) Upload(content []byte, key string, mediaType string) (string, error) {
 	_, err := bucket.client.PutObject(context.TODO(), &s3.PutObjectInput{
@@ -74,10 +74,10 @@ func (bucket *S3Bucket) Upload(content []byte, key string, mediaType string) (st
 		return "", fmt.Errorf("failed to upload object: %w", err)
 	}
 
-	// Construct the Object URL
-	objectURL := fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", bucket.bucket, bucket.region, key)
+	// Construct the Object URI
+	objectURI := fmt.Sprintf("s3://%s/%s", bucket.bucket, key)
 
-	return objectURL, nil
+	return objectURI, nil
 }
 
 func (bucket *S3Bucket) Exists(key string) (bool, error) {

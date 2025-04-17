@@ -13,14 +13,14 @@ type Example struct {
 }
 
 type MdStatement struct {
-	Story   string  `json:"story"`
-	Input   string  `json:"input"`
-	Output  string  `json:"output"`
-	Notes   string  `json:"notes"`
-	Scoring string  `json:"scoring"`
-	Talk    string  `json:"talk"`
-	Example string  `json:"example"`
-	Images  []MdImg `json:"images"`
+	Story   string `json:"story"`
+	Input   string `json:"input"`
+	Output  string `json:"output"`
+	Notes   string `json:"notes"`
+	Scoring string `json:"scoring"`
+	Talk    string `json:"talk"`
+	Example string `json:"example"`
+	// Images  []MdImg `json:"images"`
 }
 
 type MdImg struct {
@@ -69,19 +69,19 @@ func mapTaskMdStatement(md *srvc.MarkdownStatement) MdStatement {
 	if md == nil {
 		return MdStatement{}
 	}
-	imgSizes := make([]MdImg, len(md.Images))
-	for i, img := range md.Images {
-		oldPrefix := "https://proglv-public.s3.eu-central-1.amazonaws.com/"
-		newPrefix := PublicCloudfrontEndpoint
-		httpUrl := strings.Replace(img.S3Url, oldPrefix, newPrefix, 1)
-		imgSizes[i] = MdImg{
-			ImgUuid:  img.Uuid,
-			HttpUrl:  httpUrl,
-			WidthEm:  img.WidthEm,
-			WidthPx:  img.WidthPx,
-			HeightPx: img.HeightPx,
-		}
-	}
+	// imgSizes := make([]MdImg, len(md.Images))
+	// for i, img := range md.Images {
+	// 	oldPrefix := "https://proglv-public.s3.eu-central-1.amazonaws.com/"
+	// 	newPrefix := PublicCloudfrontEndpoint
+	// 	httpUrl := strings.Replace(img.S3Url, oldPrefix, newPrefix, 1)
+	// 	imgSizes[i] = MdImg{
+	// 		ImgUuid:  img.Uuid,
+	// 		HttpUrl:  httpUrl,
+	// 		WidthEm:  img.WidthEm,
+	// 		WidthPx:  img.WidthPx,
+	// 		HeightPx: img.HeightPx,
+	// 	}
+	// }
 	return MdStatement{
 		Story:   md.Story,
 		Input:   md.Input,
@@ -90,8 +90,7 @@ func mapTaskMdStatement(md *srvc.MarkdownStatement) MdStatement {
 		Scoring: md.Scoring,
 		Talk:    md.Talk,
 		Example: md.Example,
-
-		Images: imgSizes,
+		// Images: imgSizes,
 	}
 }
 
