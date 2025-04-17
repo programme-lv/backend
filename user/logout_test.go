@@ -10,7 +10,7 @@ import (
 )
 
 func TestLogout(t *testing.T) {
-	userHandler := setupUserHttpHandler(t)
+	userHandler := newUserHttpHandler(t)
 
 	// Register and login a user to get a token
 	token := registerAndLogin(t, userHandler, "testuser")

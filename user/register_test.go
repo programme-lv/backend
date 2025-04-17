@@ -11,7 +11,7 @@ import (
 )
 
 func TestRegisterHttp(t *testing.T) {
-	userHandler := setupUserHttpHandler(t)
+	userHandler := newUserHttpHandler(t)
 
 	userData := map[string]interface{}{
 		"username":  "testuser",
@@ -43,7 +43,7 @@ func TestRegisterHttp(t *testing.T) {
 }
 
 func TestRegisterHttpDuplicateUsername(t *testing.T) {
-	userHandler := setupUserHttpHandler(t)
+	userHandler := newUserHttpHandler(t)
 
 	// Create first user
 	firstUserData := map[string]interface{}{
@@ -71,7 +71,7 @@ func TestRegisterHttpDuplicateUsername(t *testing.T) {
 }
 
 func TestRegisterHttpDuplicateEmail(t *testing.T) {
-	userHandler := setupUserHttpHandler(t)
+	userHandler := newUserHttpHandler(t)
 
 	// Create first user
 	firstUserData := map[string]interface{}{

@@ -8,6 +8,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/programme-lv/backend/httpjson"
 	"github.com/programme-lv/backend/task/srvc"
+	"github.com/programme-lv/backend/user/auth"
 )
 
 type PutStatementRequest struct {
@@ -21,6 +22,13 @@ type PutStatementRequest struct {
 }
 
 func (h *TaskHttpHandler) PutStatement(w http.ResponseWriter, r *http.Request) {
+	claims, ok := r.Context().Value(auth.CtxJwtClaimsKey).(*auth.JwtClaims)
+	if !ok || claims == nil || claims.Username != "admin" {
+		httpjson.WriteErrorJson(w, "Can't edit statement as non-admin user", http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	// Continue with regular handler logic
 	taskId := chi.URLParam(r, "taskId")
 	langIso639 := chi.URLParam(r, "langIso639")
 

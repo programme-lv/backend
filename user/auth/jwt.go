@@ -21,7 +21,7 @@ type ClaimsKeyType string
 
 var CtxJwtClaimsKey ClaimsKeyType = "jwtClaims"
 
-func GenerateJWT(username, email string, uuid uuid.UUID, firstname, lastname *string, jwtKey []byte, validFor time.Duration) (string, error) {
+func GenerateJWT(username, email string, uuid uuid.UUID, jwtKey []byte, validFor time.Duration) (string, error) {
 	expirationTime := time.Now().Add(validFor)
 
 	claims := &JwtClaims{

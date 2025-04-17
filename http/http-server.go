@@ -194,7 +194,7 @@ func (httpserver *HttpServer) routes() {
 
 	httpserver.submHttpHandler.RegisterRoutes(r, httpserver.JwtKey)
 	httpserver.userHttpHandler.RegisterRoutes(r)
-	httpserver.taskHttpHandler.RegisterRoutes(r)
+	httpserver.taskHttpHandler.RegisterRoutes(r, httpserver.JwtKey)
 
 	// other
 	r.Get("/programming-languages", httpserver.listProgrammingLangs)

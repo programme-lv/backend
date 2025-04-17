@@ -6,6 +6,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/patrickmn/go-cache"
 	"github.com/programme-lv/backend/task/srvc"
+	"github.com/programme-lv/backend/user/auth"
 	"golang.org/x/sync/singleflight"
 )
 
@@ -25,8 +26,11 @@ func NewTaskHttpHandler(taskSrvc srvc.TaskSrvcClient) *TaskHttpHandler {
 	}
 }
 
-func (h *TaskHttpHandler) RegisterRoutes(r *chi.Mux) {
-	r.Get("/tasks", h.ListTasks)
-	r.Get("/tasks/{taskId}", h.GetTask)
-	r.Put("/tasks/{taskId}/statements/{langIso639}", h.PutStatement)
+func (h *TaskHttpHandler) RegisterRoutes(r *chi.Mux, jwtKey []byte) {
+	r.Group(func(r chi.Router) {
+		r.Use(auth.GetJwtAuthMiddleware(jwtKey))
+		r.Get("/tasks", h.ListTasks)
+		r.Get("/tasks/{taskId}", h.GetTask)
+		r.Put("/tasks/{taskId}/statements/{langIso639}", h.PutStatement)
+	})
 }

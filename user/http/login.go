@@ -34,7 +34,6 @@ func (httpserver *UserHttpHandler) Login(w http.ResponseWriter, r *http.Request)
 	token, err := auth.GenerateJWT(
 		user.Username,
 		user.Email, user.UUID,
-		user.Firstname, user.Lastname,
 		httpserver.jwtKey, validFor)
 	if err != nil {
 		err = fmt.Errorf("failed to generate JWT: %w", err)
