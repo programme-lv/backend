@@ -79,6 +79,10 @@ func TestPutStatementHttpRequest(t *testing.T) {
 	})
 	require.NoError(t, err)
 
+	taskBefore, err := ts.GetTask(context.Background(), "aplusb")
+	require.NoError(t, err)
+	require.Equal(t, 0, len(taskBefore.MdStatements))
+
 	req := taskhttp.PutStatementRequest{
 		Story:   "story",
 		Input:   "input",

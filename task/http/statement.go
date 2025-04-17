@@ -6,6 +6,8 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/programme-lv/backend/httpjson"
+	"github.com/programme-lv/backend/task/srvc"
 )
 
 type PutStatementRequest struct {
@@ -18,7 +20,7 @@ type PutStatementRequest struct {
 	Example string `json:"example"`
 }
 
-func (h *TaskHttpHandler) UpdateStatement(w http.ResponseWriter, r *http.Request) {
+func (h *TaskHttpHandler) PutStatement(w http.ResponseWriter, r *http.Request) {
 	taskId := chi.URLParam(r, "taskId")
 	langIso639 := chi.URLParam(r, "langIso639")
 
@@ -36,6 +38,20 @@ func (h *TaskHttpHandler) UpdateStatement(w http.ResponseWriter, r *http.Request
 
 	slog.Info("updateStatement", "taskId", taskId, "langIso639", langIso639, "req", req)
 
-	// TODO: update statement
+	err = h.taskSrvc.UpdateStatement(r.Context(), taskId, srvc.MarkdownStatement{
+		LangIso639: langIso639,
+		Story:      req.Story,
+		Input:      req.Input,
+		Output:     req.Output,
+		Notes:      req.Notes,
+		Scoring:    req.Scoring,
+		Talk:       req.Talk,
+		Example:    req.Example,
+	})
+	if err != nil {
+		httpjson.HandleError(slog.Default(), w, err)
+		return
+	}
 
+	httpjson.WriteSuccessJson(w, nil)
 }
