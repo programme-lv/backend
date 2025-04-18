@@ -44,7 +44,7 @@ func (h *TaskHttpHandler) PutStatement(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.taskSrvc.UpdateStatement(r.Context(), taskId, srvc.MarkdownStatement{
+	err = h.taskSrvc.UpdateStatementMd(r.Context(), taskId, srvc.MarkdownStatement{
 		LangIso639: langIso639,
 		Story:      req.Story,
 		Input:      req.Input,
@@ -55,7 +55,7 @@ func (h *TaskHttpHandler) PutStatement(w http.ResponseWriter, r *http.Request) {
 		Example:    req.Example,
 	})
 	if err != nil {
-		httpjson.HandleError(slog.Default(), w, err)
+		httpjson.HandleSrvcError(slog.Default(), w, err)
 		return
 	}
 

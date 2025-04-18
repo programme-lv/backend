@@ -18,13 +18,13 @@ func (h *UserHttpHandler) WhoAmI(w http.ResponseWriter, r *http.Request) {
 
 	uuid, err := uuid.Parse(claims.UUID)
 	if err != nil {
-		httpjson.HandleError(slog.Default(), w, err)
+		httpjson.HandleSrvcError(slog.Default(), w, err)
 		return
 	}
 
 	user, err := h.userSrvc.GetUserByUUID(r.Context(), uuid)
 	if err != nil {
-		httpjson.HandleError(slog.Default(), w, err)
+		httpjson.HandleSrvcError(slog.Default(), w, err)
 		return
 	}
 

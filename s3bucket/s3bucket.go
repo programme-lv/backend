@@ -61,7 +61,7 @@ func NewS3Bucket(region string, bucket string) (*S3Bucket, error) {
 //   - mediaType: The MIME type of the content being uploaded.
 //
 // Returns:
-//   - string: The URI of the uploaded object.
+//   - string: The S3 URI of the uploaded object, e.g. s3://proglv-public/task-md-images/<something>.png
 //   - error: An error if the upload fails, otherwise nil.
 func (bucket *S3Bucket) Upload(content []byte, key string, mediaType string) (string, error) {
 	_, err := bucket.client.PutObject(context.TODO(), &s3.PutObjectInput{

@@ -12,14 +12,14 @@ type TaskSrvcClient interface {
 	GetTestDownlUrl(ctx context.Context, testFileSha256 string) (string, error)
 	UploadStatementPdf(ctx context.Context, body []byte) (string, error)
 	UploadIllustrationImg(ctx context.Context, mimeType string, body []byte) (string, error)
-	UploadMarkdownImage(ctx context.Context, mimeType string, body []byte) (string, error)
+	UploadStatementImage(ctx context.Context, taskId string, semanticFilename string, mimeType string, body []byte) (string, error)
 	UploadTestFile(ctx context.Context, body []byte) error
 	GetTask(ctx context.Context, shortId string) (Task, error)
 	GetTaskFullNames(ctx context.Context, shortIds []string) ([]string, error)
 	ListTasks(ctx context.Context) ([]Task, error)
 	CreateTask(ctx context.Context, task Task) error
 	ResolveNames(ctx context.Context, shortIds []string) ([]string, error)
-	UpdateStatement(ctx context.Context, taskId string, statement MarkdownStatement) error
+	UpdateStatementMd(ctx context.Context, taskId string, statement MarkdownStatement) error
 }
 
 type S3BucketFacade interface {
@@ -36,6 +36,7 @@ type TaskPgRepo interface {
 	Exists(ctx context.Context, shortId string) (bool, error)
 	CreateTask(ctx context.Context, task Task) error
 	UpdateStatement(ctx context.Context, taskId string, statement MarkdownStatement) error
+	AddStatementImg(ctx context.Context, taskId string, img StatementImage) error
 }
 
 type TaskSrvc struct {

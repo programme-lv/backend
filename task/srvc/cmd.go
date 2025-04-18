@@ -1,15 +1,18 @@
 package srvc
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"fmt"
+	"image"
 	"mime"
 
+	"github.com/google/uuid"
 	"github.com/klauspost/compress/zstd"
 )
 
-func (ts *TaskSrvc) UpdateStatement(ctx context.Context, taskId string, statement MarkdownStatement) error {
+func (ts *TaskSrvc) UpdateStatementMd(ctx context.Context, taskId string, statement MarkdownStatement) error {
 	err := ts.repo.UpdateStatement(ctx, taskId, statement)
 	if err != nil {
 		return fmt.Errorf("failed to update statement: %w", err)
@@ -46,19 +49,70 @@ func (ts *TaskSrvc) UploadIllustrationImg(ctx context.Context, mimeType string, 
 	return ts.s3PublicBucket.Upload(body, s3Key, mimeType)
 }
 
-// S3 key format: "task-md-images/<sha2>.<extension>"
-func (ts *TaskSrvc) UploadMarkdownImage(ctx context.Context, mimeType string, body []byte) (url string, err error) {
-	sha2 := ts.Sha2Hex(body)
+// S3 key format: "task-md-images/<uuid>.<extension>"
+// returns s3 uri, e.g. s3://proglv-public/task/<taskId>/md-images/<uuid>.png
+func (ts *TaskSrvc) UploadStatementImage(ctx context.Context, taskId string, semanticFilename string, imageMimeType string, body []byte) (url string, err error) {
+	// get the file extension from the mime type, e.g. "image/png" -> ".png"
+	ext, err := getImgExt(imageMimeType)
+	if err != nil {
+		return "", fmt.Errorf("failed to get file extension: %w", err)
+	}
+
+	// get the image width and height in pixels
+	width, height, err := getImgWidthHeighPx(body, imageMimeType)
+	if err != nil {
+		return "", fmt.Errorf("failed to get image width and height: %w", err)
+	}
+
+	// verify that the image heas reasonable dimensions
+	if width > 2000 || height > 2000 || width == 0 || height == 0 {
+		return "", fmt.Errorf("image is too large or has no dimensions")
+	}
+
+	// find the task just to verify that it exists
+	_, err = ts.repo.GetTask(ctx, taskId)
+	if err != nil {
+		return "", fmt.Errorf("failed to get task: %w", err)
+	}
+
+	// generate a new UUID for the image (to avoid collision and reduce complexity when renaming semantic filenames), and upload it to S3
+	newImgUuid := uuid.New().String()
+	s3Key := fmt.Sprintf("task/%s/md-images/%s%s", taskId, newImgUuid, ext)
+	s3Uri, err := ts.s3PublicBucket.Upload(body, s3Key, imageMimeType)
+	if err != nil {
+		return "", fmt.Errorf("failed to upload to S3: %w", err)
+	}
+
+	// update the task with the new image
+	err = ts.repo.AddStatementImg(ctx, taskId, StatementImage{
+		S3Uri:    s3Uri,
+		Filename: semanticFilename,
+		WidthPx:  width,
+		HeightPx: height,
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to add statement imgage: %w", err)
+	}
+	return s3Uri, nil
+}
+
+func getImgExt(mimeType string) (string, error) {
 	exts, err := mime.ExtensionsByType(mimeType)
 	if err != nil {
 		return "", fmt.Errorf("failed to get file extension: %w", err)
 	}
 	if len(exts) == 0 {
-		return "", fmt.Errorf("file extennsion not found")
+		return "", fmt.Errorf("file extension not found")
 	}
-	ext := exts[0]
-	s3Key := fmt.Sprintf("%s/%s%s", "task-md-images", sha2, ext)
-	return ts.s3PublicBucket.Upload(body, s3Key, mimeType)
+	return exts[0], nil
+}
+
+func getImgWidthHeighPx(body []byte, mimeType string) (int, int, error) {
+	img, _, err := image.DecodeConfig(bytes.NewReader(body))
+	if err != nil {
+		return 0, 0, fmt.Errorf("failed to decode image: %w", err)
+	}
+	return img.Width, img.Height, nil
 }
 
 // UploadTestFile uploads a test input or output to S3 after compressing it with Zstandard.

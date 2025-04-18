@@ -44,7 +44,7 @@ func (httpserver *TaskHttpHandler) ListTasks(w http.ResponseWriter, r *http.Requ
 	})
 
 	if err != nil {
-		httpjson.HandleError(slog.Default(), w, err)
+		httpjson.HandleSrvcError(slog.Default(), w, err)
 		return
 	}
 

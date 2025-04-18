@@ -13,6 +13,20 @@ type taskPgRepo struct {
 	pool *pgxpool.Pool
 }
 
+/*
+type StatementImage struct {
+    S3Uri    string // e.g. s3://proglv-public/task-md-images/<sanitized-filename>.png
+    Filename string // filename of the image, e.g., nekoks.png
+    WidthPx  int    // og width [px] stored in s3
+    HeightPx int    // og height [px] stored in s3
+}
+*/
+
+// AddStatementImg implements srvc.TaskPgRepo.
+func (r *taskPgRepo) AddStatementImg(ctx context.Context, taskId string, img srvc.StatementImage) error {
+	panic("unimplemented")
+}
+
 // UpdateStatement implements srvc.TaskPgRepo.
 func (r *taskPgRepo) UpdateStatement(ctx context.Context, taskId string, statement srvc.MarkdownStatement) error {
 	tx, err := r.pool.Begin(ctx)
