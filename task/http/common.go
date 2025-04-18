@@ -23,14 +23,6 @@ type MdStatement struct {
 	// Images  []MdImg `json:"images"`
 }
 
-type MdImg struct {
-	ImgUuid  string `json:"img_uuid"`
-	HttpUrl  string `json:"http_url"`
-	WidthEm  int    `json:"width_em"`
-	WidthPx  int    `json:"width_px"`
-	HeightPx int    `json:"height_px"`
-}
-
 type VisInputSubtask struct {
 	SubtaskID  int                 `json:"subtask"`
 	TestInputs []TestWithOnlyInput `json:"inputs"`
@@ -39,6 +31,13 @@ type VisInputSubtask struct {
 type TestWithOnlyInput struct {
 	TestID int    `json:"test_id"`
 	Input  string `json:"input"`
+}
+
+type StatementImage struct {
+	Filename string `json:"filename"`
+	HttpUrl  string `json:"http_url"`
+	WidthPx  int    `json:"width_px"`
+	HeightPx int    `json:"height_px"`
 }
 
 type Task struct {
@@ -50,6 +49,7 @@ type Task struct {
 	IllustrationImgURL     *string           `json:"illustration_img_url"`
 	DifficultyRating       *int              `json:"difficulty_rating"`
 	DefaultMDStatement     MdStatement       `json:"default_md_statement"`
+	StatementImages        []StatementImage  `json:"statement_images"`
 	Examples               []Example         `json:"examples"`
 	DefaultPDFStatementURL *string           `json:"default_pdf_statement_url"`
 	OriginNotes            map[string]string `json:"origin_notes"`
@@ -194,11 +194,27 @@ func mapTaskResponse(task *srvc.Task) *Task {
 		IllustrationImgURL:     illstrImgUrl,
 		DifficultyRating:       difficultyRating,
 		DefaultMDStatement:     defaultMdStatement,
+		StatementImages:        mapTaskStatementImages(task.MdImages),
 		Examples:               mapTaskExamples(task.Examples),
 		DefaultPDFStatementURL: defaultPdfStatementUrl,
 		OriginNotes:            originNotesAsAMap,
 		VisibleInputSubtasks:   visInputSubtasks,
 		StatementSubtasks:      subtasks,
+	}
+	return response
+}
+
+func mapTaskStatementImages(images []srvc.StatementImage) []StatementImage {
+	response := make([]StatementImage, len(images))
+	for i, image := range images {
+		// image.S3Uri = s3://proglv-public/task-md-images/<uuid or sha or something unique>.png
+		httpUrl := strings.Replace(image.S3Uri, "s3://proglv-public/", PublicCloudfrontEndpoint, 1)
+		response[i] = StatementImage{
+			Filename: image.Filename,
+			HttpUrl:  httpUrl,
+			WidthPx:  image.WidthPx,
+			HeightPx: image.HeightPx,
+		}
 	}
 	return response
 }
