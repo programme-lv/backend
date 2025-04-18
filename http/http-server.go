@@ -78,6 +78,7 @@ func logHTTPReq(ri *HttpReqInfo) {
 		"method", ri.method,
 		"uri", ri.uri,
 		"status", ri.code,
+		"status-text", http.StatusText(ri.code),
 		"written", fmt.Sprintf("%dB", ri.written),
 		"duration", ri.duration,
 		"ip", ri.ipaddr,
