@@ -5,9 +5,8 @@ package submadapter
 import (
 	context "context"
 
+	domain "github.com/programme-lv/backend/subm/domain"
 	mock "github.com/stretchr/testify/mock"
-
-	submdomain "github.com/programme-lv/backend/subm/domain"
 
 	uuid "github.com/google/uuid"
 )
@@ -73,23 +72,79 @@ func (_c *MockSubmRepo_AssignEval_Call) RunAndReturn(run func(context.Context, u
 	return _c
 }
 
+// CountSubms provides a mock function with given fields: ctx
+func (_m *MockSubmRepo) CountSubms(ctx context.Context) (int, error) {
+	ret := _m.Called(ctx)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CountSubms")
+	}
+
+	var r0 int
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context) (int, error)); ok {
+		return rf(ctx)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context) int); ok {
+		r0 = rf(ctx)
+	} else {
+		r0 = ret.Get(0).(int)
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context) error); ok {
+		r1 = rf(ctx)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockSubmRepo_CountSubms_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CountSubms'
+type MockSubmRepo_CountSubms_Call struct {
+	*mock.Call
+}
+
+// CountSubms is a helper method to define mock.On call
+//   - ctx context.Context
+func (_e *MockSubmRepo_Expecter) CountSubms(ctx interface{}) *MockSubmRepo_CountSubms_Call {
+	return &MockSubmRepo_CountSubms_Call{Call: _e.mock.On("CountSubms", ctx)}
+}
+
+func (_c *MockSubmRepo_CountSubms_Call) Run(run func(ctx context.Context)) *MockSubmRepo_CountSubms_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context))
+	})
+	return _c
+}
+
+func (_c *MockSubmRepo_CountSubms_Call) Return(_a0 int, _a1 error) *MockSubmRepo_CountSubms_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockSubmRepo_CountSubms_Call) RunAndReturn(run func(context.Context) (int, error)) *MockSubmRepo_CountSubms_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetSubm provides a mock function with given fields: ctx, id
-func (_m *MockSubmRepo) GetSubm(ctx context.Context, id uuid.UUID) (submdomain.Subm, error) {
+func (_m *MockSubmRepo) GetSubm(ctx context.Context, id uuid.UUID) (domain.Subm, error) {
 	ret := _m.Called(ctx, id)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetSubm")
 	}
 
-	var r0 submdomain.Subm
+	var r0 domain.Subm
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) (submdomain.Subm, error)); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) (domain.Subm, error)); ok {
 		return rf(ctx, id)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) submdomain.Subm); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) domain.Subm); ok {
 		r0 = rf(ctx, id)
 	} else {
-		r0 = ret.Get(0).(submdomain.Subm)
+		r0 = ret.Get(0).(domain.Subm)
 	}
 
 	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
@@ -120,34 +175,34 @@ func (_c *MockSubmRepo_GetSubm_Call) Run(run func(ctx context.Context, id uuid.U
 	return _c
 }
 
-func (_c *MockSubmRepo_GetSubm_Call) Return(_a0 submdomain.Subm, _a1 error) *MockSubmRepo_GetSubm_Call {
+func (_c *MockSubmRepo_GetSubm_Call) Return(_a0 domain.Subm, _a1 error) *MockSubmRepo_GetSubm_Call {
 	_c.Call.Return(_a0, _a1)
 	return _c
 }
 
-func (_c *MockSubmRepo_GetSubm_Call) RunAndReturn(run func(context.Context, uuid.UUID) (submdomain.Subm, error)) *MockSubmRepo_GetSubm_Call {
+func (_c *MockSubmRepo_GetSubm_Call) RunAndReturn(run func(context.Context, uuid.UUID) (domain.Subm, error)) *MockSubmRepo_GetSubm_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // ListSubms provides a mock function with given fields: ctx, limit, offset
-func (_m *MockSubmRepo) ListSubms(ctx context.Context, limit int, offset int) ([]submdomain.Subm, error) {
+func (_m *MockSubmRepo) ListSubms(ctx context.Context, limit int, offset int) ([]domain.Subm, error) {
 	ret := _m.Called(ctx, limit, offset)
 
 	if len(ret) == 0 {
 		panic("no return value specified for ListSubms")
 	}
 
-	var r0 []submdomain.Subm
+	var r0 []domain.Subm
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, int, int) ([]submdomain.Subm, error)); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, int, int) ([]domain.Subm, error)); ok {
 		return rf(ctx, limit, offset)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, int, int) []submdomain.Subm); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, int, int) []domain.Subm); ok {
 		r0 = rf(ctx, limit, offset)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]submdomain.Subm)
+			r0 = ret.Get(0).([]domain.Subm)
 		}
 	}
 
@@ -180,18 +235,18 @@ func (_c *MockSubmRepo_ListSubms_Call) Run(run func(ctx context.Context, limit i
 	return _c
 }
 
-func (_c *MockSubmRepo_ListSubms_Call) Return(_a0 []submdomain.Subm, _a1 error) *MockSubmRepo_ListSubms_Call {
+func (_c *MockSubmRepo_ListSubms_Call) Return(_a0 []domain.Subm, _a1 error) *MockSubmRepo_ListSubms_Call {
 	_c.Call.Return(_a0, _a1)
 	return _c
 }
 
-func (_c *MockSubmRepo_ListSubms_Call) RunAndReturn(run func(context.Context, int, int) ([]submdomain.Subm, error)) *MockSubmRepo_ListSubms_Call {
+func (_c *MockSubmRepo_ListSubms_Call) RunAndReturn(run func(context.Context, int, int) ([]domain.Subm, error)) *MockSubmRepo_ListSubms_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // StoreSubm provides a mock function with given fields: ctx, subm
-func (_m *MockSubmRepo) StoreSubm(ctx context.Context, subm submdomain.Subm) error {
+func (_m *MockSubmRepo) StoreSubm(ctx context.Context, subm domain.Subm) error {
 	ret := _m.Called(ctx, subm)
 
 	if len(ret) == 0 {
@@ -199,7 +254,7 @@ func (_m *MockSubmRepo) StoreSubm(ctx context.Context, subm submdomain.Subm) err
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, submdomain.Subm) error); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, domain.Subm) error); ok {
 		r0 = rf(ctx, subm)
 	} else {
 		r0 = ret.Error(0)
@@ -215,14 +270,14 @@ type MockSubmRepo_StoreSubm_Call struct {
 
 // StoreSubm is a helper method to define mock.On call
 //   - ctx context.Context
-//   - subm submdomain.Subm
+//   - subm domain.Subm
 func (_e *MockSubmRepo_Expecter) StoreSubm(ctx interface{}, subm interface{}) *MockSubmRepo_StoreSubm_Call {
 	return &MockSubmRepo_StoreSubm_Call{Call: _e.mock.On("StoreSubm", ctx, subm)}
 }
 
-func (_c *MockSubmRepo_StoreSubm_Call) Run(run func(ctx context.Context, subm submdomain.Subm)) *MockSubmRepo_StoreSubm_Call {
+func (_c *MockSubmRepo_StoreSubm_Call) Run(run func(ctx context.Context, subm domain.Subm)) *MockSubmRepo_StoreSubm_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(submdomain.Subm))
+		run(args[0].(context.Context), args[1].(domain.Subm))
 	})
 	return _c
 }
@@ -232,61 +287,7 @@ func (_c *MockSubmRepo_StoreSubm_Call) Return(_a0 error) *MockSubmRepo_StoreSubm
 	return _c
 }
 
-func (_c *MockSubmRepo_StoreSubm_Call) RunAndReturn(run func(context.Context, submdomain.Subm) error) *MockSubmRepo_StoreSubm_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// CountSubms provides a mock function with given fields: ctx
-func (_m *MockSubmRepo) CountSubms(ctx context.Context) (int, error) {
-	ret := _m.Called(ctx)
-
-	var r0 int
-	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context) (int, error)); ok {
-		return rf(ctx)
-	}
-	if rf, ok := ret.Get(0).(func(context.Context) int); ok {
-		r0 = rf(ctx)
-	} else {
-		r0 = ret.Get(0).(int)
-	}
-
-	if rf, ok := ret.Get(1).(func(context.Context) error); ok {
-		r1 = rf(ctx)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// CountSubms provides a mock expectation object
-func (_e *MockSubmRepo_Expecter) CountSubms(ctx interface{}) *MockSubmRepo_CountSubms_Call {
-	return &MockSubmRepo_CountSubms_Call{Call: _e.mock.On("CountSubms", ctx)}
-}
-
-// MockSubmRepo_CountSubms_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CountSubms'
-type MockSubmRepo_CountSubms_Call struct {
-	*mock.Call
-}
-
-// Run sets up a mock for CountSubms to run a function
-func (_c *MockSubmRepo_CountSubms_Call) Run(run func(ctx context.Context)) *MockSubmRepo_CountSubms_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context))
-	})
-	return _c
-}
-
-// Return sets up a mock for CountSubms to return
-func (_c *MockSubmRepo_CountSubms_Call) Return(count int, err error) *MockSubmRepo_CountSubms_Call {
-	_c.Call.Return(count, err)
-	return _c
-}
-
-// RunAndReturn sets up a mock for CountSubms to run a function and return the result
-func (_c *MockSubmRepo_CountSubms_Call) RunAndReturn(run func(context.Context) (int, error)) *MockSubmRepo_CountSubms_Call {
+func (_c *MockSubmRepo_StoreSubm_Call) RunAndReturn(run func(context.Context, domain.Subm) error) *MockSubmRepo_StoreSubm_Call {
 	_c.Call.Return(run)
 	return _c
 }

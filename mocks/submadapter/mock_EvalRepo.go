@@ -5,9 +5,8 @@ package submadapter
 import (
 	context "context"
 
+	domain "github.com/programme-lv/backend/subm/domain"
 	mock "github.com/stretchr/testify/mock"
-
-	submdomain "github.com/programme-lv/backend/subm/domain"
 
 	uuid "github.com/google/uuid"
 )
@@ -26,22 +25,22 @@ func (_m *MockEvalRepo) EXPECT() *MockEvalRepo_Expecter {
 }
 
 // GetEval provides a mock function with given fields: ctx, evalUUID
-func (_m *MockEvalRepo) GetEval(ctx context.Context, evalUUID uuid.UUID) (submdomain.Eval, error) {
+func (_m *MockEvalRepo) GetEval(ctx context.Context, evalUUID uuid.UUID) (domain.Eval, error) {
 	ret := _m.Called(ctx, evalUUID)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetEval")
 	}
 
-	var r0 submdomain.Eval
+	var r0 domain.Eval
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) (submdomain.Eval, error)); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) (domain.Eval, error)); ok {
 		return rf(ctx, evalUUID)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) submdomain.Eval); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) domain.Eval); ok {
 		r0 = rf(ctx, evalUUID)
 	} else {
-		r0 = ret.Get(0).(submdomain.Eval)
+		r0 = ret.Get(0).(domain.Eval)
 	}
 
 	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
@@ -72,18 +71,18 @@ func (_c *MockEvalRepo_GetEval_Call) Run(run func(ctx context.Context, evalUUID 
 	return _c
 }
 
-func (_c *MockEvalRepo_GetEval_Call) Return(_a0 submdomain.Eval, _a1 error) *MockEvalRepo_GetEval_Call {
+func (_c *MockEvalRepo_GetEval_Call) Return(_a0 domain.Eval, _a1 error) *MockEvalRepo_GetEval_Call {
 	_c.Call.Return(_a0, _a1)
 	return _c
 }
 
-func (_c *MockEvalRepo_GetEval_Call) RunAndReturn(run func(context.Context, uuid.UUID) (submdomain.Eval, error)) *MockEvalRepo_GetEval_Call {
+func (_c *MockEvalRepo_GetEval_Call) RunAndReturn(run func(context.Context, uuid.UUID) (domain.Eval, error)) *MockEvalRepo_GetEval_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // StoreEval provides a mock function with given fields: ctx, eval
-func (_m *MockEvalRepo) StoreEval(ctx context.Context, eval submdomain.Eval) error {
+func (_m *MockEvalRepo) StoreEval(ctx context.Context, eval domain.Eval) error {
 	ret := _m.Called(ctx, eval)
 
 	if len(ret) == 0 {
@@ -91,7 +90,7 @@ func (_m *MockEvalRepo) StoreEval(ctx context.Context, eval submdomain.Eval) err
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, submdomain.Eval) error); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, domain.Eval) error); ok {
 		r0 = rf(ctx, eval)
 	} else {
 		r0 = ret.Error(0)
@@ -107,14 +106,14 @@ type MockEvalRepo_StoreEval_Call struct {
 
 // StoreEval is a helper method to define mock.On call
 //   - ctx context.Context
-//   - eval submdomain.Eval
+//   - eval domain.Eval
 func (_e *MockEvalRepo_Expecter) StoreEval(ctx interface{}, eval interface{}) *MockEvalRepo_StoreEval_Call {
 	return &MockEvalRepo_StoreEval_Call{Call: _e.mock.On("StoreEval", ctx, eval)}
 }
 
-func (_c *MockEvalRepo_StoreEval_Call) Run(run func(ctx context.Context, eval submdomain.Eval)) *MockEvalRepo_StoreEval_Call {
+func (_c *MockEvalRepo_StoreEval_Call) Run(run func(ctx context.Context, eval domain.Eval)) *MockEvalRepo_StoreEval_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(submdomain.Eval))
+		run(args[0].(context.Context), args[1].(domain.Eval))
 	})
 	return _c
 }
@@ -124,7 +123,7 @@ func (_c *MockEvalRepo_StoreEval_Call) Return(_a0 error) *MockEvalRepo_StoreEval
 	return _c
 }
 
-func (_c *MockEvalRepo_StoreEval_Call) RunAndReturn(run func(context.Context, submdomain.Eval) error) *MockEvalRepo_StoreEval_Call {
+func (_c *MockEvalRepo_StoreEval_Call) RunAndReturn(run func(context.Context, domain.Eval) error) *MockEvalRepo_StoreEval_Call {
 	_c.Call.Return(run)
 	return _c
 }

@@ -42,7 +42,6 @@ type TaskPgRepo interface {
 type TaskSrvc struct {
 	s3PublicBucket   S3BucketFacade
 	s3TestfileBucket S3BucketFacade
-	s3TaskBucket     S3BucketFacade
 
 	repo TaskPgRepo
 }
@@ -65,27 +64,10 @@ func (ts *TaskSrvc) GetTestDownlUrl(ctx context.Context, testFileSha256 string) 
 	return presignedUrl, nil
 }
 
-func NewTaskSrvc(repo TaskPgRepo) (TaskSrvcClient, error) {
-	publicS3, err := s3bucket.NewS3Bucket("eu-central-1", "proglv-public")
-	if err != nil {
-		format := "failed to create S3 bucket: %w"
-		return nil, fmt.Errorf(format, err)
-	}
-	testS3, err := s3bucket.NewS3Bucket("eu-central-1", "proglv-tests")
-	if err != nil {
-		format := "failed to create S3 bucket: %w"
-		return nil, fmt.Errorf(format, err)
-	}
-	taskS3, err := s3bucket.NewS3Bucket("eu-central-1", "proglv-tasks")
-	if err != nil {
-		format := "failed to create S3 bucket: %w"
-		return nil, fmt.Errorf(format, err)
-	}
-
+func NewTaskSrvc(repo TaskPgRepo, publicS3, testS3 *s3bucket.S3Bucket) (TaskSrvcClient, error) {
 	return &TaskSrvc{
 		s3PublicBucket:   publicS3,
 		s3TestfileBucket: testS3,
-		s3TaskBucket:     taskS3,
 		repo:             repo,
 	}, nil
 }

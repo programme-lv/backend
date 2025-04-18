@@ -13,6 +13,7 @@ import (
 	"github.com/programme-lv/backend/conf"
 	"github.com/programme-lv/backend/execsrvc"
 	"github.com/programme-lv/backend/http"
+	"github.com/programme-lv/backend/s3bucket"
 	http2 "github.com/programme-lv/backend/subm/http"
 	pgrepo1 "github.com/programme-lv/backend/subm/pgrepo"
 	"github.com/programme-lv/backend/subm/submsrvc"
@@ -58,7 +59,18 @@ func main() {
 
 	// Create task service
 	var taskSrvc srvc.TaskSrvcClient
-	taskSrvc, err = srvc.NewTaskSrvc(repo)
+	publicS3, err := s3bucket.NewS3Bucket("eu-central-1", "proglv-public")
+	if err != nil {
+		format := "failed to create S3 bucket: %w"
+		log.Fatalf(format, err)
+	}
+	testS3, err := s3bucket.NewS3Bucket("eu-central-1", "proglv-tests")
+	if err != nil {
+		format := "failed to create S3 bucket: %w"
+		log.Fatalf(format, err)
+	}
+
+	taskSrvc, err = srvc.NewTaskSrvc(repo, publicS3, testS3)
 	if err != nil {
 		log.Fatalf("error creating task service: %v", err)
 	}
