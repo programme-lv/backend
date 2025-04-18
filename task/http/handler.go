@@ -31,6 +31,6 @@ func (h *TaskHttpHandler) RegisterRoutes(r *chi.Mux, jwtKey []byte) {
 		r.Use(auth.GetJwtAuthMiddleware(jwtKey))
 		r.Get("/tasks", h.ListTasks)
 		r.Get("/tasks/{taskId}", h.GetTask)
-		r.Put("/tasks/{taskId}/statements/{langIso639}", h.PutStatement)
+		r.Patch("/tasks/{taskId}/statements/{langIso639}", h.PutStatement)
 	})
 }
