@@ -7,6 +7,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"path/filepath"
 	"testing"
@@ -55,6 +56,19 @@ func TestPostStatementImageHttpRequest(t *testing.T) {
 	require.Greater(t, img.HeightPx, 0)
 	require.Contains(t, img.S3Uri, "s3://")
 	t.Logf("s3 uri: %s", img.S3Uri)
+
+	// 6. Test deleting the image without authentication - should fail
+	w = DeleteStatementImage(t, taskHttpHandler, "aplusb", img.S3Uri, "")
+	require.Equal(t, http.StatusUnauthorized, w.Code)
+
+	// 7. Test deleting the image with authentication - should succeed
+	w = DeleteStatementImage(t, taskHttpHandler, "aplusb", img.S3Uri, token)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	// 8. Verify the image was deleted by checking the task
+	task, err = ts.GetTask(context.Background(), "aplusb")
+	require.NoError(t, err)
+	require.Equal(t, 0, len(task.MdImages))
 }
 
 func UploadStatementImage(t *testing.T, h http.Handler, taskId string, imagePath string, token string) *httptest.ResponseRecorder {
@@ -89,6 +103,32 @@ func UploadStatementImage(t *testing.T, h http.Handler, taskId string, imagePath
 
 	// Set the content type
 	req.Header.Set("Content-Type", w.FormDataContentType())
+
+	// Add auth token if provided
+	if token != "" {
+		req.AddCookie(&http.Cookie{
+			Name:  "auth_token",
+			Value: token,
+		})
+	}
+
+	// Execute the request
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+
+	return rec
+}
+
+func DeleteStatementImage(t *testing.T, h http.Handler, taskId string, s3Uri string, token string) *httptest.ResponseRecorder {
+	// URL encode the S3 URI since it may contain characters like '/'
+	encodedS3Uri := url.QueryEscape(s3Uri)
+
+	// Create the request URL
+	reqURL := "/tasks/" + taskId + "/images/" + encodedS3Uri
+
+	// Create a new request
+	req, err := http.NewRequest("DELETE", reqURL, nil)
+	require.NoError(t, err)
 
 	// Add auth token if provided
 	if token != "" {

@@ -42,7 +42,7 @@ type StatementImage struct {
 }
 
 type Task struct {
-	PublishedTaskID        string            `json:"published_task_id"`
+	ShortTaskID            string            `json:"short_task_id"`
 	TaskFullName           string            `json:"task_full_name"`
 	MemoryLimitMegabytes   int               `json:"memory_limit_megabytes"`
 	CPUTimeLimitSeconds    float64           `json:"cpu_time_limit_seconds"`
@@ -187,7 +187,7 @@ func mapTaskResponse(task *srvc.Task) *Task {
 	}
 
 	response := &Task{
-		PublishedTaskID:        task.ShortId,
+		ShortTaskID:            task.ShortId,
 		TaskFullName:           task.FullName,
 		MemoryLimitMegabytes:   task.MemLimMegabytes,
 		CPUTimeLimitSeconds:    task.CpuTimeLimSecs,

@@ -241,3 +241,22 @@ func (bucket *S3Bucket) ListAndGetAllFiles(prefix string) ([]FileData, error) {
 
 	return files, nil
 }
+
+// Delete deletes an object from the S3 bucket.
+// It returns an error if the deletion fails, otherwise nil.
+//
+// Parameters:
+//   - key: The key (path) of the object to be deleted from the S3 bucket.
+//
+// Returns:
+//   - error: An error if the deletion fails, otherwise nil.
+func (bucket *S3Bucket) Delete(key string) error {
+	_, err := bucket.client.DeleteObject(context.TODO(), &s3.DeleteObjectInput{
+		Bucket: &bucket.bucket,
+		Key:    &key,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to delete object: %w", err)
+	}
+	return nil
+}
