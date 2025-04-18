@@ -11,10 +11,14 @@ import (
 
 const taskGetCacheKeyPrefix = "task_get:"
 
+func taskGetCacheKey(taskId string) string {
+	return fmt.Sprintf("%s%s", taskGetCacheKeyPrefix, taskId)
+}
+
 // GetTask returns a task by ID
 func (httpserver *TaskHttpHandler) GetTask(w http.ResponseWriter, r *http.Request) {
 	taskId := chi.URLParam(r, "taskId")
-	cacheKey := fmt.Sprintf("%s%s", taskGetCacheKeyPrefix, taskId)
+	cacheKey := taskGetCacheKey(taskId)
 
 	// Try to get task from cache
 	if cachedTask, found := httpserver.cache.Get(cacheKey); found {

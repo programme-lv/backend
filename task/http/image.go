@@ -42,6 +42,8 @@ func (h *TaskHttpHandler) DeleteStatementImage(w http.ResponseWriter, r *http.Re
 		return
 	}
 
+	h.cache.Delete(taskGetCacheKey(taskId))
+
 	err = httpjson.WriteSuccessJson(w, map[string]string{"status": "ok"})
 	if err != nil {
 		slog.Error("failed to write success json", "error", err)
@@ -130,6 +132,8 @@ func (h *TaskHttpHandler) UploadStatementImage(w http.ResponseWriter, r *http.Re
 		httpjson.HandleSrvcError(slog.Default(), w, err)
 		return
 	}
+
+	h.cache.Delete(taskGetCacheKey(taskId))
 
 	err = httpjson.WriteSuccessJson(w, uri)
 	if err != nil {
