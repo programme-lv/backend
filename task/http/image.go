@@ -16,6 +16,14 @@ import (
 	"github.com/programme-lv/backend/user/auth"
 )
 
+func (h *TaskHttpHandler) DeleteStatementImage(w http.ResponseWriter, r *http.Request) {
+	claims, ok := r.Context().Value(auth.CtxJwtClaimsKey).(*auth.JwtClaims)
+	if !ok || claims == nil || claims.Username != "admin" {
+		httpjson.WriteErrorJson(w, "Can't delete statement image as non-admin user", http.StatusUnauthorized, "unauthorized")
+		return
+	}
+}
+
 func (h *TaskHttpHandler) UploadStatementImage(w http.ResponseWriter, r *http.Request) {
 	claims, ok := r.Context().Value(auth.CtxJwtClaimsKey).(*auth.JwtClaims)
 	if !ok || claims == nil || claims.Username != "admin" {
