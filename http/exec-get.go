@@ -20,7 +20,7 @@ func (httpserver *HttpServer) execGet(w http.ResponseWriter, r *http.Request) {
 
 	exec, err := httpserver.execSrvc.Get(context.TODO(), execUuid)
 	if err != nil {
-		httpjson.HandleError(slog.Default(), w, err)
+		httpjson.HandleSrvcError(slog.Default(), w, err)
 		return
 	}
 

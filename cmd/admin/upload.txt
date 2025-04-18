@@ -539,7 +539,7 @@ func processMdStatement(taskSrvc srvc.TaskSrvcClient, fsTask *fstask.Task, mdSta
 			}
 
 			// Upload the resized image using UploadMarkdownImage
-			s3Url, err := taskSrvc.UploadMarkdownImage(context.Background(), mType, resizedContent)
+			s3Url, err := taskSrvc.UploadStatementImage(context.Background(), mType, resizedContent)
 			if err != nil {
 				log.Error().
 					Str("uuid", uKey).

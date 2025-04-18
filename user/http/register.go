@@ -42,7 +42,7 @@ func (httpserver *UserHttpHandler) Register(w http.ResponseWriter, r *http.Reque
 	})
 
 	if err != nil {
-		httpjson.HandleError(slog.Default(), w, err)
+		httpjson.HandleSrvcError(slog.Default(), w, err)
 		return
 	}
 

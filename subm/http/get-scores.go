@@ -12,13 +12,13 @@ func (h *SubmHttpHandler) GetMaxScorePerTask(w http.ResponseWriter, r *http.Requ
 	username := chi.URLParam(r, "username")
 	user, err := h.userSrvc.GetUserByUsername(r.Context(), username)
 	if err != nil {
-		httpjson.HandleError(slog.Default(), w, err)
+		httpjson.HandleSrvcError(slog.Default(), w, err)
 		return
 	}
 
 	scores, err := h.submSrvc.GetMaxScorePerTask(r.Context(), user.UUID)
 	if err != nil {
-		httpjson.HandleError(slog.Default(), w, err)
+		httpjson.HandleSrvcError(slog.Default(), w, err)
 		return
 	}
 
@@ -26,7 +26,7 @@ func (h *SubmHttpHandler) GetMaxScorePerTask(w http.ResponseWriter, r *http.Requ
 	for taskId, score := range scores {
 		scoresJson[taskId], err = h.mapMaxScore(r.Context(), taskId, score)
 		if err != nil {
-			httpjson.HandleError(slog.Default(), w, err)
+			httpjson.HandleSrvcError(slog.Default(), w, err)
 			return
 		}
 	}

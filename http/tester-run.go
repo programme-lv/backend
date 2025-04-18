@@ -65,7 +65,7 @@ func (httpserver *HttpServer) testerRun(w http.ResponseWriter, r *http.Request) 
 		},
 	)
 	if err != nil {
-		httpjson.HandleError(slog.Default(), w, err)
+		httpjson.HandleSrvcError(slog.Default(), w, err)
 		return
 	}
 

@@ -146,19 +146,20 @@ Each path will be parsed as an fstask and uploaded accordingly.`,
 					Msg("Task parsed successfully")
 
 				shortId := filepath.Base(absPath)
-				err = uploadTask(task, shortId)
-				if err != nil {
-					log.Error().
-						Str("taskName", task.FullName).
-						Err(err).
-						Msg("Error uploading task")
-					break
-				}
-
 				log.Info().
 					Str("taskName", task.FullName).
 					Str("shortId", shortId).
 					Msg("Task uploaded successfully")
+				panic("not maintained")
+				// err = uploadTask(task, shortId)
+				// if err != nil {
+				// 	log.Error().
+				// 		Str("taskName", task.FullName).
+				// 		Err(err).
+				// 		Msg("Error uploading task")
+				// 	break
+				// }
+
 			}
 
 			log.Info().Msg("Upload command completed")

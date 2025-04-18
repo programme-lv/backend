@@ -25,7 +25,7 @@ func (httpserver *UserHttpHandler) Login(w http.ResponseWriter, r *http.Request)
 
 	user, err := httpserver.userSrvc.Login(r.Context(), request.Username, request.Password)
 	if err != nil {
-		httpjson.HandleError(slog.Default(), w, err)
+		httpjson.HandleSrvcError(slog.Default(), w, err)
 		return
 	}
 
@@ -37,7 +37,7 @@ func (httpserver *UserHttpHandler) Login(w http.ResponseWriter, r *http.Request)
 		httpserver.jwtKey, validFor)
 	if err != nil {
 		err = fmt.Errorf("failed to generate JWT: %w", err)
-		httpjson.HandleError(slog.Default(), w, err)
+		httpjson.HandleSrvcError(slog.Default(), w, err)
 		return
 	}
 
