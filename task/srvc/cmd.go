@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"image"
+	"image/png"
 	"mime"
 
 	"github.com/google/uuid"
@@ -108,6 +109,13 @@ func getImgExt(mimeType string) (string, error) {
 }
 
 func getImgWidthHeighPx(body []byte, mimeType string) (int, int, error) {
+	if mimeType == "image/png" {
+		img, err := png.Decode(bytes.NewReader(body))
+		if err != nil {
+			return 0, 0, fmt.Errorf("failed to decode image: %w", err)
+		}
+		return img.Bounds().Dx(), img.Bounds().Dy(), nil
+	}
 	img, _, err := image.DecodeConfig(bytes.NewReader(body))
 	if err != nil {
 		return 0, 0, fmt.Errorf("failed to decode image: %w", err)

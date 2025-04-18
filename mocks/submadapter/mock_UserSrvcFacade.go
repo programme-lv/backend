@@ -7,7 +7,7 @@ import (
 
 	mock "github.com/stretchr/testify/mock"
 
-	usersrvc "github.com/programme-lv/backend/user"
+	user "github.com/programme-lv/backend/user"
 
 	uuid "github.com/google/uuid"
 )
@@ -26,22 +26,22 @@ func (_m *MockUserSrvcFacade) EXPECT() *MockUserSrvcFacade_Expecter {
 }
 
 // GetUserByUUID provides a mock function with given fields: ctx, _a1
-func (_m *MockUserSrvcFacade) GetUserByUUID(ctx context.Context, _a1 uuid.UUID) (usersrvc.User, error) {
+func (_m *MockUserSrvcFacade) GetUserByUUID(ctx context.Context, _a1 uuid.UUID) (user.User, error) {
 	ret := _m.Called(ctx, _a1)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetUserByUUID")
 	}
 
-	var r0 usersrvc.User
+	var r0 user.User
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) (usersrvc.User, error)); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) (user.User, error)); ok {
 		return rf(ctx, _a1)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) usersrvc.User); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) user.User); ok {
 		r0 = rf(ctx, _a1)
 	} else {
-		r0 = ret.Get(0).(usersrvc.User)
+		r0 = ret.Get(0).(user.User)
 	}
 
 	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
@@ -72,12 +72,12 @@ func (_c *MockUserSrvcFacade_GetUserByUUID_Call) Run(run func(ctx context.Contex
 	return _c
 }
 
-func (_c *MockUserSrvcFacade_GetUserByUUID_Call) Return(_a0 usersrvc.User, _a1 error) *MockUserSrvcFacade_GetUserByUUID_Call {
+func (_c *MockUserSrvcFacade_GetUserByUUID_Call) Return(_a0 user.User, _a1 error) *MockUserSrvcFacade_GetUserByUUID_Call {
 	_c.Call.Return(_a0, _a1)
 	return _c
 }
 
-func (_c *MockUserSrvcFacade_GetUserByUUID_Call) RunAndReturn(run func(context.Context, uuid.UUID) (usersrvc.User, error)) *MockUserSrvcFacade_GetUserByUUID_Call {
+func (_c *MockUserSrvcFacade_GetUserByUUID_Call) RunAndReturn(run func(context.Context, uuid.UUID) (user.User, error)) *MockUserSrvcFacade_GetUserByUUID_Call {
 	_c.Call.Return(run)
 	return _c
 }

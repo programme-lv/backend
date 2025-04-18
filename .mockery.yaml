@@ -1,6 +1,13 @@
 with-expecter: true
 issue-845-fix: True
 packages:
+  github.com/programme-lv/backend/s3bucket:
+    config:
+      all: true
+      filename: "mock_{{.InterfaceName}}.go"
+      dir: "mocks/s3bucket"
+      mockname: "Mock{{.InterfaceName}}"
+      outpkg: "{{.PackageName}}"
   github.com/programme-lv/backend/subm/submsrvc/submadapter:
     config:
       all: true
