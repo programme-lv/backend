@@ -46,8 +46,8 @@ func GetTask(t *testing.T, h http.Handler, taskId string) *httptest.ResponseReco
 	return w
 }
 
-func PutStatement(t *testing.T, h http.Handler, taskId string, req taskhttp.PutStatementRequest, token string) *httptest.ResponseRecorder {
-	method := http.MethodPut
+func PatchStatement(t *testing.T, h http.Handler, taskId string, req taskhttp.PutStatementRequest, token string) *httptest.ResponseRecorder {
+	method := http.MethodPatch
 	url := fmt.Sprintf("/tasks/%s/statements/lv", taskId)
 
 	body, err := json.Marshal(req)
@@ -91,7 +91,7 @@ func TestPutStatementHttpRequest(t *testing.T) {
 		Example: "example",
 	}
 
-	w := PutStatement(t, taskHttpHandler, "aplusb", req, "")
+	w := PatchStatement(t, taskHttpHandler, "aplusb", req, "")
 	require.Equal(t, http.StatusUnauthorized, w.Code)
 
 	token, err := auth.GenerateJWT(
@@ -100,7 +100,7 @@ func TestPutStatementHttpRequest(t *testing.T) {
 		[]byte("test"), 24*time.Hour)
 	require.NoError(t, err)
 
-	w = PutStatement(t, taskHttpHandler, "aplusb", req, token)
+	w = PatchStatement(t, taskHttpHandler, "aplusb", req, token)
 	require.Equal(t, http.StatusOK, w.Code)
 
 	task, err := ts.GetTask(context.Background(), "aplusb")
