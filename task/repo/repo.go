@@ -13,18 +13,70 @@ type taskPgRepo struct {
 	pool *pgxpool.Pool
 }
 
-/*
-type StatementImage struct {
-    S3Uri    string // e.g. s3://proglv-public/task-md-images/<sanitized-filename>.png
-    Filename string // filename of the image, e.g., nekoks.png
-    WidthPx  int    // og width [px] stored in s3
-    HeightPx int    // og height [px] stored in s3
-}
-*/
-
-// AddStatementImg implements srvc.TaskPgRepo.
+// PatchStatementImg implements srvc.TaskPgRepo.
+// 1. It starts a transaction to ensure database consistency
+// 2. Checks if the task exists first
+// 3. Checks if the image already exists for this task and S3 URI
+// 4. Either updates the existing image or inserts a new one
+// 5. Commits the transaction if everything succeeds
 func (r *taskPgRepo) AddStatementImg(ctx context.Context, taskId string, img srvc.StatementImage) error {
-	panic("unimplemented")
+	// Start a transaction
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+
+	// Defer rollback in case of error - transaction is committed later if successful
+	defer tx.Rollback(ctx)
+
+	// Check if the task exists
+	var exists bool
+	err = tx.QueryRow(ctx, `
+		SELECT EXISTS(SELECT 1 FROM tasks WHERE short_id = $1)
+	`, taskId).Scan(&exists)
+	if err != nil {
+		return fmt.Errorf("failed to check if task exists: %w", err)
+	}
+	if !exists {
+		return fmt.Errorf("task with ID %s does not exist", taskId)
+	}
+
+	// Check if the image already exists for this task
+	var imageExists bool
+	err = tx.QueryRow(ctx, `
+		SELECT EXISTS(SELECT 1 FROM task_images WHERE task_short_id = $1 AND s3_uri = $2)
+	`, taskId, img.S3Uri).Scan(&imageExists)
+	if err != nil {
+		return fmt.Errorf("failed to check if image exists: %w", err)
+	}
+
+	if imageExists {
+		// Update existing image
+		_, err = tx.Exec(ctx, `
+			UPDATE task_images
+			SET file_name = $3, width_px = $4, height_px = $5
+			WHERE task_short_id = $1 AND s3_uri = $2
+		`, taskId, img.S3Uri, img.Filename, img.WidthPx, img.HeightPx)
+		if err != nil {
+			return fmt.Errorf("failed to update statement image: %w", err)
+		}
+	} else {
+		// Insert new image
+		_, err = tx.Exec(ctx, `
+			INSERT INTO task_images (task_short_id, s3_uri, file_name, width_px, height_px)
+			VALUES ($1, $2, $3, $4, $5)
+		`, taskId, img.S3Uri, img.Filename, img.WidthPx, img.HeightPx)
+		if err != nil {
+			return fmt.Errorf("failed to insert statement image: %w", err)
+		}
+	}
+
+	// Commit the transaction
+	if err = tx.Commit(ctx); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return nil
 }
 
 // UpdateStatement implements srvc.TaskPgRepo.
