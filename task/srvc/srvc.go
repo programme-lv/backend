@@ -13,6 +13,7 @@ type TaskSrvcClient interface {
 	UploadStatementPdf(ctx context.Context, body []byte) (string, error)
 	UploadIllustrationImg(ctx context.Context, mimeType string, body []byte) (string, error)
 	UploadStatementImage(ctx context.Context, taskId string, semanticFilename string, mimeType string, body []byte) (string, error)
+	DeleteStatementImage(ctx context.Context, taskId string, s3Uri string) error
 	UploadTestFile(ctx context.Context, body []byte) error
 	GetTask(ctx context.Context, shortId string) (Task, error)
 	GetTaskFullNames(ctx context.Context, shortIds []string) ([]string, error)
@@ -27,6 +28,8 @@ type S3BucketFacade interface {
 	PresignedURL(key string, duration time.Duration) (string, error)
 	Exists(key string) (bool, error)
 	ListAndGetAllFiles(prefix string) ([]s3bucket.FileData, error)
+	Delete(key string) error
+	Bucket() string
 }
 
 type TaskPgRepo interface {
@@ -37,6 +40,7 @@ type TaskPgRepo interface {
 	CreateTask(ctx context.Context, task Task) error
 	UpdateStatement(ctx context.Context, taskId string, statement MarkdownStatement) error
 	AddStatementImg(ctx context.Context, taskId string, img StatementImage) error
+	DeleteStatementImg(ctx context.Context, taskId string, s3Uri string) error
 }
 
 type TaskSrvc struct {

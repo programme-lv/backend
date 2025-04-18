@@ -141,6 +141,47 @@ func (r *taskPgRepo) UpdateStatement(ctx context.Context, taskId string, stateme
 	return nil
 }
 
+// DeleteStatementImg implements srvc.TaskPgRepo.
+// It deletes an image from the database.
+func (r *taskPgRepo) DeleteStatementImg(ctx context.Context, taskId string, s3Uri string) error {
+	// Start a transaction
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+
+	// Defer rollback in case of error - transaction is committed later if successful
+	defer tx.Rollback(ctx)
+
+	// Check if the image exists
+	var imageExists bool
+	err = tx.QueryRow(ctx, `
+		SELECT EXISTS(SELECT 1 FROM task_images WHERE task_short_id = $1 AND s3_uri = $2)
+	`, taskId, s3Uri).Scan(&imageExists)
+	if err != nil {
+		return fmt.Errorf("failed to check if image exists: %w", err)
+	}
+	if !imageExists {
+		return fmt.Errorf("image with S3 URI %s does not exist for task %s", s3Uri, taskId)
+	}
+
+	// Delete the image
+	_, err = tx.Exec(ctx, `
+		DELETE FROM task_images
+		WHERE task_short_id = $1 AND s3_uri = $2
+	`, taskId, s3Uri)
+	if err != nil {
+		return fmt.Errorf("failed to delete statement image: %w", err)
+	}
+
+	// Commit the transaction
+	if err = tx.Commit(ctx); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return nil
+}
+
 func NewTaskPgRepo(pool *pgxpool.Pool) *taskPgRepo {
 	return &taskPgRepo{pool: pool}
 }

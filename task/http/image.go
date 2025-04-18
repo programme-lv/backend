@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"mime/multipart"
 	"net/http"
+	"net/url"
 	"path/filepath"
 	"regexp"
 	"slices"
@@ -21,6 +22,29 @@ func (h *TaskHttpHandler) DeleteStatementImage(w http.ResponseWriter, r *http.Re
 	if !ok || claims == nil || claims.Username != "admin" {
 		httpjson.WriteErrorJson(w, "Can't delete statement image as non-admin user", http.StatusUnauthorized, "unauthorized")
 		return
+	}
+
+	taskId := chi.URLParam(r, "taskId")
+	s3uri := chi.URLParam(r, "s3uri")
+
+	// URL decode the s3uri parameter as it may contain characters like '/'
+	decodedS3Uri, err := url.QueryUnescape(s3uri)
+	if err != nil {
+		errMsg := fmt.Sprintf("failed to decode S3 URI: %v", err)
+		errCode := "invalid_s3_uri"
+		httpjson.WriteErrorJson(w, errMsg, http.StatusBadRequest, errCode)
+		return
+	}
+
+	err = h.taskSrvc.DeleteStatementImage(r.Context(), taskId, decodedS3Uri)
+	if err != nil {
+		httpjson.HandleSrvcError(slog.Default(), w, err)
+		return
+	}
+
+	err = httpjson.WriteSuccessJson(w, map[string]string{"status": "ok"})
+	if err != nil {
+		slog.Error("failed to write success json", "error", err)
 	}
 }
 

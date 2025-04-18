@@ -8,6 +8,7 @@ import (
 	"image"
 	"image/png"
 	"mime"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/klauspost/compress/zstd"
@@ -171,4 +172,35 @@ func (ts *TaskSrvc) Sha2Hex(body []byte) (sha2 string) {
 	hash := sha256.Sum256(body)
 	sha2 = fmt.Sprintf("%x", hash[:])
 	return
+}
+
+// DeleteStatementImage implements TaskSrvcClient.
+// It deletes an image from both S3 and the database.
+func (ts *TaskSrvc) DeleteStatementImage(ctx context.Context, taskId string, s3Uri string) error {
+	// Extract the S3 key from the URI
+	// s3Uri format: s3://proglv-public/task/<taskId>/md-images/<uuid>.png
+	s3Key := strings.TrimPrefix(s3Uri, "s3://"+ts.s3PublicBucket.Bucket()+"/")
+
+	// Check if the image exists in S3
+	exists, err := ts.s3PublicBucket.Exists(s3Key)
+	if err != nil {
+		return fmt.Errorf("failed to check if image exists in S3: %w", err)
+	}
+	if !exists {
+		return fmt.Errorf("image with key %s does not exist in S3", s3Key)
+	}
+
+	// Delete the image from the database first
+	err = ts.repo.DeleteStatementImg(ctx, taskId, s3Uri)
+	if err != nil {
+		return fmt.Errorf("failed to delete image from database: %w", err)
+	}
+
+	// Delete the image from S3
+	err = ts.s3PublicBucket.Delete(s3Key)
+	if err != nil {
+		return fmt.Errorf("failed to delete image from S3: %w", err)
+	}
+
+	return nil
 }
