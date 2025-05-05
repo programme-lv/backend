@@ -11,7 +11,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/lmittmann/tint"
 	"github.com/programme-lv/backend/conf"
-	"github.com/programme-lv/backend/execsrvc"
+	"github.com/programme-lv/backend/exec"
 	"github.com/programme-lv/backend/http"
 	"github.com/programme-lv/backend/s3bucket"
 	http2 "github.com/programme-lv/backend/subm/http"
@@ -47,7 +47,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	execSrvc := execsrvc.NewExecSrvc()
+	execSrvc := exec.NewExecSrvc()
 
 	pg, err := pgxpool.New(context.Background(), conf.GetPgConnStrFromEnv())
 	if err != nil {
@@ -89,7 +89,7 @@ func main() {
 	slog.Info("server stopped", "error", err)
 }
 
-func newSubmHttpHandler(userSrvc *user.UserSrvc, taskSrvc srvc.TaskSrvcClient, execSrvc *execsrvc.ExecSrvc) *http2.SubmHttpHandler {
+func newSubmHttpHandler(userSrvc *user.UserSrvc, taskSrvc srvc.TaskSrvcClient, execSrvc *exec.ExecSrvc) *http2.SubmHttpHandler {
 	pool, err := pgxpool.New(context.Background(), conf.GetPgConnStrFromEnv())
 	if err != nil {
 		log.Fatalf("failed to create pg pool: %v", err)

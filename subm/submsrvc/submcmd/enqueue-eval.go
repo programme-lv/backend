@@ -5,7 +5,7 @@ import (
 	"log/slog"
 
 	"github.com/google/uuid"
-	"github.com/programme-lv/backend/execsrvc"
+	"github.com/programme-lv/backend/exec"
 	decorator "github.com/programme-lv/backend/srvccqs"
 	subm "github.com/programme-lv/backend/subm/domain"
 )
@@ -19,7 +19,7 @@ type EnqueueEvalParams struct {
 }
 
 type EnqueueEvalCmdHandler struct {
-	EnqueueExec     func(ctx context.Context, execUuid uuid.UUID, srcCode string, prLangId string, tests []execsrvc.TestFile, params execsrvc.TestingParams) error
+	EnqueueExec     func(ctx context.Context, execUuid uuid.UUID, srcCode string, prLangId string, tests []exec.TestFile, params exec.TestingParams) error
 	GetTestDownlUrl func(ctx context.Context, testFileSha256 string) (string, error)
 }
 
@@ -30,7 +30,7 @@ func (h EnqueueEvalCmdHandler) Handle(ctx context.Context, p EnqueueEvalParams) 
 		p.SrcCode,
 		p.PrLangId,
 		h.evalReqTests(ctx, p.Eval),
-		execsrvc.TestingParams{
+		exec.TestingParams{
 			CpuMs:      p.Eval.CpuLimMs,
 			MemKiB:     p.Eval.MemLimKiB,
 			Checker:    p.Eval.Checker,
@@ -42,8 +42,8 @@ func (h EnqueueEvalCmdHandler) Handle(ctx context.Context, p EnqueueEvalParams) 
 func (h EnqueueEvalCmdHandler) evalReqTests(
 	ctx context.Context,
 	eval subm.Eval,
-) []execsrvc.TestFile {
-	evalReqTests := make([]execsrvc.TestFile, len(eval.Tests))
+) []exec.TestFile {
+	evalReqTests := make([]exec.TestFile, len(eval.Tests))
 	for i, test := range eval.Tests {
 		inputS3Url, err := h.GetTestDownlUrl(ctx, test.InpSha256)
 		if err != nil {
@@ -53,7 +53,7 @@ func (h EnqueueEvalCmdHandler) evalReqTests(
 		if err != nil {
 			slog.Error("failed to get download URL for answer", "error", err)
 		}
-		evalReqTests[i] = execsrvc.TestFile{
+		evalReqTests[i] = exec.TestFile{
 			InSha256:    &test.InpSha256,
 			AnsSha256:   &test.AnsSha256,
 			InDownlUrl:  &inputS3Url,

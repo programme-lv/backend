@@ -7,7 +7,7 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
-	"github.com/programme-lv/backend/execsrvc"
+	"github.com/programme-lv/backend/exec"
 	"github.com/programme-lv/backend/httpjson"
 )
 
@@ -38,9 +38,9 @@ func (httpserver *HttpServer) testerRun(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	tests := make([]execsrvc.TestFile, len(req.Tests))
+	tests := make([]exec.TestFile, len(req.Tests))
 	for i, test := range req.Tests {
-		tests[i] = execsrvc.TestFile{
+		tests[i] = exec.TestFile{
 			InSha256:    test.InSha256,
 			InDownlUrl:  test.InUrl,
 			InContent:   test.InContent,
@@ -57,7 +57,7 @@ func (httpserver *HttpServer) testerRun(w http.ResponseWriter, r *http.Request) 
 		req.SrcCode,
 		req.ProgLangId,
 		tests,
-		execsrvc.TestingParams{
+		exec.TestingParams{
 			CpuMs:      req.CpuMs,
 			MemKiB:     req.MemKib,
 			Checker:    req.Checker,

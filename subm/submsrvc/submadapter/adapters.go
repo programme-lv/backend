@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/google/uuid"
-	"github.com/programme-lv/backend/execsrvc"
+	"github.com/programme-lv/backend/exec"
 	subm "github.com/programme-lv/backend/subm/domain"
 	"github.com/programme-lv/backend/task/srvc"
 	"github.com/programme-lv/backend/user"
@@ -33,6 +33,6 @@ type TaskSrvcFacade interface {
 }
 
 type ExecSrvcFacade interface {
-	Enqueue(ctx context.Context, execUuid uuid.UUID, srcCode string, prLangId string, tests []execsrvc.TestFile, params execsrvc.TestingParams) error
-	Listen(ctx context.Context, execUuid uuid.UUID) (<-chan execsrvc.Event, error)
+	Enqueue(ctx context.Context, execUuid uuid.UUID, srcCode string, prLangId string, tests []exec.TestFile, params exec.TestingParams) error
+	Listen(ctx context.Context, execUuid uuid.UUID) (<-chan exec.Event, error)
 }

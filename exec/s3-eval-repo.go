@@ -1,4 +1,4 @@
-package execsrvc
+package exec
 
 import (
 	"bytes"
