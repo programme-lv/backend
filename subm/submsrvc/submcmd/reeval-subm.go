@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
-	decorator "github.com/programme-lv/backend/srvccqs"
 	subm "github.com/programme-lv/backend/subm/domain"
+	decorator "github.com/programme-lv/backend/subm/srvccqs"
 )
 
 type ReEvalSubmCmd decorator.CmdHandler[ReEvalSubmParams]

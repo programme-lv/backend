@@ -7,8 +7,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/programme-lv/backend/exec"
-	decorator "github.com/programme-lv/backend/srvccqs"
 	subm "github.com/programme-lv/backend/subm/domain"
+	decorator "github.com/programme-lv/backend/subm/srvccqs"
 )
 
 type ProcExecEvCmd decorator.CmdHandler[ProcExecEvParams]
