@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/programme-lv/backend/common/ctxlog"
 	"github.com/programme-lv/backend/common/httpjson"
-	"github.com/programme-lv/backend/common/logger"
 	"github.com/programme-lv/backend/subm/domain"
 	"github.com/programme-lv/backend/subm/submsrvc/submquery"
 )
@@ -26,7 +26,7 @@ type Pagination struct {
 }
 
 func (h *SubmHttpHandler) GetSubmList(w http.ResponseWriter, r *http.Request) {
-	log := logger.FromContext(r.Context())
+	log := ctxlog.FromContext(r.Context())
 	log.Info("getting submission list")
 
 	// Parse pagination parameters from query string
