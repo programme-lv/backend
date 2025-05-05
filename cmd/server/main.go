@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"log/slog"
 	"os"
 	"time"
@@ -18,8 +17,8 @@ import (
 	"github.com/programme-lv/backend/common/s3bucket"
 	"github.com/programme-lv/backend/exec"
 	"github.com/programme-lv/backend/http"
-	http2 "github.com/programme-lv/backend/subm/http"
-	pgrepo1 "github.com/programme-lv/backend/subm/pgrepo"
+	submhttp "github.com/programme-lv/backend/subm/http"
+	submpgrepo "github.com/programme-lv/backend/subm/pgrepo"
 	"github.com/programme-lv/backend/subm/submsrvc"
 	taskhttp "github.com/programme-lv/backend/task/http"
 	"github.com/programme-lv/backend/task/repo"
@@ -28,108 +27,152 @@ import (
 	userhttp "github.com/programme-lv/backend/user/http"
 )
 
-func main() {
-	w := os.Stderr
+const (
+	awsRegion  = "eu-central-1"
+	cdnBucket  = "proglv-public"
+	testBucket = "proglv-tests"
+	address    = ":8080"
+)
 
-	// set global logger with custom options
+func main() {
+	setupLogger()
+	loadEnvVars()
+
+	jwtKey := getRequiredEnv("JWT_KEY")
+	cookieDomain := os.Getenv("COOKIE_DOMAIN")
+
+	pgPool, err := getPgxPoolFromEnv()
+	if err != nil {
+		slog.Error("failed to create pg pool", "error", err)
+		os.Exit(1)
+	}
+
+	cdnS3, testS3, err := initializeS3Buckets()
+	if err != nil {
+		slog.Error("failed to initialize S3 buckets", "error", err)
+		os.Exit(1)
+	}
+
+	execSrvc := exec.NewExecSrvc()
+	userSrvc := user.NewUserService(pgPool)
+	taskRepo := repo.NewTaskPgRepo(pgPool)
+
+	taskSrvc, err := srvc.NewTaskSrvc(taskRepo, cdnS3, testS3)
+	if err != nil {
+		slog.Error("error creating task service", "error", err)
+		os.Exit(1)
+	}
+
+	// Initialize HTTP handlers
+	submHttpHandler := newSubmHttpHandler(userSrvc, taskSrvc, execSrvc)
+	taskHttpHandler := taskhttp.NewTaskHttpHandler(taskSrvc)
+	userHttpHandler := userhttp.NewUserHttpHandler(userSrvc, []byte(jwtKey), userhttp.WithCookieDomain(cookieDomain))
+
+	// Start HTTP server
+	httpServer := http.NewHttpServer(submHttpHandler, taskHttpHandler, userHttpHandler, execSrvc, []byte(jwtKey))
+
+	slog.Info("starting server", "address", address)
+	err = httpServer.Start(address)
+	slog.Info("server stopped", "error", err)
+}
+
+func setupLogger() {
 	slog.SetDefault(slog.New(
-		tint.NewHandler(w, &tint.Options{
+		tint.NewHandler(os.Stdout, &tint.Options{
 			Level:      slog.LevelInfo,
 			TimeFormat: time.Kitchen,
 			AddSource:  true,
 		}),
 	))
+}
 
-	err := godotenv.Load()
+func loadEnvVars() {
+	if err := godotenv.Load(); err != nil {
+		slog.Error("error loading .env file", "error", err)
+		os.Exit(1)
+	}
+}
+
+func getRequiredEnv(name string) string {
+	value := os.Getenv(name)
+	if value == "" {
+		slog.Error(fmt.Sprintf("%s env var is not set", name))
+		os.Exit(1)
+	}
+	return value
+}
+
+func initializeS3Buckets() (*s3bucket.S3Bucket, *s3bucket.S3Bucket, error) {
+	publicS3, err := s3bucket.NewS3Bucket(awsRegion, cdnBucket)
 	if err != nil {
-		panic("Error loading .env file")
+		return nil, nil, fmt.Errorf("failed to create public S3 bucket: %w", err)
 	}
 
-	jwtKey := os.Getenv("JWT_KEY")
-	if jwtKey == "" {
-		slog.Error("JWT_KEY is not set")
+	testS3, err := s3bucket.NewS3Bucket(awsRegion, testBucket)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to create test S3 bucket: %w", err)
+	}
+
+	return publicS3, testS3, nil
+}
+
+func newSubmHttpHandler(userSrvc *user.UserSrvc, taskSrvc srvc.TaskSrvcClient, execSrvc *exec.ExecSrvc) *submhttp.SubmHttpHandler {
+	pool, err := pgxpool.New(context.Background(), getPgConnStrFromEnv())
+	if err != nil {
+		slog.Error("failed to create pg pool", "error", err)
 		os.Exit(1)
 	}
 
-	execSrvc := exec.NewExecSrvc()
-
-	pg, err := pgxpool.New(context.Background(), GetPgConnStrFromEnv())
-	if err != nil {
-		log.Fatalf("failed to create pg pool: %v", err)
-	}
-	userSrvc := user.NewUserService(pg)
-
-	repo := repo.NewTaskPgRepo(pg)
-
-	// Create task service
-	var taskSrvc srvc.TaskSrvcClient
-	publicS3, err := s3bucket.NewS3Bucket("eu-central-1", "proglv-public")
-	if err != nil {
-		format := "failed to create S3 bucket: %w"
-		log.Fatalf(format, err)
-	}
-	testS3, err := s3bucket.NewS3Bucket("eu-central-1", "proglv-tests")
-	if err != nil {
-		format := "failed to create S3 bucket: %w"
-		log.Fatalf(format, err)
-	}
-
-	taskSrvc, err = srvc.NewTaskSrvc(repo, publicS3, testS3)
-	if err != nil {
-		log.Fatalf("error creating task service: %v", err)
-	}
-	slog.Info("Task service initialized")
-
-	submHttpHandler := newSubmHttpHandler(userSrvc, taskSrvc, execSrvc)
-	taskHttpHandler := taskhttp.NewTaskHttpHandler(taskSrvc)
-	cookieDomain := os.Getenv("COOKIE_DOMAIN")
-	userHttpHandler := userhttp.NewUserHttpHandler(userSrvc, []byte(jwtKey), userhttp.WithCookieDomain(cookieDomain))
-
-	httpServer := http.NewHttpServer(submHttpHandler, taskHttpHandler, userHttpHandler, execSrvc, []byte(jwtKey))
-
-	address := ":8080"
-	slog.Info("starting server", "address", address)
-	err = httpServer.Start(":8080")
-	slog.Info("server stopped", "error", err)
-}
-
-func newSubmHttpHandler(userSrvc *user.UserSrvc, taskSrvc srvc.TaskSrvcClient, execSrvc *exec.ExecSrvc) *http2.SubmHttpHandler {
-	pool, err := pgxpool.New(context.Background(), GetPgConnStrFromEnv())
-	if err != nil {
-		log.Fatalf("failed to create pg pool: %v", err)
-	}
-
-	submPgRepo := pgrepo1.NewPgSubmRepo(pool)
-	evalPgRepo := pgrepo1.NewPgEvalRepo(pool)
+	submPgRepo := submpgrepo.NewPgSubmRepo(pool)
+	evalPgRepo := submpgrepo.NewPgEvalRepo(pool)
 	submSrvc := submsrvc.NewSubmSrvc(userSrvc, taskSrvc, execSrvc, submPgRepo, evalPgRepo)
-	if err != nil {
-		log.Fatalf("error creating submission service: %v", err)
-	}
 
-	submHttpServer := http2.NewSubmHttpHandler(submSrvc, taskSrvc, userSrvc)
-
-	return submHttpServer
+	return submhttp.NewSubmHttpHandler(submSrvc, taskSrvc, userSrvc)
 }
 
-func GetPgConnStrFromEnv() string {
+func getPgxPoolFromEnv() (*pgxpool.Pool, error) {
+	connStr := getPgConnStrFromEnv()
+	config, err := pgxpool.ParseConfig(connStr)
+	if err != nil {
+		return nil, fmt.Errorf("unable to parse connection string: %w", err)
+	}
+
+	pool, err := pgxpool.NewWithConfig(context.Background(), config)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create connection pool: %w", err)
+	}
+
+	// Verify connection is working
+	if err := pool.Ping(context.Background()); err != nil {
+		return nil, fmt.Errorf("unable to connect to database: %w", err)
+	}
+
+	return pool, nil
+}
+
+func getPgConnStrFromEnv() string {
 	host := os.Getenv("POSTGRES_HOST")
 	var pw string
 	if host == "localhost" {
 		pw = os.Getenv("POSTGRES_PW")
 	} else {
-		secretName := os.Getenv("POSTGRES_PASSWORD_SECRET_NAME")
+		secretName := getRequiredEnv("POSTGRES_PASSWORD_SECRET_NAME")
 		secretValue, err := getSecretFromAWS(secretName)
 		if err != nil {
-			panic(fmt.Sprintf("failed to get postgres password from AWS: %v", err))
+			slog.Error("failed to get postgres password from AWS", "error", err)
+			os.Exit(1)
 		}
+
 		var secret struct {
 			Password string `json:"password"`
 		}
 		if err := json.Unmarshal([]byte(secretValue), &secret); err != nil {
-			panic(fmt.Sprintf("failed to parse postgres password secret: %v", err))
+			slog.Error("failed to parse postgres password secret", "error", err)
+			os.Exit(1)
 		}
 		pw = secret.Password
 	}
+
 	user := os.Getenv("POSTGRES_USER")
 	port := os.Getenv("POSTGRES_PORT")
 	db := os.Getenv("POSTGRES_DB")
@@ -145,17 +188,22 @@ func getSecretFromAWS(secretName string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	svc := secretsmanager.NewFromConfig(cfg, func(opts *secretsmanager.Options) {
-		opts.Region = "eu-central-1"
+		opts.Region = awsRegion
 	})
+
 	input := &secretsmanager.GetSecretValueInput{
 		SecretId: aws.String(secretName),
 	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
+
 	result, err := svc.GetSecretValue(ctx, input)
 	if err != nil {
 		return "", err
 	}
+
 	return *result.SecretString, nil
 }
