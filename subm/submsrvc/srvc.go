@@ -9,7 +9,7 @@ import (
 
 	"github.com/google/uuid"
 	_ "github.com/lib/pq"
-	"github.com/programme-lv/backend/common/logger"
+	"github.com/programme-lv/backend/common/ctxlog"
 	"github.com/programme-lv/backend/exec"
 	"github.com/programme-lv/backend/subm/domain"
 	"github.com/programme-lv/backend/subm/submsrvc/submadapter"
@@ -210,13 +210,13 @@ func (s *submSrvc) ReEvalSubm(ctx context.Context, p submcmd.ReEvalSubmParams) e
 }
 
 func (s *submSrvc) GetSubm(ctx context.Context, uuid uuid.UUID) (domain.Subm, error) {
-	log := logger.FromContext(ctx)
+	log := ctxlog.FromContext(ctx)
 	log.Debug("getting submission", "subm_uuid", uuid)
 	return s.submRepo.GetSubm(ctx, uuid)
 }
 
 func (s *submSrvc) ListSubms(ctx context.Context, filter submquery.ListSubmsParams) ([]domain.Subm, error) {
-	log := logger.FromContext(ctx)
+	log := ctxlog.FromContext(ctx)
 	log.Debug("listing submissions", "limit", filter.Limit, "offset", filter.Offset)
 	return s.submRepo.ListSubms(ctx, filter.Limit, filter.Offset)
 }
@@ -300,7 +300,7 @@ func (s *submSrvc) WaitForEvalFinish(ctx context.Context, evalUUID uuid.UUID) er
 
 // CountSubms returns the total number of submissions
 func (s *submSrvc) CountSubms(ctx context.Context) (int, error) {
-	log := logger.FromContext(ctx)
+	log := ctxlog.FromContext(ctx)
 	log.Debug("counting submissions")
 
 	count, err := s.submRepo.CountSubms(ctx)

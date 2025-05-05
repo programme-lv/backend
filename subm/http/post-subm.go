@@ -6,15 +6,15 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/programme-lv/backend/common/ctxlog"
 	"github.com/programme-lv/backend/common/httpjson"
-	"github.com/programme-lv/backend/common/logger"
 	"github.com/programme-lv/backend/subm/submerror"
 	"github.com/programme-lv/backend/subm/submsrvc/submcmd"
 	"github.com/programme-lv/backend/user/auth"
 )
 
 func (h *SubmHttpHandler) PostSubm(w http.ResponseWriter, r *http.Request) {
-	log := logger.FromContext(r.Context())
+	log := ctxlog.FromContext(r.Context())
 	log.Info("processing submission request")
 
 	type createSubmissionRequest struct {

@@ -13,7 +13,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
 	"github.com/google/uuid"
-	"github.com/programme-lv/backend/common/logger"
+	"github.com/programme-lv/backend/common/ctxlog"
 	"github.com/programme-lv/backend/exec"
 	http1 "github.com/programme-lv/backend/subm/http"
 	taskhttp "github.com/programme-lv/backend/task/http"
@@ -120,7 +120,7 @@ func requestLoggerMiddleware(next http.Handler) http.Handler {
 
 		// Add request ID and logger to context
 		ctx := context.WithValue(r.Context(), "requestID", requestID)
-		ctx = logger.WithLogger(ctx, reqLogger)
+		ctx = ctxlog.WithLogger(ctx, reqLogger)
 		r = r.WithContext(ctx)
 
 		// Capture metrics about the request

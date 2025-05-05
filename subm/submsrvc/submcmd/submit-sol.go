@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/programme-lv/backend/common/logger"
+	"github.com/programme-lv/backend/common/ctxlog"
 	"github.com/programme-lv/backend/plang"
 	subm "github.com/programme-lv/backend/subm/domain"
 	decorator "github.com/programme-lv/backend/subm/srvccqs"
@@ -34,7 +34,7 @@ type SubmitSolCmdHandler struct {
 }
 
 func (h SubmitSolCmdHandler) Handle(ctx context.Context, p SubmitSolParams) error {
-	log := logger.FromContext(ctx)
+	log := ctxlog.FromContext(ctx)
 	log.Debug("handling submit solution command", "subm_uuid", p.UUID, "author_uuid", p.AuthorUUID, "task_id", p.TaskShortID)
 
 	if len(p.Submission) > 64*1024 { // 64 KB

@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/programme-lv/backend/common/logger"
+	"github.com/programme-lv/backend/common/ctxlog"
 	"github.com/programme-lv/backend/common/srvcerror"
 )
 
@@ -66,6 +66,6 @@ func HandleSrvcError(logger *slog.Logger, w http.ResponseWriter, err error) {
 
 // HandleErrorWithContext is a convenience function that extracts the logger from the context
 func HandleErrorWithContext(ctx http.Request, w http.ResponseWriter, err error) {
-	log := logger.FromContext(ctx.Context())
+	log := ctxlog.FromContext(ctx.Context())
 	HandleSrvcError(log, w, err)
 }

@@ -9,7 +9,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/programme-lv/backend/common/logger"
+	"github.com/programme-lv/backend/common/ctxlog"
 	"github.com/programme-lv/backend/subm/domain"
 )
 
@@ -22,7 +22,7 @@ func NewPgEvalRepo(pool *pgxpool.Pool) *pgEvalRepo {
 }
 
 func (r *pgEvalRepo) StoreEval(ctx context.Context, eval domain.Eval) error {
-	log := logger.FromContext(ctx)
+	log := ctxlog.FromContext(ctx)
 	log.Debug("storing evaluation", "eval_uuid", eval.UUID, "subm_uuid", eval.SubmUUID)
 
 	// Start a transaction
@@ -175,7 +175,7 @@ func (r *pgEvalRepo) StoreEval(ctx context.Context, eval domain.Eval) error {
 }
 
 func (r *pgEvalRepo) GetEval(ctx context.Context, evalUUID uuid.UUID) (domain.Eval, error) {
-	log := logger.FromContext(ctx)
+	log := ctxlog.FromContext(ctx)
 	log.Debug("getting evaluation", "eval_uuid", evalUUID)
 
 	// Fetch Evaluation
@@ -352,7 +352,7 @@ func NewPgSubmRepo(pool *pgxpool.Pool) *pgSubmRepo {
 
 // StoreSubm inserts a new SubmissionEntity into the database.
 func (r *pgSubmRepo) StoreSubm(ctx context.Context, subm domain.Subm) error {
-	log := logger.FromContext(ctx)
+	log := ctxlog.FromContext(ctx)
 	log.Debug("storing submission", "subm_uuid", subm.UUID, "author_uuid", subm.AuthorUUID, "task_id", subm.TaskShortID)
 
 	submissionInsertQuery := `
@@ -386,7 +386,7 @@ func (r *pgSubmRepo) StoreSubm(ctx context.Context, subm domain.Subm) error {
 }
 
 func (r *pgSubmRepo) AssignEval(ctx context.Context, submUuid uuid.UUID, evalUuid uuid.UUID) error {
-	log := logger.FromContext(ctx)
+	log := ctxlog.FromContext(ctx)
 	log.Debug("assigning evaluation to submission", "subm_uuid", submUuid, "eval_uuid", evalUuid)
 
 	updateQuery := `
@@ -408,7 +408,7 @@ func (r *pgSubmRepo) AssignEval(ctx context.Context, submUuid uuid.UUID, evalUui
 
 // GetSubm retrieves a SubmissionEntity by UUID
 func (r *pgSubmRepo) GetSubm(ctx context.Context, id uuid.UUID) (domain.Subm, error) {
-	log := logger.FromContext(ctx)
+	log := ctxlog.FromContext(ctx)
 	log.Debug("getting submission", "subm_uuid", id)
 
 	submissionQuery := `
@@ -443,7 +443,7 @@ func (r *pgSubmRepo) GetSubm(ctx context.Context, id uuid.UUID) (domain.Subm, er
 
 // ListSubms retrieves all SubmissionEntities from the database
 func (r *pgSubmRepo) ListSubms(ctx context.Context, limit int, offset int) ([]domain.Subm, error) {
-	log := logger.FromContext(ctx)
+	log := ctxlog.FromContext(ctx)
 	log.Debug("executing ListSubms query", "limit", limit, "offset", offset)
 
 	submissionsQuery := `
@@ -496,7 +496,7 @@ func (r *pgSubmRepo) ListSubms(ctx context.Context, limit int, offset int) ([]do
 
 // CountSubms returns the total number of submissions in the database
 func (r *pgSubmRepo) CountSubms(ctx context.Context) (int, error) {
-	log := logger.FromContext(ctx)
+	log := ctxlog.FromContext(ctx)
 	log.Debug("executing CountSubms query")
 
 	countQuery := `SELECT COUNT(*) FROM submissions`
