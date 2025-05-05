@@ -5,8 +5,8 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
-	"github.com/programme-lv/backend/httpjson"
-	"github.com/programme-lv/backend/logger"
+	"github.com/programme-lv/backend/common/httpjson"
+	"github.com/programme-lv/backend/common/logger"
 )
 
 func (h *SubmHttpHandler) GetFullSubm(w http.ResponseWriter, r *http.Request) {

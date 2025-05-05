@@ -2,15 +2,19 @@ package main
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"log"
 	"log/slog"
 	"os"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 	"github.com/lmittmann/tint"
-	"github.com/programme-lv/backend/conf"
 	"github.com/programme-lv/backend/exec"
 	"github.com/programme-lv/backend/http"
 	"github.com/programme-lv/backend/s3bucket"
@@ -49,7 +53,7 @@ func main() {
 
 	execSrvc := exec.NewExecSrvc()
 
-	pg, err := pgxpool.New(context.Background(), conf.GetPgConnStrFromEnv())
+	pg, err := pgxpool.New(context.Background(), GetPgConnStrFromEnv())
 	if err != nil {
 		log.Fatalf("failed to create pg pool: %v", err)
 	}
@@ -90,7 +94,7 @@ func main() {
 }
 
 func newSubmHttpHandler(userSrvc *user.UserSrvc, taskSrvc srvc.TaskSrvcClient, execSrvc *exec.ExecSrvc) *http2.SubmHttpHandler {
-	pool, err := pgxpool.New(context.Background(), conf.GetPgConnStrFromEnv())
+	pool, err := pgxpool.New(context.Background(), GetPgConnStrFromEnv())
 	if err != nil {
 		log.Fatalf("failed to create pg pool: %v", err)
 	}
@@ -105,4 +109,53 @@ func newSubmHttpHandler(userSrvc *user.UserSrvc, taskSrvc srvc.TaskSrvcClient, e
 	submHttpServer := http2.NewSubmHttpHandler(submSrvc, taskSrvc, userSrvc)
 
 	return submHttpServer
+}
+
+func GetPgConnStrFromEnv() string {
+	host := os.Getenv("POSTGRES_HOST")
+	var pw string
+	if host == "localhost" {
+		pw = os.Getenv("POSTGRES_PW")
+	} else {
+		secretName := os.Getenv("POSTGRES_PASSWORD_SECRET_NAME")
+		secretValue, err := getSecretFromAWS(secretName)
+		if err != nil {
+			panic(fmt.Sprintf("failed to get postgres password from AWS: %v", err))
+		}
+		var secret struct {
+			Password string `json:"password"`
+		}
+		if err := json.Unmarshal([]byte(secretValue), &secret); err != nil {
+			panic(fmt.Sprintf("failed to parse postgres password secret: %v", err))
+		}
+		pw = secret.Password
+	}
+	user := os.Getenv("POSTGRES_USER")
+	port := os.Getenv("POSTGRES_PORT")
+	db := os.Getenv("POSTGRES_DB")
+	ssl := os.Getenv("POSTGRES_SSLMODE")
+
+	return fmt.Sprintf(
+		"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
+		host, port, user, pw, db, ssl)
+}
+
+func getSecretFromAWS(secretName string) (string, error) {
+	cfg, err := config.LoadDefaultConfig(context.TODO())
+	if err != nil {
+		return "", err
+	}
+	svc := secretsmanager.NewFromConfig(cfg, func(opts *secretsmanager.Options) {
+		opts.Region = "eu-central-1"
+	})
+	input := &secretsmanager.GetSecretValueInput{
+		SecretId: aws.String(secretName),
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	result, err := svc.GetSecretValue(ctx, input)
+	if err != nil {
+		return "", err
+	}
+	return *result.SecretString, nil
 }

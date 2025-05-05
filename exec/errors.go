@@ -3,7 +3,7 @@ package exec
 import (
 	"net/http"
 
-	"github.com/programme-lv/backend/srvcerror"
+	"github.com/programme-lv/backend/common/srvcerror"
 )
 
 const ErrCodeInvalidTesterParams = "invalid_tester_params"

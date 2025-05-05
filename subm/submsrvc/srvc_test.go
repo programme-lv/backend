@@ -14,7 +14,7 @@ import (
 	"github.com/peterldowns/pgtestdb"
 	"github.com/peterldowns/pgtestdb/migrators/golangmigrator"
 	"github.com/programme-lv/backend/exec"
-	submadaptermock "github.com/programme-lv/backend/mocks/submadapter"
+	submadaptermock "github.com/programme-lv/backend/gen/mocks/submadapter"
 	"github.com/programme-lv/backend/subm/domain"
 	"github.com/programme-lv/backend/subm/pgrepo"
 	"github.com/programme-lv/backend/subm/submsrvc"

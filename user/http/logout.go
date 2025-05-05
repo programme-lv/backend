@@ -3,7 +3,7 @@ package http
 import (
 	"net/http"
 
-	"github.com/programme-lv/backend/httpjson"
+	"github.com/programme-lv/backend/common/httpjson"
 )
 
 // Logout handles user logout by clearing the auth_token cookie

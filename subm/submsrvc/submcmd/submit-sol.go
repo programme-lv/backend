@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/programme-lv/backend/logger"
+	"github.com/programme-lv/backend/common/logger"
 	"github.com/programme-lv/backend/planglist"
 	subm "github.com/programme-lv/backend/subm/domain"
 	decorator "github.com/programme-lv/backend/subm/srvccqs"

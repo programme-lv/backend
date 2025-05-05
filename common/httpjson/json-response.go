@@ -6,8 +6,8 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/programme-lv/backend/logger"
-	"github.com/programme-lv/backend/srvcerror"
+	"github.com/programme-lv/backend/common/logger"
+	"github.com/programme-lv/backend/common/srvcerror"
 )
 
 type JsonResponse struct {
