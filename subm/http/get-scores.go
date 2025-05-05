@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/programme-lv/backend/httpjson"
+	"github.com/programme-lv/backend/common/httpjson"
 )
 
 func (h *SubmHttpHandler) GetMaxScorePerTask(w http.ResponseWriter, r *http.Request) {

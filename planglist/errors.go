@@ -3,7 +3,7 @@ package planglist
 import (
 	"net/http"
 
-	"github.com/programme-lv/backend/srvcerror"
+	"github.com/programme-lv/backend/common/srvcerror"
 )
 
 const ErrCodeInvalidProgLang = "invalid_programming_language"

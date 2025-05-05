@@ -9,8 +9,8 @@ import (
 
 	"github.com/google/uuid"
 	_ "github.com/lib/pq"
+	"github.com/programme-lv/backend/common/logger"
 	"github.com/programme-lv/backend/exec"
-	"github.com/programme-lv/backend/logger"
 	"github.com/programme-lv/backend/subm/domain"
 	"github.com/programme-lv/backend/subm/submsrvc/submadapter"
 	"github.com/programme-lv/backend/subm/submsrvc/submcmd"

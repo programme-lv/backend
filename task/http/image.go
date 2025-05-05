@@ -13,7 +13,7 @@ import (
 	"strings"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/programme-lv/backend/httpjson"
+	"github.com/programme-lv/backend/common/httpjson"
 	"github.com/programme-lv/backend/user/auth"
 )
 

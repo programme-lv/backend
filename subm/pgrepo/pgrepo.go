@@ -9,7 +9,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/programme-lv/backend/logger"
+	"github.com/programme-lv/backend/common/logger"
 	"github.com/programme-lv/backend/subm/domain"
 )
 

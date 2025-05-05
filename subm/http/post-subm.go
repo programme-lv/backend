@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/programme-lv/backend/httpjson"
-	"github.com/programme-lv/backend/logger"
+	"github.com/programme-lv/backend/common/httpjson"
+	"github.com/programme-lv/backend/common/logger"
 	"github.com/programme-lv/backend/subm/submerror"
 	"github.com/programme-lv/backend/subm/submsrvc/submcmd"
 	"github.com/programme-lv/backend/user/auth"

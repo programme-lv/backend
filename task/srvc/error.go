@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/programme-lv/backend/srvcerror"
+	"github.com/programme-lv/backend/common/srvcerror"
 )
 
 const ErrCodeTaskNotFound = "task_not_found"

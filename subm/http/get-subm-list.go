@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/programme-lv/backend/httpjson"
-	"github.com/programme-lv/backend/logger"
+	"github.com/programme-lv/backend/common/httpjson"
+	"github.com/programme-lv/backend/common/logger"
 	"github.com/programme-lv/backend/subm/domain"
 	"github.com/programme-lv/backend/subm/submsrvc/submquery"
 )

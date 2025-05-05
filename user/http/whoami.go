@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
-	"github.com/programme-lv/backend/httpjson"
+	"github.com/programme-lv/backend/common/httpjson"
 	"github.com/programme-lv/backend/user/auth"
 )
 
