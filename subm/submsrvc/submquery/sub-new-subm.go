@@ -3,8 +3,8 @@ package submquery
 import (
 	"context"
 
-	decorator "github.com/programme-lv/backend/srvccqs"
 	subm "github.com/programme-lv/backend/subm/domain"
+	decorator "github.com/programme-lv/backend/subm/srvccqs"
 )
 
 type SubsNewSubms decorator.QueryHandler[SubsNewSubmsParams, <-chan subm.Subm]
