@@ -1,4 +1,4 @@
-package planglist
+package plang
 
 import (
 	"net/http"

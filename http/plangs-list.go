@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/programme-lv/backend/common/httpjson"
-	"github.com/programme-lv/backend/planglist"
+	"github.com/programme-lv/backend/plang"
 )
 
 // ProgrammingLang represents a programming language.
@@ -25,13 +25,13 @@ type ProgrammingLang struct {
 func (httpserver *HttpServer) listProgrammingLangs(w http.ResponseWriter, r *http.Request) {
 	type listProgLangsResponse []*ProgrammingLang
 
-	langs, err := planglist.ListProgrammingLanguages()
+	langs, err := plang.ListProgrammingLanguages()
 	if err != nil {
 		httpjson.HandleSrvcError(slog.Default(), w, err)
 		return
 	}
 
-	mapProgrammingLangResponse := func(lang *planglist.ProgrammingLang) *ProgrammingLang {
+	mapProgrammingLangResponse := func(lang *plang.ProgrammingLang) *ProgrammingLang {
 		return &ProgrammingLang{
 			ID:               lang.ID,
 			FullName:         lang.FullName,
@@ -46,7 +46,7 @@ func (httpserver *HttpServer) listProgrammingLangs(w http.ResponseWriter, r *htt
 		}
 	}
 
-	mapProgLangsResponse := func(langs []planglist.ProgrammingLang) listProgLangsResponse {
+	mapProgLangsResponse := func(langs []plang.ProgrammingLang) listProgLangsResponse {
 		response := make(listProgLangsResponse, len(langs))
 		for i, lang := range langs {
 			response[i] = mapProgrammingLangResponse(&lang)

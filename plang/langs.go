@@ -1,4 +1,4 @@
-package planglist
+package plang
 
 // ListProgrammingLanguages implements submissions.Service.
 func ListProgrammingLanguages() (res []ProgrammingLang, err error) {

@@ -13,7 +13,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
-	"github.com/programme-lv/backend/s3bucket"
+	"github.com/programme-lv/backend/common/s3bucket"
 	"github.com/programme-lv/backend/task/repo"
 	"github.com/programme-lv/backend/task/srvc"
 	"github.com/programme-lv/backend/user/auth"
