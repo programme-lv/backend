@@ -9,7 +9,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/patrickmn/go-cache"
-	"github.com/programme-lv/backend/planglist"
+	"github.com/programme-lv/backend/plang"
 	"github.com/programme-lv/backend/subm/domain"
 	"github.com/programme-lv/backend/subm/submsrvc"
 	"github.com/programme-lv/backend/task/srvc"
@@ -104,7 +104,7 @@ func (h *SubmHttpHandler) getUsername(ctx context.Context, userUuid uuid.UUID) (
 }
 
 func (h *SubmHttpHandler) getPrLang(ctx context.Context, shortID string) (PrLang, error) {
-	plang, err := planglist.GetProgrLangById(shortID)
+	plang, err := plang.GetProgrLangById(shortID)
 	if err != nil {
 		return PrLang{}, err
 	}

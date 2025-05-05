@@ -7,7 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/programme-lv/backend/common/logger"
-	"github.com/programme-lv/backend/planglist"
+	"github.com/programme-lv/backend/plang"
 	subm "github.com/programme-lv/backend/subm/domain"
 	decorator "github.com/programme-lv/backend/subm/srvccqs"
 	"github.com/programme-lv/backend/subm/submerror"
@@ -52,7 +52,7 @@ func (h SubmitSolCmdHandler) Handle(ctx context.Context, p SubmitSolParams) erro
 		return submerror.ErrUserNotFound()
 	}
 
-	l, err := planglist.GetProgrLangById(p.ProgrLangID)
+	l, err := plang.GetProgrLangById(p.ProgrLangID)
 	if err != nil {
 		log.Error("failed to get programming language", "prog_lang_id", p.ProgrLangID, "error", err)
 		return fmt.Errorf("failed to get progr lang: %w", err)

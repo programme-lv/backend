@@ -1,7 +1,7 @@
 with-expecter: true
 issue-845-fix: True
 packages:
-  github.com/programme-lv/backend/s3bucket:
+  github.com/programme-lv/backend/common/s3bucket:
     config:
       all: true
       filename: "mock_{{.InterfaceName}}.go"

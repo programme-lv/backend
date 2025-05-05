@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/programme-lv/backend/s3bucket"
+	"github.com/programme-lv/backend/common/s3bucket"
 )
 
 type TaskSrvcClient interface {

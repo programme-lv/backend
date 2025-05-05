@@ -10,11 +10,11 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
-	"github.com/programme-lv/backend/planglist"
+	"github.com/programme-lv/backend/plang"
 )
 
 func getPrLangById(id string) (PrLang, error) {
-	lang, err := planglist.GetProgrLangById(id)
+	lang, err := plang.GetProgrLangById(id)
 	if err != nil {
 		return PrLang{}, err
 	}
