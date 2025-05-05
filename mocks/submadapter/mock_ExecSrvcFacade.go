@@ -5,7 +5,7 @@ package submadapter
 import (
 	context "context"
 
-	execsrvc "github.com/programme-lv/backend/execsrvc"
+	execsrvc "github.com/programme-lv/backend/exec"
 	mock "github.com/stretchr/testify/mock"
 
 	uuid "github.com/google/uuid"

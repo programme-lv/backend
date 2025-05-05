@@ -13,7 +13,7 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/peterldowns/pgtestdb"
 	"github.com/peterldowns/pgtestdb/migrators/golangmigrator"
-	"github.com/programme-lv/backend/execsrvc"
+	"github.com/programme-lv/backend/exec"
 	submadaptermock "github.com/programme-lv/backend/mocks/submadapter"
 	"github.com/programme-lv/backend/subm/domain"
 	"github.com/programme-lv/backend/subm/pgrepo"
@@ -199,7 +199,7 @@ func TestUserMaxScores(t *testing.T) {
 
 	// Submit a solution that will get 50% score (1 out of 2 tests pass)
 	setup.execSrvc.EXPECT().Enqueue(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
-	mockCh := make(chan execsrvc.Event, 10)
+	mockCh := make(chan exec.Event, 10)
 	setup.execSrvc.EXPECT().Listen(mock.Anything, mock.Anything).Return(mockCh, nil).Once()
 	setup.userSrvc.EXPECT().GetUserByUUID(mock.Anything, mockUserUuid).Return(user.User{UUID: mockUserUuid}, nil).Once()
 	setup.taskSrvc.EXPECT().GetTask(mock.Anything, "aplusb").Return(newAplusBTask(t), nil).Once()
@@ -219,13 +219,13 @@ func TestUserMaxScores(t *testing.T) {
 	require.NoError(t, err)
 
 	// Simulate evaluation events
-	mockCh <- execsrvc.ReceivedSubmission{SysInfo: "test", StartedAt: time.Now()}
-	mockCh <- execsrvc.StartedTesting{}
-	mockCh <- execsrvc.ReachedTest{TestId: 1}
-	mockCh <- execsrvc.FinishedTest{TestID: 1, Subm: &execsrvc.RunData{ExitCode: 0}, Checker: &execsrvc.RunData{ExitCode: 0}} // AC
-	mockCh <- execsrvc.ReachedTest{TestId: 2}
-	mockCh <- execsrvc.FinishedTest{TestID: 2, Subm: &execsrvc.RunData{ExitCode: 0}, Checker: &execsrvc.RunData{ExitCode: 1}} // WA
-	mockCh <- execsrvc.FinishedTesting{}
+	mockCh <- exec.ReceivedSubmission{SysInfo: "test", StartedAt: time.Now()}
+	mockCh <- exec.StartedTesting{}
+	mockCh <- exec.ReachedTest{TestId: 1}
+	mockCh <- exec.FinishedTest{TestID: 1, Subm: &exec.RunData{ExitCode: 0}, Checker: &exec.RunData{ExitCode: 0}} // AC
+	mockCh <- exec.ReachedTest{TestId: 2}
+	mockCh <- exec.FinishedTest{TestID: 2, Subm: &exec.RunData{ExitCode: 0}, Checker: &exec.RunData{ExitCode: 1}} // WA
+	mockCh <- exec.FinishedTesting{}
 	close(mockCh)
 
 	err = setup.srvc.WaitForEvalFinish(bg, subm.CurrEvalUUID)
@@ -259,7 +259,7 @@ func TestUserMaxScores(t *testing.T) {
 	}, scores)
 
 	// Submit another solution that gets 100% score
-	mockCh2 := make(chan execsrvc.Event, 10)
+	mockCh2 := make(chan exec.Event, 10)
 	setup.execSrvc.EXPECT().Enqueue(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	setup.execSrvc.EXPECT().Listen(mock.Anything, mock.Anything).Return(mockCh2, nil).Once()
 	setup.userSrvc.EXPECT().GetUserByUUID(mock.Anything, mockUserUuid).Return(user.User{UUID: mockUserUuid}, nil)
@@ -280,13 +280,13 @@ func TestUserMaxScores(t *testing.T) {
 	require.NoError(t, err)
 
 	// Simulate evaluation events - both tests pass this time
-	mockCh2 <- execsrvc.ReceivedSubmission{SysInfo: "test", StartedAt: time.Now()}
-	mockCh2 <- execsrvc.StartedTesting{}
-	mockCh2 <- execsrvc.ReachedTest{TestId: 1}
-	mockCh2 <- execsrvc.FinishedTest{TestID: 1, Subm: &execsrvc.RunData{ExitCode: 0}, Checker: &execsrvc.RunData{ExitCode: 0}} // AC
-	mockCh2 <- execsrvc.ReachedTest{TestId: 2}
-	mockCh2 <- execsrvc.FinishedTest{TestID: 2, Subm: &execsrvc.RunData{ExitCode: 0}, Checker: &execsrvc.RunData{ExitCode: 0}} // AC
-	mockCh2 <- execsrvc.FinishedTesting{}
+	mockCh2 <- exec.ReceivedSubmission{SysInfo: "test", StartedAt: time.Now()}
+	mockCh2 <- exec.StartedTesting{}
+	mockCh2 <- exec.ReachedTest{TestId: 1}
+	mockCh2 <- exec.FinishedTest{TestID: 1, Subm: &exec.RunData{ExitCode: 0}, Checker: &exec.RunData{ExitCode: 0}} // AC
+	mockCh2 <- exec.ReachedTest{TestId: 2}
+	mockCh2 <- exec.FinishedTest{TestID: 2, Subm: &exec.RunData{ExitCode: 0}, Checker: &exec.RunData{ExitCode: 0}} // AC
+	mockCh2 <- exec.FinishedTesting{}
 	close(mockCh2)
 
 	err = setup.srvc.WaitForEvalFinish(bg, subm2.CurrEvalUUID)
@@ -332,43 +332,43 @@ func newAplusBTask(t *testing.T) srvc.Task {
 }
 
 // newMockExecEventChannel creates and returns a channel that simulates the execution service events
-func newMockExecEventChannel(t *testing.T) <-chan execsrvc.Event {
+func newMockExecEventChannel(t *testing.T) <-chan exec.Event {
 	t.Helper()
 	t.Log("Creating mock execution event channel...")
-	mockCh := make(chan execsrvc.Event, 1)
+	mockCh := make(chan exec.Event, 1)
 	go func() {
 		defer close(mockCh)
-		events := []execsrvc.Event{
-			execsrvc.ReceivedSubmission{
+		events := []exec.Event{
+			exec.ReceivedSubmission{
 				SysInfo:   "some sys info",
 				StartedAt: time.Now(),
 			},
-			execsrvc.StartedCompiling{},
-			execsrvc.FinishedCompiling{
+			exec.StartedCompiling{},
+			exec.FinishedCompiling{
 				RuntimeData: getExampleRunData(),
 			},
-			execsrvc.StartedTesting{},
-			execsrvc.ReachedTest{
+			exec.StartedTesting{},
+			exec.ReachedTest{
 				TestId: 1,
 				In:     getExampleStrPtr(),
 				Ans:    getExampleStrPtr(),
 			},
-			execsrvc.FinishedTest{
+			exec.FinishedTest{
 				TestID:  1,
 				Subm:    getExampleRunData(),
 				Checker: getExampleRunData(),
 			},
-			execsrvc.ReachedTest{
+			exec.ReachedTest{
 				TestId: 2,
 				In:     getExampleStrPtr(),
 				Ans:    getExampleStrPtr(),
 			},
-			execsrvc.FinishedTest{
+			exec.FinishedTest{
 				TestID:  2,
 				Subm:    getExampleRunData(),
 				Checker: getExampleRunData(),
 			},
-			execsrvc.FinishedTesting{},
+			exec.FinishedTesting{},
 		}
 		for _, event := range events {
 			t.Logf("Sending mock event: %T", event)
@@ -379,8 +379,8 @@ func newMockExecEventChannel(t *testing.T) <-chan execsrvc.Event {
 }
 
 // Helper that generates random run data for tests
-func getExampleRunData() *execsrvc.RunData {
-	return &execsrvc.RunData{
+func getExampleRunData() *exec.RunData {
+	return &exec.RunData{
 		StdIn:    "some std in",
 		StdOut:   "some std out",
 		StdErr:   "some std err",

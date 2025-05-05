@@ -9,7 +9,7 @@ import (
 
 	"github.com/google/uuid"
 	_ "github.com/lib/pq"
-	"github.com/programme-lv/backend/execsrvc"
+	"github.com/programme-lv/backend/exec"
 	"github.com/programme-lv/backend/logger"
 	"github.com/programme-lv/backend/subm/domain"
 	"github.com/programme-lv/backend/subm/submsrvc/submadapter"
@@ -171,7 +171,7 @@ func (s *submSrvc) enqueueEvalExecAndListen(ctx context.Context, eval domain.Eva
 
 	// Create a new background context for the event processing goroutine
 	processCtx := context.Background()
-	go func(execEvCh <-chan execsrvc.Event) {
+	go func(execEvCh <-chan exec.Event) {
 		for ev := range execEvCh {
 			err := s.procExecEv(processCtx, submcmd.ProcExecEvParams{
 				Eval:  eval,

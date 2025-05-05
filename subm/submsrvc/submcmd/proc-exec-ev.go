@@ -6,7 +6,7 @@ import (
 	"log/slog"
 
 	"github.com/google/uuid"
-	"github.com/programme-lv/backend/execsrvc"
+	"github.com/programme-lv/backend/exec"
 	decorator "github.com/programme-lv/backend/srvccqs"
 	subm "github.com/programme-lv/backend/subm/domain"
 )
@@ -15,7 +15,7 @@ type ProcExecEvCmd decorator.CmdHandler[ProcExecEvParams]
 
 type ProcExecEvParams struct {
 	Eval  subm.Eval
-	Event execsrvc.Event
+	Event exec.Event
 }
 
 type ProcExecEvCmdHandler struct {
@@ -35,9 +35,9 @@ func (h *ProcExecEvCmdHandler) Handle(ctx context.Context, p ProcExecEvParams) e
 	eval := applyExecEventToEval(latestEval, p.Event)
 
 	final := false
-	final = final || p.Event.Type() == execsrvc.InternalServerErrorType
-	final = final || p.Event.Type() == execsrvc.CompilationErrorType
-	final = final || p.Event.Type() == execsrvc.FinishedTestingType
+	final = final || p.Event.Type() == exec.InternalServerErrorType
+	final = final || p.Event.Type() == exec.CompilationErrorType
+	final = final || p.Event.Type() == exec.FinishedTestingType
 
 	if final {
 		err := h.StoreEval(ctx, eval)
@@ -63,34 +63,34 @@ func (h *ProcExecEvCmdHandler) Handle(ctx context.Context, p ProcExecEvParams) e
 	return nil
 }
 
-func applyExecEventToEval(eval subm.Eval, event execsrvc.Event) subm.Eval {
+func applyExecEventToEval(eval subm.Eval, event exec.Event) subm.Eval {
 	switch u := event.(type) {
-	case execsrvc.ReceivedSubmission:
-	case execsrvc.StartedCompiling:
+	case exec.ReceivedSubmission:
+	case exec.StartedCompiling:
 		eval.Stage = subm.EvalStageCompiling
-	case execsrvc.StartedTesting:
+	case exec.StartedTesting:
 		eval.Stage = subm.EvalStageTesting
-	case execsrvc.FinishedTesting:
+	case exec.FinishedTesting:
 		eval.Stage = subm.EvalStageFinished
-	case execsrvc.InternalServerError:
+	case exec.InternalServerError:
 		eval.Stage = subm.EvalStageFinished
 		eval.Error = &subm.EvalError{
 			Type:    subm.ErrorTypeInternal,
 			Message: u.ErrorMsg,
 		}
-	case execsrvc.CompilationError:
+	case exec.CompilationError:
 		eval.Stage = subm.EvalStageFinished
 		eval.Error = &subm.EvalError{
 			Type:    subm.ErrorTypeCompilation,
 			Message: u.ErrorMsg,
 		}
-	case execsrvc.ReachedTest:
+	case exec.ReachedTest:
 		if u.TestId > len(eval.Tests) {
 			slog.Error("reached test out of bounds", "test_id", u.TestId, "eval", fmt.Sprintf("%+v", eval))
 			return eval
 		}
 		eval.Tests[u.TestId-1].Reached = true
-	case execsrvc.FinishedTest:
+	case exec.FinishedTest:
 		if u.TestID > len(eval.Tests) {
 			slog.Error("finished test out of bounds", "test_id", u.TestID, "eval", fmt.Sprintf("%+v", eval))
 			return eval
@@ -119,7 +119,7 @@ func applyExecEventToEval(eval subm.Eval, event execsrvc.Event) subm.Eval {
 			memKiB := int(u.Subm.MemKiB)
 			eval.Tests[u.TestID-1].MemKiB = &memKiB
 		}
-	case execsrvc.IgnoredTest:
+	case exec.IgnoredTest:
 		if u.TestId > len(eval.Tests) {
 			slog.Error("ignored test out of bounds", "test_id", u.TestId, "eval", fmt.Sprintf("%+v", eval))
 			return eval
