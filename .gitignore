@@ -2,5 +2,5 @@
 .env.prod
 .aider*
 submsrvc-old
-local-pg/prod-pg.dump
+*.dump
 tmp
