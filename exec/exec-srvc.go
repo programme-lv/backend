@@ -46,11 +46,44 @@ type ExecSrvc struct {
 	// tracks completion status of executions
 	execWg sync.Map // notifies get listener when execution is finished
 
-	listenCancel context.CancelFunc
-	listenWait   sync.WaitGroup // on close, waits for sqs jobs to finish
+	listenCancel     context.CancelFunc
+	listenWait       sync.WaitGroup // on close, waits for sqs jobs to finish
+	listeningStarted bool           // tracks if StartListening has been called
 
 	organizers map[uuid.UUID]*ExecResStreamOrganizer
 	executions map[uuid.UUID]*Execution
+}
+
+// ListenToResultSQS begins listening for SQS messages in a separate goroutine.
+// Returns an error if called more than once.
+func (e *ExecSrvc) ListenToResultSQS() error {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+
+	if e.listeningStarted {
+		return fmt.Errorf("listening already started")
+	}
+
+	e.listeningStarted = true
+	e.listenWait.Add(1)
+	go func() {
+		ctx, cancel := context.WithCancel(context.Background())
+		e.listenCancel = cancel
+		defer cancel()
+		err := StartReceivingResultsFromSqs(
+			ctx,
+			e.respQ,
+			e.sqsClient,
+			e.handleSqsMsg,
+			e.logger,
+		)
+		if err != nil {
+			slog.Error("failed to listen for sqs messages", "error", err)
+		}
+		e.listenWait.Done()
+	}()
+
+	return nil
 }
 
 // NewExecSrvc creates an execution service
@@ -84,24 +117,6 @@ func NewExecSrvc() *ExecSrvc {
 			map[uuid.UUID]*Execution,
 		),
 	}
-
-	esrvc.listenWait.Add(1)
-	go func() {
-		ctx, cancel := context.WithCancel(context.Background())
-		esrvc.listenCancel = cancel
-		defer cancel()
-		err := StartReceivingResultsFromSqs(
-			ctx,
-			esrvc.respQ,
-			esrvc.sqsClient,
-			esrvc.handleSqsMsg,
-			esrvc.logger,
-		)
-		if err != nil {
-			slog.Error("failed to listen for sqs messages", "error", err)
-		}
-		esrvc.listenWait.Done()
-	}()
 
 	return esrvc
 }
