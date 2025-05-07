@@ -41,8 +41,10 @@ func TestEvalServiceCmpListenNoCompile(t *testing.T) {
 
 	// 1. enqueue a submission
 	srvc := exec.NewExecSrvc()
+	err := srvc.ListenToResultSQS()
+	require.NoError(t, err)
 	execUuid := uuid.New()
-	err := srvc.Enqueue(context.Background(), execUuid, "a=int(input());b=int(input());print(a+b)", "python3.11", []exec.TestFile{
+	err = srvc.Enqueue(context.Background(), execUuid, "a=int(input());b=int(input());print(a+b)", "python3.11", []exec.TestFile{
 		{InContent: strPtr("1 2"), AnsContent: strPtr("3")},
 		{InContent: strPtr("3 4"), AnsContent: strPtr("6")},
 	}, exec.TestingParams{

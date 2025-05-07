@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"log/slog"
 	"os"
@@ -38,6 +39,10 @@ func main() {
 	setupLogger()
 	loadEnvVars()
 
+	// Add flag for SQS listening
+	listenSQS := flag.Bool("listen-sqs", true, "Whether to listen to result SQS queue")
+	flag.Parse()
+
 	jwtKey := getRequiredEnv("JWT_KEY")
 	cookieDomain := os.Getenv("COOKIE_DOMAIN")
 
@@ -54,6 +59,15 @@ func main() {
 	}
 
 	execSrvc := exec.NewExecSrvc()
+	if *listenSQS {
+		err = execSrvc.ListenToResultSQS()
+		if err != nil {
+			slog.Error("failed to listen to result SQS", "error", err)
+			os.Exit(1)
+		}
+	} else {
+		slog.Info("listening to execution result SQS disabled")
+	}
 	userSrvc := user.NewUserService(pgPool)
 	taskRepo := repo.NewTaskPgRepo(pgPool)
 
