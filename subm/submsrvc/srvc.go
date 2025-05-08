@@ -15,12 +15,13 @@ import (
 	"github.com/programme-lv/backend/subm/submsrvc/submadapter"
 	"github.com/programme-lv/backend/subm/submsrvc/submcmd"
 	"github.com/programme-lv/backend/subm/submsrvc/submquery"
+	"github.com/programme-lv/backend/user/auth"
 )
 
 type SubmSrvcClient interface {
 	SubmitSol(ctx context.Context, p submcmd.SubmitSolParams) error
 	ReEvalSubm(ctx context.Context, p submcmd.ReEvalSubmParams) error
-	GetSubm(ctx context.Context, uuid uuid.UUID) (domain.Subm, error)
+	ViewSubm(ctx context.Context, uuid uuid.UUID) (domain.Subm, error)
 	ListSubms(ctx context.Context, filter submquery.ListSubmsParams) ([]domain.Subm, error)
 	GetEval(ctx context.Context, uuid uuid.UUID) (domain.Eval, error)
 	SubscribeNewSubms(ctx context.Context) (<-chan domain.Subm, error)
@@ -209,10 +210,36 @@ func (s *submSrvc) ReEvalSubm(ctx context.Context, p submcmd.ReEvalSubmParams) e
 	panic("not implemented")
 }
 
-func (s *submSrvc) GetSubm(ctx context.Context, uuid uuid.UUID) (domain.Subm, error) {
+func (s *submSrvc) ViewSubm(ctx context.Context, submUuid uuid.UUID) (domain.Subm, error) {
 	log := ctxlog.FromContext(ctx)
-	log.Debug("getting submission", "subm_uuid", uuid)
-	return s.submRepo.GetSubm(ctx, uuid)
+
+	subm, err := s.submRepo.GetSubm(ctx, submUuid)
+	if err != nil {
+		log.Error("failed to get submission", "error", err)
+		return domain.Subm{}, fmt.Errorf("failed to get submission: %w", err)
+	}
+
+	userHasSolvedTheTask := false
+	userUUID, err := auth.GetUserUuidFromCtx(ctx)
+	if err == nil {
+		userMaxScores, err := s.GetMaxScorePerTask(ctx, userUUID)
+		if err != nil {
+			log.Error("failed to get user scores", "error", err)
+			return domain.Subm{}, fmt.Errorf("failed to get user scores: %w", err)
+		}
+		userScore, ok := userMaxScores[subm.TaskShortID]
+		if !ok {
+			log.Error("failed to get user score for task", "error", err)
+			return domain.Subm{}, fmt.Errorf("failed to get user score for task: %w", err)
+		}
+		userHasSolvedTheTask = userScore.Received >= userScore.Possible
+	}
+
+	if !userHasSolvedTheTask {
+		subm.Content = ""
+	}
+
+	return subm, nil
 }
 
 func (s *submSrvc) ListSubms(ctx context.Context, filter submquery.ListSubmsParams) ([]domain.Subm, error) {

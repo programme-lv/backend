@@ -22,14 +22,15 @@ func (h *SubmHttpHandler) GetFullSubm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	subm, err := h.submSrvc.GetSubm(r.Context(), submUuid)
+	subm, err := h.submSrvc.ViewSubm(r.Context(), submUuid)
 	if err != nil {
 		log.Error("failed to get submission", "subm_uuid", submUuid, "error", err)
 		httpjson.HandleErrorWithContext(*r, w, err)
 		return
 	}
 
-	response, err := h.mapSubm(r.Context(), subm)
+	var response *DetailedSubmView
+	response, err = h.mapSubm(r.Context(), subm)
 	if err != nil {
 		log.Error("failed to map submission", "subm_uuid", submUuid, "error", err)
 		httpjson.HandleErrorWithContext(*r, w, err)

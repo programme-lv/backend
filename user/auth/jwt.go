@@ -90,3 +90,14 @@ func GetJwtAuthMiddleware(jwtKey []byte) func(next http.Handler) http.Handler {
 		return http.HandlerFunc(hfn)
 	}
 }
+
+func GetUserUuidFromCtx(ctx context.Context) (uuid.UUID, error) {
+	claims, ok := ctx.Value(CtxJwtClaimsKey).(*JwtClaims)
+	if !ok {
+		return uuid.Nil, errors.New("no JWT claims found in context")
+	}
+	if claims == nil {
+		return uuid.Nil, errors.New("no JWT claims found in context")
+	}
+	return uuid.Parse(claims.UUID)
+}

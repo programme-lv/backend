@@ -102,7 +102,7 @@ func TestSubmitSolutionBasicFlow(t *testing.T) {
 	require.Equal(t, submFromCh.UUID, submUUID)
 
 	t.Log("Fetching submission details...")
-	submFromGet, err := setup.srvc.GetSubm(bg, submUUID)
+	submFromGet, err := setup.srvc.ViewSubm(bg, submUUID)
 	require.NoError(t, err)
 
 	t.Log("Verifying submission details...")
@@ -121,7 +121,7 @@ func TestSubmitSolutionPersistence(t *testing.T) {
 	submUUID := setup.submitSolution(t, bg)
 
 	t.Log("Fetching original submission...")
-	origSubm, err := setup.srvc.GetSubm(bg, submUUID)
+	origSubm, err := setup.srvc.ViewSubm(bg, submUUID)
 	require.NoError(t, err)
 
 	t.Log("Creating new service instance...")
@@ -134,7 +134,7 @@ func TestSubmitSolutionPersistence(t *testing.T) {
 	)
 
 	t.Log("Verifying submission persistence...")
-	persistedSubm, err := newSrvc.GetSubm(bg, submUUID)
+	persistedSubm, err := newSrvc.ViewSubm(bg, submUUID)
 	require.NoError(t, err)
 	require.Equal(t, origSubm, persistedSubm)
 
@@ -156,7 +156,7 @@ func TestSubmitSolutionEvaluation(t *testing.T) {
 	submUUID := setup.submitSolution(t, bg)
 
 	t.Log("Fetching submission to get evaluation UUID...")
-	subm, err := setup.srvc.GetSubm(bg, submUUID)
+	subm, err := setup.srvc.ViewSubm(bg, submUUID)
 	require.NoError(t, err)
 
 	updates := []domain.Eval{}
@@ -215,7 +215,7 @@ func TestUserMaxScores(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	subm, err := setup.srvc.GetSubm(bg, submUUID)
+	subm, err := setup.srvc.ViewSubm(bg, submUUID)
 	require.NoError(t, err)
 
 	// Simulate evaluation events
@@ -276,7 +276,7 @@ func TestUserMaxScores(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	subm2, err := setup.srvc.GetSubm(bg, submUUID2)
+	subm2, err := setup.srvc.ViewSubm(bg, submUUID2)
 	require.NoError(t, err)
 
 	// Simulate evaluation events - both tests pass this time
