@@ -9,12 +9,9 @@ import (
 	"github.com/programme-lv/backend/common/ctxlog"
 	"github.com/programme-lv/backend/plang"
 	subm "github.com/programme-lv/backend/subm/domain"
-	decorator "github.com/programme-lv/backend/subm/srvccqs"
 	"github.com/programme-lv/backend/subm/submerror"
 	"github.com/programme-lv/backend/task/srvc"
 )
-
-type SubmitSolCmd decorator.CmdHandler[SubmitSolParams]
 
 type SubmitSolParams struct {
 	UUID        uuid.UUID

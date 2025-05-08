@@ -89,7 +89,7 @@ func (h *SubmHttpHandler) PostSubm(w http.ResponseWriter, r *http.Request) {
 
 	h.submCache.Flush()
 
-	subm, err := h.submSrvc.GetSubm(r.Context(), submUUID)
+	subm, err := h.submSrvc.ViewSubm(r.Context(), submUUID)
 	if err != nil {
 		log.Error("failed to get submission after creation", "subm_uuid", submUUID, "error", err)
 		httpjson.HandleErrorWithContext(*r, w, err)
