@@ -48,7 +48,7 @@ func New(errorCode string, msgToUser string) *Error {
 
 const ErrCodeInternalServerError = "internal_server_error"
 
-func ErrInternalSE() *Error {
+func ErrInternalServerError() *Error {
 	return New(
 		ErrCodeInternalServerError,
 		"iekšēja servera kļūda",

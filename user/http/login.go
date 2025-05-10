@@ -55,7 +55,7 @@ func (httpserver *UserHttpHandler) Login(w http.ResponseWriter, r *http.Request)
 	}
 	http.SetCookie(w, &cookie)
 
-	httpjson.WriteSuccessJson(w, User{
+	httpjson.Success(w, User{
 		UUID:      user.UUID.String(),
 		Username:  user.Username,
 		Email:     user.Email,

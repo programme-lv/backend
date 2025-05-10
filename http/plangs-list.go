@@ -56,5 +56,5 @@ func (httpserver *HttpServer) listProgrammingLangs(w http.ResponseWriter, r *htt
 
 	response := mapProgLangsResponse(langs)
 
-	httpjson.WriteSuccessJson(w, response)
+	httpjson.Success(w, response)
 }

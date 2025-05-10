@@ -18,7 +18,6 @@ import (
 	"github.com/programme-lv/backend/subm/domain"
 	"github.com/programme-lv/backend/subm/pgrepo"
 	"github.com/programme-lv/backend/subm/submsrvc"
-	"github.com/programme-lv/backend/subm/submsrvc/submadapter"
 	"github.com/programme-lv/backend/subm/submsrvc/submcmd"
 	"github.com/programme-lv/backend/subm/submsrvc/submquery"
 	"github.com/programme-lv/backend/task/srvc"
@@ -33,8 +32,8 @@ type testSetup struct {
 	userSrvc *submadaptermock.MockUserSrvcFacade
 	taskSrvc *submadaptermock.MockTaskSrvcFacade
 	execSrvc *submadaptermock.MockExecSrvcFacade
-	submRepo submadapter.SubmRepo
-	evalRepo submadapter.EvalRepo
+	submRepo submsrvc.SubmRepo
+	evalRepo submsrvc.EvalRepo
 	srvc     submsrvc.SubmSrvcClient
 }
 

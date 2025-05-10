@@ -14,7 +14,7 @@ func (httpserver *TaskHttpHandler) ListTasks(w http.ResponseWriter, r *http.Requ
 	// Try to get tasks from cache
 	if cachedTasks, found := httpserver.cache.Get(taskListCacheKey); found {
 		if tasks, ok := cachedTasks.([]*Task); ok {
-			httpjson.WriteSuccessJson(w, tasks)
+			httpjson.Success(w, tasks)
 			return
 		}
 	}
@@ -49,5 +49,5 @@ func (httpserver *TaskHttpHandler) ListTasks(w http.ResponseWriter, r *http.Requ
 	}
 
 	response, _ := result.([]*Task)
-	httpjson.WriteSuccessJson(w, response)
+	httpjson.Success(w, response)
 }

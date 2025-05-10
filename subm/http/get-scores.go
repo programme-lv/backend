@@ -31,5 +31,5 @@ func (h *SubmHttpHandler) GetMaxScorePerTask(w http.ResponseWriter, r *http.Requ
 		}
 	}
 
-	httpjson.WriteSuccessJson(w, scoresJson)
+	httpjson.Success(w, scoresJson)
 }

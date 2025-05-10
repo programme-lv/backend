@@ -54,5 +54,5 @@ func (httpserver *UserHttpHandler) Register(w http.ResponseWriter, r *http.Reque
 		Lastname:  user.Lastname,
 	}
 
-	httpjson.WriteSuccessJson(w, response)
+	httpjson.Success(w, response)
 }

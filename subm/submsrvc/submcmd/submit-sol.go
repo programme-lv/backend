@@ -27,12 +27,11 @@ type SubmitSolCmdHandler struct {
 	StoreSubm        func(ctx context.Context, subm subm.Subm) error
 	StoreEval        func(ctx context.Context, eval subm.Eval) error
 	BcastSubmCreated func(subm subm.Subm)
-	EnqueueEvalExec  func(ctx context.Context, eval subm.Eval, srcCode string, prLangId string) error
+	EnqueueExec      func(ctx context.Context, eval subm.Eval, srcCode string, prLangId string) error
 }
 
 func (h SubmitSolCmdHandler) Handle(ctx context.Context, p SubmitSolParams) error {
 	log := ctxlog.FromContext(ctx)
-	log.Debug("handling submit solution command", "subm_uuid", p.UUID, "author_uuid", p.AuthorUUID, "task_id", p.TaskShortID)
 
 	if len(p.Submission) > 64*1024 { // 64 KB
 		log.Warn("submission too long", "size", len(p.Submission))
@@ -90,7 +89,7 @@ func (h SubmitSolCmdHandler) Handle(ctx context.Context, p SubmitSolParams) erro
 	log.Debug("broadcasting submission created", "subm_uuid", p.UUID)
 	h.BcastSubmCreated(entity)
 
-	err = h.EnqueueEvalExec(ctx, eval, entity.Content, l.ID)
+	err = h.EnqueueExec(ctx, eval, entity.Content, l.ID)
 	if err != nil {
 		log.Error("failed to enqueue execution", "eval_uuid", evalUuid, "error", err)
 		return fmt.Errorf("failed to enqueue execution of submission: %w", err)

@@ -77,7 +77,7 @@ func (httpserver *HttpServer) testerRun(w http.ResponseWriter, r *http.Request) 
 		EvalUUID: execUuid.String(),
 	}
 
-	httpjson.WriteSuccessJson(w, res)
+	httpjson.Success(w, res)
 }
 
 func (httpserver *HttpServer) testerListen(w http.ResponseWriter, r *http.Request) {

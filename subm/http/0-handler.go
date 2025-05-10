@@ -3,24 +3,24 @@ package http
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"sync"
 	"time"
 
-	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/patrickmn/go-cache"
+	"github.com/programme-lv/backend/common/ctxlog"
 	"github.com/programme-lv/backend/plang"
 	"github.com/programme-lv/backend/subm/domain"
-	"github.com/programme-lv/backend/subm/submsrvc"
-	"github.com/programme-lv/backend/task/srvc"
+	submsrvc "github.com/programme-lv/backend/subm/submsrvc"
+	tasksrvc "github.com/programme-lv/backend/task/srvc"
 	"github.com/programme-lv/backend/user"
-	"github.com/programme-lv/backend/user/auth"
 	"golang.org/x/sync/singleflight"
 )
 
 type SubmHttpHandler struct {
 	submSrvc submsrvc.SubmSrvcClient
-	taskSrvc srvc.TaskSrvcClient
+	taskSrvc tasksrvc.TaskSrvcClient
 	userSrvc *user.UserSrvc
 
 	// solution submission rate limit
@@ -29,34 +29,25 @@ type SubmHttpHandler struct {
 
 	// submCache and singleflight for preventing submCache stampedes
 	submCache *cache.Cache
-	sfGroup   singleflight.Group
+	sfGroup   singleflight.Group // singleflight.Group doesn't need initialization
 }
 
 func NewSubmHttpHandler(
 	submSrvc submsrvc.SubmSrvcClient,
-	taskSrvc srvc.TaskSrvcClient,
+	taskSrvc tasksrvc.TaskSrvcClient,
 	userSrvc *user.UserSrvc,
 ) *SubmHttpHandler {
-	// Create a cache with 1 second default expiration and 1 minute cleanup interval
-	c := cache.New(1*time.Second, 1*time.Minute)
 	return &SubmHttpHandler{
 		submSrvc:     submSrvc,
 		taskSrvc:     taskSrvc,
 		userSrvc:     userSrvc,
 		lastSubmTime: make(map[string]time.Time),
-		submCache:    c,
-		// singleflight.Group doesn't need initialization
+		submCache:    cache.New(1*time.Second, 1*time.Minute),
 	}
 }
 
-func (h *SubmHttpHandler) RegisterRoutes(r *chi.Mux, jwtKey []byte) {
-	r.Group(func(r chi.Router) {
-		r.Use(auth.GetJwtAuthMiddleware(jwtKey))
-		r.Post("/subm", h.PostSubm)
-		r.Get("/subm", h.GetSubmList)
-		r.Get("/subm/{subm-uuid}", h.GetFullSubm)
-		r.Get("/subm/scores/{username}", h.GetMaxScorePerTask)
-	})
+func (h *SubmHttpHandler) newLogger(ctx context.Context) *slog.Logger {
+	return ctxlog.FromContext(ctx).With("module", "subm", "layer", "http")
 }
 
 func (h *SubmHttpHandler) mapSubm(

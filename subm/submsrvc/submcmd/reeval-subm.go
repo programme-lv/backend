@@ -5,62 +5,57 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
-	subm "github.com/programme-lv/backend/subm/domain"
-	decorator "github.com/programme-lv/backend/subm/srvccqs"
+	submdomain "github.com/programme-lv/backend/subm/domain"
+	tasksrvc "github.com/programme-lv/backend/task/srvc"
 )
-
-type ReEvalSubmCmd decorator.CmdHandler[ReEvalSubmParams]
-
-func NewReEvalSubmCmd(
-	getSubm func(ctx context.Context, submUuid uuid.UUID) (subm.Subm, error),
-	createEval func(ctx context.Context, evalUuid uuid.UUID, submUuid uuid.UUID) error,
-	assignEval func(ctx context.Context, evalUuid uuid.UUID) error,
-	enqueueEval func(ctx context.Context, evalUuid uuid.UUID) error,
-) ReEvalSubmCmd {
-	return reEvalSubmHandler{
-		getSubm:     getSubm,
-		createEval:  createEval,
-		assignEval:  assignEval,
-		enqueueEval: enqueueEval,
-	}
-}
 
 type ReEvalSubmParams struct {
 	SubmUUID uuid.UUID
 }
 
-type reEvalSubmHandler struct {
+type ReEvalSubmHandler struct {
 	// get persisted submission entity by uuid
-	getSubm func(ctx context.Context, submUuid uuid.UUID) (subm.Subm, error)
+	GetSubm func(ctx context.Context, submUuid uuid.UUID) (submdomain.Subm, error)
 
-	// create and persist new evaluation entity, bcast evaluation created event
-	createEval func(ctx context.Context, evalUuid uuid.UUID, submUuid uuid.UUID) error
+	// get persisted task entity by short id
+	GetTask func(ctx context.Context, shortId string) (tasksrvc.Task, error)
+
+	// persist evaluation entity
+	StoreEval func(ctx context.Context, eval submdomain.Eval) error
 
 	// assign evaluation to submission
-	assignEval func(ctx context.Context, evalUuid uuid.UUID) error
+	AssignEval func(ctx context.Context, submUuid uuid.UUID, evalUuid uuid.UUID) error
 
 	// enqueue evaluation for corresponding submission execution by tester
-	enqueueEval func(ctx context.Context, evalUuid uuid.UUID) error
+	EnqueueExec func(ctx context.Context, eval submdomain.Eval, srcCode string, prLangId string) error
 }
 
-func (h reEvalSubmHandler) Handle(ctx context.Context, p ReEvalSubmParams) error {
-	subm, err := h.getSubm(ctx, p.SubmUUID)
+func (h ReEvalSubmHandler) Handle(ctx context.Context, submUuid uuid.UUID) error {
+	subm, err := h.GetSubm(ctx, submUuid)
 	if err != nil {
 		return err
 	}
 
-	evalUuid := uuid.New()
-	err = h.createEval(ctx, evalUuid, subm.UUID)
+	t, err := h.GetTask(ctx, subm.TaskShortID)
 	if err != nil {
-		return fmt.Errorf("failed to create evaluation: %w", err)
+		errMsg := fmt.Errorf("failed to get task: %w", err)
+		return errMsg
 	}
 
-	err = h.assignEval(ctx, evalUuid)
+	evalUuid := uuid.New()
+	eval := submdomain.NewEval(evalUuid, subm.UUID, t)
+
+	err = h.StoreEval(ctx, eval)
+	if err != nil {
+		return fmt.Errorf("failed to store evaluation: %w", err)
+	}
+
+	err = h.AssignEval(ctx, subm.UUID, evalUuid)
 	if err != nil {
 		return fmt.Errorf("failed to assign new eval to submission: %w", err)
 	}
 
-	err = h.enqueueEval(ctx, evalUuid)
+	err = h.EnqueueExec(ctx, eval, subm.Content, subm.LangShortID)
 	if err != nil {
 		return fmt.Errorf("failed to enqueue evaluation: %w", err)
 	}

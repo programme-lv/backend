@@ -24,7 +24,7 @@ type PutStatementRequest struct {
 func (h *TaskHttpHandler) PutStatement(w http.ResponseWriter, r *http.Request) {
 	claims, ok := r.Context().Value(auth.CtxJwtClaimsKey).(*auth.JwtClaims)
 	if !ok || claims == nil || claims.Username != "admin" {
-		httpjson.WriteErrorJson(w, "Can't edit statement as non-admin user", http.StatusUnauthorized, "unauthorized")
+		httpjson.Error(w, "Can't edit statement as non-admin user", http.StatusUnauthorized, "unauthorized")
 		return
 	}
 
@@ -59,7 +59,7 @@ func (h *TaskHttpHandler) PutStatement(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = httpjson.WriteSuccessJson(w, nil)
+	err = httpjson.Success(w, nil)
 	if err != nil {
 		slog.Error("failed to write success json", "error", err)
 	}

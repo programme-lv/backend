@@ -21,5 +21,5 @@ func (httpserver *UserHttpHandler) Logout(w http.ResponseWriter, r *http.Request
 	}
 	http.SetCookie(w, &cookie)
 
-	httpjson.WriteSuccessJson(w, map[string]string{"message": "Logout successful"})
+	httpjson.Success(w, map[string]string{"message": "Logout successful"})
 }

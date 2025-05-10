@@ -12,15 +12,16 @@ import (
 	"github.com/programme-lv/backend/common/ctxlog"
 	"github.com/programme-lv/backend/exec"
 	"github.com/programme-lv/backend/subm/domain"
-	"github.com/programme-lv/backend/subm/submsrvc/submadapter"
 	"github.com/programme-lv/backend/subm/submsrvc/submcmd"
 	"github.com/programme-lv/backend/subm/submsrvc/submquery"
+	"github.com/programme-lv/backend/task/srvc"
+	usersrvc "github.com/programme-lv/backend/user"
 	"github.com/programme-lv/backend/user/auth"
 )
 
 type SubmSrvcClient interface {
 	SubmitSol(ctx context.Context, p submcmd.SubmitSolParams) error
-	ReEvalSubm(ctx context.Context, p submcmd.ReEvalSubmParams) error
+	ReEvalSubm(ctx context.Context, submUuid uuid.UUID) error
 	ViewSubm(ctx context.Context, uuid uuid.UUID) (domain.Subm, error)
 	ListSubms(ctx context.Context, filter submquery.ListSubmsParams) ([]domain.Subm, error)
 	GetEval(ctx context.Context, uuid uuid.UUID) (domain.Eval, error)
@@ -32,11 +33,12 @@ type SubmSrvcClient interface {
 }
 
 type submSrvc struct {
-	userSrvc submadapter.UserSrvcFacade
-	taskSrvc submadapter.TaskSrvcFacade
-	execSrvc submadapter.ExecSrvcFacade
-	submRepo submadapter.SubmRepo
-	evalRepo submadapter.EvalRepo
+	submRepo SubmRepo
+	evalRepo EvalRepo
+
+	userSrvc UserSrvcFacade
+	taskSrvc TaskSrvcFacade
+	execSrvc ExecSrvcFacade
 
 	newSubmChListenerLock sync.Mutex
 	newSubmListeners      map[chan domain.Subm]struct{}
@@ -45,6 +47,33 @@ type submSrvc struct {
 	newEvalUpdListeners    map[chan domain.Eval]struct{}
 
 	inProgrEval map[uuid.UUID]domain.Eval
+}
+
+type SubmRepo interface {
+	AssignEval(ctx context.Context, submUuid uuid.UUID, evalUuid uuid.UUID) error
+	GetSubm(ctx context.Context, id uuid.UUID) (domain.Subm, error)
+	ListSubms(ctx context.Context, limit int, offset int) ([]domain.Subm, error)
+	StoreSubm(ctx context.Context, subm domain.Subm) error
+	CountSubms(ctx context.Context) (int, error)
+}
+
+type EvalRepo interface {
+	GetEval(ctx context.Context, evalUUID uuid.UUID) (domain.Eval, error)
+	StoreEval(ctx context.Context, eval domain.Eval) error
+}
+
+type UserSrvcFacade interface {
+	GetUserByUUID(ctx context.Context, uuid uuid.UUID) (usersrvc.User, error)
+}
+
+type TaskSrvcFacade interface {
+	GetTask(ctx context.Context, shortId string) (srvc.Task, error)
+	GetTestDownlUrl(ctx context.Context, testFileSha256 string) (string, error)
+}
+
+type ExecSrvcFacade interface {
+	Enqueue(ctx context.Context, execUuid uuid.UUID, srcCode string, prLangId string, tests []exec.TestFile, params exec.TestingParams) error
+	Listen(ctx context.Context, execUuid uuid.UUID) (<-chan exec.Event, error)
 }
 
 // GetMaxScorePerTask implements SubmSrvcClient.
@@ -89,11 +118,11 @@ func (s *submSrvc) GetMaxScorePerTask(ctx context.Context, userUUID uuid.UUID) (
 }
 
 func NewSubmSrvc(
-	userSrvc submadapter.UserSrvcFacade,
-	taskSrvc submadapter.TaskSrvcFacade,
-	execSrvc submadapter.ExecSrvcFacade,
-	submRepo submadapter.SubmRepo,
-	evalRepo submadapter.EvalRepo,
+	userSrvc UserSrvcFacade,
+	taskSrvc TaskSrvcFacade,
+	execSrvc ExecSrvcFacade,
+	submRepo SubmRepo,
+	evalRepo EvalRepo,
 ) SubmSrvcClient {
 	return &submSrvc{
 		userSrvc: userSrvc,
@@ -200,14 +229,21 @@ func (s *submSrvc) SubmitSol(ctx context.Context, p submcmd.SubmitSolParams) err
 		StoreSubm:        s.submRepo.StoreSubm,
 		StoreEval:        s.evalRepo.StoreEval,
 		BcastSubmCreated: s.broadcastSubmCreated,
-		EnqueueEvalExec:  s.enqueueEvalExecAndListen,
+		EnqueueExec:      s.enqueueEvalExecAndListen,
 	}
 
 	return submitSolCmd.Handle(ctx, p)
 }
 
-func (s *submSrvc) ReEvalSubm(ctx context.Context, p submcmd.ReEvalSubmParams) error {
-	panic("not implemented")
+func (s *submSrvc) ReEvalSubm(ctx context.Context, submUuid uuid.UUID) error {
+	reevalSubmCmd := submcmd.ReEvalSubmHandler{
+		GetSubm:     s.submRepo.GetSubm,
+		GetTask:     s.taskSrvc.GetTask,
+		StoreEval:   s.evalRepo.StoreEval,
+		AssignEval:  s.submRepo.AssignEval,
+		EnqueueExec: s.enqueueEvalExecAndListen,
+	}
+	return reevalSubmCmd.Handle(ctx, submUuid)
 }
 
 func (s *submSrvc) ViewSubm(ctx context.Context, submUuid uuid.UUID) (domain.Subm, error) {

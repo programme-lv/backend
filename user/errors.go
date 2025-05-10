@@ -44,7 +44,7 @@ func newErrEmailExists() *srvcerror.Error {
 }
 
 func newErrInternalSE() *srvcerror.Error {
-	return srvcerror.ErrInternalSE()
+	return srvcerror.ErrInternalServerError()
 }
 
 const ErrCodeEmailTooLong = "email_too_long"
