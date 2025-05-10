@@ -20,7 +20,7 @@ import (
 func (h *TaskHttpHandler) DeleteStatementImage(w http.ResponseWriter, r *http.Request) {
 	claims, ok := r.Context().Value(auth.CtxJwtClaimsKey).(*auth.JwtClaims)
 	if !ok || claims == nil || claims.Username != "admin" {
-		httpjson.WriteErrorJson(w, "Can't delete statement image as non-admin user", http.StatusUnauthorized, "unauthorized")
+		httpjson.Error(w, "Can't delete statement image as non-admin user", http.StatusUnauthorized, "unauthorized")
 		return
 	}
 
@@ -32,7 +32,7 @@ func (h *TaskHttpHandler) DeleteStatementImage(w http.ResponseWriter, r *http.Re
 	if err != nil {
 		errMsg := fmt.Sprintf("failed to decode S3 URI: %v", err)
 		errCode := "invalid_s3_uri"
-		httpjson.WriteErrorJson(w, errMsg, http.StatusBadRequest, errCode)
+		httpjson.Error(w, errMsg, http.StatusBadRequest, errCode)
 		return
 	}
 
@@ -44,7 +44,7 @@ func (h *TaskHttpHandler) DeleteStatementImage(w http.ResponseWriter, r *http.Re
 
 	h.cache.Delete(taskGetCacheKey(taskId))
 
-	err = httpjson.WriteSuccessJson(w, map[string]string{"status": "ok"})
+	err = httpjson.Success(w, map[string]string{"status": "ok"})
 	if err != nil {
 		slog.Error("failed to write success json", "error", err)
 	}
@@ -53,7 +53,7 @@ func (h *TaskHttpHandler) DeleteStatementImage(w http.ResponseWriter, r *http.Re
 func (h *TaskHttpHandler) UploadStatementImage(w http.ResponseWriter, r *http.Request) {
 	claims, ok := r.Context().Value(auth.CtxJwtClaimsKey).(*auth.JwtClaims)
 	if !ok || claims == nil || claims.Username != "admin" {
-		httpjson.WriteErrorJson(w, "Can't edit statement as non-admin user", http.StatusUnauthorized, "unauthorized")
+		httpjson.Error(w, "Can't edit statement as non-admin user", http.StatusUnauthorized, "unauthorized")
 		return
 	}
 	taskId := chi.URLParam(r, "taskId")
@@ -62,7 +62,7 @@ func (h *TaskHttpHandler) UploadStatementImage(w http.ResponseWriter, r *http.Re
 	if err != nil {
 		errMsg := fmt.Sprintf("failed to parse multipart form (maybe the image is too large?): %v", err)
 		errCode := "failed_to_parse_multipart_form"
-		httpjson.WriteErrorJson(w, errMsg, http.StatusBadRequest, errCode)
+		httpjson.Error(w, errMsg, http.StatusBadRequest, errCode)
 		return
 	}
 
@@ -71,7 +71,7 @@ func (h *TaskHttpHandler) UploadStatementImage(w http.ResponseWriter, r *http.Re
 	if err != nil {
 		errMsg := fmt.Sprintf("failed to get image: %v", err)
 		errCode := "failed_to_get_image"
-		httpjson.WriteErrorJson(w, errMsg, http.StatusBadRequest, errCode)
+		httpjson.Error(w, errMsg, http.StatusBadRequest, errCode)
 		return
 	}
 	defer image.Close()
@@ -85,20 +85,20 @@ func (h *TaskHttpHandler) UploadStatementImage(w http.ResponseWriter, r *http.Re
 	if !allowedChars.MatchString(filenameWithoutExt) {
 		errMsg := fmt.Sprintf("invalid filename (only alphanumeric characters, underscores, and hyphens are allowed): %s", uploadedFilename)
 		errCode := "invalid_filename"
-		httpjson.WriteErrorJson(w, errMsg, http.StatusBadRequest, errCode)
+		httpjson.Error(w, errMsg, http.StatusBadRequest, errCode)
 		return
 	}
 	if len(filenameWithoutExt) > 100 {
 		errMsg := fmt.Sprintf("filename is too long (max 100 characters): %s", filenameWithoutExt)
 		errCode := "filename_too_long"
-		httpjson.WriteErrorJson(w, errMsg, http.StatusBadRequest, errCode)
+		httpjson.Error(w, errMsg, http.StatusBadRequest, errCode)
 		return
 	}
 	cantContain := []string{"CON", "PRN", "AUX", "NUL", "COM", "LPT"}
 	if len(filenameWithoutExt) < 4 && slices.Contains(cantContain, filenameWithoutExt) {
 		errMsg := fmt.Sprintf("invalid filename (may contain reserved filenames): %s", filenameWithoutExt)
 		errCode := "invalid_filename"
-		httpjson.WriteErrorJson(w, errMsg, http.StatusBadRequest, errCode)
+		httpjson.Error(w, errMsg, http.StatusBadRequest, errCode)
 		return
 	}
 
@@ -107,7 +107,7 @@ func (h *TaskHttpHandler) UploadStatementImage(w http.ResponseWriter, r *http.Re
 	if err != nil {
 		errMsg := fmt.Sprintf("failed to get MIME types: %v", err)
 		errCode := "failed_to_get_mimes"
-		httpjson.WriteErrorJson(w, errMsg, http.StatusBadRequest, errCode)
+		httpjson.Error(w, errMsg, http.StatusBadRequest, errCode)
 		return
 	}
 
@@ -115,7 +115,7 @@ func (h *TaskHttpHandler) UploadStatementImage(w http.ResponseWriter, r *http.Re
 	if !isExtensionValidForMIME(imageFilenameExt, imageMimeType) {
 		errMsg := fmt.Sprintf("file extension '%s' does not match detected MIME type '%s'", imageFilenameExt, imageMimeType)
 		errCode := "invalid_file_extension"
-		httpjson.WriteErrorJson(w, errMsg, http.StatusBadRequest, errCode)
+		httpjson.Error(w, errMsg, http.StatusBadRequest, errCode)
 		return
 	}
 
@@ -123,7 +123,7 @@ func (h *TaskHttpHandler) UploadStatementImage(w http.ResponseWriter, r *http.Re
 	if err != nil {
 		errMsg := fmt.Sprintf("failed to read image: %v", err)
 		errCode := "failed_to_read_image"
-		httpjson.WriteErrorJson(w, errMsg, http.StatusBadRequest, errCode)
+		httpjson.Error(w, errMsg, http.StatusBadRequest, errCode)
 		return
 	}
 
@@ -135,7 +135,7 @@ func (h *TaskHttpHandler) UploadStatementImage(w http.ResponseWriter, r *http.Re
 
 	h.cache.Delete(taskGetCacheKey(taskId))
 
-	err = httpjson.WriteSuccessJson(w, uri)
+	err = httpjson.Success(w, uri)
 	if err != nil {
 		slog.Error("failed to write success json", "error", err)
 	}

@@ -17,7 +17,7 @@ type JsonResponse struct {
 	ErrMsg  string `json:"message,omitempty"`
 }
 
-func WriteSuccessJson(w http.ResponseWriter, data any) error {
+func Success(w http.ResponseWriter, data any) error {
 	resp := JsonResponse{
 		Status: "success",
 		Data:   data,
@@ -27,7 +27,7 @@ func WriteSuccessJson(w http.ResponseWriter, data any) error {
 	return json.NewEncoder(w).Encode(resp)
 }
 
-func WriteErrorJson(w http.ResponseWriter, errMsg string, statusCode int, errCode string) error {
+func Error(w http.ResponseWriter, errMsg string, statusCode int, errCode string) error {
 	resp := JsonResponse{
 		Status:  "error",
 		ErrMsg:  errMsg,
@@ -38,8 +38,41 @@ func WriteErrorJson(w http.ResponseWriter, errMsg string, statusCode int, errCod
 	return json.NewEncoder(w).Encode(resp)
 }
 
+func BadRequest(w http.ResponseWriter, errMsg string) error {
+	resp := JsonResponse{
+		Status:  "error",
+		ErrMsg:  errMsg,
+		ErrCode: "http_bad_request",
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusBadRequest)
+	return json.NewEncoder(w).Encode(resp)
+}
+
+func Forbidden(w http.ResponseWriter, errMsg string) error {
+	resp := JsonResponse{
+		Status:  "error",
+		ErrMsg:  errMsg,
+		ErrCode: "http_forbidden",
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusForbidden)
+	return json.NewEncoder(w).Encode(resp)
+}
+
+func Unauthorized(w http.ResponseWriter, errMsg string) error {
+	resp := JsonResponse{
+		Status:  "error",
+		ErrMsg:  errMsg,
+		ErrCode: "http_unauthorized",
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusUnauthorized)
+	return json.NewEncoder(w).Encode(resp)
+}
+
 func writeInternalErrorJson(w http.ResponseWriter) {
-	WriteErrorJson(w,
+	Error(w,
 		http.StatusText(http.StatusInternalServerError),
 		http.StatusInternalServerError,
 		"")
@@ -56,7 +89,7 @@ func HandleSrvcError(logger *slog.Logger, w http.ResponseWriter, err error) {
 		if srvcErr.HttpStatusCode() == http.StatusInternalServerError {
 			logger.Error("internal server error", "error", err)
 		}
-		WriteErrorJson(w, srvcErr.Error(), srvcErr.HttpStatusCode(), srvcErr.ErrorCode())
+		Error(w, srvcErr.Error(), srvcErr.HttpStatusCode(), srvcErr.ErrorCode())
 		return
 	} else {
 		logger.Error("internal server error", "error", err)

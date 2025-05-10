@@ -12,7 +12,7 @@ import (
 func (h *UserHttpHandler) WhoAmI(w http.ResponseWriter, r *http.Request) {
 	claims, ok := r.Context().Value(auth.CtxJwtClaimsKey).(*auth.JwtClaims)
 	if !ok || claims == nil {
-		httpjson.WriteSuccessJson(w, nil)
+		httpjson.Success(w, nil)
 		return
 	}
 
@@ -28,7 +28,7 @@ func (h *UserHttpHandler) WhoAmI(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpjson.WriteSuccessJson(w, User{
+	httpjson.Success(w, User{
 		UUID:      user.UUID.String(),
 		Username:  user.Username,
 		Email:     user.Email,

@@ -38,5 +38,5 @@ func (h *SubmHttpHandler) GetFullSubm(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Info("returning full submission", "subm_uuid", submUuid)
-	httpjson.WriteSuccessJson(w, response)
+	httpjson.Success(w, response)
 }

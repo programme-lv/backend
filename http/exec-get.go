@@ -24,5 +24,5 @@ func (httpserver *HttpServer) execGet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpjson.WriteSuccessJson(w, exec)
+	httpjson.Success(w, exec)
 }

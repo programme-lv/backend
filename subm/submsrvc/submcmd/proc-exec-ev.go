@@ -44,8 +44,6 @@ func (h *ProcExecEvCmdHandler) Handle(ctx context.Context, p ProcExecEvParams) e
 		if err != nil {
 			slog.Error("failed to store evaluation", "error", err)
 			return err
-		} else {
-			slog.Info("stored evaluation", "eval", fmt.Sprintf("%+v", eval))
 		}
 		delete(h.InProgrEval, p.Eval.UUID)
 	} else {

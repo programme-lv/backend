@@ -58,7 +58,7 @@ func (h *SubmHttpHandler) GetSubmList(w http.ResponseWriter, r *http.Request) {
 	if cachedResponse, found := h.submCache.Get(cacheKey); found {
 		if response, ok := cachedResponse.(PaginatedResponse); ok {
 			log.Info("returning cached submission list", "limit", limit, "offset", offset)
-			httpjson.WriteSuccessJson(w, response)
+			httpjson.Success(w, response)
 			return
 		}
 	}
@@ -133,5 +133,5 @@ func (h *SubmHttpHandler) GetSubmList(w http.ResponseWriter, r *http.Request) {
 
 	response := result.(PaginatedResponse)
 	log.Info("returning submission list", "count", len(response.Page.([]SubmListEntry)), "total", response.Pagination.Total)
-	httpjson.WriteSuccessJson(w, response)
+	httpjson.Success(w, response)
 }

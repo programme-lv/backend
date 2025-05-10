@@ -18,15 +18,15 @@ func (httpserver *UserHttpHandler) GetRole(w http.ResponseWriter, r *http.Reques
 
 	// If no claims (not logged in) or claims retrieval failed, user is a guest
 	if !ok || claims == nil {
-		httpjson.WriteSuccessJson(w, RoleResponse{Role: "guest"})
+		httpjson.Success(w, RoleResponse{Role: "guest"})
 		return
 	}
 
 	if claims.Username == "admin" {
-		httpjson.WriteSuccessJson(w, RoleResponse{Role: "admin"})
+		httpjson.Success(w, RoleResponse{Role: "admin"})
 		return
 	}
 
 	// Return the role from JWT claims
-	httpjson.WriteSuccessJson(w, RoleResponse{Role: "user"})
+	httpjson.Success(w, RoleResponse{Role: "user"})
 }
