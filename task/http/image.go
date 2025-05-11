@@ -94,6 +94,7 @@ func (h *TaskHttpHandler) UploadStatementImage(w http.ResponseWriter, r *http.Re
 		httpjson.Error(w, errMsg, http.StatusBadRequest, errCode)
 		return
 	}
+
 	cantContain := []string{"CON", "PRN", "AUX", "NUL", "COM", "LPT"}
 	if len(filenameWithoutExt) < 4 && slices.Contains(cantContain, filenameWithoutExt) {
 		errMsg := fmt.Sprintf("invalid filename (may contain reserved filenames): %s", filenameWithoutExt)
@@ -129,7 +130,7 @@ func (h *TaskHttpHandler) UploadStatementImage(w http.ResponseWriter, r *http.Re
 
 	uri, err := h.taskSrvc.UploadStatementImage(r.Context(), taskId, uploadedFilename, imageMimeType, imageBytes)
 	if err != nil {
-		httpjson.HandleSrvcError(slog.Default(), w, err)
+		writeSrvcError(w, err)
 		return
 	}
 
