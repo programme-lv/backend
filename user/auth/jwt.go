@@ -99,5 +99,12 @@ func GetUserUuidFromCtx(ctx context.Context) (uuid.UUID, error) {
 	if claims == nil {
 		return uuid.Nil, errors.New("no JWT claims found in context")
 	}
-	return uuid.Parse(claims.UUID)
+	u, err := uuid.Parse(claims.UUID)
+	if err != nil {
+		return uuid.Nil, err
+	}
+	if u == uuid.Nil {
+		return uuid.Nil, errors.New("empty UUID in JWT claims")
+	}
+	return u, nil
 }
