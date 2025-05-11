@@ -10,8 +10,13 @@ import (
 
 func httpStatus(e srvcerror.Error) int {
 	codeMap := map[string]int{
-		srvc.ErrCodeImageAlreadyExists: http.StatusConflict,
-		srvc.ErrCodeTaskNotFound:       http.StatusNotFound,
+		srvc.ErrCodeImageAlreadyExists:        http.StatusConflict,
+		srvc.ErrCodeTaskNotFound:              http.StatusNotFound,
+		srvc.ErrCodeInternalServerError:       http.StatusInternalServerError,
+		srvc.ErrCodeImageFileExtFromMimeType:  http.StatusBadRequest,
+		srvc.ErrCodeGetImageWidthAndHeight:    http.StatusBadRequest,
+		srvc.ErrCodeImageInadequateDimensions: http.StatusBadRequest,
+		srvc.ErrCodeFailedToGetTaskFromDb:     http.StatusInternalServerError,
 	}
 
 	if code, ok := codeMap[e.ErrorCode()]; ok {
