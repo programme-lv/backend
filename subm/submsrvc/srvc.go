@@ -264,11 +264,9 @@ func (s *submSrvc) ViewSubm(ctx context.Context, submUuid uuid.UUID) (domain.Sub
 			return domain.Subm{}, fmt.Errorf("failed to get user scores: %w", err)
 		}
 		userScore, ok := userMaxScores[subm.TaskShortID]
-		if !ok {
-			log.Error("failed to get user score for task", "error", err)
-			return domain.Subm{}, fmt.Errorf("failed to get user score for task: %w", err)
+		if ok {
+			userHasSolvedTheTask = userScore.Received >= userScore.Possible
 		}
-		userHasSolvedTheTask = userScore.Received >= userScore.Possible
 	}
 
 	if !userHasSolvedTheTask {
