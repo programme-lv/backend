@@ -55,27 +55,32 @@ func (ts *TaskSrvc) UploadIllustrationImg(ctx context.Context, mimeType string, 
 // S3 key format: "task-md-images/<uuid>.<extension>"
 // returns s3 uri, e.g. s3://proglv-public/task/<taskId>/md-images/<uuid>.png
 func (ts *TaskSrvc) UploadStatementImage(ctx context.Context, taskId string, semanticFilename string, imageMimeType string, body []byte) (url string, err error) {
+	l := ts.logger(ctx)
+
 	// get the file extension from the mime type, e.g. "image/png" -> ".png"
 	ext, err := getImgExt(imageMimeType)
 	if err != nil {
-		return "", fmt.Errorf("failed to get file extension: %w", err)
+		l.Error("failed to get image file extension from mime type", "error", err)
+		return "", NewErrorImageFileExtFromMimeType(imageMimeType)
 	}
 
 	// get the image width and height in pixels
 	width, height, err := getImgWidthHeighPx(body, imageMimeType)
 	if err != nil {
-		return "", fmt.Errorf("failed to get image width and height: %w", err)
+		l.Error("failed to get image width and height", "error", err)
+		return "", NewErrorGetImageWidthAndHeight()
 	}
 
 	// verify that the image heas reasonable dimensions
 	if width > 2000 || height > 2000 || width == 0 || height == 0 {
-		return "", fmt.Errorf("image is too large or has no dimensions")
+		return "", NewErrorImageInadequateDimensions()
 	}
 
-	// find the task just to verify that it exists and the an image with the same filename does not exist
+	// find the task to verify that it exists and the an image with the same filename does not exist
 	t, err := ts.repo.GetTask(ctx, taskId)
 	if err != nil {
-		return "", fmt.Errorf("failed to get task: %w", err)
+		l.Error("failed to get corresponding task", "error", err)
+		return "", NewErrorFailedToGetTaskFromDb(taskId)
 	}
 	for _, img := range t.MdImages {
 		if img.Filename == semanticFilename {
@@ -89,7 +94,8 @@ func (ts *TaskSrvc) UploadStatementImage(ctx context.Context, taskId string, sem
 	s3Key := fmt.Sprintf("task/%s/md-images/%s%s", taskId, newImgUuid, ext)
 	s3Uri, err := ts.s3PublicBucket.Upload(body, s3Key, imageMimeType)
 	if err != nil {
-		return "", fmt.Errorf("failed to upload to S3: %w", err)
+		l.Error("failed to upload to S3", "error", err)
+		return "", ErrInternalServerError()
 	}
 
 	// update the task with the new image
@@ -100,7 +106,8 @@ func (ts *TaskSrvc) UploadStatementImage(ctx context.Context, taskId string, sem
 		HeightPx: height,
 	})
 	if err != nil {
-		return "", fmt.Errorf("failed to add statement imgage: %w", err)
+		l.Error("failed to add statement image to db", "error", err)
+		return "", ErrInternalServerError()
 	}
 	return s3Uri, nil
 }

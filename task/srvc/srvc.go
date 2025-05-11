@@ -3,8 +3,10 @@ package srvc
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"time"
 
+	"github.com/programme-lv/backend/common/ctxlog"
 	"github.com/programme-lv/backend/common/s3bucket"
 )
 
@@ -74,4 +76,8 @@ func NewTaskSrvc(repo TaskPgRepo, publicS3, testS3 *s3bucket.S3Bucket) (TaskSrvc
 		s3TestfileBucket: testS3,
 		repo:             repo,
 	}, nil
+}
+
+func (ts *TaskSrvc) logger(ctx context.Context) *slog.Logger {
+	return ctxlog.FromContext(ctx).With("module", "task", "layer", "srvc")
 }
