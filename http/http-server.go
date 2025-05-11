@@ -99,6 +99,7 @@ func requestLoggerMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Generate request ID
 		requestID := uuid.New().String()
+		requestID = requestID[:8]
 
 		// Add request ID to response headers
 		w.Header().Set("X-Request-ID", requestID)

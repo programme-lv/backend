@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"image"
 	"image/png"
+	"log/slog"
 	"mime"
 	"strings"
 
@@ -71,10 +72,16 @@ func (ts *TaskSrvc) UploadStatementImage(ctx context.Context, taskId string, sem
 		return "", fmt.Errorf("image is too large or has no dimensions")
 	}
 
-	// find the task just to verify that it exists
-	_, err = ts.repo.GetTask(ctx, taskId)
+	// find the task just to verify that it exists and the an image with the same filename does not exist
+	t, err := ts.repo.GetTask(ctx, taskId)
 	if err != nil {
 		return "", fmt.Errorf("failed to get task: %w", err)
+	}
+	for _, img := range t.MdImages {
+		if img.Filename == semanticFilename {
+			slog.Warn("image already exists", "task_id", taskId, "filename", semanticFilename)
+			return "", NewErrorImageAlreadyExists(semanticFilename)
+		}
 	}
 
 	// generate a new UUID for the image (to avoid collision and reduce complexity when renaming semantic filenames), and upload it to S3

@@ -38,6 +38,17 @@ func Error(w http.ResponseWriter, errMsg string, statusCode int, errCode string)
 	return json.NewEncoder(w).Encode(resp)
 }
 
+func InternalError(w http.ResponseWriter) error {
+	resp := JsonResponse{
+		Status:  "error",
+		ErrMsg:  "internal server error; please contact the administrator",
+		ErrCode: "undefined_internal_server_error",
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusInternalServerError)
+	return json.NewEncoder(w).Encode(resp)
+}
+
 func BadRequest(w http.ResponseWriter, errMsg string) error {
 	resp := JsonResponse{
 		Status:  "error",
@@ -71,13 +82,6 @@ func Unauthorized(w http.ResponseWriter, errMsg string) error {
 	return json.NewEncoder(w).Encode(resp)
 }
 
-func writeInternalErrorJson(w http.ResponseWriter) {
-	Error(w,
-		http.StatusText(http.StatusInternalServerError),
-		http.StatusInternalServerError,
-		"")
-}
-
 func HandleSrvcError(logger *slog.Logger, w http.ResponseWriter, err error) {
 	srvcErr := &srvcerror.Error{}
 	if errors.As(err, &srvcErr) {
@@ -93,7 +97,7 @@ func HandleSrvcError(logger *slog.Logger, w http.ResponseWriter, err error) {
 		return
 	} else {
 		logger.Error("internal server error", "error", err)
-		writeInternalErrorJson(w)
+		InternalError(w)
 	}
 }
 
