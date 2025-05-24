@@ -8,7 +8,6 @@ import (
 	"image"
 	"image/jpeg"
 	"image/png"
-	"log/slog"
 	"mime"
 	"strings"
 
@@ -77,7 +76,7 @@ func (ts *TaskSrvc) UploadIllustrationImg(ctx context.Context, mimeType string, 
 
 // S3 key format: "task-md-images/<uuid>.<extension>"
 // returns s3 uri, e.g. s3://proglv-public/task/<taskId>/md-images/<uuid>.png
-func (ts *TaskSrvc) UploadStatementImage(ctx context.Context, taskId string, semanticFilename string, imageMimeType string, body []byte) (url string, err error) {
+func (ts *TaskSrvc) UploadStatementImage(ctx context.Context, taskId string, imgFilename string, imageMimeType string, body []byte) (url string, err error) {
 	l := ts.logger(ctx)
 
 	// get the file extension from the mime type, e.g. "image/png" -> ".png"
@@ -106,9 +105,8 @@ func (ts *TaskSrvc) UploadStatementImage(ctx context.Context, taskId string, sem
 		return "", NewErrorFailedToGetTaskFromDb(taskId)
 	}
 	for _, img := range t.MdImages {
-		if img.Filename == semanticFilename {
-			slog.Warn("image already exists", "task_id", taskId, "filename", semanticFilename)
-			return "", NewErrorImageAlreadyExists(semanticFilename)
+		if img.Filename == imgFilename {
+			return "", NewErrorImageAlreadyExists(imgFilename)
 		}
 	}
 
@@ -123,10 +121,11 @@ func (ts *TaskSrvc) UploadStatementImage(ctx context.Context, taskId string, sem
 
 	// update the task with the new image
 	err = ts.repo.AddStatementImg(ctx, taskId, StatementImage{
-		S3Uri:    s3Uri,
-		Filename: semanticFilename,
-		WidthPx:  width,
-		HeightPx: height,
+		S3Uri:     s3Uri,
+		Filename:  imgFilename,
+		WidthPx:   width,
+		HeightPx:  height,
+		SzInBytes: len(body),
 	})
 	if err != nil {
 		l.Error("failed to add statement image to db", "error", err)

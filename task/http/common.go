@@ -34,11 +34,12 @@ type TestWithOnlyInput struct {
 }
 
 type StatementImage struct {
-	S3Uri    string `json:"s3_uri"`
-	Filename string `json:"filename"`
-	HttpUrl  string `json:"http_url"`
-	WidthPx  int    `json:"width_px"`
-	HeightPx int    `json:"height_px"`
+	S3Uri     string `json:"s3_uri"`
+	Filename  string `json:"filename"`
+	HttpUrl   string `json:"http_url"`
+	WidthPx   int    `json:"width_px"`
+	HeightPx  int    `json:"height_px"`
+	SzInBytes int    `json:"sz_in_bytes"`
 }
 
 type Task struct {
@@ -211,11 +212,12 @@ func mapTaskStatementImages(images []srvc.StatementImage) []StatementImage {
 		// image.S3Uri = s3://proglv-public/task-md-images/<uuid or sha or something unique>.png
 		httpUrl := strings.Replace(image.S3Uri, "s3://proglv-public/", PublicCloudfrontEndpoint, 1)
 		response[i] = StatementImage{
-			S3Uri:    image.S3Uri,
-			Filename: image.Filename,
-			HttpUrl:  httpUrl,
-			WidthPx:  image.WidthPx,
-			HeightPx: image.HeightPx,
+			S3Uri:     image.S3Uri,
+			Filename:  image.Filename,
+			HttpUrl:   httpUrl,
+			WidthPx:   image.WidthPx,
+			HeightPx:  image.HeightPx,
+			SzInBytes: image.SzInBytes,
 		}
 	}
 	return response
