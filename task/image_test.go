@@ -54,6 +54,7 @@ func TestPostStatementImageHttpRequest(t *testing.T) {
 	require.Equal(t, "seifs.png", img.Filename)
 	require.Greater(t, img.WidthPx, 0)
 	require.Greater(t, img.HeightPx, 0)
+	require.Greater(t, img.SzInBytes, 0)
 	require.Contains(t, img.S3Uri, "s3://")
 	t.Logf("s3 uri: %s", img.S3Uri)
 
