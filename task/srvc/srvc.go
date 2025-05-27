@@ -15,7 +15,7 @@ type TaskSrvcClient interface {
 	UploadStatementPdf(ctx context.Context, body []byte) (string, error)
 	UploadIllustrationImg(ctx context.Context, mimeType string, body []byte) (string, error)
 	UploadStatementImage(ctx context.Context, taskId string, semanticFilename string, mimeType string, body []byte) (string, error)
-	DeleteStatementImage(ctx context.Context, taskId string, s3Uri string) error
+	DeleteStatementImage(ctx context.Context, taskId string, filename string) error
 	UploadTestFile(ctx context.Context, body []byte) error
 	GetTask(ctx context.Context, shortId string) (Task, error)
 	GetTaskFullNames(ctx context.Context, shortIds []string) ([]string, error)
@@ -42,7 +42,7 @@ type TaskPgRepo interface {
 	CreateTask(ctx context.Context, task Task) error
 	UpdateStatement(ctx context.Context, taskId string, statement MarkdownStatement) error
 	AddStatementImg(ctx context.Context, taskId string, img StatementImage) error
-	DeleteStatementImg(ctx context.Context, taskId string, s3Uri string) error
+	DeleteStatementImg(ctx context.Context, taskId string, filename string) error
 }
 
 type TaskSrvc struct {

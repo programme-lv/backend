@@ -228,11 +228,33 @@ func (ts *TaskSrvc) Sha2Hex(body []byte) (sha2 string) {
 
 // DeleteStatementImage implements TaskSrvcClient.
 // It deletes an image from both S3 and the database.
-func (ts *TaskSrvc) DeleteStatementImage(ctx context.Context, taskId string, s3Uri string) error {
+func (ts *TaskSrvc) DeleteStatementImage(ctx context.Context, taskId string, filename string) error {
 	l := ts.logger(ctx)
+
+	// First, get the task to find the image with the specified filename
+	t, err := ts.repo.GetTask(ctx, taskId)
+	if err != nil {
+		l.Error("failed to get task", "error", err)
+		return NewErrorFailedToGetTaskFromDb(taskId)
+	}
+
+	// Find the image with the specified filename
+	var targetImage *StatementImage
+	for _, img := range t.MdImages {
+		if img.Filename == filename {
+			targetImage = &img
+			break
+		}
+	}
+
+	if targetImage == nil {
+		l.Error("image with filename not found", "filename", filename)
+		return fmt.Errorf("image with filename %s does not exist for task %s", filename, taskId)
+	}
+
 	// Extract the S3 key from the URI
 	// s3Uri format: s3://proglv-public/task/<taskId>/md-images/<uuid>.png
-	s3Key := strings.TrimPrefix(s3Uri, "s3://"+ts.s3PublicBucket.Bucket()+"/")
+	s3Key := strings.TrimPrefix(targetImage.S3Uri, "s3://"+ts.s3PublicBucket.Bucket()+"/")
 
 	// Check if the image exists in S3
 	exists, err := ts.s3PublicBucket.Exists(s3Key)
@@ -246,7 +268,7 @@ func (ts *TaskSrvc) DeleteStatementImage(ctx context.Context, taskId string, s3U
 	}
 
 	// Delete the image from the database first
-	err = ts.repo.DeleteStatementImg(ctx, taskId, s3Uri)
+	err = ts.repo.DeleteStatementImg(ctx, taskId, filename)
 	if err != nil {
 		l.Error("failed to delete image from database", "error", err)
 		return ErrInternalServerError()

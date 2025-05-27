@@ -143,7 +143,7 @@ func (r *taskPgRepo) UpdateStatement(ctx context.Context, taskId string, stateme
 
 // DeleteStatementImg implements srvc.TaskPgRepo.
 // It deletes an image from the database.
-func (r *taskPgRepo) DeleteStatementImg(ctx context.Context, taskId string, s3Uri string) error {
+func (r *taskPgRepo) DeleteStatementImg(ctx context.Context, taskId string, filename string) error {
 	// Start a transaction
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
@@ -156,20 +156,20 @@ func (r *taskPgRepo) DeleteStatementImg(ctx context.Context, taskId string, s3Ur
 	// Check if the image exists
 	var imageExists bool
 	err = tx.QueryRow(ctx, `
-		SELECT EXISTS(SELECT 1 FROM task_images WHERE task_short_id = $1 AND s3_uri = $2)
-	`, taskId, s3Uri).Scan(&imageExists)
+		SELECT EXISTS(SELECT 1 FROM task_images WHERE task_short_id = $1 AND file_name = $2)
+	`, taskId, filename).Scan(&imageExists)
 	if err != nil {
 		return fmt.Errorf("failed to check if image exists: %w", err)
 	}
 	if !imageExists {
-		return fmt.Errorf("image with S3 URI %s does not exist for task %s", s3Uri, taskId)
+		return fmt.Errorf("image with filename %s does not exist for task %s", filename, taskId)
 	}
 
 	// Delete the image
 	_, err = tx.Exec(ctx, `
 		DELETE FROM task_images
-		WHERE task_short_id = $1 AND s3_uri = $2
-	`, taskId, s3Uri)
+		WHERE task_short_id = $1 AND file_name = $2
+	`, taskId, filename)
 	if err != nil {
 		return fmt.Errorf("failed to delete statement image: %w", err)
 	}
