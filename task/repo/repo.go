@@ -191,13 +191,13 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 
 	// Load main task row.
 	err := r.pool.QueryRow(ctx, `
-		SELECT short_id, full_name, illustr_img_url, mem_lim_megabytes, cpu_time_lim_secs, origin_olympiad, difficulty_rating, checker, interactor
+		SELECT short_id, full_name, illustr_img_uri, mem_lim_megabytes, cpu_time_lim_secs, origin_olympiad, difficulty_rating, checker, interactor
 		FROM tasks
 		WHERE short_id = $1
 	`, shortId).Scan(
 		&t.ShortId,
 		&t.FullName,
-		&t.IllustrImgUrl,
+		&t.IllustrImgUri,
 		&t.MemLimMegabytes,
 		&t.CpuTimeLimSecs,
 		&t.OriginOlympiad,
@@ -562,9 +562,9 @@ func (r *taskPgRepo) CreateTask(ctx context.Context, t srvc.Task) error {
 
 	// Insert main task.
 	_, err = tx.Exec(ctx, `
-		INSERT INTO tasks (short_id, full_name, illustr_img_url, mem_lim_megabytes, cpu_time_lim_secs, origin_olympiad, difficulty_rating, checker, interactor)
+		INSERT INTO tasks (short_id, full_name, illustr_img_uri, mem_lim_megabytes, cpu_time_lim_secs, origin_olympiad, difficulty_rating, checker, interactor)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-	`, t.ShortId, t.FullName, t.IllustrImgUrl, t.MemLimMegabytes, t.CpuTimeLimSecs, t.OriginOlympiad, t.DifficultyRating, t.Checker, t.Interactor)
+	`, t.ShortId, t.FullName, t.IllustrImgUri, t.MemLimMegabytes, t.CpuTimeLimSecs, t.OriginOlympiad, t.DifficultyRating, t.Checker, t.Interactor)
 	if err != nil {
 		return fmt.Errorf("failed to insert main task: %w", err)
 	}

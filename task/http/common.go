@@ -110,9 +110,9 @@ func mapTaskExamples(examples []srvc.Example) []Example {
 
 func mapTaskResponse(task *srvc.Task) *Task {
 	illstrImgUrl := new(string)
-	if task.IllustrImgUrl != "" {
+	if task.IllustrImgUri != "" {
 		illstrImgUrl = new(string)
-		*illstrImgUrl = task.IllustrImgUrl
+		*illstrImgUrl = task.IllustrImgUri
 
 		*illstrImgUrl = strings.Replace(*illstrImgUrl, "https://proglv-public.s3.eu-central-1.amazonaws.com/", PublicCloudfrontEndpoint, 1)
 	}

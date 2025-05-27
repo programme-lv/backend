@@ -1,0 +1,1 @@
+DROP TABLE task_md_statement_images;
