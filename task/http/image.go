@@ -25,18 +25,18 @@ func (h *TaskHttpHandler) DeleteStatementImage(w http.ResponseWriter, r *http.Re
 	}
 
 	taskId := chi.URLParam(r, "taskId")
-	s3uri := chi.URLParam(r, "s3uri")
+	filename := chi.URLParam(r, "filename")
 
-	// URL decode the s3uri parameter as it may contain characters like '/'
-	decodedS3Uri, err := url.QueryUnescape(s3uri)
+	// URL decode the filename parameter as it may contain special characters
+	decodedFilename, err := url.QueryUnescape(filename)
 	if err != nil {
-		errMsg := fmt.Sprintf("failed to decode S3 URI: %v", err)
-		errCode := "invalid_s3_uri"
+		errMsg := fmt.Sprintf("failed to decode filename: %v", err)
+		errCode := "invalid_filename"
 		httpjson.Error(w, errMsg, http.StatusBadRequest, errCode)
 		return
 	}
 
-	err = h.taskSrvc.DeleteStatementImage(r.Context(), taskId, decodedS3Uri)
+	err = h.taskSrvc.DeleteStatementImage(r.Context(), taskId, decodedFilename)
 	if err != nil {
 		httpjson.HandleSrvcError(slog.Default(), w, err)
 		return
