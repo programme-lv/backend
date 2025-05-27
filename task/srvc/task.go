@@ -10,7 +10,7 @@ type Task struct {
 	ShortId  string
 	FullName string
 
-	IllustrImgUrl string
+	IllustrImgUri string
 
 	// constraints
 	MemLimMegabytes int

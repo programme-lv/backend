@@ -18,7 +18,6 @@ import (
 
 const (
 	awsRegion  = "eu-central-1"
-	cdnBucket  = "proglv-public"
 	testBucket = "proglv-tests"
 )
 
@@ -30,6 +29,12 @@ func init() {
 }
 
 func MustGetCdnS3Bucket() *s3bucket.S3Bucket {
+	cdnBucket := os.Getenv("CDN_BUCKET")
+	if cdnBucket == "" {
+		slog.Error("CDN_BUCKET env var is not set")
+		os.Exit(1)
+	}
+
 	s3, err := s3bucket.NewS3Bucket(awsRegion, cdnBucket)
 	if err != nil {
 		slog.Error("failed to create public S3 bucket", "error", err)
