@@ -14,9 +14,8 @@ Following the modular monolith architecture with these layers:
 Additionally, there are integration tests in the `test/` directory.
 
 Integration tests require:
-- PostgreSQL database (configured in `test/helpers_test.go`)
-- S3 bucket access for image storage
-- Proper authentication tokens for protected endpoints 
+- PostgreSQL database
+- S3 bucket access
 
 ```bash
 go test ./task/...
