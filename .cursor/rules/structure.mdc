@@ -5,6 +5,10 @@ alwaysApply: true
 ---
 `cmd` directory defines entrypoint for starting a http server.
 
+`docs` directory contains file `schema.txt` that documents (when last refreshed) the whole schema of the postgres databse.
+
+postgres sql migration files are located in `migrate` directory
+
 For context:
 - "tester" is hosted in a seperate code repo. "tester" to AWS SQS for code execution jobs and streams back results
 - "website" is also a seperate repository that hosts next.js website code
