@@ -1,0 +1,346 @@
+-- Schema dump of 'proglv' generated Sat Jun  7 16:51:58 UTC 2025
+                               Table "public.eval_test_groups"
+     Column      |   Type    | Collation | Nullable |                 Default                 
+-----------------+-----------+-----------+----------+-----------------------------------------
+ id              | integer   |           | not null | nextval('test_groups_id_seq'::regclass)
+ evaluation_uuid | uuid      |           | not null | 
+ points          | integer   |           | not null | 
+ subtasks        | integer[] |           | not null | 
+ tg_tests        | integer[] |           | not null | 
+Indexes:
+    "test_groups_pkey" PRIMARY KEY, btree (id)
+    "idx_test_groups_evaluation_uuid" btree (evaluation_uuid)
+Foreign-key constraints:
+    "fk_evaluation_test_groups" FOREIGN KEY (evaluation_uuid) REFERENCES evaluations(uuid) ON DELETE CASCADE
+
+                                  Table "public.eval_test_results"
+     Column      |         Type          | Collation | Nullable |              Default              
+-----------------+-----------------------+-----------+----------+-----------------------------------
+ id              | integer               |           | not null | nextval('tests_id_seq'::regclass)
+ evaluation_uuid | uuid                  |           | not null | 
+ ac              | boolean               |           | not null | false
+ wa              | boolean               |           | not null | false
+ tle             | boolean               |           | not null | false
+ mle             | boolean               |           | not null | false
+ re              | boolean               |           | not null | false
+ ig              | boolean               |           | not null | false
+ reached         | boolean               |           | not null | false
+ finished        | boolean               |           | not null | false
+ inp_sha256      | character varying(64) |           |          | 
+ ans_sha256      | character varying(64) |           |          | 
+ cpu_ms          | integer               |           |          | 
+ mem_kib         | integer               |           |          | 
+ test_id         | integer               |           | not null | 
+Indexes:
+    "tests_pkey" PRIMARY KEY, btree (id)
+    "idx_tests_evaluation_uuid" btree (evaluation_uuid)
+Foreign-key constraints:
+    "fk_evaluation_tests" FOREIGN KEY (evaluation_uuid) REFERENCES evaluations(uuid) ON DELETE CASCADE
+
+                              Table "public.evaluations"
+    Column     |           Type           | Collation | Nullable |      Default       
+---------------+--------------------------+-----------+----------+--------------------
+ uuid          | uuid                     |           | not null | uuid_generate_v4()
+ stage         | character varying(20)    |           | not null | 
+ score_unit    | character varying(20)    |           | not null | 
+ checker       | text                     |           |          | 
+ interactor    | text                     |           |          | 
+ cpu_lim_ms    | integer                  |           | not null | 
+ mem_lim_kib   | integer                  |           | not null | 
+ error_type    | character varying(20)    |           |          | 
+ error_message | text                     |           |          | 
+ created_at    | timestamp with time zone |           | not null | now()
+ subm_uuid     | uuid                     |           |          | 
+Indexes:
+    "evaluations_pkey" PRIMARY KEY, btree (uuid)
+Check constraints:
+    "score_unit_check" CHECK (score_unit::text = ANY (ARRAY['test'::character varying::text, 'group'::character varying::text, 'subtask'::character varying::text]))
+    "stage_check" CHECK (stage::text = ANY (ARRAY['waiting'::character varying::text, 'compiling'::character varying::text, 'testing'::character varying::text, 'finished'::character varying::text]))
+Referenced by:
+    TABLE "submissions" CONSTRAINT "fk_curr_eval" FOREIGN KEY (curr_eval_uuid) REFERENCES evaluations(uuid) ON DELETE SET NULL
+    TABLE "subtasks" CONSTRAINT "fk_evaluation_subtasks" FOREIGN KEY (evaluation_uuid) REFERENCES evaluations(uuid) ON DELETE CASCADE
+    TABLE "eval_test_groups" CONSTRAINT "fk_evaluation_test_groups" FOREIGN KEY (evaluation_uuid) REFERENCES evaluations(uuid) ON DELETE CASCADE
+    TABLE "eval_test_results" CONSTRAINT "fk_evaluation_tests" FOREIGN KEY (evaluation_uuid) REFERENCES evaluations(uuid) ON DELETE CASCADE
+
+          Table "public.schema_migrations"
+ Column  |  Type   | Collation | Nullable | Default 
+---------+---------+-----------+----------+---------
+ version | bigint  |           | not null | 
+ dirty   | boolean |           | not null | 
+Indexes:
+    "schema_migrations_pkey" PRIMARY KEY, btree (version)
+
+                              Table "public.submissions"
+     Column     |           Type           | Collation | Nullable |      Default       
+----------------+--------------------------+-----------+----------+--------------------
+ uuid           | uuid                     |           | not null | uuid_generate_v4()
+ content        | text                     |           | not null | 
+ author_uuid    | uuid                     |           | not null | 
+ task_shortid   | character varying(50)    |           | not null | 
+ lang_shortid   | character varying(20)    |           | not null | 
+ curr_eval_uuid | uuid                     |           |          | 
+ created_at     | timestamp with time zone |           | not null | now()
+Indexes:
+    "submissions_pkey1" PRIMARY KEY, btree (uuid)
+    "idx_submissions_author_uuid" btree (author_uuid)
+    "idx_submissions_curr_eval_uuid" btree (curr_eval_uuid)
+Foreign-key constraints:
+    "fk_author" FOREIGN KEY (author_uuid) REFERENCES users(uuid) ON DELETE CASCADE
+    "fk_curr_eval" FOREIGN KEY (curr_eval_uuid) REFERENCES evaluations(uuid) ON DELETE SET NULL
+
+                                  Table "public.subtasks"
+     Column      |   Type    | Collation | Nullable |               Default                
+-----------------+-----------+-----------+----------+--------------------------------------
+ id              | integer   |           | not null | nextval('subtasks_id_seq'::regclass)
+ evaluation_uuid | uuid      |           | not null | 
+ points          | integer   |           | not null | 
+ description     | text      |           | not null | 
+ st_tests        | integer[] |           | not null | 
+Indexes:
+    "subtasks_pkey" PRIMARY KEY, btree (id)
+    "idx_subtasks_evaluation_uuid" btree (evaluation_uuid)
+Foreign-key constraints:
+    "fk_evaluation_subtasks" FOREIGN KEY (evaluation_uuid) REFERENCES evaluations(uuid) ON DELETE CASCADE
+
+                                Table "public.task_examples"
+    Column     |  Type   | Collation | Nullable |                  Default                  
+---------------+---------+-----------+----------+-------------------------------------------
+ id            | integer |           | not null | nextval('task_examples_id_seq'::regclass)
+ task_short_id | text    |           | not null | 
+ input         | text    |           |          | 
+ output        | text    |           |          | 
+ md_note       | text    |           |          | 
+Indexes:
+    "task_examples_pkey" PRIMARY KEY, btree (id)
+Foreign-key constraints:
+    "fk_examples_task" FOREIGN KEY (task_short_id) REFERENCES tasks(short_id) ON DELETE CASCADE
+
+                Table "public.task_images"
+     Column     |  Type   | Collation | Nullable | Default 
+----------------+---------+-----------+----------+---------
+ task_short_id  | text    |           | not null | 
+ s3_uri         | text    |           | not null | 
+ file_name      | text    |           |          | 
+ width_px       | integer |           |          | 
+ height_px      | integer |           |          | 
+ filesize_bytes | integer |           |          | 
+Indexes:
+    "task_images_pkey" PRIMARY KEY, btree (task_short_id, s3_uri)
+    "unique_task_filename" UNIQUE CONSTRAINT, btree (task_short_id, file_name)
+Foreign-key constraints:
+    "fk_task_images_task" FOREIGN KEY (task_short_id) REFERENCES tasks(short_id) ON DELETE CASCADE
+
+                                Table "public.task_md_statements"
+    Column     |  Type   | Collation | Nullable |                    Default                     
+---------------+---------+-----------+----------+------------------------------------------------
+ id            | integer |           | not null | nextval('task_md_statements_id_seq'::regclass)
+ task_short_id | text    |           | not null | 
+ lang_iso639   | text    |           |          | 
+ story         | text    |           |          | 
+ input         | text    |           |          | 
+ output        | text    |           |          | 
+ notes         | text    |           |          | 
+ scoring       | text    |           |          | 
+ talk          | text    |           |          | 
+ example       | text    |           |          | 
+Indexes:
+    "task_md_statements_pkey" PRIMARY KEY, btree (id)
+Foreign-key constraints:
+    "fk_md_statements_task" FOREIGN KEY (task_short_id) REFERENCES tasks(short_id) ON DELETE CASCADE
+
+                                Table "public.task_origin_notes"
+    Column     |  Type   | Collation | Nullable |                    Default                    
+---------------+---------+-----------+----------+-----------------------------------------------
+ id            | integer |           | not null | nextval('task_origin_notes_id_seq'::regclass)
+ task_short_id | text    |           | not null | 
+ lang          | text    |           | not null | 
+ info          | text    |           |          | 
+Indexes:
+    "task_origin_notes_pkey" PRIMARY KEY, btree (id)
+Foreign-key constraints:
+    "fk_origin_notes_task" FOREIGN KEY (task_short_id) REFERENCES tasks(short_id) ON DELETE CASCADE
+
+                                Table "public.task_pdf_statements"
+    Column     |  Type   | Collation | Nullable |                     Default                     
+---------------+---------+-----------+----------+-------------------------------------------------
+ id            | integer |           | not null | nextval('task_pdf_statements_id_seq'::regclass)
+ task_short_id | text    |           | not null | 
+ lang_iso639   | text    |           |          | 
+ object_url    | text    |           |          | 
+Indexes:
+    "task_pdf_statements_pkey" PRIMARY KEY, btree (id)
+Foreign-key constraints:
+    "fk_pdf_statements_task" FOREIGN KEY (task_short_id) REFERENCES tasks(short_id) ON DELETE CASCADE
+
+                              Table "public.task_subtask_test_ids"
+   Column   |  Type   | Collation | Nullable |                      Default                      
+------------+---------+-----------+----------+---------------------------------------------------
+ id         | integer |           | not null | nextval('task_subtask_test_ids_id_seq'::regclass)
+ subtask_id | integer |           | not null | 
+ test_id    | integer |           | not null | 
+Indexes:
+    "task_subtask_test_ids_pkey" PRIMARY KEY, btree (id)
+Foreign-key constraints:
+    "fk_subtask_test_ids_subtask" FOREIGN KEY (subtask_id) REFERENCES task_subtasks(id) ON DELETE CASCADE
+
+                                Table "public.task_subtasks"
+    Column     |  Type   | Collation | Nullable |                  Default                  
+---------------+---------+-----------+----------+-------------------------------------------
+ id            | integer |           | not null | nextval('task_subtasks_id_seq'::regclass)
+ task_short_id | text    |           | not null | 
+ score         | integer |           |          | 
+ descriptions  | jsonb   |           |          | 
+Indexes:
+    "task_subtasks_pkey" PRIMARY KEY, btree (id)
+Foreign-key constraints:
+    "fk_subtasks_task" FOREIGN KEY (task_short_id) REFERENCES tasks(short_id) ON DELETE CASCADE
+Referenced by:
+    TABLE "task_subtask_test_ids" CONSTRAINT "fk_subtask_test_ids_subtask" FOREIGN KEY (subtask_id) REFERENCES task_subtasks(id) ON DELETE CASCADE
+
+                                Table "public.task_test_group_test_ids"
+    Column     |  Type   | Collation | Nullable |                       Default                        
+---------------+---------+-----------+----------+------------------------------------------------------
+ id            | integer |           | not null | nextval('task_test_group_test_ids_id_seq'::regclass)
+ test_group_id | integer |           | not null | 
+ test_id       | integer |           | not null | 
+Indexes:
+    "task_test_group_test_ids_pkey" PRIMARY KEY, btree (id)
+Foreign-key constraints:
+    "fk_test_group_test_ids" FOREIGN KEY (test_group_id) REFERENCES task_test_groups(id) ON DELETE CASCADE
+
+                                Table "public.task_test_groups"
+    Column     |  Type   | Collation | Nullable |                   Default                    
+---------------+---------+-----------+----------+----------------------------------------------
+ id            | integer |           | not null | nextval('task_test_groups_id_seq'::regclass)
+ task_short_id | text    |           | not null | 
+ points        | integer |           |          | 
+ public        | boolean |           |          | 
+Indexes:
+    "task_test_groups_pkey" PRIMARY KEY, btree (id)
+Foreign-key constraints:
+    "fk_test_groups_task" FOREIGN KEY (task_short_id) REFERENCES tasks(short_id) ON DELETE CASCADE
+Referenced by:
+    TABLE "task_test_group_test_ids" CONSTRAINT "fk_test_group_test_ids" FOREIGN KEY (test_group_id) REFERENCES task_test_groups(id) ON DELETE CASCADE
+
+                                Table "public.task_tests"
+    Column     |  Type   | Collation | Nullable |                Default                 
+---------------+---------+-----------+----------+----------------------------------------
+ id            | integer |           | not null | nextval('task_tests_id_seq'::regclass)
+ task_short_id | text    |           | not null | 
+ inp_sha2      | text    |           |          | 
+ ans_sha2      | text    |           |          | 
+Indexes:
+    "task_tests_pkey" PRIMARY KEY, btree (id)
+Foreign-key constraints:
+    "fk_tests_task" FOREIGN KEY (task_short_id) REFERENCES tasks(short_id) ON DELETE CASCADE
+
+                              Table "public.task_vis_inp_subtask_tests"
+   Column   |  Type   | Collation | Nullable |                        Default                         
+------------+---------+-----------+----------+--------------------------------------------------------
+ id         | integer |           | not null | nextval('task_vis_inp_subtask_tests_id_seq'::regclass)
+ subtask_id | integer |           | not null | 
+ test_id    | integer |           |          | 
+ input      | text    |           |          | 
+Indexes:
+    "task_vis_inp_subtask_tests_pkey" PRIMARY KEY, btree (id)
+Foreign-key constraints:
+    "fk_vis_inp_subtask_tests" FOREIGN KEY (subtask_id) REFERENCES task_vis_inp_subtasks(id) ON DELETE CASCADE
+
+                                   Table "public.task_vis_inp_subtasks"
+       Column        |  Type   | Collation | Nullable |                      Default                      
+---------------------+---------+-----------+----------+---------------------------------------------------
+ id                  | integer |           | not null | nextval('task_vis_inp_subtasks_id_seq'::regclass)
+ task_short_id       | text    |           | not null | 
+ external_subtask_id | integer |           |          | 
+Indexes:
+    "task_vis_inp_subtasks_pkey" PRIMARY KEY, btree (id)
+    "unique_task_subtask" UNIQUE CONSTRAINT, btree (task_short_id, external_subtask_id)
+Foreign-key constraints:
+    "fk_vis_inp_subtasks_task" FOREIGN KEY (task_short_id) REFERENCES tasks(short_id) ON DELETE CASCADE
+Referenced by:
+    TABLE "task_vis_inp_subtask_tests" CONSTRAINT "fk_vis_inp_subtask_tests" FOREIGN KEY (subtask_id) REFERENCES task_vis_inp_subtasks(id) ON DELETE CASCADE
+
+                         Table "public.tasks"
+      Column       |       Type       | Collation | Nullable | Default 
+-------------------+------------------+-----------+----------+---------
+ short_id          | text             |           | not null | 
+ full_name         | text             |           | not null | 
+ illustr_img_uri   | text             |           |          | 
+ mem_lim_megabytes | integer          |           | not null | 
+ cpu_time_lim_secs | double precision |           | not null | 
+ origin_olympiad   | text             |           |          | 
+ difficulty_rating | integer          |           |          | 
+ checker           | text             |           |          | 
+ interactor        | text             |           |          | 
+ width_px          | integer          |           |          | 
+ height_px         | integer          |           |          | 
+ filesize_bytes    | integer          |           |          | 
+Indexes:
+    "tasks_pkey" PRIMARY KEY, btree (short_id)
+Referenced by:
+    TABLE "task_examples" CONSTRAINT "fk_examples_task" FOREIGN KEY (task_short_id) REFERENCES tasks(short_id) ON DELETE CASCADE
+    TABLE "task_md_statements" CONSTRAINT "fk_md_statements_task" FOREIGN KEY (task_short_id) REFERENCES tasks(short_id) ON DELETE CASCADE
+    TABLE "task_origin_notes" CONSTRAINT "fk_origin_notes_task" FOREIGN KEY (task_short_id) REFERENCES tasks(short_id) ON DELETE CASCADE
+    TABLE "task_pdf_statements" CONSTRAINT "fk_pdf_statements_task" FOREIGN KEY (task_short_id) REFERENCES tasks(short_id) ON DELETE CASCADE
+    TABLE "task_subtasks" CONSTRAINT "fk_subtasks_task" FOREIGN KEY (task_short_id) REFERENCES tasks(short_id) ON DELETE CASCADE
+    TABLE "task_images" CONSTRAINT "fk_task_images_task" FOREIGN KEY (task_short_id) REFERENCES tasks(short_id) ON DELETE CASCADE
+    TABLE "task_test_groups" CONSTRAINT "fk_test_groups_task" FOREIGN KEY (task_short_id) REFERENCES tasks(short_id) ON DELETE CASCADE
+    TABLE "task_tests" CONSTRAINT "fk_tests_task" FOREIGN KEY (task_short_id) REFERENCES tasks(short_id) ON DELETE CASCADE
+    TABLE "task_vis_inp_subtasks" CONSTRAINT "fk_vis_inp_subtasks_task" FOREIGN KEY (task_short_id) REFERENCES tasks(short_id) ON DELETE CASCADE
+
+                               Table "public.users"
+   Column   |           Type           | Collation | Nullable |      Default       
+------------+--------------------------+-----------+----------+--------------------
+ uuid       | uuid                     |           | not null | uuid_generate_v4()
+ firstname  | character varying(100)   |           | not null | 
+ lastname   | character varying(100)   |           | not null | 
+ username   | character varying(50)    |           | not null | 
+ email      | character varying(255)   |           | not null | 
+ bcrypt_pwd | text                     |           | not null | 
+ created_at | timestamp with time zone |           | not null | now()
+Indexes:
+    "users_pkey" PRIMARY KEY, btree (uuid)
+    "users_email_key" UNIQUE CONSTRAINT, btree (email)
+    "users_username_key" UNIQUE CONSTRAINT, btree (username)
+Referenced by:
+    TABLE "submissions" CONSTRAINT "fk_author" FOREIGN KEY (author_uuid) REFERENCES users(uuid) ON DELETE CASCADE
+
+                       List of relations
+ Schema |               Name                |   Type   | Owner  
+--------+-----------------------------------+----------+--------
+ public | eval_test_groups                  | table    | proglv
+ public | eval_test_results                 | table    | proglv
+ public | evaluations                       | table    | proglv
+ public | schema_migrations                 | table    | proglv
+ public | submissions                       | table    | proglv
+ public | subtasks                          | table    | proglv
+ public | subtasks_id_seq                   | sequence | proglv
+ public | task_examples                     | table    | proglv
+ public | task_examples_id_seq              | sequence | proglv
+ public | task_images                       | table    | proglv
+ public | task_md_statements                | table    | proglv
+ public | task_md_statements_id_seq         | sequence | proglv
+ public | task_origin_notes                 | table    | proglv
+ public | task_origin_notes_id_seq          | sequence | proglv
+ public | task_pdf_statements               | table    | proglv
+ public | task_pdf_statements_id_seq        | sequence | proglv
+ public | task_subtask_test_ids             | table    | proglv
+ public | task_subtask_test_ids_id_seq      | sequence | proglv
+ public | task_subtasks                     | table    | proglv
+ public | task_subtasks_id_seq              | sequence | proglv
+ public | task_test_group_test_ids          | table    | proglv
+ public | task_test_group_test_ids_id_seq   | sequence | proglv
+ public | task_test_groups                  | table    | proglv
+ public | task_test_groups_id_seq           | sequence | proglv
+ public | task_tests                        | table    | proglv
+ public | task_tests_id_seq                 | sequence | proglv
+ public | task_vis_inp_subtask_tests        | table    | proglv
+ public | task_vis_inp_subtask_tests_id_seq | sequence | proglv
+ public | task_vis_inp_subtasks             | table    | proglv
+ public | task_vis_inp_subtasks_id_seq      | sequence | proglv
+ public | tasks                             | table    | proglv
+ public | test_groups_id_seq                | sequence | proglv
+ public | tests_id_seq                      | sequence | proglv
+ public | users                             | table    | proglv
+(34 rows)
+
