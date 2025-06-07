@@ -1,46 +1,22 @@
-package task_test
+package test
 
 import (
 	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
 
-	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
-	"github.com/programme-lv/backend/common/s3bucket"
-	"github.com/programme-lv/backend/task/repo"
 	"github.com/programme-lv/backend/task/srvc"
 	"github.com/programme-lv/backend/user/auth"
 	"github.com/stretchr/testify/require"
 
 	taskhttp "github.com/programme-lv/backend/task/http"
 )
-
-func NewTaskSrvc(t *testing.T) srvc.TaskSrvcClient {
-	pool := newTestPgDb(t)
-	repo := repo.NewTaskPgRepo(pool)
-	publicS3, err := s3bucket.NewS3Bucket("eu-central-1", "proglv-testing")
-	if err != nil {
-		format := "failed to create S3 bucket: %w"
-		log.Fatalf(format, err)
-	}
-	ts, err := srvc.NewTaskSrvc(repo, publicS3, nil)
-	require.NoError(t, err)
-	return ts
-}
-
-func NewTaskHttpHandler(t *testing.T, ts srvc.TaskSrvcClient) http.Handler {
-	handler := taskhttp.NewTaskHttpHandler(ts)
-	router := chi.NewRouter()
-	handler.RegisterRoutes(router, []byte("test"))
-	return router
-}
 
 func GetTask(t *testing.T, h http.Handler, taskId string) *httptest.ResponseRecorder {
 	method := http.MethodGet
@@ -76,8 +52,8 @@ func PatchStatement(t *testing.T, h http.Handler, taskId string, req taskhttp.Pu
 }
 
 func TestPutStatementHttpRequest(t *testing.T) {
-	ts := NewTaskSrvc(t)
-	taskHttpHandler := NewTaskHttpHandler(t, ts)
+	ts := newTaskSrvc(t)
+	taskHttpHandler := newTaskHttpHandler(ts)
 
 	err := ts.CreateTask(context.Background(), srvc.Task{
 		ShortId: "aplusb",

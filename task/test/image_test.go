@@ -1,4 +1,4 @@
-package task_test
+package test
 
 import (
 	"bytes"
@@ -21,8 +21,8 @@ import (
 )
 
 func TestPostStatementImageHttpRequest(t *testing.T) {
-	ts := NewTaskSrvc(t)
-	taskHttpHandler := NewTaskHttpHandler(t, ts)
+	ts := newTaskSrvc(t)
+	taskHttpHandler := newTaskHttpHandler(ts)
 
 	err := ts.CreateTask(context.Background(), srvc.Task{
 		ShortId: "aplusb",

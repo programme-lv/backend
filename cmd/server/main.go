@@ -37,7 +37,7 @@ func main() {
 	pgPool := conf.MustGetPgxPoolFromEnv()
 
 	cdnS3 := conf.MustGetCdnS3Bucket()
-	testS3 := conf.MustGetTestS3Bucket()
+	testS3 := conf.MustGetTestfileS3Bucket()
 
 	execSrvc := exec.NewExecSrvc()
 	if *listenSQS {
