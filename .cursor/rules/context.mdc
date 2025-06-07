@@ -1,0 +1,50 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+**programme.lv is**
+- An online judge - system to host programming tasks
+- A tool for educators & guide for aspirants
+
+Objectives:
+- Lower barriers: address beginner obstacles (e.g., IDE setup)
+- Archive tasks: persist and publish high-quality contest tasks
+- Support teachers: tools to create/share tasks, monitor progress
+- Foster community: host contests, plan in-person events
+
+Strategies:
+- Make it fun: engaging sounds/visuals, fun task formulations, easter eggs
+- Guide beginners: step-by-step IDE setup guide, link to other resources online
+- Ranking system: XP awards and competitive activity rankings
+- Community: organize meetups, lectures, enable discussions
+
+Value proposition:
+- Accessible, easier tasks for general education
+- Private tasks for teachers to share with student groups
+- Integrated web-based code editor
+- Partial solution support with subtasks
+- Support for most popular programming languages
+
+Revenue Streams:
+- Premium content: advanced courses via partners
+- Sponsorships: badges, tasks featuring logos
+- Donations and grants for STEM education
+
+Metrics for Success:
+- Active users (daily/monthly uniques)
+- Archive coverage (Latvian Olympiads tasks)
+- Retention (30-day return rate)
+
+Background:
+- J. Gruzis develops CleverCode as a bachelor thesis (2014), maintains it until 2021
+- In 2018, author discovers CleverCode, self-learns programming
+- In 2022, struggles to find tasks to assign in as a teacher to pupils
+
+Technical challenges:
+- Safe solution testing system
+- Broader programming language support
+- Systematized task archive
+- Subtasks and test groups
+- Real-time submission result streaming
+- Support for interactive tasks
