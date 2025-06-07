@@ -14,7 +14,7 @@ type TaskSrvcClient interface {
 	GetTestDownlUrl(ctx context.Context, testFileSha256 string) (string, error)
 	UploadStatementPdf(ctx context.Context, body []byte) (string, error)
 	UploadIllustrationImg(ctx context.Context, mimeType string, body []byte) (string, error)
-	UploadStatementImage(ctx context.Context, taskId string, semanticFilename string, mimeType string, body []byte) (string, error)
+	UploadStatementImage(ctx context.Context, taskId string, filename string, mimeType string, body []byte) (string, error)
 	DeleteStatementImage(ctx context.Context, taskId string, filename string) error
 	UploadTestFile(ctx context.Context, body []byte) error
 	GetTask(ctx context.Context, shortId string) (Task, error)
@@ -70,10 +70,10 @@ func (ts *TaskSrvc) GetTestDownlUrl(ctx context.Context, testFileSha256 string) 
 	return presignedUrl, nil
 }
 
-func NewTaskSrvc(repo TaskPgRepo, publicS3, testS3 *s3bucket.S3Bucket) (TaskSrvcClient, error) {
+func NewTaskSrvc(repo TaskPgRepo, publicS3, testfileS3 *s3bucket.S3Bucket) (TaskSrvcClient, error) {
 	return &TaskSrvc{
 		s3PublicBucket:   publicS3,
-		s3TestfileBucket: testS3,
+		s3TestfileBucket: testfileS3,
 		repo:             repo,
 	}, nil
 }

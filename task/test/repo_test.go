@@ -1,4 +1,4 @@
-package repo
+package test
 
 import (
 	"context"
@@ -10,6 +10,7 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/peterldowns/pgtestdb"
 	"github.com/peterldowns/pgtestdb/migrators/golangmigrator"
+	"github.com/programme-lv/backend/task/repo"
 	"github.com/programme-lv/backend/task/srvc"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -50,7 +51,7 @@ func TestTaskPgRepo(t *testing.T) {
 	// compare the task with manual inspection
 
 	pool := NewDB(t)
-	repo := NewTaskPgRepo(pool)
+	repo := repo.NewTaskPgRepo(pool)
 
 	taskJson, err := os.ReadFile("testdata/aplusbirc.json")
 	if err != nil {

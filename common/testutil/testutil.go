@@ -1,19 +1,19 @@
-package task_test
+package testutil
 
 import (
 	"context"
 	"testing"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/peterldowns/pgtestdb"
 	"github.com/peterldowns/pgtestdb/migrators/golangmigrator"
+	"github.com/programme-lv/backend/conf"
 )
 
-func newTestPgDb(t *testing.T) *pgxpool.Pool {
+func MustGetMigratedTestPostgresDb(t *testing.T) *pgxpool.Pool {
 	t.Helper()
 	ctx := context.Background()
-	conf := pgtestdb.Config{
+	pgtestConf := pgtestdb.Config{
 		DriverName: "pgx",
 		User:       "proglv", // local dev pg user
 		Password:   "proglv", // local dev pg password
@@ -21,8 +21,9 @@ func newTestPgDb(t *testing.T) *pgxpool.Pool {
 		Port:       "5433",
 		Options:    "sslmode=disable",
 	}
-	gm := golangmigrator.New("../migrate")
-	config := pgtestdb.Custom(t, conf, gm)
+	rootPath := conf.FindProjectRoot()
+	gm := golangmigrator.New(rootPath + "/migrate")
+	config := pgtestdb.Custom(t, pgtestConf, gm)
 
 	pool, err := pgxpool.New(ctx, config.URL())
 	if err != nil {

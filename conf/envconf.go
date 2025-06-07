@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"regexp"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -17,13 +18,27 @@ import (
 )
 
 const (
-	awsRegion  = "eu-central-1"
-	testBucket = "proglv-tests"
+	awsRegion      = "eu-central-1"
+	testfileBucket = "proglv-tests"
+	testingBucket  = "proglv-testing"
+	repoDirName    = "backend"
 )
 
+func FindProjectRoot() string {
+	re := regexp.MustCompile(`^(.*` + repoDirName + `)`)
+	cwd, _ := os.Getwd()
+	rootPath := re.Find([]byte(cwd))
+	return string(rootPath)
+}
+
 func init() {
-	if err := godotenv.Load(); err != nil {
-		slog.Error("error loading .env file", "error", err)
+	rootPath := FindProjectRoot()
+	err := godotenv.Load(rootPath + `/.env`)
+	if err != nil {
+		slog.Error("error loading .env file",
+			"error", err,
+			"cwd", rootPath,
+		)
 		os.Exit(1)
 	}
 }
@@ -43,8 +58,18 @@ func MustGetCdnS3Bucket() *s3bucket.S3Bucket {
 	return s3
 }
 
-func MustGetTestS3Bucket() *s3bucket.S3Bucket {
-	s3, err := s3bucket.NewS3Bucket(awsRegion, testBucket)
+// utilized for testing purposes
+func MustGetTestingS3Bucket() *s3bucket.S3Bucket {
+	s3, err := s3bucket.NewS3Bucket(awsRegion, testingBucket)
+	if err != nil {
+		slog.Error("failed to create development S3 bucket", "error", err)
+		os.Exit(1)
+	}
+	return s3
+}
+
+func MustGetTestfileS3Bucket() *s3bucket.S3Bucket {
+	s3, err := s3bucket.NewS3Bucket(awsRegion, testfileBucket)
 	if err != nil {
 		slog.Error("failed to create test S3 bucket", "error", err)
 		os.Exit(1)

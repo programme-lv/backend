@@ -25,3 +25,8 @@ Services are used through a "facade" interface. The main purpose - gather method
 Moreover, if the monolith is to refactored into seperately deployable microservices, facade can handle remote interaction.
 
 For observability, currently we strive towards implementing contextual logging by appending attributes such as "http-req-uuid", "module", "layer".
+
+Unit tests are kept alongside code in `_test.go` files but integration tests may be extracted to `tests` directory at the root of the module.
+Unit tests have mocked or minimal dependencies whereas integration tests may call external systems. Testing the persistence layer is an integration test, imo.
+
+Interestingly, I've decided that the HTTP layer of each module may aggregate data from multiple services to present frontend with necessary information.

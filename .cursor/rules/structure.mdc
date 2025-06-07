@@ -3,7 +3,7 @@ description:
 globs: 
 alwaysApply: true
 ---
-
+`cmd` directory defines entrypoint for starting a http server.
 
 For context:
 - "tester" is hosted in a seperate code repo. "tester" to AWS SQS for code execution jobs and streams back results
