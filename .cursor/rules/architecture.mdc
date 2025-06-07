@@ -1,0 +1,27 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+## backend architecture
+
+The backend does not implement perfectly but strives towards modular (domain-oriented) monolith architecture.
+It is decomposed into the following modules:
+- user (registration, login, retrieval by username and id, updating, etc.)
+- task (uploading, listing, updating tasks (statement, tests, execution limits, metadata, etc.), also importing and exporting to .ZIP)
+- exec (arbitrary code execution and result streaming; actuall execution is don by the "tester")
+- lang (as of now just has hardcoded list of available programming languages, their compilation, execution commands, etc.)
+- subm (user solution to problem submission. the most important module. stores subm., uses exec to evaluate and stream back results)
+
+Each module is currently implemented a little bit differently but generally flows through the following 3 layers:
+1. http (gateway layer - marshalling JSON requests, responses, authorization (admin,user,guest), caching GET requests, mapping error codes)
+2. srvc (abbreviation of service. use-case orchestration layer - logging, error reporting, persistance orchestration, calling external services)
+3. repo (persistance layer - atomic, consistent, isolated, durable storage in postgres database)
+
+Some modules may also incorporate a "domain" layer outside of `srvc`. On the file system, it could be located at the root of a module implementation.
+The "domain" layer can often be skipped by defining aggregates, domain services, etc. in the service layer.
+
+Services are used through a "facade" interface. The main purpose - gather methods that service exposes as a way of documentation.
+Moreover, if the monolith is to refactored into seperately deployable microservices, facade can handle remote interaction.
+
+For observability, currently we strive towards implementing contextual logging by appending attributes such as "http-req-uuid", "module", "layer".

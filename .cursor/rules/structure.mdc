@@ -1,0 +1,10 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+
+
+For context:
+- "tester" is hosted in a seperate code repo. "tester" to AWS SQS for code execution jobs and streams back results
+- "website" is also a seperate repository that hosts next.js website code
