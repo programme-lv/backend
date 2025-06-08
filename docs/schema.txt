@@ -1,4 +1,4 @@
--- Schema dump of 'proglv' generated Sat Jun  7 16:51:58 UTC 2025
+-- Schema dump of 'proglv' generated Sun Jun  8 11:50:33 UTC 2025
                                Table "public.eval_test_groups"
      Column      |   Type    | Collation | Nullable |                 Default                 
 -----------------+-----------+-----------+----------+-----------------------------------------
@@ -119,13 +119,13 @@ Foreign-key constraints:
      Column     |  Type   | Collation | Nullable | Default 
 ----------------+---------+-----------+----------+---------
  task_short_id  | text    |           | not null | 
- s3_uri         | text    |           | not null | 
+ s3_key         | text    |           | not null | 
  file_name      | text    |           |          | 
  width_px       | integer |           |          | 
  height_px      | integer |           |          | 
  filesize_bytes | integer |           |          | 
 Indexes:
-    "task_images_pkey" PRIMARY KEY, btree (task_short_id, s3_uri)
+    "task_images_pkey" PRIMARY KEY, btree (task_short_id, s3_key)
     "unique_task_filename" UNIQUE CONSTRAINT, btree (task_short_id, file_name)
 Foreign-key constraints:
     "fk_task_images_task" FOREIGN KEY (task_short_id) REFERENCES tasks(short_id) ON DELETE CASCADE
@@ -260,21 +260,21 @@ Foreign-key constraints:
 Referenced by:
     TABLE "task_vis_inp_subtask_tests" CONSTRAINT "fk_vis_inp_subtask_tests" FOREIGN KEY (subtask_id) REFERENCES task_vis_inp_subtasks(id) ON DELETE CASCADE
 
-                         Table "public.tasks"
-      Column       |       Type       | Collation | Nullable | Default 
--------------------+------------------+-----------+----------+---------
- short_id          | text             |           | not null | 
- full_name         | text             |           | not null | 
- illustr_img_uri   | text             |           |          | 
- mem_lim_megabytes | integer          |           | not null | 
- cpu_time_lim_secs | double precision |           | not null | 
- origin_olympiad   | text             |           |          | 
- difficulty_rating | integer          |           |          | 
- checker           | text             |           |          | 
- interactor        | text             |           |          | 
- width_px          | integer          |           |          | 
- height_px         | integer          |           |          | 
- filesize_bytes    | integer          |           |          | 
+                          Table "public.tasks"
+       Column       |       Type       | Collation | Nullable | Default 
+--------------------+------------------+-----------+----------+---------
+ short_id           | text             |           | not null | 
+ full_name          | text             |           | not null | 
+ illustr_img_s3_key | text             |           |          | 
+ mem_lim_megabytes  | integer          |           | not null | 
+ cpu_time_lim_secs  | double precision |           | not null | 
+ origin_olympiad    | text             |           |          | 
+ difficulty_rating  | integer          |           |          | 
+ checker            | text             |           |          | 
+ interactor         | text             |           |          | 
+ width_px           | integer          |           |          | 
+ height_px          | integer          |           |          | 
+ filesize_bytes     | integer          |           |          | 
 Indexes:
     "tasks_pkey" PRIMARY KEY, btree (short_id)
 Referenced by:
