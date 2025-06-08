@@ -1,0 +1,1 @@
+ALTER TABLE tasks RENAME COLUMN illustr_img_uri TO illustr_img_s3_key; 

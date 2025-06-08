@@ -10,7 +10,7 @@ type Task struct {
 	ShortId  string
 	FullName string
 
-	IllustrImgUri string
+	IllustrImgS3Key string
 
 	// constraints
 	MemLimMegabytes int
@@ -90,7 +90,7 @@ type MarkdownStatement struct {
 }
 
 type StatementImage struct {
-	S3Uri     string // e.g. s3://proglv-public/task-md-images/<sanitized-filename>.png
+	S3Key     string // e.g. task-md-images/<sanitized-filename>.png
 	Filename  string // filename of the image, e.g., nekoks.png
 	WidthPx   int    // og width [px] stored in s3
 	HeightPx  int    // og height [px] stored in s3

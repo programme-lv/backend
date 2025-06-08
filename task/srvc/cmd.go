@@ -9,7 +9,6 @@ import (
 	"image/jpeg"
 	"image/png"
 	"mime"
-	"strings"
 
 	"github.com/google/uuid"
 	"github.com/klauspost/compress/zstd"
@@ -121,7 +120,7 @@ func (ts *TaskSrvc) UploadStatementImage(ctx context.Context, taskId string, img
 
 	// update the task with the new image
 	err = ts.repo.AddStatementImg(ctx, taskId, StatementImage{
-		S3Uri:     s3Uri,
+		S3Key:     s3Key,
 		Filename:  imgFilename,
 		WidthPx:   width,
 		HeightPx:  height,
@@ -252,9 +251,8 @@ func (ts *TaskSrvc) DeleteStatementImage(ctx context.Context, taskId string, fil
 		return fmt.Errorf("image with filename %s does not exist for task %s", filename, taskId)
 	}
 
-	// Extract the S3 key from the URI
-	// s3Uri format: s3://proglv-public/task/<taskId>/md-images/<uuid>.png
-	s3Key := strings.TrimPrefix(targetImage.S3Uri, "s3://"+ts.s3PublicBucket.Bucket()+"/")
+	// The S3 key is already stored directly in the database
+	s3Key := targetImage.S3Key
 
 	// Check if the image exists in S3
 	exists, err := ts.s3PublicBucket.Exists(s3Key)

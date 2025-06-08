@@ -1,8 +1,6 @@
 package http
 
 import (
-	"strings"
-
 	"github.com/programme-lv/backend/task/srvc"
 )
 
@@ -34,7 +32,7 @@ type TestWithOnlyInput struct {
 }
 
 type StatementImage struct {
-	S3Uri     string `json:"s3_uri"`
+	S3Key     string `json:"s3_key"`
 	Filename  string `json:"filename"`
 	HttpUrl   string `json:"http_url"`
 	WidthPx   int    `json:"width_px"`
@@ -110,11 +108,9 @@ func mapTaskExamples(examples []srvc.Example) []Example {
 
 func mapTaskResponse(task *srvc.Task) *Task {
 	illstrImgUrl := new(string)
-	if task.IllustrImgUri != "" {
+	if task.IllustrImgS3Key != "" {
 		illstrImgUrl = new(string)
-		*illstrImgUrl = task.IllustrImgUri
-
-		*illstrImgUrl = strings.Replace(*illstrImgUrl, "https://proglv-public.s3.eu-central-1.amazonaws.com/", PublicCloudfrontEndpoint, 1)
+		*illstrImgUrl = PublicCloudfrontEndpoint + task.IllustrImgS3Key
 	}
 
 	difficultyRating := new(int)
@@ -209,10 +205,10 @@ func mapTaskResponse(task *srvc.Task) *Task {
 func mapTaskStatementImages(images []srvc.StatementImage) []StatementImage {
 	response := make([]StatementImage, len(images))
 	for i, image := range images {
-		// image.S3Uri = s3://proglv-public/task-md-images/<uuid or sha or something unique>.png
-		httpUrl := strings.Replace(image.S3Uri, "s3://proglv-public/", PublicCloudfrontEndpoint, 1)
+		// image.S3Key = task-md-images/<uuid or sha or something unique>.png
+		httpUrl := PublicCloudfrontEndpoint + image.S3Key
 		response[i] = StatementImage{
-			S3Uri:     image.S3Uri,
+			S3Key:     image.S3Key,
 			Filename:  image.Filename,
 			HttpUrl:   httpUrl,
 			WidthPx:   image.WidthPx,

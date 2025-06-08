@@ -18,10 +18,8 @@ import (
 )
 
 const (
-	awsRegion      = "eu-central-1"
-	testfileBucket = "proglv-tests"
-	testingBucket  = "proglv-testing"
-	repoDirName    = "backend"
+	awsRegion   = "eu-central-1"
+	repoDirName = "backend"
 )
 
 func FindProjectRoot() string {
@@ -43,14 +41,14 @@ func init() {
 	}
 }
 
-func MustGetCdnS3Bucket() *s3bucket.S3Bucket {
-	cdnBucket := os.Getenv("CDN_BUCKET")
-	if cdnBucket == "" {
-		slog.Error("CDN_BUCKET env var is not set")
+func MustGetPublicS3Bucket() *s3bucket.S3Bucket {
+	publicBucket := os.Getenv("S3_PUBLIC_BUCKET")
+	if publicBucket == "" {
+		slog.Error("S3_PUBLIC_BUCKET env var is not set")
 		os.Exit(1)
 	}
 
-	s3, err := s3bucket.NewS3Bucket(awsRegion, cdnBucket)
+	s3, err := s3bucket.NewS3Bucket(awsRegion, publicBucket)
 	if err != nil {
 		slog.Error("failed to create public S3 bucket", "error", err)
 		os.Exit(1)
@@ -60,6 +58,12 @@ func MustGetCdnS3Bucket() *s3bucket.S3Bucket {
 
 // utilized for testing purposes
 func MustGetTestingS3Bucket() *s3bucket.S3Bucket {
+	testingBucket := os.Getenv("S3_TESTING_BUCKET")
+	if testingBucket == "" {
+		slog.Error("S3_TESTING_BUCKET env var is not set")
+		os.Exit(1)
+	}
+
 	s3, err := s3bucket.NewS3Bucket(awsRegion, testingBucket)
 	if err != nil {
 		slog.Error("failed to create development S3 bucket", "error", err)
@@ -69,6 +73,12 @@ func MustGetTestingS3Bucket() *s3bucket.S3Bucket {
 }
 
 func MustGetTestfileS3Bucket() *s3bucket.S3Bucket {
+	testfileBucket := os.Getenv("S3_TESTFILE_BUCKET")
+	if testfileBucket == "" {
+		slog.Error("S3_TESTFILE_BUCKET env var is not set")
+		os.Exit(1)
+	}
+
 	s3, err := s3bucket.NewS3Bucket(awsRegion, testfileBucket)
 	if err != nil {
 		slog.Error("failed to create test S3 bucket", "error", err)
@@ -120,7 +130,7 @@ func getPgConnStrFromEnv() string {
 	if host == "localhost" {
 		pw = os.Getenv("POSTGRES_PW")
 	} else {
-		secretName := getRequiredEnv("POSTGRES_PASSWORD_SECRET_NAME")
+		secretName := getRequiredEnv("POSTGRES_PW_SECRET_NAME")
 		secretValue, err := getSecretFromAWS(secretName)
 		if err != nil {
 			slog.Error("failed to get postgres password from AWS", "error", err)

@@ -44,8 +44,8 @@ func (r *taskPgRepo) AddStatementImg(ctx context.Context, taskId string, img srv
 	// Check if the image already exists for this task
 	var imageExists bool
 	err = tx.QueryRow(ctx, `
-		SELECT EXISTS(SELECT 1 FROM task_images WHERE task_short_id = $1 AND s3_uri = $2)
-	`, taskId, img.S3Uri).Scan(&imageExists)
+		SELECT EXISTS(SELECT 1 FROM task_images WHERE task_short_id = $1 AND s3_key = $2)
+	`, taskId, img.S3Key).Scan(&imageExists)
 	if err != nil {
 		return fmt.Errorf("failed to check if image exists: %w", err)
 	}
@@ -55,17 +55,17 @@ func (r *taskPgRepo) AddStatementImg(ctx context.Context, taskId string, img srv
 		_, err = tx.Exec(ctx, `
 			UPDATE task_images
 			SET file_name = $3, width_px = $4, height_px = $5, filesize_bytes = $6
-			WHERE task_short_id = $1 AND s3_uri = $2
-		`, taskId, img.S3Uri, img.Filename, img.WidthPx, img.HeightPx, img.SzInBytes)
+			WHERE task_short_id = $1 AND s3_key = $2
+		`, taskId, img.S3Key, img.Filename, img.WidthPx, img.HeightPx, img.SzInBytes)
 		if err != nil {
 			return fmt.Errorf("failed to update statement image: %w", err)
 		}
 	} else {
 		// Insert new image
 		_, err = tx.Exec(ctx, `
-			INSERT INTO task_images (task_short_id, s3_uri, file_name, width_px, height_px, filesize_bytes)
+			INSERT INTO task_images (task_short_id, s3_key, file_name, width_px, height_px, filesize_bytes)
 			VALUES ($1, $2, $3, $4, $5, $6)
-		`, taskId, img.S3Uri, img.Filename, img.WidthPx, img.HeightPx, img.SzInBytes)
+		`, taskId, img.S3Key, img.Filename, img.WidthPx, img.HeightPx, img.SzInBytes)
 		if err != nil {
 			return fmt.Errorf("failed to insert statement image: %w", err)
 		}
@@ -191,13 +191,13 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 
 	// Load main task row.
 	err := r.pool.QueryRow(ctx, `
-		SELECT short_id, full_name, illustr_img_uri, mem_lim_megabytes, cpu_time_lim_secs, origin_olympiad, difficulty_rating, checker, interactor
+		SELECT short_id, full_name, illustr_img_s3_key, mem_lim_megabytes, cpu_time_lim_secs, origin_olympiad, difficulty_rating, checker, interactor
 		FROM tasks
 		WHERE short_id = $1
 	`, shortId).Scan(
 		&t.ShortId,
 		&t.FullName,
-		&t.IllustrImgUri,
+		&t.IllustrImgS3Key,
 		&t.MemLimMegabytes,
 		&t.CpuTimeLimSecs,
 		&t.OriginOlympiad,
@@ -250,7 +250,7 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 	mdStmtRows.Close()
 	t.MdStatements = mdStatements
 	taskImgsRows, err := r.pool.Query(ctx, `
-		SELECT s3_uri, file_name, width_px, height_px, filesize_bytes 
+		SELECT s3_key, file_name, width_px, height_px, filesize_bytes 
 		FROM task_images 
 		WHERE task_short_id = $1
 	`, shortId)
@@ -260,7 +260,7 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 	var taskImgs []srvc.StatementImage
 	for taskImgsRows.Next() {
 		var img srvc.StatementImage
-		if err := taskImgsRows.Scan(&img.S3Uri, &img.Filename, &img.WidthPx, &img.HeightPx, &img.SzInBytes); err != nil {
+		if err := taskImgsRows.Scan(&img.S3Key, &img.Filename, &img.WidthPx, &img.HeightPx, &img.SzInBytes); err != nil {
 			taskImgsRows.Close()
 			return t, fmt.Errorf("failed to load task image: %w", err)
 		}
@@ -562,9 +562,9 @@ func (r *taskPgRepo) CreateTask(ctx context.Context, t srvc.Task) error {
 
 	// Insert main task.
 	_, err = tx.Exec(ctx, `
-		INSERT INTO tasks (short_id, full_name, illustr_img_uri, mem_lim_megabytes, cpu_time_lim_secs, origin_olympiad, difficulty_rating, checker, interactor)
+		INSERT INTO tasks (short_id, full_name, illustr_img_s3_key, mem_lim_megabytes, cpu_time_lim_secs, origin_olympiad, difficulty_rating, checker, interactor)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-	`, t.ShortId, t.FullName, t.IllustrImgUri, t.MemLimMegabytes, t.CpuTimeLimSecs, t.OriginOlympiad, t.DifficultyRating, t.Checker, t.Interactor)
+	`, t.ShortId, t.FullName, t.IllustrImgS3Key, t.MemLimMegabytes, t.CpuTimeLimSecs, t.OriginOlympiad, t.DifficultyRating, t.Checker, t.Interactor)
 	if err != nil {
 		return fmt.Errorf("failed to insert main task: %w", err)
 	}
@@ -594,9 +594,9 @@ func (r *taskPgRepo) CreateTask(ctx context.Context, t srvc.Task) error {
 	}
 	for _, img := range t.MdImages {
 		_, err = tx.Exec(ctx, `
-			INSERT INTO task_images (task_short_id, s3_uri, file_name, width_px, height_px, filesize_bytes)
+			INSERT INTO task_images (task_short_id, s3_key, file_name, width_px, height_px, filesize_bytes)
 			VALUES ($1, $2, $3, $4, $5, $6)
-		`, t.ShortId, img.S3Uri, img.Filename, img.WidthPx, img.HeightPx, img.SzInBytes)
+		`, t.ShortId, img.S3Key, img.Filename, img.WidthPx, img.HeightPx, img.SzInBytes)
 		if err != nil {
 			return fmt.Errorf("failed to insert markdown image: %w", err)
 		}
