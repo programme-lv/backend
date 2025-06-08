@@ -1,7 +1,6 @@
 package http
 
 import (
-	"context"
 	"fmt"
 	"log/slog"
 	"net"
@@ -68,12 +67,18 @@ func (r *HttpIpResolver) resolveIp(req *http.Request) string {
 
 // logHTTPReq logs information about the HTTP request
 func logHTTPReq(ri *HttpReqInfo) {
-	logLevel := slog.LevelInfo
-	if ri.code >= 400 {
-		logLevel = slog.LevelWarn
-	}
+	slog.Info("http info",
+		"req", ri.requestID,
+		"m", ri.method,
+		"uri", ri.uri,
+		"status", ri.code,
+		"kB", fmt.Sprintf("%d", ri.written/1000),
+		"ms", ri.duration.Milliseconds(),
+		"ip", ri.ipaddr,
+		"ua", ri.userAgent,
+	)
 
-	slog.Log(context.Background(), logLevel, "http req info",
+	slog.Debug("http info",
 		"req-id", ri.requestID,
 		"method", ri.method,
 		"uri", ri.uri,
@@ -120,8 +125,7 @@ func requestLoggerMiddleware(next http.Handler) http.Handler {
 		reqLogger := slog.Default().With("req-id", requestID)
 
 		// Add request ID and logger to context
-		ctx := context.WithValue(r.Context(), "requestID", requestID)
-		ctx = ctxlog.WithLogger(ctx, reqLogger)
+		ctx := ctxlog.WithLogger(r.Context(), reqLogger)
 		r = r.WithContext(ctx)
 
 		// Capture metrics about the request

@@ -56,17 +56,17 @@ func getSqsClientFromEnvNoLogging() *sqs.Client {
 }
 
 func getResponseSqsUrlFromEnv() string {
-	responseSQSURL := os.Getenv("RESPONSE_SQS_URL")
+	responseSQSURL := os.Getenv("SQS_RESPONSE_QUEUE_URL")
 	if responseSQSURL == "" {
-		panic("RESPONSE_SQS_URL not set in .env file")
+		panic("SQS_RESPONSE_QUEUE_URL not set in .env file")
 	}
 	return responseSQSURL
 }
 
 func getSubmSqsUrlFromEnv() string {
-	submQueueUrl := os.Getenv("SUBM_SQS_QUEUE_URL")
+	submQueueUrl := os.Getenv("SQS_SUBM_QUEUE_URL")
 	if submQueueUrl == "" {
-		panic("SUBM_SQS_QUEUE_URL not set in .env file")
+		panic("SQS_SUBM_QUEUE_URL not set in .env file")
 	}
 	return submQueueUrl
 }
@@ -80,9 +80,9 @@ func getExtPartnerPwFromEnv() string {
 }
 
 func getExecS3BucketFromEnv() string {
-	s3Bucket := os.Getenv("EVAL_S3_BUCKET")
+	s3Bucket := os.Getenv("S3_EXEC_BUCKET")
 	if s3Bucket == "" {
-		panic("EVAL_S3_BUCKET not set in .env file")
+		panic("S3_EXEC_BUCKET not set in .env file")
 	}
 	return s3Bucket
 }
