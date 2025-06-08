@@ -43,21 +43,28 @@ type StatementImage struct {
 	SzInBytes int    `json:"sz_in_bytes"`
 }
 
+type IllustrationImage struct {
+	HttpUrl   string `json:"http_url"`
+	WidthPx   int    `json:"width_px"`
+	HeightPx  int    `json:"height_px"`
+	SzInBytes int    `json:"sz_in_bytes"`
+}
+
 type Task struct {
-	ShortTaskID            string            `json:"short_task_id"`
-	TaskFullName           string            `json:"task_full_name"`
-	MemoryLimitMegabytes   int               `json:"memory_limit_megabytes"`
-	CPUTimeLimitSeconds    float64           `json:"cpu_time_limit_seconds"`
-	OriginOlympiad         string            `json:"origin_olympiad"`
-	IllustrationImgURL     *string           `json:"illustration_img_url"`
-	DifficultyRating       *int              `json:"difficulty_rating"`
-	DefaultMDStatement     MdStatement       `json:"default_md_statement"`
-	StatementImages        []StatementImage  `json:"statement_images"`
-	Examples               []Example         `json:"examples"`
-	DefaultPDFStatementURL *string           `json:"default_pdf_statement_url"`
-	OriginNotes            map[string]string `json:"origin_notes"`
-	VisibleInputSubtasks   []VisInputSubtask `json:"visible_input_subtasks"`
-	StatementSubtasks      []SubtaskOverview `json:"statement_subtasks"`
+	ShortTaskID            string             `json:"short_task_id"`
+	TaskFullName           string             `json:"task_full_name"`
+	MemoryLimitMegabytes   int                `json:"memory_limit_megabytes"`
+	CPUTimeLimitSeconds    float64            `json:"cpu_time_limit_seconds"`
+	OriginOlympiad         string             `json:"origin_olympiad"`
+	IllustrationImg        *IllustrationImage `json:"illustration_img"`
+	DifficultyRating       *int               `json:"difficulty_rating"`
+	DefaultMDStatement     MdStatement        `json:"default_md_statement"`
+	StatementImages        []StatementImage   `json:"statement_images"`
+	Examples               []Example          `json:"examples"`
+	DefaultPDFStatementURL *string            `json:"default_pdf_statement_url"`
+	OriginNotes            map[string]string  `json:"origin_notes"`
+	VisibleInputSubtasks   []VisInputSubtask  `json:"visible_input_subtasks"`
+	StatementSubtasks      []SubtaskOverview  `json:"statement_subtasks"`
 }
 
 type SubtaskOverview struct {
@@ -97,14 +104,34 @@ func mapTaskExamples(examples []srvc.Example) []Example {
 }
 
 func (handler *TaskHttpHandler) mapTaskResponse(task *srvc.Task) *Task {
-	var illstrImgPtr *string = nil
+	var illstrImgPtr *IllustrationImage = nil
 	if task.IllustrImg.S3Key != "" {
 		illstrImgUrl, err := handler.taskSrvc.GetPublicUrlForIllustrImg(context.TODO(), task.IllustrImg.S3Key)
 		if err != nil {
 			slog.Error("failed to get public url for illustration image", "error", err)
 			illstrImgPtr = nil
 		} else {
-			illstrImgPtr = &illstrImgUrl
+			// Handle pointer types with safe dereferencing
+			widthPx := 0
+			heightPx := 0
+			szInBytes := 0
+
+			if task.IllustrImg.WidthPx != nil {
+				widthPx = *task.IllustrImg.WidthPx
+			}
+			if task.IllustrImg.HeightPx != nil {
+				heightPx = *task.IllustrImg.HeightPx
+			}
+			if task.IllustrImg.SzInBytes != nil {
+				szInBytes = *task.IllustrImg.SzInBytes
+			}
+
+			illstrImgPtr = &IllustrationImage{
+				HttpUrl:   illstrImgUrl,
+				WidthPx:   widthPx,
+				HeightPx:  heightPx,
+				SzInBytes: szInBytes,
+			}
 		}
 	}
 
@@ -184,7 +211,7 @@ func (handler *TaskHttpHandler) mapTaskResponse(task *srvc.Task) *Task {
 		MemoryLimitMegabytes:   task.MemLimMegabytes,
 		CPUTimeLimitSeconds:    task.CpuTimeLimSecs,
 		OriginOlympiad:         task.OriginOlympiad,
-		IllustrationImgURL:     illstrImgPtr,
+		IllustrationImg:        illstrImgPtr,
 		DifficultyRating:       difficultyRating,
 		DefaultMDStatement:     defaultMdStatement,
 		StatementImages:        handler.mapTaskStatementImages(task.MdImages),
