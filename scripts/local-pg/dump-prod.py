@@ -5,7 +5,7 @@ Requires pg_dump and aws cli to be installed.
 The purpose is to replicate production db to local env for dev.
 Reads the following env variables from .env:
 POSTGRES_HOST,POSTGRES_PORT, POSTGRES_USER, POSTGRES_DB
-POSTGRES_PASSWORD_SECRET_NAME
+POSTGRES_PW_SECRET_NAME
 """
 import os
 import subprocess
@@ -156,7 +156,7 @@ def main():
         'POSTGRES_PORT',
         'POSTGRES_USER',
         'POSTGRES_DB',
-        'POSTGRES_PASSWORD_SECRET_NAME'
+        'POSTGRES_PW_SECRET_NAME'
     ]
     
     missing_vars = [var for var in required_vars if var not in env_vars]
@@ -170,7 +170,7 @@ def main():
     user = env_vars['POSTGRES_USER']
     db_name = env_vars['POSTGRES_DB']
     sslmode = env_vars.get('POSTGRES_SSLMODE', 'require')
-    secret_name = env_vars['POSTGRES_PASSWORD_SECRET_NAME']
+    secret_name = env_vars['POSTGRES_PW_SECRET_NAME']
     
     # Step 2: Retrieve secret using AWS CLI
     secret = get_secret(secret_name, region='eu-central-1')  # Adjust region if necessary
