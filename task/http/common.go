@@ -1,6 +1,9 @@
 package http
 
 import (
+	"context"
+	"log/slog"
+
 	"github.com/programme-lv/backend/task/srvc"
 )
 
@@ -69,19 +72,6 @@ func mapTaskMdStatement(md *srvc.MarkdownStatement) MdStatement {
 	if md == nil {
 		return MdStatement{}
 	}
-	// imgSizes := make([]MdImg, len(md.Images))
-	// for i, img := range md.Images {
-	// 	oldPrefix := "https://proglv-public.s3.eu-central-1.amazonaws.com/"
-	// 	newPrefix := PublicCloudfrontEndpoint
-	// 	httpUrl := strings.Replace(img.S3Url, oldPrefix, newPrefix, 1)
-	// 	imgSizes[i] = MdImg{
-	// 		ImgUuid:  img.Uuid,
-	// 		HttpUrl:  httpUrl,
-	// 		WidthEm:  img.WidthEm,
-	// 		WidthPx:  img.WidthPx,
-	// 		HeightPx: img.HeightPx,
-	// 	}
-	// }
 	return MdStatement{
 		Story:   md.Story,
 		Input:   md.Input,
@@ -106,11 +96,16 @@ func mapTaskExamples(examples []srvc.Example) []Example {
 	return response
 }
 
-func mapTaskResponse(task *srvc.Task) *Task {
-	illstrImgUrl := new(string)
-	if task.IllustrImgS3Key != "" {
-		illstrImgUrl = new(string)
-		*illstrImgUrl = PublicCloudfrontEndpoint + task.IllustrImgS3Key
+func (handler *TaskHttpHandler) mapTaskResponse(task *srvc.Task) *Task {
+	var illstrImgPtr *string = nil
+	if task.IllustrImg.S3Key != "" {
+		illstrImgUrl, err := handler.taskSrvc.GetPublicUrlForIllustrImg(context.TODO(), task.IllustrImg.S3Key)
+		if err != nil {
+			slog.Error("failed to get public url for illustration image", "error", err)
+			illstrImgPtr = nil
+		} else {
+			illstrImgPtr = &illstrImgUrl
+		}
 	}
 
 	difficultyRating := new(int)
@@ -189,10 +184,10 @@ func mapTaskResponse(task *srvc.Task) *Task {
 		MemoryLimitMegabytes:   task.MemLimMegabytes,
 		CPUTimeLimitSeconds:    task.CpuTimeLimSecs,
 		OriginOlympiad:         task.OriginOlympiad,
-		IllustrationImgURL:     illstrImgUrl,
+		IllustrationImgURL:     illstrImgPtr,
 		DifficultyRating:       difficultyRating,
 		DefaultMDStatement:     defaultMdStatement,
-		StatementImages:        mapTaskStatementImages(task.MdImages),
+		StatementImages:        handler.mapTaskStatementImages(task.MdImages),
 		Examples:               mapTaskExamples(task.Examples),
 		DefaultPDFStatementURL: defaultPdfStatementUrl,
 		OriginNotes:            originNotesAsAMap,
@@ -202,11 +197,14 @@ func mapTaskResponse(task *srvc.Task) *Task {
 	return response
 }
 
-func mapTaskStatementImages(images []srvc.StatementImage) []StatementImage {
+func (handler *TaskHttpHandler) mapTaskStatementImages(images []srvc.StatementImage) []StatementImage {
 	response := make([]StatementImage, len(images))
 	for i, image := range images {
-		// image.S3Key = task-md-images/<uuid or sha or something unique>.png
-		httpUrl := PublicCloudfrontEndpoint + image.S3Key
+		httpUrl, err := handler.taskSrvc.GetPublicUrlForStatementImage(context.TODO(), image.S3Key)
+		if err != nil {
+			slog.Error("failed to get public url for statement image", "error", err)
+			httpUrl = ""
+		}
 		response[i] = StatementImage{
 			S3Key:     image.S3Key,
 			Filename:  image.Filename,
@@ -219,10 +217,10 @@ func mapTaskStatementImages(images []srvc.StatementImage) []StatementImage {
 	return response
 }
 
-func mapTasksResponse(tasks []srvc.Task) []*Task {
+func (handler *TaskHttpHandler) mapTasksResponse(tasks []srvc.Task) []*Task {
 	response := make([]*Task, len(tasks))
 	for i, task := range tasks {
-		response[i] = mapTaskResponse(&task)
+		response[i] = handler.mapTaskResponse(&task)
 	}
 	return response
 }

@@ -35,7 +35,7 @@ func (httpserver *TaskHttpHandler) ListTasks(w http.ResponseWriter, r *http.Requ
 			return nil, err
 		}
 
-		response := mapTasksResponse(tasks)
+		response := httpserver.mapTasksResponse(tasks)
 
 		// Store in cache for future requests
 		httpserver.cache.Set(taskListCacheKey, response, 0) // Use default expiration time
