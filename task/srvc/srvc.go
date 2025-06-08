@@ -2,7 +2,6 @@ package srvc
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"time"
 
@@ -23,6 +22,8 @@ type TaskSrvcClient interface {
 	CreateTask(ctx context.Context, task Task) error
 	ResolveNames(ctx context.Context, shortIds []string) ([]string, error)
 	UpdateStatementMd(ctx context.Context, taskId string, statement MarkdownStatement) error
+	GetPublicUrlForIllustrImg(ctx context.Context, illstrImgS3Key string) (string, error)
+	GetPublicUrlForStatementImage(ctx context.Context, statementImageS3Key string) (string, error)
 }
 
 type S3BucketFacade interface {
@@ -50,24 +51,6 @@ type TaskSrvc struct {
 	s3TestfileBucket S3BucketFacade
 
 	repo TaskPgRepo
-}
-
-// ResolveNames implements TaskSrvcClient.
-func (ts *TaskSrvc) ResolveNames(ctx context.Context, shortIds []string) ([]string, error) {
-	names, err := ts.repo.ResolveNames(ctx, shortIds)
-	if err != nil {
-		return nil, fmt.Errorf("failed to resolve names: %w", err)
-	}
-	return names, nil
-}
-
-// GetTestDownlUrl implements submadapter.TaskSrvcFacade.
-func (ts *TaskSrvc) GetTestDownlUrl(ctx context.Context, testFileSha256 string) (string, error) {
-	presignedUrl, err := ts.s3TestfileBucket.PresignedURL(fmt.Sprintf("%s.zst", testFileSha256), time.Hour*24)
-	if err != nil {
-		return "", fmt.Errorf("failed to get presigned URL: %w", err)
-	}
-	return presignedUrl, nil
 }
 
 func NewTaskSrvc(repo TaskPgRepo, publicS3, testfileS3 *s3bucket.S3Bucket) (TaskSrvcClient, error) {

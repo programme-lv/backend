@@ -1,25 +1,27 @@
 package srvc
 
 import (
-	"fmt"
-
 	"github.com/thoas/go-funk"
 )
 
 type Task struct {
-	ShortId  string
+	// url slug friendly identifier
+	ShortId string
+
+	// full name of the task (TODO: translateable)
 	FullName string
 
-	IllustrImgS3Key string
+	// illustration image
+	IllustrImg IllustrationImage
 
 	// constraints
 	MemLimMegabytes int
 	CpuTimeLimSecs  float64
 
-	// metadata
+	// metadata (origin, difficulty)
 	OriginOlympiad   string
-	DifficultyRating int
 	OriginNotes      []OriginNote
+	DifficultyRating int
 
 	// statement
 	MdStatements   []MarkdownStatement
@@ -28,7 +30,7 @@ type Task struct {
 	VisInpSubtasks []VisibleInputSubtask
 	Examples       []Example
 
-	// evaluation
+	// testing
 	Tests      []Test
 	Checker    string
 	Interactor string
@@ -89,6 +91,13 @@ type MarkdownStatement struct {
 	Example string // example in interactive tasks
 }
 
+type IllustrationImage struct {
+	S3Key     string
+	WidthPx   *int
+	HeightPx  *int
+	SzInBytes *int
+}
+
 type StatementImage struct {
 	S3Key     string // e.g. task-md-images/<sanitized-filename>.png
 	Filename  string // filename of the image, e.g., nekoks.png
@@ -104,11 +113,6 @@ type Subtask struct {
 	Descriptions map[string]string
 }
 
-type SubtaskWithId struct {
-	ID int
-	Subtask
-}
-
 type TaskEvalTestGroupInformation struct {
 	TestGroupID int
 	Score       int
@@ -118,69 +122,6 @@ type TaskEvalTestGroupInformation struct {
 type Test struct {
 	InpSha2 string
 	AnsSha2 string
-}
-
-// s3://proglv-tests/00a312d5348215f1afb97748059facead3a63babeb7ca24eea4eec012e8ee6bf.zst
-func (test *Test) FullInputS3URI() string {
-	format := "s3://proglv-tests/%s.zst"
-	return fmt.Sprintf(format, test.InpSha2)
-}
-
-func (test *Test) FullAnswerS3URI() string {
-	format := "s3://proglv-tests/%s.zst"
-	return fmt.Sprintf(format, test.AnsSha2)
-}
-
-// https://proglv-tests.s3.eu-central-1.amazonaws.com/00a312d5348215f1afb97748059facead3a63babeb7ca24eea4eec012e8ee6bf.zst
-func (test *Test) FullInputS3URL() string {
-	format := "https://proglv-tests.s3.eu-central-1.amazonaws.com/%s.zst"
-	return fmt.Sprintf(format, test.InpSha2)
-}
-
-func (test *Test) FullAnswerS3URL() string {
-	format := "https://proglv-tests.s3.eu-central-1.amazonaws.com/%s.zst"
-	return fmt.Sprintf(format, test.AnsSha2)
-}
-
-func (t *Task) FindSubtasksWithTest(testId int) []SubtaskWithId {
-	subtasks := make([]SubtaskWithId, 0)
-	for i, subtask := range t.Subtasks {
-		for _, test := range subtask.TestIDs {
-			if test == testId {
-				subtasks = append(subtasks, SubtaskWithId{
-					ID:      i + 1,
-					Subtask: subtask,
-				})
-			}
-		}
-	}
-	return subtasks
-}
-
-type TestGroupWithID struct {
-	ID int
-	TestGroup
-}
-
-func (t *Task) FindTestGroupsWithTest(testId int) []TestGroupWithID {
-	testGroups := make([]TestGroupWithID, 0)
-	for i, testGroup := range t.TestGroups {
-		for _, test := range testGroup.TestIDs {
-			if test == testId {
-				testGroups = append(testGroups, TestGroupWithID{
-					ID:        i + 1,
-					TestGroup: testGroup,
-				})
-			}
-		}
-	}
-	return testGroups
-}
-
-// TestWithOnlyInput represents a test with only its input data.
-type TestWithOnlyInput struct {
-	TestID int
-	Input  string
 }
 
 // TestGroup represents a group of tests within a task.
@@ -211,12 +152,6 @@ func (t *Task) FindTestgroupSubtasks(testGroupId int) []int {
 type PdfStatement struct {
 	LangIso639 string
 	ObjectUrl  string
-}
-
-// ImgUuidUrl represents a mapping between image UUIDs and their URLs.
-type ImgUuidUrl struct {
-	UUID string
-	Url  string
 }
 
 // OriginNote represents origin notes with language and information.

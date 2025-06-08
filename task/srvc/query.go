@@ -2,6 +2,8 @@ package srvc
 
 import (
 	"context"
+	"fmt"
+	"time"
 )
 
 func (ts *TaskSrvc) GetTask(ctx context.Context, id string) (res Task, err error) {
@@ -33,4 +35,40 @@ func (ts *TaskSrvc) GetTaskFullNames(ctx context.Context, shortIDs []string) ([]
 		return nil, err
 	}
 	return fullNames, nil
+}
+
+func (ts *TaskSrvc) GetPublicUrlForIllustrImg(ctx context.Context, s3Key string) (string, error) {
+	if ts.s3PublicBucket.Bucket() == "proglv-public" {
+		cloudfrontEndpoint := "https://dvhk4hiwp1rmf.cloudfront.net/"
+		return cloudfrontEndpoint + s3Key, nil
+	} else {
+		return ts.s3PublicBucket.PresignedURL(s3Key, 24*time.Hour)
+	}
+}
+
+func (ts *TaskSrvc) GetPublicUrlForStatementImage(ctx context.Context, s3Key string) (string, error) {
+	if ts.s3PublicBucket.Bucket() == "proglv-public" {
+		cloudfrontEndpoint := "https://dvhk4hiwp1rmf.cloudfront.net/"
+		return cloudfrontEndpoint + s3Key, nil
+	} else {
+		return ts.s3PublicBucket.PresignedURL(s3Key, 24*time.Hour)
+	}
+}
+
+// GetTestDownlUrl implements submadapter.TaskSrvcFacade.
+func (ts *TaskSrvc) GetTestDownlUrl(ctx context.Context, testFileSha256 string) (string, error) {
+	presignedUrl, err := ts.s3TestfileBucket.PresignedURL(fmt.Sprintf("%s.zst", testFileSha256), time.Hour*24)
+	if err != nil {
+		return "", fmt.Errorf("failed to get presigned URL: %w", err)
+	}
+	return presignedUrl, nil
+}
+
+// ResolveNames implements TaskSrvcClient.
+func (ts *TaskSrvc) ResolveNames(ctx context.Context, shortIds []string) ([]string, error) {
+	names, err := ts.repo.ResolveNames(ctx, shortIds)
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve names: %w", err)
+	}
+	return names, nil
 }

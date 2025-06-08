@@ -44,7 +44,7 @@ func (httpserver *TaskHttpHandler) GetTask(w http.ResponseWriter, r *http.Reques
 			return nil, err
 		}
 
-		response := mapTaskResponse(&task)
+		response := httpserver.mapTaskResponse(&task)
 
 		// Store in cache for future requests
 		httpserver.cache.Set(cacheKey, response, 0) // Use default expiration time
