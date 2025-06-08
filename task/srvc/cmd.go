@@ -281,3 +281,71 @@ func (ts *TaskSrvc) DeleteStatementImage(ctx context.Context, taskId string, fil
 
 	return nil
 }
+
+// DeleteIllustrationImg implements TaskSrvcClient.
+// It deletes an illustration image from both S3 and the database.
+func (ts *TaskSrvc) DeleteIllustrationImg(ctx context.Context, taskId string) error {
+	l := ts.logger(ctx)
+
+	// First, get the task to find the illustration image S3 key
+	t, err := ts.repo.GetTask(ctx, taskId)
+	if err != nil {
+		l.Error("failed to get task", "error", err)
+		return NewErrorFailedToGetTaskFromDb(taskId)
+	}
+
+	// Check if there's an illustration image to delete
+	if t.IllustrImg.S3Key == "" {
+		l.Error("no illustration image found for task", "task_id", taskId)
+		return fmt.Errorf("no illustration image found for task %s", taskId)
+	}
+
+	s3Key := t.IllustrImg.S3Key
+
+	// Check if the image exists in S3
+	exists, err := ts.s3PublicBucket.Exists(s3Key)
+	if err != nil {
+		l.Error("failed to check if image exists in S3", "error", err)
+		return ErrInternalServerError()
+	}
+	if !exists {
+		l.Error("image does not exist in S3", "s3_key", s3Key)
+		return ErrInternalServerError()
+	}
+
+	// Update the database to remove illustration image fields
+	emptyImg := IllustrationImage{
+		S3Key:     "",
+		WidthPx:   nil,
+		HeightPx:  nil,
+		SzInBytes: nil,
+	}
+	err = ts.repo.UpdateIllustrationImg(ctx, taskId, emptyImg)
+	if err != nil {
+		l.Error("failed to update illustration image in database", "error", err)
+		return ErrInternalServerError()
+	}
+
+	// Delete the image from S3
+	err = ts.s3PublicBucket.Delete(s3Key)
+	if err != nil {
+		l.Error("failed to delete image from S3", "error", err)
+		return ErrInternalServerError()
+	}
+
+	return nil
+}
+
+// UpdateIllustrationImg implements TaskSrvcClient.
+// It updates the illustration image information in the database.
+func (ts *TaskSrvc) UpdateIllustrationImg(ctx context.Context, taskId string, img IllustrationImage) error {
+	l := ts.logger(ctx)
+
+	err := ts.repo.UpdateIllustrationImg(ctx, taskId, img)
+	if err != nil {
+		l.Error("failed to update illustration image in database", "error", err)
+		return ErrInternalServerError()
+	}
+
+	return nil
+}

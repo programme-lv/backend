@@ -182,6 +182,48 @@ func (r *taskPgRepo) DeleteStatementImg(ctx context.Context, taskId string, file
 	return nil
 }
 
+// UpdateIllustrationImg implements srvc.TaskPgRepo.
+// It updates the illustration image fields in the tasks table.
+func (r *taskPgRepo) UpdateIllustrationImg(ctx context.Context, taskId string, img srvc.IllustrationImage) error {
+	// Start a transaction
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+
+	// Defer rollback in case of error - transaction is committed later if successful
+	defer tx.Rollback(ctx)
+
+	// Check if the task exists
+	var taskExists bool
+	err = tx.QueryRow(ctx, `
+		SELECT EXISTS(SELECT 1 FROM tasks WHERE short_id = $1)
+	`, taskId).Scan(&taskExists)
+	if err != nil {
+		return fmt.Errorf("failed to check if task exists: %w", err)
+	}
+	if !taskExists {
+		return fmt.Errorf("task with ID %s does not exist", taskId)
+	}
+
+	// Update the illustration image fields
+	_, err = tx.Exec(ctx, `
+		UPDATE tasks 
+		SET illustr_img_s3_key = $2, width_px = $3, height_px = $4, filesize_bytes = $5
+		WHERE short_id = $1
+	`, taskId, img.S3Key, img.WidthPx, img.HeightPx, img.SzInBytes)
+	if err != nil {
+		return fmt.Errorf("failed to update illustration image: %w", err)
+	}
+
+	// Commit the transaction
+	if err = tx.Commit(ctx); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return nil
+}
+
 func NewTaskPgRepo(pool *pgxpool.Pool) *taskPgRepo {
 	return &taskPgRepo{pool: pool}
 }

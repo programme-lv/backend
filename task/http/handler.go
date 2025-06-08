@@ -34,5 +34,7 @@ func (h *TaskHttpHandler) RegisterRoutes(r *chi.Mux, jwtKey []byte) {
 		r.Patch("/tasks/{taskId}/statements/{langIso639}", h.PutStatement)
 		r.Post("/tasks/{taskId}/images", h.UploadStatementImage)
 		r.Delete("/tasks/{taskId}/images/{filename}", h.DeleteStatementImage)
+		r.Post("/tasks/{taskId}/illustration", h.UploadIllustrationImage)
+		r.Delete("/tasks/{taskId}/illustration", h.DeleteIllustrationImage)
 	})
 }

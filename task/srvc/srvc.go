@@ -13,6 +13,8 @@ type TaskSrvcClient interface {
 	GetTestDownlUrl(ctx context.Context, testFileSha256 string) (string, error)
 	UploadStatementPdf(ctx context.Context, body []byte) (string, error)
 	UploadIllustrationImg(ctx context.Context, mimeType string, body []byte) (string, error)
+	DeleteIllustrationImg(ctx context.Context, taskId string) error
+	UpdateIllustrationImg(ctx context.Context, taskId string, img IllustrationImage) error
 	UploadStatementImage(ctx context.Context, taskId string, filename string, mimeType string, body []byte) (string, error)
 	DeleteStatementImage(ctx context.Context, taskId string, filename string) error
 	UploadTestFile(ctx context.Context, body []byte) error
@@ -44,6 +46,7 @@ type TaskPgRepo interface {
 	UpdateStatement(ctx context.Context, taskId string, statement MarkdownStatement) error
 	AddStatementImg(ctx context.Context, taskId string, img StatementImage) error
 	DeleteStatementImg(ctx context.Context, taskId string, filename string) error
+	UpdateIllustrationImg(ctx context.Context, taskId string, img IllustrationImage) error
 }
 
 type TaskSrvc struct {
