@@ -360,6 +360,10 @@ func (r *taskPgRepo) GetTaskPreview(ctx context.Context, shortId string) (srvc.T
 func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, error) {
 	var t srvc.Task
 
+	illustrImg := srvc.IllustrationImage{}
+	var widthPx *int = nil
+	var heightPx *int = nil
+	var szInBytes *int = nil
 	// Load main task row.
 	err := r.pool.QueryRow(ctx, `
 		SELECT short_id, full_name, illustr_img_s3_key, width_px, height_px, filesize_bytes, mem_lim_megabytes, cpu_time_lim_secs, origin_olympiad, difficulty_rating, checker, interactor
@@ -368,10 +372,10 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 	`, shortId).Scan(
 		&t.ShortId,
 		&t.FullName,
-		&t.IllustrImg.S3Key,
-		&t.IllustrImg.WidthPx,
-		&t.IllustrImg.HeightPx,
-		&t.IllustrImg.SzInBytes,
+		&illustrImg.S3Key,
+		&widthPx,
+		&heightPx,
+		&szInBytes,
 		&t.MemLimMegabytes,
 		&t.CpuTimeLimSecs,
 		&t.OriginOlympiad,
@@ -381,6 +385,15 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 	)
 	if err != nil {
 		return t, fmt.Errorf("failed to load task: %w", err)
+	}
+
+	if illustrImg.S3Key != "" &&
+		widthPx != nil && heightPx != nil && szInBytes != nil &&
+		*widthPx > 0 && *heightPx > 0 && *szInBytes > 0 {
+		illustrImg.WidthPx = *widthPx
+		illustrImg.HeightPx = *heightPx
+		illustrImg.SzInBytes = *szInBytes
+		t.IllustrImg = &illustrImg
 	}
 
 	// Load OriginNotes.
