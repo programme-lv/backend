@@ -15,13 +15,15 @@ import (
 	"github.com/peterldowns/pgtestdb/migrators/golangmigrator"
 	"github.com/programme-lv/backend/exec"
 	submadaptermock "github.com/programme-lv/backend/gen/mocks/submadapter"
+	mocktask "github.com/programme-lv/backend/mocks/task"
+	mockuser "github.com/programme-lv/backend/mocks/user"
 	"github.com/programme-lv/backend/subm/domain"
 	"github.com/programme-lv/backend/subm/pgrepo"
 	"github.com/programme-lv/backend/subm/submsrvc"
 	"github.com/programme-lv/backend/subm/submsrvc/submcmd"
 	"github.com/programme-lv/backend/subm/submsrvc/submquery"
 	"github.com/programme-lv/backend/task/srvc"
-	"github.com/programme-lv/backend/user"
+	usersrvc "github.com/programme-lv/backend/user"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
@@ -29,8 +31,8 @@ import (
 var mockUserUuid = uuid.New()
 
 type testSetup struct {
-	userSrvc *submadaptermock.MockUserSrvcFacade
-	taskSrvc *submadaptermock.MockTaskSrvcFacade
+	userSrvc *mockuser.MockUserSrvcClient
+	taskSrvc *mocktask.MockTaskSrvcClient
 	execSrvc *submadaptermock.MockExecSrvcFacade
 	submRepo submsrvc.SubmRepo
 	evalRepo submsrvc.EvalRepo
@@ -46,8 +48,8 @@ func setupSubmSrvc(t *testing.T) *testSetup {
 	evalRepo := pgrepo.NewPgEvalRepo(db)
 
 	setup := &testSetup{
-		userSrvc: submadaptermock.NewMockUserSrvcFacade(t),
-		taskSrvc: submadaptermock.NewMockTaskSrvcFacade(t),
+		userSrvc: mockuser.NewMockUserSrvcClient(t),
+		taskSrvc: mocktask.NewMockTaskSrvcClient(t),
 		execSrvc: submadaptermock.NewMockExecSrvcFacade(t),
 		submRepo: submRepo,
 		evalRepo: evalRepo,
@@ -69,7 +71,7 @@ func (s *testSetup) submitSolution(t *testing.T, ctx context.Context) uuid.UUID 
 	t.Helper()
 	s.execSrvc.EXPECT().Enqueue(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	s.execSrvc.EXPECT().Listen(mock.Anything, mock.Anything).Return(newMockExecEventChannel(t), nil)
-	s.userSrvc.EXPECT().GetUserByUUID(mock.Anything, mockUserUuid).Return(user.User{UUID: mockUserUuid}, nil)
+	s.userSrvc.EXPECT().GetUserByUUID(mock.Anything, mockUserUuid).Return(usersrvc.User{UUID: mockUserUuid}, nil)
 	s.taskSrvc.EXPECT().GetTask(mock.Anything, "aplusb").Return(srvc.Task{ShortId: "aplusb"}, nil)
 	submUUID := uuid.New()
 	err := s.srvc.SubmitSol(ctx, submcmd.SubmitSolParams{
@@ -200,7 +202,7 @@ func TestUserMaxScores(t *testing.T) {
 	setup.execSrvc.EXPECT().Enqueue(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	mockCh := make(chan exec.Event, 10)
 	setup.execSrvc.EXPECT().Listen(mock.Anything, mock.Anything).Return(mockCh, nil).Once()
-	setup.userSrvc.EXPECT().GetUserByUUID(mock.Anything, mockUserUuid).Return(user.User{UUID: mockUserUuid}, nil).Once()
+	setup.userSrvc.EXPECT().GetUserByUUID(mock.Anything, mockUserUuid).Return(usersrvc.User{UUID: mockUserUuid}, nil).Once()
 	setup.taskSrvc.EXPECT().GetTask(mock.Anything, "aplusb").Return(newAplusBTask(t), nil).Once()
 	setup.taskSrvc.EXPECT().GetTestDownlUrl(mock.Anything, mock.Anything).Return("", nil)
 
@@ -261,7 +263,7 @@ func TestUserMaxScores(t *testing.T) {
 	mockCh2 := make(chan exec.Event, 10)
 	setup.execSrvc.EXPECT().Enqueue(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	setup.execSrvc.EXPECT().Listen(mock.Anything, mock.Anything).Return(mockCh2, nil).Once()
-	setup.userSrvc.EXPECT().GetUserByUUID(mock.Anything, mockUserUuid).Return(user.User{UUID: mockUserUuid}, nil)
+	setup.userSrvc.EXPECT().GetUserByUUID(mock.Anything, mockUserUuid).Return(usersrvc.User{UUID: mockUserUuid}, nil)
 	setup.taskSrvc.EXPECT().GetTask(mock.Anything, "aplusb").Return(newAplusBTask(t), nil)
 	setup.taskSrvc.EXPECT().GetTestDownlUrl(mock.Anything, mock.Anything).Return("", nil)
 

@@ -15,8 +15,8 @@ import (
 	"github.com/programme-lv/backend/subm/submsrvc"
 	taskhttp "github.com/programme-lv/backend/task/http"
 	"github.com/programme-lv/backend/task/repo"
-	"github.com/programme-lv/backend/task/srvc"
-	"github.com/programme-lv/backend/user"
+	tasksrvc "github.com/programme-lv/backend/task/srvc"
+	usersrvc "github.com/programme-lv/backend/user"
 	userhttp "github.com/programme-lv/backend/user/http"
 )
 
@@ -51,11 +51,11 @@ func main() {
 	}
 
 	// Initialize user service
-	userSrvc := user.NewUserService(pgPool)
+	userSrvc := usersrvc.NewUserService(pgPool)
 
 	// Initialize task service
 	taskRepo := repo.NewTaskPgRepo(pgPool)
-	taskSrvc, err := srvc.NewTaskSrvc(taskRepo, cdnS3, testS3)
+	taskSrvc, err := tasksrvc.NewTaskSrvc(taskRepo, cdnS3, testS3)
 	if err != nil {
 		slog.Error("error creating task service", "error", err)
 		os.Exit(1)
@@ -84,7 +84,7 @@ func setupLogger() {
 	))
 }
 
-func newSubmHttpHandler(userSrvc *user.UserSrvc, taskSrvc srvc.TaskSrvcClient, execSrvc *exec.ExecSrvc) *submhttp.SubmHttpHandler {
+func newSubmHttpHandler(userSrvc usersrvc.UserSrvcClient, taskSrvc tasksrvc.TaskSrvcClient, execSrvc *exec.ExecSrvc) *submhttp.SubmHttpHandler {
 	pgPool, err := conf.GetPgxPoolFromEnv()
 	if err != nil {
 		slog.Error("failed to create pg pool", "error", err)

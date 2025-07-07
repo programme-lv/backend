@@ -1,5 +1,7 @@
 package plang
 
+import "strings"
+
 // ListProgrammingLanguages implements submissions.Service.
 func ListProgrammingLanguages() (res []ProgrammingLang, err error) {
 	res = make([]ProgrammingLang, 0)
@@ -29,6 +31,19 @@ func GetProgrLangById(langId string) (*ProgrammingLang, error) {
 		}
 	}
 	return nil, ErrInvalidProgLang()
+}
+
+func SearchProgrLangByName(name string) ([]string, error) {
+	langs := getHardcodedLanguageList()
+	name = strings.ToLower(name)
+	langIds := make([]string, 0)
+	for _, lang := range langs {
+		if strings.Contains(strings.ToLower(lang.FullName), name) ||
+			strings.Contains(strings.ToLower(lang.ID), name) {
+			langIds = append(langIds, lang.ID)
+		}
+	}
+	return langIds, nil
 }
 
 // ProgrammingLang represents the structure of a programming language.

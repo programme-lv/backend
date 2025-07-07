@@ -4,9 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/google/uuid"
+	"github.com/lib/pq"
+
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/programme-lv/backend/common/ctxlog"
@@ -442,29 +443,38 @@ func (r *pgSubmRepo) GetSubm(ctx context.Context, id uuid.UUID) (domain.Subm, er
 }
 
 // ListSubms retrieves all SubmissionEntities from the database
-func (r *pgSubmRepo) ListSubms(ctx context.Context, limit int, offset int) ([]domain.Subm, error) {
+func (r *pgSubmRepo) ListSubms(ctx context.Context, limit int, offset int, search string, authorIds []string, taskIds []string, langIds []string) ([]domain.Subm, error) {
 	log := ctxlog.FromContext(ctx)
 	log.Debug("executing ListSubms query", "limit", limit, "offset", offset)
 
-	submissionsQuery := `
-			SELECT uuid, content, author_uuid, task_shortid, lang_shortid, curr_eval_uuid, created_at
+	var rows pgx.Rows
+	var err error
+	if len(authorIds) > 0 || len(taskIds) > 0 || len(langIds) > 0 {
+		submissionsQuery := `SELECT uuid, content, author_uuid, task_shortid, lang_shortid, curr_eval_uuid, created_at
+			FROM submissions
+			WHERE author_uuid=any($1) OR task_shortid=any($2) OR lang_shortid=any($3)
+			ORDER BY created_at DESC
+			LIMIT $4 OFFSET $5`
+
+		rows, err = r.pool.Query(ctx, submissionsQuery, pq.Array(authorIds), pq.Array(taskIds), pq.Array(langIds), limit, offset)
+		if err != nil {
+			log.Debug("failed to query submissions", "error", err)
+			return nil, fmt.Errorf("failed to query submissions: %w", err)
+		}
+		defer rows.Close()
+	} else {
+		submissionsQuery := `SELECT uuid, content, author_uuid, task_shortid, lang_shortid, curr_eval_uuid, created_at
 			FROM submissions
 			ORDER BY created_at DESC
-			LIMIT $1 OFFSET $2
-	`
+			LIMIT $1 OFFSET $2`
 
-	submissionQueryPretty := strings.ReplaceAll(submissionsQuery, "\t", " ")
-	for strings.Contains(submissionQueryPretty, "  ") {
-		submissionQueryPretty = strings.ReplaceAll(submissionQueryPretty, "  ", " ")
+		rows, err = r.pool.Query(ctx, submissionsQuery, limit, offset)
+		if err != nil {
+			log.Debug("failed to query submissions", "error", err)
+			return nil, fmt.Errorf("failed to query submissions: %w", err)
+		}
+		defer rows.Close()
 	}
-	log.Debug("running SQL query", "query", submissionQueryPretty)
-
-	rows, err := r.pool.Query(ctx, submissionsQuery, limit, offset)
-	if err != nil {
-		log.Debug("failed to query submissions", "error", err)
-		return nil, fmt.Errorf("failed to query submissions: %w", err)
-	}
-	defer rows.Close()
 
 	var submissions []domain.Subm
 	for rows.Next() {
@@ -495,17 +505,28 @@ func (r *pgSubmRepo) ListSubms(ctx context.Context, limit int, offset int) ([]do
 }
 
 // CountSubms returns the total number of submissions in the database
-func (r *pgSubmRepo) CountSubms(ctx context.Context) (int, error) {
+func (r *pgSubmRepo) CountSubms(ctx context.Context, authorIds []string, taskIds []string, langIds []string) (int, error) {
 	log := ctxlog.FromContext(ctx)
 	log.Debug("executing CountSubms query")
 
-	countQuery := `SELECT COUNT(*) FROM submissions`
-
 	var count int
-	err := r.pool.QueryRow(ctx, countQuery).Scan(&count)
-	if err != nil {
-		log.Debug("failed to count submissions", "error", err)
-		return 0, fmt.Errorf("failed to count submissions: %w", err)
+	if len(authorIds) > 0 || len(taskIds) > 0 || len(langIds) > 0 {
+		countQuery := `SELECT COUNT(*) FROM submissions
+			WHERE author_uuid=any($1) OR task_shortid=any($2) OR lang_shortid=any($3)`
+		err := r.pool.QueryRow(ctx, countQuery, pq.Array(authorIds), pq.Array(taskIds), pq.Array(langIds)).Scan(&count)
+		if err != nil {
+			log.Debug("failed to count submissions", "error", err)
+			return 0, fmt.Errorf("failed to count submissions with filters: %w", err)
+		}
+		log.Debug("counted submissions", "count", count)
+		return count, nil
+	} else {
+		countQuery := `SELECT COUNT(*) FROM submissions`
+		err := r.pool.QueryRow(ctx, countQuery).Scan(&count)
+		if err != nil {
+			log.Debug("failed to count submissions", "error", err)
+			return 0, fmt.Errorf("failed to count submissions: %w", err)
+		}
 	}
 
 	log.Debug("counted submissions", "count", count)

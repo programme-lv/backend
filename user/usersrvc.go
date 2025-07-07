@@ -13,7 +13,15 @@ type UserSrvc struct {
 	postgres *pgxpool.Pool
 }
 
-func NewUserService(pg *pgxpool.Pool) *UserSrvc {
+type UserSrvcClient interface {
+	GetUserByUsername(ctx context.Context, username string) (User, error)
+	GetUserByUUID(ctx context.Context, uuid uuid.UUID) (User, error)
+	GetUsernames(ctx context.Context, uuids []uuid.UUID) ([]string, error)
+	Login(ctx context.Context, username string, password string) (*User, error)
+	CreateUser(ctx context.Context, user CreateUserParams) (*User, error)
+}
+
+func NewUserService(pg *pgxpool.Pool) UserSrvcClient {
 	return &UserSrvc{
 		postgres: pg,
 	}

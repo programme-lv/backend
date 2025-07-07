@@ -9,21 +9,22 @@ import (
 
 type ListSubmsQuery decorator.QueryHandler[ListSubmsParams, []subm.Subm]
 
-func NewListSubmsQuery(listSubms func(ctx context.Context, limit int, offset int) ([]subm.Subm, error)) ListSubmsQuery {
+func NewListSubmsQuery(listSubms func(ctx context.Context, limit int, offset int, search string) ([]subm.Subm, error)) ListSubmsQuery {
 	return listSubmsHandler{listSubms: listSubms}
 }
 
 type ListSubmsParams struct {
 	Limit  int
 	Offset int
+	Search string
 }
 
 type listSubmsHandler struct {
-	listSubms func(ctx context.Context, limit int, offset int) ([]subm.Subm, error)
+	listSubms func(ctx context.Context, limit int, offset int, search string) ([]subm.Subm, error)
 }
 
 func (h listSubmsHandler) Handle(ctx context.Context, p ListSubmsParams) ([]subm.Subm, error) {
-	subms, err := h.listSubms(ctx, p.Limit, p.Offset)
+	subms, err := h.listSubms(ctx, p.Limit, p.Offset, p.Search)
 	if err != nil {
 		return nil, err
 	}

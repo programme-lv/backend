@@ -10,11 +10,13 @@ import (
 	"github.com/google/uuid"
 	_ "github.com/lib/pq"
 	"github.com/programme-lv/backend/common/ctxlog"
+	"github.com/programme-lv/backend/common/srvcerror"
 	"github.com/programme-lv/backend/exec"
+	"github.com/programme-lv/backend/plang"
 	"github.com/programme-lv/backend/subm/domain"
 	"github.com/programme-lv/backend/subm/submsrvc/submcmd"
 	"github.com/programme-lv/backend/subm/submsrvc/submquery"
-	"github.com/programme-lv/backend/task/srvc"
+	tasksrvc "github.com/programme-lv/backend/task/srvc"
 	usersrvc "github.com/programme-lv/backend/user"
 	"github.com/programme-lv/backend/user/auth"
 )
@@ -29,15 +31,15 @@ type SubmSrvcClient interface {
 	SubscribeEvalUpds(ctx context.Context) (<-chan domain.Eval, error)
 	WaitForEvalFinish(ctx context.Context, evalUUID uuid.UUID) error
 	GetMaxScorePerTask(ctx context.Context, userUUID uuid.UUID) (map[string]domain.MaxScore, error)
-	CountSubms(ctx context.Context) (int, error)
+	CountSubms(ctx context.Context, search string) (int, error)
 }
 
 type submSrvc struct {
 	submRepo SubmRepo
 	evalRepo EvalRepo
 
-	userSrvc UserSrvcFacade
-	taskSrvc TaskSrvcFacade
+	userSrvc usersrvc.UserSrvcClient
+	taskSrvc tasksrvc.TaskSrvcClient
 	execSrvc ExecSrvcFacade
 
 	newSubmChListenerLock sync.Mutex
@@ -52,23 +54,14 @@ type submSrvc struct {
 type SubmRepo interface {
 	AssignEval(ctx context.Context, submUuid uuid.UUID, evalUuid uuid.UUID) error
 	GetSubm(ctx context.Context, id uuid.UUID) (domain.Subm, error)
-	ListSubms(ctx context.Context, limit int, offset int) ([]domain.Subm, error)
+	ListSubms(ctx context.Context, limit int, offset int, search string, authorIds []string, taskIds []string, langIds []string) ([]domain.Subm, error)
 	StoreSubm(ctx context.Context, subm domain.Subm) error
-	CountSubms(ctx context.Context) (int, error)
+	CountSubms(ctx context.Context, authorIds []string, taskIds []string, langIds []string) (int, error)
 }
 
 type EvalRepo interface {
 	GetEval(ctx context.Context, evalUUID uuid.UUID) (domain.Eval, error)
 	StoreEval(ctx context.Context, eval domain.Eval) error
-}
-
-type UserSrvcFacade interface {
-	GetUserByUUID(ctx context.Context, uuid uuid.UUID) (usersrvc.User, error)
-}
-
-type TaskSrvcFacade interface {
-	GetTask(ctx context.Context, shortId string) (srvc.Task, error)
-	GetTestDownlUrl(ctx context.Context, testFileSha256 string) (string, error)
 }
 
 type ExecSrvcFacade interface {
@@ -79,7 +72,8 @@ type ExecSrvcFacade interface {
 // GetMaxScorePerTask implements SubmSrvcClient.
 func (s *submSrvc) GetMaxScorePerTask(ctx context.Context, userUUID uuid.UUID) (map[string]domain.MaxScore, error) {
 	// Get all submissions
-	subms, err := s.submRepo.ListSubms(ctx, 10000, 0)
+	// TODO: wtf is this?
+	subms, err := s.submRepo.ListSubms(ctx, 10000, 0, "", []string{}, []string{}, []string{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to list submissions: %w", err)
 	}
@@ -118,8 +112,8 @@ func (s *submSrvc) GetMaxScorePerTask(ctx context.Context, userUUID uuid.UUID) (
 }
 
 func NewSubmSrvc(
-	userSrvc UserSrvcFacade,
-	taskSrvc TaskSrvcFacade,
+	userSrvc usersrvc.UserSrvcClient,
+	taskSrvc tasksrvc.TaskSrvcClient,
 	execSrvc ExecSrvcFacade,
 	submRepo SubmRepo,
 	evalRepo EvalRepo,
@@ -279,7 +273,41 @@ func (s *submSrvc) ViewSubm(ctx context.Context, submUuid uuid.UUID) (domain.Sub
 func (s *submSrvc) ListSubms(ctx context.Context, filter submquery.ListSubmsParams) ([]domain.Subm, error) {
 	log := ctxlog.FromContext(ctx)
 	log.Debug("listing submissions", "limit", filter.Limit, "offset", filter.Offset)
-	return s.submRepo.ListSubms(ctx, filter.Limit, filter.Offset)
+
+	authorIds := make([]string, 0)
+	taskIds := make([]string, 0)
+	langIds := make([]string, 0)
+
+	var err error
+	if filter.Search != "" {
+		// get all possible task matches
+		taskIds, err = s.taskSrvc.SearchTasksByName(ctx, filter.Search)
+		if err != nil {
+			return nil, fmt.Errorf("failed to search tasks by name: %w", err)
+		}
+		taskIds = append(taskIds, filter.Search)
+
+		// get all possible user matches
+		authorId, err := s.userSrvc.GetUserByUsername(ctx, filter.Search)
+		if err != nil && !srvcerror.Is(err, usersrvc.ErrCodeUserNotFound) {
+			return nil, fmt.Errorf("failed to get user by username: %w", err)
+		}
+		if authorId.UUID != uuid.Nil {
+			authorIdStr := authorId.UUID.String()
+			authorIds = append(authorIds, authorIdStr)
+		}
+		if _, err := uuid.Parse(filter.Search); err == nil {
+			authorIds = append(authorIds, filter.Search)
+		}
+
+		// get all programming languages
+		langIds, err = plang.SearchProgrLangByName(filter.Search)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get programming language by id: %w", err)
+		}
+		langIds = append(langIds, filter.Search)
+	}
+	return s.submRepo.ListSubms(ctx, filter.Limit, filter.Offset, filter.Search, authorIds, taskIds, langIds)
 }
 
 func (s *submSrvc) GetEval(ctx context.Context, uuid uuid.UUID) (domain.Eval, error) {
@@ -360,11 +388,44 @@ func (s *submSrvc) WaitForEvalFinish(ctx context.Context, evalUUID uuid.UUID) er
 }
 
 // CountSubms returns the total number of submissions
-func (s *submSrvc) CountSubms(ctx context.Context) (int, error) {
+func (s *submSrvc) CountSubms(ctx context.Context, search string) (int, error) {
 	log := ctxlog.FromContext(ctx)
 	log.Debug("counting submissions")
 
-	count, err := s.submRepo.CountSubms(ctx)
+	authorIds := make([]string, 0)
+	taskIds := make([]string, 0)
+	langIds := make([]string, 0)
+
+	var err error
+	if search != "" {
+		// get all possible task matches
+		taskIds, err = s.taskSrvc.SearchTasksByName(ctx, search)
+		if err != nil {
+			return 0, fmt.Errorf("failed to search tasks by name: %w", err)
+		}
+		taskIds = append(taskIds, search)
+
+		// get all possible user matches
+		authorId, err := s.userSrvc.GetUserByUsername(ctx, search)
+		if err != nil && !srvcerror.Is(err, usersrvc.ErrCodeUserNotFound) {
+			return 0, fmt.Errorf("failed to get user by username: %w", err)
+		}
+		if authorId.UUID != uuid.Nil {
+			authorIdStr := authorId.UUID.String()
+			authorIds = append(authorIds, authorIdStr)
+		}
+		if _, err := uuid.Parse(search); err == nil {
+			authorIds = append(authorIds, search)
+		}
+
+		// get all programming languages
+		langIds, err = plang.SearchProgrLangByName(search)
+		if err != nil {
+			return 0, fmt.Errorf("failed to get programming language by id: %w", err)
+		}
+		langIds = append(langIds, search)
+	}
+	count, err := s.submRepo.CountSubms(ctx, authorIds, taskIds, langIds)
 	if err != nil {
 		log.Error("failed to count submissions", "error", err)
 		return 0, err
