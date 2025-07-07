@@ -7,7 +7,6 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/programme-lv/backend/common/httpjson"
-	"github.com/programme-lv/backend/user/auth"
 )
 
 const taskGetCacheKeyPrefix = "task_get:"
@@ -18,12 +17,6 @@ func taskGetCacheKey(taskId string) string {
 
 // GetTask returns a task by ID
 func (httpserver *TaskHttpHandler) GetTask(w http.ResponseWriter, r *http.Request) {
-	claims, ok := r.Context().Value(auth.CtxJwtClaimsKey).(*auth.JwtClaims)
-	if !ok || claims == nil || claims.Username != "admin" {
-		httpjson.Error(w, "Can't get full task as non-admin user", http.StatusUnauthorized, "unauthorized")
-		return
-	}
-
 	taskId := chi.URLParam(r, "taskId")
 	cacheKey := taskGetCacheKey(taskId)
 
