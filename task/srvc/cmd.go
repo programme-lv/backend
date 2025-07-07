@@ -19,7 +19,7 @@ func (ts *TaskSrvc) UpdateStatementMd(ctx context.Context, taskId string, statem
 	if err != nil {
 		l := ts.logger(ctx)
 		l.Error("failed to update statement", "error", err)
-		return ErrInternalServerError()
+		return NewErrorInternalServerError()
 	}
 
 	return nil
@@ -30,7 +30,7 @@ func (ts *TaskSrvc) CreateTask(ctx context.Context, task Task) error {
 	if err != nil {
 		l := ts.logger(ctx)
 		l.Error("failed to create task", "error", err)
-		return ErrInternalServerError()
+		return NewErrorInternalServerError()
 	}
 	return nil
 }
@@ -44,7 +44,7 @@ func (ts *TaskSrvc) UploadStatementPdf(ctx context.Context, body []byte) (string
 	url, err := ts.s3PublicBucket.Upload(body, s3Key, "application/pdf")
 	if err != nil {
 		l.Error("failed to upload PDF to S3", "error", err)
-		return "", ErrInternalServerError()
+		return "", NewErrorInternalServerError()
 	}
 	return url, nil
 }
@@ -68,7 +68,7 @@ func (ts *TaskSrvc) UploadIllustrationImg(ctx context.Context, mimeType string, 
 	url, err = ts.s3PublicBucket.Upload(body, s3Key, mimeType)
 	if err != nil {
 		l.Error("failed to upload illustration to S3", "error", err)
-		return "", ErrInternalServerError()
+		return "", NewErrorInternalServerError()
 	}
 	return url, nil
 }
@@ -115,7 +115,7 @@ func (ts *TaskSrvc) UploadStatementImage(ctx context.Context, taskId string, img
 	s3Uri, err := ts.s3PublicBucket.Upload(body, s3Key, imageMimeType)
 	if err != nil {
 		l.Error("failed to upload to S3", "error", err)
-		return "", ErrInternalServerError()
+		return "", NewErrorInternalServerError()
 	}
 
 	// update the task with the new image
@@ -128,7 +128,7 @@ func (ts *TaskSrvc) UploadStatementImage(ctx context.Context, taskId string, img
 	})
 	if err != nil {
 		l.Error("failed to add statement image to db", "error", err)
-		return "", ErrInternalServerError()
+		return "", NewErrorInternalServerError()
 	}
 	return s3Uri, nil
 }
@@ -184,7 +184,7 @@ func (ts *TaskSrvc) UploadTestFile(ctx context.Context, body []byte) error {
 	exists, err := ts.s3TestfileBucket.Exists(s3Key)
 	if err != nil {
 		l.Error("failed to check if object exists in S3", "error", err)
-		return ErrInternalServerError()
+		return NewErrorInternalServerError()
 	}
 
 	if exists {
@@ -194,13 +194,13 @@ func (ts *TaskSrvc) UploadTestFile(ctx context.Context, body []byte) error {
 	zstdCompressed, err := compressWithZstd(body)
 	if err != nil {
 		l.Error("failed to compress data", "error", err)
-		return ErrInternalServerError()
+		return NewErrorInternalServerError()
 	}
 
 	_, err = ts.s3TestfileBucket.Upload(zstdCompressed, s3Key, mediaType)
 	if err != nil {
 		l.Error("failed to upload to S3", "error", err)
-		return ErrInternalServerError()
+		return NewErrorInternalServerError()
 	}
 
 	return nil
@@ -258,25 +258,25 @@ func (ts *TaskSrvc) DeleteStatementImage(ctx context.Context, taskId string, fil
 	exists, err := ts.s3PublicBucket.Exists(s3Key)
 	if err != nil {
 		l.Error("failed to check if image exists in S3", "error", err)
-		return ErrInternalServerError()
+		return NewErrorInternalServerError()
 	}
 	if !exists {
 		l.Error("image does not exist in S3", "s3_key", s3Key)
-		return ErrInternalServerError()
+		return NewErrorInternalServerError()
 	}
 
 	// Delete the image from the database first
 	err = ts.repo.DeleteStatementImg(ctx, taskId, filename)
 	if err != nil {
 		l.Error("failed to delete image from database", "error", err)
-		return ErrInternalServerError()
+		return NewErrorInternalServerError()
 	}
 
 	// Delete the image from S3
 	err = ts.s3PublicBucket.Delete(s3Key)
 	if err != nil {
 		l.Error("failed to delete image from S3", "error", err)
-		return ErrInternalServerError()
+		return NewErrorInternalServerError()
 	}
 
 	return nil
@@ -306,31 +306,31 @@ func (ts *TaskSrvc) DeleteIllustrationImg(ctx context.Context, taskId string) er
 	exists, err := ts.s3PublicBucket.Exists(s3Key)
 	if err != nil {
 		l.Error("failed to check if image exists in S3", "error", err)
-		return ErrInternalServerError()
+		return NewErrorInternalServerError()
 	}
 	if !exists {
 		l.Error("image does not exist in S3", "s3_key", s3Key)
-		return ErrInternalServerError()
+		return NewErrorInternalServerError()
 	}
 
 	// Update the database to remove illustration image fields
 	emptyImg := IllustrationImage{
 		S3Key:     "",
-		WidthPx:   nil,
-		HeightPx:  nil,
-		SzInBytes: nil,
+		WidthPx:   0,
+		HeightPx:  0,
+		SzInBytes: 0,
 	}
 	err = ts.repo.UpdateIllustrationImg(ctx, taskId, emptyImg)
 	if err != nil {
 		l.Error("failed to update illustration image in database", "error", err)
-		return ErrInternalServerError()
+		return NewErrorInternalServerError()
 	}
 
 	// Delete the image from S3
 	err = ts.s3PublicBucket.Delete(s3Key)
 	if err != nil {
 		l.Error("failed to delete image from S3", "error", err)
-		return ErrInternalServerError()
+		return NewErrorInternalServerError()
 	}
 
 	return nil
@@ -344,7 +344,7 @@ func (ts *TaskSrvc) UpdateIllustrationImg(ctx context.Context, taskId string, im
 	err := ts.repo.UpdateIllustrationImg(ctx, taskId, img)
 	if err != nil {
 		l.Error("failed to update illustration image in database", "error", err)
-		return ErrInternalServerError()
+		return NewErrorInternalServerError()
 	}
 
 	return nil

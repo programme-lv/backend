@@ -298,9 +298,9 @@ func (h *TaskHttpHandler) UploadIllustrationImage(w http.ResponseWriter, r *http
 	sizeInBytes := len(imageBytes)
 	illustrationImg := srvc.IllustrationImage{
 		S3Key:     s3Key,
-		WidthPx:   &width,
-		HeightPx:  &height,
-		SzInBytes: &sizeInBytes,
+		WidthPx:   width,
+		HeightPx:  height,
+		SzInBytes: sizeInBytes,
 	}
 
 	err = h.taskSrvc.UpdateIllustrationImg(r.Context(), taskId, illustrationImg)

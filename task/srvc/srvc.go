@@ -20,6 +20,7 @@ type TaskSrvcClient interface {
 	UploadTestFile(ctx context.Context, body []byte) error
 	GetTask(ctx context.Context, shortId string) (Task, error)
 	GetTaskPreview(ctx context.Context, shortId string) (TaskPreview, error)
+	ListTaskPreviews(ctx context.Context) ([]TaskPreview, error)
 	GetTaskFullNames(ctx context.Context, shortIds []string) ([]string, error)
 	ListTasks(ctx context.Context) ([]Task, error)
 	CreateTask(ctx context.Context, task Task) error
@@ -42,6 +43,7 @@ type TaskPgRepo interface {
 	GetTask(ctx context.Context, shortId string) (Task, error)
 	GetTaskPreview(ctx context.Context, shortId string) (TaskPreview, error)
 	ListTasks(ctx context.Context, limit int, offset int) ([]Task, error)
+	ListTaskPreviews(ctx context.Context, limit int, offset int) ([]TaskPreview, error)
 	ResolveNames(ctx context.Context, shortIds []string) ([]string, error)
 	Exists(ctx context.Context, shortId string) (bool, error)
 	CreateTask(ctx context.Context, task Task) error

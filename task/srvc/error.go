@@ -9,10 +9,10 @@ import (
 
 const ErrCodeTaskNotFound = "task_not_found"
 
-func NewErrorTaskNotFound(id string) *srvcerror.Error {
+func NewErrorTaskNotFound(taskId string) *srvcerror.Error {
 	return srvcerror.New(
 		ErrCodeTaskNotFound,
-		fmt.Sprintf("uzdevums '%s' netika atrasts", id),
+		fmt.Sprintf("uzdevums '%s' netika atrasts", taskId),
 	)
 }
 
@@ -63,7 +63,7 @@ func NewErrorFailedToGetTaskFromDb(taskId string) *srvcerror.Error {
 
 const ErrCodeInternalServerError = "internal_server_error"
 
-func ErrInternalServerError() *srvcerror.Error {
+func NewErrorInternalServerError() *srvcerror.Error {
 	return srvcerror.New(
 		ErrCodeInternalServerError,
 		"iekšēja servera kļūda",

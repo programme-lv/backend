@@ -1,5 +1,9 @@
 package http
 
+import (
+	tasksrvc "github.com/programme-lv/backend/task/srvc"
+)
+
 type DetailedSubmView struct {
 	SubmUUID  string `json:"subm_uuid"`
 	Content   string `json:"content,omitempty"`
@@ -78,4 +82,14 @@ type MaxScore struct {
 	Possible     int    `json:"possible"`
 	CreatedAt    string `json:"created_at"`
 	TaskFullName string `json:"task_full_name"`
+}
+
+type TaskPreview struct {
+	ShortId          string                     `json:"short_id"`
+	FullName         string                     `json:"full_name"`
+	IllustrImg       tasksrvc.IllustrationImage `json:"illustr_img"`
+	DifficultyRating int                        `json:"difficulty_rating"`
+	OriginOlympiad   string                     `json:"origin_olympiad"`
+	OriginNotes      []tasksrvc.OriginNote      `json:"origin_notes"`
+	MdStatementStory string                     `json:"md_statement_story"`
 }
