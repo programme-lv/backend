@@ -19,6 +19,7 @@ type TaskSrvcClient interface {
 	DeleteStatementImage(ctx context.Context, taskId string, filename string) error
 	UploadTestFile(ctx context.Context, body []byte) error
 	GetTask(ctx context.Context, shortId string) (Task, error)
+	GetTaskPreview(ctx context.Context, shortId string) (TaskPreview, error)
 	GetTaskFullNames(ctx context.Context, shortIds []string) ([]string, error)
 	ListTasks(ctx context.Context) ([]Task, error)
 	CreateTask(ctx context.Context, task Task) error
@@ -39,6 +40,7 @@ type S3BucketFacade interface {
 
 type TaskPgRepo interface {
 	GetTask(ctx context.Context, shortId string) (Task, error)
+	GetTaskPreview(ctx context.Context, shortId string) (TaskPreview, error)
 	ListTasks(ctx context.Context, limit int, offset int) ([]Task, error)
 	ResolveNames(ctx context.Context, shortIds []string) ([]string, error)
 	Exists(ctx context.Context, shortId string) (bool, error)

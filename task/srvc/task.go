@@ -4,6 +4,20 @@ import (
 	"github.com/thoas/go-funk"
 )
 
+type TaskPreview struct {
+	ShortId  string
+	FullName string
+
+	IllustrImg IllustrationImage
+
+	DifficultyRating int
+
+	OriginOlympiad string
+	OriginNotes    []OriginNote
+
+	MdStatementStory string
+}
+
 type Task struct {
 	// url slug friendly identifier
 	ShortId string
