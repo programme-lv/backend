@@ -154,9 +154,7 @@ func TestTaskPgRepo(t *testing.T) {
 		assert.NotNil(t, taskPreview.IllustrImg.SzInBytes, "Preview SzInBytes should not be nil")
 
 		// Verify origin notes
-		assert.Len(t, taskPreview.OriginNotes, 1, "Preview OriginNotes length mismatch")
-		assert.Equal(t, "lv", taskPreview.OriginNotes[0].Lang, "Preview OriginNotes language mismatch")
-		assert.Contains(t, taskPreview.OriginNotes[0].Info, "Uzdevums no Latvijas 38.", "Preview OriginNotes content mismatch")
+		assert.Contains(t, taskPreview.OriginNote, "Uzdevums no Latvijas 38.", "Preview OriginNote mismatch")
 
 		// Verify markdown statement story
 		assert.Contains(t, taskPreview.MdStatementStory, "Dotas $N$ kartītes", "Preview MdStatementStory mismatch")

@@ -13,6 +13,85 @@ type taskPgRepo struct {
 	pool *pgxpool.Pool
 }
 
+// ListTaskPreviews returns a list of task previews with pagination.
+func (r *taskPgRepo) ListTaskPreviews(ctx context.Context, limit int, offset int) ([]srvc.TaskPreview, error) {
+	// Query tasks table for preview data
+	rows, err := r.pool.Query(ctx, `
+		SELECT t.short_id, t.full_name, t.illustr_img_s3_key, t.width_px, t.height_px, t.filesize_bytes, 
+		       t.origin_olympiad, t.difficulty_rating,
+		       COALESCE(
+			       (SELECT ton.info 
+				FROM task_origin_notes ton 
+				WHERE ton.task_short_id = t.short_id 
+				AND ton.lang = 'lv' 
+				LIMIT 1),
+			       (SELECT ton.info 
+				FROM task_origin_notes ton 
+				WHERE ton.task_short_id = t.short_id 
+				LIMIT 1)
+		       ) as origin_note,
+		       ms.story
+		FROM tasks t
+		LEFT JOIN task_md_statements ms ON t.short_id = ms.task_short_id
+		ORDER BY t.short_id
+		LIMIT $1 OFFSET $2
+	`, limit, offset)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query task previews: %w", err)
+	}
+	defer rows.Close()
+
+	var previews []srvc.TaskPreview
+	for rows.Next() {
+		var p srvc.TaskPreview
+		var illustrImg srvc.IllustrationImage
+		var widthPx *int = nil
+		var heightPx *int = nil
+		var szInBytes *int = nil
+		var story, originNote *string // Use pointers to handle NULL values
+		err := rows.Scan(
+			&p.ShortId,
+			&p.FullName,
+			&illustrImg.S3Key,
+			&widthPx,
+			&heightPx,
+			&szInBytes,
+			&p.OriginOlympiad,
+			&p.DifficultyRating,
+			&originNote,
+			&story,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan task preview: %w", err)
+		}
+
+		// Handle NULL values
+		if originNote != nil {
+			p.OriginNote = *originNote
+		}
+		if story != nil {
+			p.MdStatementStory = *story
+		}
+
+		if illustrImg.S3Key != "" &&
+			widthPx != nil && heightPx != nil && szInBytes != nil &&
+			*widthPx > 0 && *heightPx > 0 && *szInBytes > 0 {
+			illustrImg.WidthPx = *widthPx
+			illustrImg.HeightPx = *heightPx
+			illustrImg.SzInBytes = *szInBytes
+			p.IllustrImg = &illustrImg
+		}
+
+		previews = append(previews, p)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating task previews: %w", err)
+	}
+
+	return previews, nil
+}
+
 // PatchStatementImg implements srvc.TaskPgRepo.
 // 1. It starts a transaction to ensure database consistency
 // 2. Checks if the task exists first
@@ -250,24 +329,15 @@ func (r *taskPgRepo) GetTaskPreview(ctx context.Context, shortId string) (srvc.T
 		return t, fmt.Errorf("failed to load task preview: %w", err)
 	}
 
-	// Load OriginNotes.
-	originRows, err := r.pool.Query(ctx, `
-		SELECT lang, info 
+	err = r.pool.QueryRow(ctx, `
+		SELECT info 
 		FROM task_origin_notes 
 		WHERE task_short_id = $1
-	`, shortId)
+		LIMIT 1
+	`, shortId).Scan(&t.OriginNote)
 	if err != nil {
-		return t, fmt.Errorf("failed to load origin notes: %w", err)
+		return t, fmt.Errorf("failed to load origin note: %w", err)
 	}
-	for originRows.Next() {
-		var note srvc.OriginNote
-		if err := originRows.Scan(&note.Lang, &note.Info); err != nil {
-			originRows.Close()
-			return t, fmt.Errorf("failed to load origin note: %w", err)
-		}
-		t.OriginNotes = append(t.OriginNotes, note)
-	}
-	originRows.Close()
 
 	// Load the first markdown statement story (for preview)
 	var story string

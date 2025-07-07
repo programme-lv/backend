@@ -8,12 +8,12 @@ type TaskPreview struct {
 	ShortId  string
 	FullName string
 
-	IllustrImg IllustrationImage
+	IllustrImg *IllustrationImage
 
 	DifficultyRating int
 
 	OriginOlympiad string
-	OriginNotes    []OriginNote
+	OriginNote     string
 
 	MdStatementStory string
 }
@@ -26,7 +26,7 @@ type Task struct {
 	FullName string
 
 	// illustration image
-	IllustrImg IllustrationImage
+	IllustrImg *IllustrationImage
 
 	// constraints
 	MemLimMegabytes int
@@ -107,9 +107,9 @@ type MarkdownStatement struct {
 
 type IllustrationImage struct {
 	S3Key     string
-	WidthPx   *int
-	HeightPx  *int
-	SzInBytes *int
+	WidthPx   int
+	HeightPx  int
+	SzInBytes int
 }
 
 type StatementImage struct {

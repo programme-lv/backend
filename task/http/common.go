@@ -104,37 +104,6 @@ func mapTaskExamples(examples []srvc.Example) []Example {
 }
 
 func (handler *TaskHttpHandler) mapTaskResponse(task *srvc.Task) *Task {
-	var illstrImgPtr *IllustrationImage = nil
-	if task.IllustrImg.S3Key != "" {
-		illstrImgUrl, err := handler.taskSrvc.GetPublicUrlForIllustrImg(context.TODO(), task.IllustrImg.S3Key)
-		if err != nil {
-			slog.Error("failed to get public url for illustration image", "error", err)
-			illstrImgPtr = nil
-		} else {
-			// Handle pointer types with safe dereferencing
-			widthPx := 0
-			heightPx := 0
-			szInBytes := 0
-
-			if task.IllustrImg.WidthPx != nil {
-				widthPx = *task.IllustrImg.WidthPx
-			}
-			if task.IllustrImg.HeightPx != nil {
-				heightPx = *task.IllustrImg.HeightPx
-			}
-			if task.IllustrImg.SzInBytes != nil {
-				szInBytes = *task.IllustrImg.SzInBytes
-			}
-
-			illstrImgPtr = &IllustrationImage{
-				HttpUrl:   illstrImgUrl,
-				WidthPx:   widthPx,
-				HeightPx:  heightPx,
-				SzInBytes: szInBytes,
-			}
-		}
-	}
-
 	difficultyRating := new(int)
 	if task.DifficultyRating != 0 {
 		difficultyRating = new(int)
@@ -211,7 +180,7 @@ func (handler *TaskHttpHandler) mapTaskResponse(task *srvc.Task) *Task {
 		MemoryLimitMegabytes:   task.MemLimMegabytes,
 		CPUTimeLimitSeconds:    task.CpuTimeLimSecs,
 		OriginOlympiad:         task.OriginOlympiad,
-		IllustrationImg:        illstrImgPtr,
+		IllustrationImg:        handler.mapTaskIllustrImg(task.IllustrImg),
 		DifficultyRating:       difficultyRating,
 		DefaultMDStatement:     defaultMdStatement,
 		StatementImages:        handler.mapTaskStatementImages(task.MdImages),
@@ -222,6 +191,37 @@ func (handler *TaskHttpHandler) mapTaskResponse(task *srvc.Task) *Task {
 		StatementSubtasks:      subtasks,
 	}
 	return response
+}
+
+func (handler *TaskHttpHandler) mapTaskIllustrImg(illustrImg *srvc.IllustrationImage) *IllustrationImage {
+	if illustrImg == nil || illustrImg.S3Key == "" {
+		return nil
+	}
+
+	httpUrl, err := handler.taskSrvc.GetPublicUrlForIllustrImg(context.TODO(), illustrImg.S3Key)
+	if err != nil {
+		slog.Error("failed to get public url for illustration image", "error", err)
+		return nil
+	}
+
+	return &IllustrationImage{
+		HttpUrl:   httpUrl,
+		WidthPx:   illustrImg.WidthPx,
+		HeightPx:  illustrImg.HeightPx,
+		SzInBytes: illustrImg.SzInBytes,
+	}
+}
+
+func (handler *TaskHttpHandler) mapTaskPreview(preview srvc.TaskPreview) TaskPreview {
+	return TaskPreview{
+		ShortId:          preview.ShortId,
+		FullName:         preview.FullName,
+		IllustrImg:       handler.mapTaskIllustrImg(preview.IllustrImg),
+		DifficultyRating: preview.DifficultyRating,
+		OriginOlympiad:   preview.OriginOlympiad,
+		OriginNote:       preview.OriginNote,
+		MdStatementStory: preview.MdStatementStory,
+	}
 }
 
 func (handler *TaskHttpHandler) mapTaskStatementImages(images []srvc.StatementImage) []StatementImage {

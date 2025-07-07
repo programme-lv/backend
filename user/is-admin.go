@@ -13,7 +13,7 @@ func (s *UserSrvc) IsAdmin(ctx context.Context, userUuid uuid.UUID) (bool, error
 	user, err := s.GetUserByUUID(ctx, userUuid)
 	if err != nil {
 		l.Error("failed to get user by uuid", "error", err)
-		return false, srvcerror.ErrInternalServerError()
+		return false, srvcerror.InternalServerError()
 	}
 
 	return user.Username == "admin", nil

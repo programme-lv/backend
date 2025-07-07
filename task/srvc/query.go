@@ -21,6 +21,15 @@ func (ts *TaskSrvc) GetTaskPreview(ctx context.Context, id string) (res TaskPrev
 	return taskPreview, nil
 }
 
+func (ts *TaskSrvc) ListTaskPreviews(ctx context.Context) ([]TaskPreview, error) {
+	taskPreviews, err := ts.repo.ListTaskPreviews(ctx, 100, 0)
+	if err != nil {
+		ts.logger(ctx).Error("failed to list task previews", "error", err)
+		return nil, NewErrorInternalServerError()
+	}
+	return taskPreviews, nil
+}
+
 func (ts *TaskSrvc) GetTask(ctx context.Context, id string) (res Task, err error) {
 	exists, err := ts.repo.Exists(ctx, id)
 	if err != nil {

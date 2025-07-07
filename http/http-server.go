@@ -67,7 +67,13 @@ func (r *HttpIpResolver) resolveIp(req *http.Request) string {
 
 // logHTTPReq logs information about the HTTP request
 func logHTTPReq(ri *HttpReqInfo) {
-	slog.Info("http info",
+	// Choose log level based on status code
+	logger := slog.Info
+	if ri.code >= 400 {
+		logger = slog.Warn
+	}
+
+	logger("http info",
 		"req", ri.requestID,
 		"m", ri.method,
 		"uri", ri.uri,
