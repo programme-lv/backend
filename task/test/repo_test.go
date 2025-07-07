@@ -135,4 +135,36 @@ func TestTaskPgRepo(t *testing.T) {
 	assert.Error(t, err, "Creating duplicate task should fail")
 	assert.Contains(t, err.Error(), "already exists", "Error message should indicate task already exists")
 
+	// Test GetTaskPreview
+	t.Run("GetTaskPreview", func(t *testing.T) {
+		// Test getting task preview
+		taskPreview, err := repo.GetTaskPreview(ctx, task.ShortId)
+		require.NoError(t, err, "Failed to get task preview")
+
+		// Verify basic task preview fields
+		assert.Equal(t, "aplusbirc", taskPreview.ShortId, "Preview ShortId mismatch")
+		assert.Equal(t, "A+B=C", taskPreview.FullName, "Preview FullName mismatch")
+		assert.Equal(t, "task-md-images/nekoks.png", taskPreview.IllustrImg.S3Key, "Preview IllustrImgS3Key mismatch")
+		assert.Equal(t, "LIO", taskPreview.OriginOlympiad, "Preview OriginOlympiad mismatch")
+		assert.Equal(t, 3, taskPreview.DifficultyRating, "Preview DifficultyRating mismatch")
+
+		// Verify illustration image fields
+		assert.NotNil(t, taskPreview.IllustrImg.WidthPx, "Preview WidthPx should not be nil")
+		assert.NotNil(t, taskPreview.IllustrImg.HeightPx, "Preview HeightPx should not be nil")
+		assert.NotNil(t, taskPreview.IllustrImg.SzInBytes, "Preview SzInBytes should not be nil")
+
+		// Verify origin notes
+		assert.Len(t, taskPreview.OriginNotes, 1, "Preview OriginNotes length mismatch")
+		assert.Equal(t, "lv", taskPreview.OriginNotes[0].Lang, "Preview OriginNotes language mismatch")
+		assert.Contains(t, taskPreview.OriginNotes[0].Info, "Uzdevums no Latvijas 38.", "Preview OriginNotes content mismatch")
+
+		// Verify markdown statement story
+		assert.Contains(t, taskPreview.MdStatementStory, "Dotas $N$ kartītes", "Preview MdStatementStory mismatch")
+
+		// Test getting preview for non-existent task
+		_, err = repo.GetTaskPreview(ctx, "non-existent-task")
+		assert.Error(t, err, "Getting preview for non-existent task should fail")
+		assert.Contains(t, err.Error(), "failed to load task preview", "Error message should indicate task preview loading failed")
+	})
+
 }

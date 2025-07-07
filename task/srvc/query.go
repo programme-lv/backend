@@ -6,6 +6,21 @@ import (
 	"time"
 )
 
+func (ts *TaskSrvc) GetTaskPreview(ctx context.Context, id string) (res TaskPreview, err error) {
+	exists, err := ts.repo.Exists(ctx, id)
+	if err != nil {
+		return TaskPreview{}, err
+	}
+	if !exists {
+		return TaskPreview{}, NewErrorTaskNotFound(id)
+	}
+	taskPreview, err := ts.repo.GetTaskPreview(ctx, id)
+	if err != nil {
+		return TaskPreview{}, err
+	}
+	return taskPreview, nil
+}
+
 func (ts *TaskSrvc) GetTask(ctx context.Context, id string) (res Task, err error) {
 	exists, err := ts.repo.Exists(ctx, id)
 	if err != nil {

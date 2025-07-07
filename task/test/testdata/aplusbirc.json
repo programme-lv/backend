@@ -1,7 +1,12 @@
 {
   "ShortId": "aplusbirc",
   "FullName": "A+B=C",
-  "IllustrImgS3Key": "",
+  "IllustrImg": {
+    "S3Key": "task-md-images/nekoks.png",
+    "WidthPx": 101,
+    "HeightPx": 102,
+    "SzInBytes": 103
+  },
   "MemLimMegabytes": 256,
   "CpuTimeLimSecs": 0.6,
   "OriginOlympiad": "LIO",

@@ -228,6 +228,65 @@ func NewTaskPgRepo(pool *pgxpool.Pool) *taskPgRepo {
 	return &taskPgRepo{pool: pool}
 }
 
+func (r *taskPgRepo) GetTaskPreview(ctx context.Context, shortId string) (srvc.TaskPreview, error) {
+	var t srvc.TaskPreview
+
+	// Load main task row.
+	err := r.pool.QueryRow(ctx, `
+		SELECT short_id, full_name, illustr_img_s3_key, width_px, height_px, filesize_bytes, origin_olympiad, difficulty_rating
+		FROM tasks
+		WHERE short_id = $1
+	`, shortId).Scan(
+		&t.ShortId,
+		&t.FullName,
+		&t.IllustrImg.S3Key,
+		&t.IllustrImg.WidthPx,
+		&t.IllustrImg.HeightPx,
+		&t.IllustrImg.SzInBytes,
+		&t.OriginOlympiad,
+		&t.DifficultyRating,
+	)
+	if err != nil {
+		return t, fmt.Errorf("failed to load task preview: %w", err)
+	}
+
+	// Load OriginNotes.
+	originRows, err := r.pool.Query(ctx, `
+		SELECT lang, info 
+		FROM task_origin_notes 
+		WHERE task_short_id = $1
+	`, shortId)
+	if err != nil {
+		return t, fmt.Errorf("failed to load origin notes: %w", err)
+	}
+	for originRows.Next() {
+		var note srvc.OriginNote
+		if err := originRows.Scan(&note.Lang, &note.Info); err != nil {
+			originRows.Close()
+			return t, fmt.Errorf("failed to load origin note: %w", err)
+		}
+		t.OriginNotes = append(t.OriginNotes, note)
+	}
+	originRows.Close()
+
+	// Load the first markdown statement story (for preview)
+	var story string
+	err = r.pool.QueryRow(ctx, `
+		SELECT story 
+		FROM task_md_statements 
+		WHERE task_short_id = $1
+		LIMIT 1
+	`, shortId).Scan(&story)
+	if err != nil {
+		// If no markdown statement exists, story will remain empty
+		// This is not an error for preview
+	} else {
+		t.MdStatementStory = story
+	}
+
+	return t, nil
+}
+
 func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, error) {
 	var t srvc.Task
 
@@ -608,7 +667,7 @@ func (r *taskPgRepo) CreateTask(ctx context.Context, t srvc.Task) error {
 	// Insert main task.
 	_, err = tx.Exec(ctx, `
 		INSERT INTO tasks (short_id, full_name, illustr_img_s3_key, width_px, height_px, filesize_bytes, mem_lim_megabytes, cpu_time_lim_secs, origin_olympiad, difficulty_rating, checker, interactor)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
 	`, t.ShortId, t.FullName, t.IllustrImg.S3Key, t.IllustrImg.WidthPx, t.IllustrImg.HeightPx, t.IllustrImg.SzInBytes, t.MemLimMegabytes, t.CpuTimeLimSecs, t.OriginOlympiad, t.DifficultyRating, t.Checker, t.Interactor)
 	if err != nil {
 		return fmt.Errorf("failed to insert main task: %w", err)
