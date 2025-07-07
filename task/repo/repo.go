@@ -13,6 +13,35 @@ type taskPgRepo struct {
 	pool *pgxpool.Pool
 }
 
+func (r *taskPgRepo) SearchTasksByName(ctx context.Context, name string) ([]string, error) {
+	rows, err := r.pool.Query(ctx, `
+		SELECT short_id 
+		FROM tasks 
+		WHERE LOWER(full_name) LIKE LOWER($1)
+		ORDER BY short_id
+		LIMIT 100
+	`, "%"+name+"%")
+	if err != nil {
+		return nil, fmt.Errorf("failed to search tasks by name: %w", err)
+	}
+	defer rows.Close()
+
+	var taskIds []string
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, fmt.Errorf("failed to scan task id: %w", err)
+		}
+		taskIds = append(taskIds, id)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating task search results: %w", err)
+	}
+
+	return taskIds, nil
+}
+
 // ListTaskPreviews returns a list of task previews with pagination.
 func (r *taskPgRepo) ListTaskPreviews(ctx context.Context, limit int, offset int) ([]srvc.TaskPreview, error) {
 	// Query tasks table for preview data

@@ -14,14 +14,14 @@ import (
 	"github.com/programme-lv/backend/subm/domain"
 	submsrvc "github.com/programme-lv/backend/subm/submsrvc"
 	tasksrvc "github.com/programme-lv/backend/task/srvc"
-	"github.com/programme-lv/backend/user"
+	usersrvc "github.com/programme-lv/backend/user"
 	"golang.org/x/sync/singleflight"
 )
 
 type SubmHttpHandler struct {
 	submSrvc submsrvc.SubmSrvcClient
 	taskSrvc tasksrvc.TaskSrvcClient
-	userSrvc *user.UserSrvc
+	userSrvc usersrvc.UserSrvcClient
 
 	// solution submission rate limit
 	lastSubmTime map[string]time.Time // username -> last submission time
@@ -35,7 +35,7 @@ type SubmHttpHandler struct {
 func NewSubmHttpHandler(
 	submSrvc submsrvc.SubmSrvcClient,
 	taskSrvc tasksrvc.TaskSrvcClient,
-	userSrvc *user.UserSrvc,
+	userSrvc usersrvc.UserSrvcClient,
 ) *SubmHttpHandler {
 	return &SubmHttpHandler{
 		submSrvc:     submSrvc,

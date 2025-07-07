@@ -25,6 +25,7 @@ type TaskSrvcClient interface {
 	ListTasks(ctx context.Context) ([]Task, error)
 	CreateTask(ctx context.Context, task Task) error
 	ResolveNames(ctx context.Context, shortIds []string) ([]string, error)
+	SearchTasksByName(ctx context.Context, name string) ([]string, error)
 	UpdateStatementMd(ctx context.Context, taskId string, statement MarkdownStatement) error
 	GetPublicUrlForIllustrImg(ctx context.Context, illstrImgS3Key string) (string, error)
 	GetPublicUrlForStatementImage(ctx context.Context, statementImageS3Key string) (string, error)
@@ -42,6 +43,7 @@ type S3BucketFacade interface {
 type TaskPgRepo interface {
 	GetTask(ctx context.Context, shortId string) (Task, error)
 	GetTaskPreview(ctx context.Context, shortId string) (TaskPreview, error)
+	SearchTasksByName(ctx context.Context, name string) ([]string, error)
 	ListTasks(ctx context.Context, limit int, offset int) ([]Task, error)
 	ListTaskPreviews(ctx context.Context, limit int, offset int) ([]TaskPreview, error)
 	ResolveNames(ctx context.Context, shortIds []string) ([]string, error)

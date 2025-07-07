@@ -1,6 +1,9 @@
 package srvcerror
 
-import "net/http"
+import (
+	"errors"
+	"net/http"
+)
 
 type Error struct {
 	errorCode  string
@@ -8,6 +11,14 @@ type Error struct {
 	dbgInfoErr error  // private, for debugging
 
 	httpStatus int // optional, for HTTP responses
+}
+
+func Is(err error, code string) bool {
+	var svcErr *Error
+	if errors.As(err, &svcErr) {
+		return svcErr.errorCode == code
+	}
+	return false
 }
 
 func (e *Error) Error() string {

@@ -7,14 +7,14 @@ import (
 )
 
 type UserHttpHandler struct {
-	userSrvc     *user.UserSrvc
+	userSrvc     user.UserSrvcClient
 	jwtKey       []byte
 	cookieDomain string
 }
 
 // NewUserHttpHandler creates a new UserHttpHandler with the given user service and JWT key.
 // The cookieDomain parameter is optional and defaults to an empty string if not provided.
-func NewUserHttpHandler(userSrvc *user.UserSrvc, jwtKey []byte, options ...func(*UserHttpHandler)) *UserHttpHandler {
+func NewUserHttpHandler(userSrvc user.UserSrvcClient, jwtKey []byte, options ...func(*UserHttpHandler)) *UserHttpHandler {
 	handler := &UserHttpHandler{
 		userSrvc:     userSrvc,
 		jwtKey:       jwtKey,

@@ -8,6 +8,20 @@ packages:
       dir: "mocks/s3bucket"
       mockname: "Mock{{.InterfaceName}}"
       outpkg: "{{.PackageName}}"
+  github.com/programme-lv/backend/user:
+    config:
+      all: true
+      filename: "mock_{{.InterfaceName}}.go"
+      dir: "mocks/mockuser"
+      mockname: "Mock{{.InterfaceName}}"
+      outpkg: "mockuser"
+  github.com/programme-lv/backend/task/srvc:
+    config:
+      all: true
+      filename: "mock_{{.InterfaceName}}.go"
+      dir: "mocks/mocktasksrvc"
+      mockname: "Mock{{.InterfaceName}}"
+      outpkg: "mocktasksrvc"
   github.com/programme-lv/backend/subm/submsrvc/submadapter:
     config:
       all: true

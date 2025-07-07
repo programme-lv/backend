@@ -49,15 +49,19 @@ func (h *SubmHttpHandler) GetSubmList(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	log.Debug("pagination parameters", "limit", limit, "offset", offset)
+	search := r.URL.Query().Get("search")
+	if len(search) > 100 {
+		httpjson.BadRequest(w, "Search query too long")
+		return
+	}
 
 	// Create a cache key based on pagination parameters
-	cacheKey := fmt.Sprintf("subm_list:%d:%d", limit, offset)
+	cacheKey := fmt.Sprintf("subm_list:%d:%d:%s", limit, offset, search)
 
 	// Try to get from cache first
 	if cachedResponse, found := h.submCache.Get(cacheKey); found {
 		if response, ok := cachedResponse.(PaginatedResponse); ok {
-			log.Info("returning cached submission list", "limit", limit, "offset", offset)
+			log.Info("returning cached submission list", "limit", limit, "offset", offset, "search", search)
 			httpjson.Success(w, response)
 			return
 		}
@@ -74,7 +78,7 @@ func (h *SubmHttpHandler) GetSubmList(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Get total count of submissions
-		totalCount, err := h.submSrvc.CountSubms(r.Context())
+		totalCount, err := h.submSrvc.CountSubms(r.Context(), search)
 		if err != nil {
 			log.Error("failed to count submissions", "error", err)
 			return nil, err
@@ -84,6 +88,7 @@ func (h *SubmHttpHandler) GetSubmList(w http.ResponseWriter, r *http.Request) {
 		subms, err := h.submSrvc.ListSubms(r.Context(), submquery.ListSubmsParams{
 			Limit:  limit,
 			Offset: offset,
+			Search: search,
 		})
 		if err != nil {
 			log.Error("failed to list submissions", "error", err)
