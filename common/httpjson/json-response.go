@@ -1,6 +1,7 @@
 package httpjson
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"log/slog"
@@ -102,7 +103,7 @@ func HandleSrvcError(logger *slog.Logger, w http.ResponseWriter, err error) {
 }
 
 // HandleErrorWithContext is a convenience function that extracts the logger from the context
-func HandleErrorWithContext(ctx http.Request, w http.ResponseWriter, err error) {
-	log := ctxlog.FromContext(ctx.Context())
+func HandleErrorWithContext(ctx context.Context, w http.ResponseWriter, err error) {
+	log := ctxlog.FromContext(ctx)
 	HandleSrvcError(log, w, err)
 }

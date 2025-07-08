@@ -5,10 +5,12 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/google/uuid"
 	"github.com/programme-lv/backend/common/ctxlog"
 	"github.com/programme-lv/backend/common/httpjson"
 	"github.com/programme-lv/backend/subm/domain"
 	"github.com/programme-lv/backend/subm/submsrvc/submquery"
+	"github.com/programme-lv/backend/user/auth"
 )
 
 // PaginatedResponse represents a paginated response with data and pagination metadata
@@ -55,8 +57,33 @@ func (h *SubmHttpHandler) GetSubmList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	onlyMyStr := r.URL.Query().Get("my")
+	onlyMy := false
+	if onlyMyStr == "true" {
+		onlyMy = true
+	}
+
+	var authorUuid *uuid.UUID
+	if onlyMy {
+		userUuid, err := auth.GetUserUuidFromCtx(r.Context())
+		if err == auth.ErrNoJwtClaims || err == auth.ErrEmptyJwtClaims {
+			httpjson.Unauthorized(w, "jwt claims are missing")
+			return
+		}
+		if err != nil {
+			log.Error("failed to get user uuid from context", "error", err)
+			httpjson.HandleErrorWithContext(r.Context(), w, err)
+			return
+		}
+		authorUuid = &userUuid
+	}
+
 	// Create a cache key based on pagination parameters
-	cacheKey := fmt.Sprintf("subm_list:%d:%d:%s", limit, offset, search)
+	authorUuidStr := ""
+	if authorUuid != nil {
+		authorUuidStr = authorUuid.String()
+	}
+	cacheKey := fmt.Sprintf("subm_list:%d:%d:%s:%s", limit, offset, search, authorUuidStr)
 
 	// Try to get from cache first
 	if cachedResponse, found := h.submCache.Get(cacheKey); found {
@@ -78,7 +105,7 @@ func (h *SubmHttpHandler) GetSubmList(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Get total count of submissions
-		totalCount, err := h.submSrvc.CountSubms(r.Context(), search)
+		totalCount, err := h.submSrvc.CountSubms(r.Context(), search, authorUuid)
 		if err != nil {
 			log.Error("failed to count submissions", "error", err)
 			return nil, err
@@ -89,6 +116,7 @@ func (h *SubmHttpHandler) GetSubmList(w http.ResponseWriter, r *http.Request) {
 			Limit:  limit,
 			Offset: offset,
 			Search: search,
+			Author: authorUuid,
 		})
 		if err != nil {
 			log.Error("failed to list submissions", "error", err)
@@ -132,7 +160,7 @@ func (h *SubmHttpHandler) GetSubmList(w http.ResponseWriter, r *http.Request) {
 	})
 
 	if err != nil {
-		httpjson.HandleErrorWithContext(*r, w, err)
+		httpjson.HandleErrorWithContext(r.Context(), w, err)
 		return
 	}
 
