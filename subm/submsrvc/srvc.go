@@ -31,7 +31,7 @@ type SubmSrvcClient interface {
 	SubscribeEvalUpds(ctx context.Context) (<-chan domain.Eval, error)
 	WaitForEvalFinish(ctx context.Context, evalUUID uuid.UUID) error
 	GetMaxScorePerTask(ctx context.Context, userUUID uuid.UUID) (map[string]domain.MaxScore, error)
-	CountSubms(ctx context.Context, search string) (int, error)
+	CountSubms(ctx context.Context, search string, author *uuid.UUID) (int, error)
 }
 
 type submSrvc struct {
@@ -54,9 +54,9 @@ type submSrvc struct {
 type SubmRepo interface {
 	AssignEval(ctx context.Context, submUuid uuid.UUID, evalUuid uuid.UUID) error
 	GetSubm(ctx context.Context, id uuid.UUID) (domain.Subm, error)
-	ListSubms(ctx context.Context, limit int, offset int, search string, authorIds []string, taskIds []string, langIds []string) ([]domain.Subm, error)
+	ListSubms(ctx context.Context, limit int, offset int, search string, authorUuid *uuid.UUID, authorIds []string, taskIds []string, langIds []string) ([]domain.Subm, error)
 	StoreSubm(ctx context.Context, subm domain.Subm) error
-	CountSubms(ctx context.Context, authorIds []string, taskIds []string, langIds []string) (int, error)
+	CountSubms(ctx context.Context, authorUuid *uuid.UUID, authorIds []string, taskIds []string, langIds []string) (int, error)
 }
 
 type EvalRepo interface {
@@ -73,7 +73,7 @@ type ExecSrvcFacade interface {
 func (s *submSrvc) GetMaxScorePerTask(ctx context.Context, userUUID uuid.UUID) (map[string]domain.MaxScore, error) {
 	// Get all submissions
 	// TODO: wtf is this?
-	subms, err := s.submRepo.ListSubms(ctx, 10000, 0, "", []string{}, []string{}, []string{})
+	subms, err := s.submRepo.ListSubms(ctx, 10000, 0, "", nil, []string{}, []string{}, []string{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to list submissions: %w", err)
 	}
@@ -307,7 +307,7 @@ func (s *submSrvc) ListSubms(ctx context.Context, filter submquery.ListSubmsPara
 		}
 		langIds = append(langIds, filter.Search)
 	}
-	return s.submRepo.ListSubms(ctx, filter.Limit, filter.Offset, filter.Search, authorIds, taskIds, langIds)
+	return s.submRepo.ListSubms(ctx, filter.Limit, filter.Offset, filter.Search, filter.Author, authorIds, taskIds, langIds)
 }
 
 func (s *submSrvc) GetEval(ctx context.Context, uuid uuid.UUID) (domain.Eval, error) {
@@ -388,7 +388,7 @@ func (s *submSrvc) WaitForEvalFinish(ctx context.Context, evalUUID uuid.UUID) er
 }
 
 // CountSubms returns the total number of submissions
-func (s *submSrvc) CountSubms(ctx context.Context, search string) (int, error) {
+func (s *submSrvc) CountSubms(ctx context.Context, search string, author *uuid.UUID) (int, error) {
 	log := ctxlog.FromContext(ctx)
 	log.Debug("counting submissions")
 
@@ -425,7 +425,7 @@ func (s *submSrvc) CountSubms(ctx context.Context, search string) (int, error) {
 		}
 		langIds = append(langIds, search)
 	}
-	count, err := s.submRepo.CountSubms(ctx, authorIds, taskIds, langIds)
+	count, err := s.submRepo.CountSubms(ctx, author, authorIds, taskIds, langIds)
 	if err != nil {
 		log.Error("failed to count submissions", "error", err)
 		return 0, err

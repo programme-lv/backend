@@ -3,6 +3,7 @@ package submquery
 import (
 	"context"
 
+	"github.com/google/uuid"
 	subm "github.com/programme-lv/backend/subm/domain"
 	decorator "github.com/programme-lv/backend/subm/srvccqs"
 )
@@ -17,6 +18,7 @@ type ListSubmsParams struct {
 	Limit  int
 	Offset int
 	Search string
+	Author *uuid.UUID // Optional author UUID to filter by
 }
 
 type listSubmsHandler struct {

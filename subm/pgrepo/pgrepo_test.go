@@ -196,7 +196,7 @@ func TestSubmRepo_List_MultipleEntries(t *testing.T) {
 	}
 
 	// List all entities
-	listedEntities, err := repo.ListSubms(context.Background(), 3, 1, "", []string{}, []string{}, []string{})
+	listedEntities, err := repo.ListSubms(context.Background(), 3, 1, "", nil, []string{}, []string{}, []string{})
 	require.Nil(t, err, "expected no error when listing SubmissionEntities")
 	require.Len(t, listedEntities, 3, "expected number of listed entities to match stored entries")
 
@@ -220,7 +220,7 @@ func TestSubmRepo_List_NoEntries(t *testing.T) {
 	repo := NewPgSubmRepo(NewSampleDB(t))
 
 	// Ensure repository is empty by not storing any entities
-	listedEntities, err := repo.ListSubms(context.Background(), 100, 0, "", []string{}, []string{}, []string{})
+	listedEntities, err := repo.ListSubms(context.Background(), 100, 0, "", nil, []string{}, []string{}, []string{})
 	assert.Nil(t, err, "expected no error when listing with no SubmissionEntities")
 	assert.Empty(t, listedEntities, "expected no SubmissionEntities to be listed")
 }

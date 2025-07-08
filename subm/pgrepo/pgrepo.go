@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/lib/pq"
@@ -443,20 +444,58 @@ func (r *pgSubmRepo) GetSubm(ctx context.Context, id uuid.UUID) (domain.Subm, er
 }
 
 // ListSubms retrieves all SubmissionEntities from the database
-func (r *pgSubmRepo) ListSubms(ctx context.Context, limit int, offset int, search string, authorIds []string, taskIds []string, langIds []string) ([]domain.Subm, error) {
+func (r *pgSubmRepo) ListSubms(ctx context.Context, limit int, offset int, search string, authorUuid *uuid.UUID, authorIds []string, taskIds []string, langIds []string) ([]domain.Subm, error) {
 	log := ctxlog.FromContext(ctx)
 	log.Debug("executing ListSubms query", "limit", limit, "offset", offset)
 
 	var rows pgx.Rows
 	var err error
-	if len(authorIds) > 0 || len(taskIds) > 0 || len(langIds) > 0 {
-		submissionsQuery := `SELECT uuid, content, author_uuid, task_shortid, lang_shortid, curr_eval_uuid, created_at
-			FROM submissions
-			WHERE author_uuid=any($1) OR task_shortid=any($2) OR lang_shortid=any($3)
-			ORDER BY created_at DESC
-			LIMIT $4 OFFSET $5`
 
-		rows, err = r.pool.Query(ctx, submissionsQuery, pq.Array(authorIds), pq.Array(taskIds), pq.Array(langIds), limit, offset)
+	// Build WHERE conditions based on filters
+	hasFilters := authorUuid != nil || len(authorIds) > 0 || len(taskIds) > 0 || len(langIds) > 0
+
+	if hasFilters {
+		var conditions []string
+		var args []interface{}
+		argIndex := 1
+
+		// Add search-based filters if provided
+		if len(authorIds) > 0 {
+			conditions = append(conditions, fmt.Sprintf("author_uuid=any($%d)", argIndex))
+			args = append(args, pq.Array(authorIds))
+			argIndex++
+		}
+		if len(taskIds) > 0 {
+			conditions = append(conditions, fmt.Sprintf("task_shortid=any($%d)", argIndex))
+			args = append(args, pq.Array(taskIds))
+			argIndex++
+		}
+		if len(langIds) > 0 {
+			conditions = append(conditions, fmt.Sprintf("lang_shortid=any($%d)", argIndex))
+			args = append(args, pq.Array(langIds))
+			argIndex++
+		}
+
+		whereClause := strings.Join(conditions, " OR ")
+
+		if authorUuid != nil {
+			if whereClause != "" {
+				whereClause = fmt.Sprintf("author_uuid = $%d AND (%s)", argIndex, whereClause)
+			} else {
+				whereClause = fmt.Sprintf("author_uuid = $%d", argIndex)
+			}
+			args = append(args, *authorUuid)
+			argIndex++
+		}
+
+		submissionsQuery := fmt.Sprintf(`SELECT uuid, content, author_uuid, task_shortid, lang_shortid, curr_eval_uuid, created_at
+			FROM submissions
+			WHERE %s
+			ORDER BY created_at DESC
+			LIMIT $%d OFFSET $%d`, whereClause, argIndex, argIndex+1)
+
+		args = append(args, limit, offset)
+		rows, err = r.pool.Query(ctx, submissionsQuery, args...)
 		if err != nil {
 			log.Debug("failed to query submissions", "error", err)
 			return nil, fmt.Errorf("failed to query submissions: %w", err)
@@ -505,15 +544,48 @@ func (r *pgSubmRepo) ListSubms(ctx context.Context, limit int, offset int, searc
 }
 
 // CountSubms returns the total number of submissions in the database
-func (r *pgSubmRepo) CountSubms(ctx context.Context, authorIds []string, taskIds []string, langIds []string) (int, error) {
+func (r *pgSubmRepo) CountSubms(ctx context.Context, authorUuid *uuid.UUID, authorIds []string, taskIds []string, langIds []string) (int, error) {
 	log := ctxlog.FromContext(ctx)
 	log.Debug("executing CountSubms query")
 
 	var count int
-	if len(authorIds) > 0 || len(taskIds) > 0 || len(langIds) > 0 {
-		countQuery := `SELECT COUNT(*) FROM submissions
-			WHERE author_uuid=any($1) OR task_shortid=any($2) OR lang_shortid=any($3)`
-		err := r.pool.QueryRow(ctx, countQuery, pq.Array(authorIds), pq.Array(taskIds), pq.Array(langIds)).Scan(&count)
+
+	// Build WHERE conditions based on filters
+	hasFilters := authorUuid != nil || len(authorIds) > 0 || len(taskIds) > 0 || len(langIds) > 0
+
+	if hasFilters {
+		var conditions []string
+		var args []interface{}
+		argIndex := 1
+
+		// Add specific author filter if provided
+		if authorUuid != nil {
+			conditions = append(conditions, fmt.Sprintf("author_uuid = $%d", argIndex))
+			args = append(args, *authorUuid)
+			argIndex++
+		}
+
+		// Add search-based filters if provided
+		if len(authorIds) > 0 {
+			conditions = append(conditions, fmt.Sprintf("author_uuid=any($%d)", argIndex))
+			args = append(args, pq.Array(authorIds))
+			argIndex++
+		}
+		if len(taskIds) > 0 {
+			conditions = append(conditions, fmt.Sprintf("task_shortid=any($%d)", argIndex))
+			args = append(args, pq.Array(taskIds))
+			argIndex++
+		}
+		if len(langIds) > 0 {
+			conditions = append(conditions, fmt.Sprintf("lang_shortid=any($%d)", argIndex))
+			args = append(args, pq.Array(langIds))
+			argIndex++
+		}
+
+		whereClause := strings.Join(conditions, " OR ")
+		countQuery := fmt.Sprintf(`SELECT COUNT(*) FROM submissions WHERE %s`, whereClause)
+
+		err := r.pool.QueryRow(ctx, countQuery, args...).Scan(&count)
 		if err != nil {
 			log.Debug("failed to count submissions", "error", err)
 			return 0, fmt.Errorf("failed to count submissions with filters: %w", err)

@@ -91,20 +91,23 @@ func GetJwtAuthMiddleware(jwtKey []byte) func(next http.Handler) http.Handler {
 	}
 }
 
+var ErrNoJwtClaims = errors.New("no JWT claims found in context")
+var ErrEmptyJwtClaims = errors.New("empty JWT claims found in context")
+
 func GetUserUuidFromCtx(ctx context.Context) (uuid.UUID, error) {
 	claims, ok := ctx.Value(CtxJwtClaimsKey).(*JwtClaims)
 	if !ok {
-		return uuid.Nil, errors.New("no JWT claims found in context")
+		return uuid.Nil, ErrNoJwtClaims
 	}
 	if claims == nil {
-		return uuid.Nil, errors.New("no JWT claims found in context")
+		return uuid.Nil, ErrEmptyJwtClaims
 	}
 	u, err := uuid.Parse(claims.UUID)
 	if err != nil {
 		return uuid.Nil, err
 	}
 	if u == uuid.Nil {
-		return uuid.Nil, errors.New("empty UUID in JWT claims")
+		return uuid.Nil, ErrEmptyJwtClaims
 	}
 	return u, nil
 }
