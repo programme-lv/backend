@@ -43,6 +43,7 @@ type Task struct {
 	PdfStatements  []PdfStatement
 	VisInpSubtasks []VisibleInputSubtask
 	Examples       []Example
+	Subtasks       []Subtask
 
 	// testing
 	Tests      []Test
@@ -50,7 +51,6 @@ type Task struct {
 	Interactor string
 
 	// scoring
-	Subtasks   []Subtask
 	TestGroups []TestGroup
 }
 
