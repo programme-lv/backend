@@ -103,7 +103,7 @@ func mapTaskExamples(examples []srvc.Example) []Example {
 	return response
 }
 
-func (handler *TaskHttpHandler) mapTaskResponse(task *srvc.Task) *Task {
+func (handler *taskHttpHandler) mapTaskResponse(task *srvc.Task) *Task {
 	difficultyRating := new(int)
 	if task.DifficultyRating != 0 {
 		difficultyRating = new(int)
@@ -193,7 +193,7 @@ func (handler *TaskHttpHandler) mapTaskResponse(task *srvc.Task) *Task {
 	return response
 }
 
-func (handler *TaskHttpHandler) mapTaskIllustrImg(illustrImg *srvc.IllustrationImage) *IllustrationImage {
+func (handler *taskHttpHandler) mapTaskIllustrImg(illustrImg *srvc.IllustrationImage) *IllustrationImage {
 	if illustrImg == nil || illustrImg.S3Key == "" {
 		return nil
 	}
@@ -212,7 +212,7 @@ func (handler *TaskHttpHandler) mapTaskIllustrImg(illustrImg *srvc.IllustrationI
 	}
 }
 
-func (handler *TaskHttpHandler) mapTaskPreview(preview srvc.TaskPreview) TaskPreview {
+func (handler *taskHttpHandler) mapTaskPreview(preview srvc.TaskPreview) TaskPreview {
 	return TaskPreview{
 		ShortId:          preview.ShortId,
 		FullName:         preview.FullName,
@@ -224,7 +224,7 @@ func (handler *TaskHttpHandler) mapTaskPreview(preview srvc.TaskPreview) TaskPre
 	}
 }
 
-func (handler *TaskHttpHandler) mapTaskStatementImages(images []srvc.StatementImage) []StatementImage {
+func (handler *taskHttpHandler) mapTaskStatementImages(images []srvc.StatementImage) []StatementImage {
 	response := make([]StatementImage, len(images))
 	for i, image := range images {
 		httpUrl, err := handler.taskSrvc.GetPublicUrlForStatementImage(context.TODO(), image.S3Key)
@@ -240,14 +240,6 @@ func (handler *TaskHttpHandler) mapTaskStatementImages(images []srvc.StatementIm
 			HeightPx:  image.HeightPx,
 			SzInBytes: image.SzInBytes,
 		}
-	}
-	return response
-}
-
-func (handler *TaskHttpHandler) mapTasksResponse(tasks []srvc.Task) []*Task {
-	response := make([]*Task, len(tasks))
-	for i, task := range tasks {
-		response[i] = handler.mapTaskResponse(&task)
 	}
 	return response
 }

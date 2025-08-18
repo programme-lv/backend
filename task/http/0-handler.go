@@ -1,6 +1,7 @@
 package http
 
 import (
+	"sync"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -10,32 +11,49 @@ import (
 	"golang.org/x/sync/singleflight"
 )
 
-type TaskHttpHandler struct {
-	taskSrvc srvc.TaskSrvcClient
-	cache    *cache.Cache
-	sfGroup  singleflight.Group // Added singleflight group to prevent cache stampedes
+type taskHttpHandler struct {
+	taskSrvc  srvc.TaskSrvcClient
+	cache     *cache.Cache
+	sfGroup   singleflight.Group // Added singleflight group to prevent cache stampedes
+	exportMu  sync.Mutex
+	exportDir string
 }
 
-func NewTaskHttpHandler(taskSrvc srvc.TaskSrvcClient) *TaskHttpHandler {
+func NewTaskHttpHandler(taskSrvc srvc.TaskSrvcClient) *taskHttpHandler {
 	// Create a cache with 3 second default expiration and 10 second cleanup interval
 	c := cache.New(5*time.Second, 10*time.Second)
-	return &TaskHttpHandler{
+	return &taskHttpHandler{
 		taskSrvc: taskSrvc,
 		cache:    c,
 		// singleflight.Group doesn't need initialization
+		exportDir: "/tmp/proglv-task-exports",
 	}
 }
 
-func (h *TaskHttpHandler) RegisterRoutes(r *chi.Mux, jwtKey []byte) {
+func (h *taskHttpHandler) RegisterRoutes(r *chi.Mux, jwtKey []byte) {
 	r.Group(func(r chi.Router) {
-		r.Use(auth.GetJwtAuthMiddleware(jwtKey))
-		r.Get("/tasks", h.ListTasks)
-		r.Get("/tasks/{taskId}", h.GetTask)
-		r.Patch("/tasks/{taskId}/statements/{langIso639}", h.PutStatement)
-		r.Post("/tasks/{taskId}/images", h.UploadStatementImage)
-		r.Delete("/tasks/{taskId}/images/{filename}", h.DeleteStatementImage)
-		r.Post("/tasks/{taskId}/illustration", h.UploadIllustrationImage)
-		r.Delete("/tasks/{taskId}/illustration", h.DeleteIllustrationImage)
-		r.Get("/task-list", h.GetTaskPreviewList)
+		r.Use(auth.HttpJwtAuthentication(jwtKey))
+		r.Get("/tasks/{taskId}", h.ViewTask)
+		r.Get("/tasks", h.ViewTaskList)
+
+		// admin-only routes
+		r.Group(func(r chi.Router) {
+			r.Use(auth.HttpJwtAllowOnlyAdmins)
+
+			r.Post("/tasks/{taskId}/export", h.ExportTask)
+
+			// statement
+			r.Patch("/tasks/{taskId}/statements/{langIso639}", h.PutStatement)
+
+			// statement images
+			r.Post("/tasks/{taskId}/images", h.UploadStatementImage)
+			r.Delete("/tasks/{taskId}/images/{filename}", h.DeleteStatementImage)
+
+			// illustration image
+			r.Post("/tasks/{taskId}/illustration", h.UploadIllustrationImage)
+			r.Delete("/tasks/{taskId}/illustration", h.DeleteIllustrationImage)
+
+			// non-admin users should use /task-list instead
+		})
 	})
 }

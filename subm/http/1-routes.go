@@ -7,15 +7,15 @@ import (
 
 func (h *SubmHttpHandler) RegisterRoutes(r *chi.Mux, jwtKey []byte) {
 	r.Group(func(r chi.Router) {
-		r.Use(auth.GetJwtAuthMiddleware(jwtKey))
+		r.Use(auth.HttpJwtAuthentication(jwtKey))
 		r.Post("/subm", h.PostSubm)
 		r.Get("/subm", h.GetSubmList)
 		r.Get("/subm/{subm-uuid}", h.GetFullSubm)
 		r.Get("/subm/scores/{username}", h.GetMaxScorePerTask)
 
-		// Admin-only routes
+		// admin-only routes
 		r.Group(func(r chi.Router) {
-			r.Use(auth.AdminOnly)
+			r.Use(auth.HttpJwtAllowOnlyAdmins)
 			r.Post("/reeval", h.ReevalSubms)
 		})
 	})
