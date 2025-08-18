@@ -8,10 +8,17 @@ import (
 	"image"
 	"image/jpeg"
 	"image/png"
+	"io"
+	"log/slog"
 	"mime"
+	"net/http"
+	"os"
+	"path/filepath"
 
 	"github.com/google/uuid"
 	"github.com/klauspost/compress/zstd"
+	"github.com/programme-lv/taskzip/common/etrace"
+	"github.com/programme-lv/taskzip/taskfs"
 )
 
 func (ts *TaskSrvc) UpdateStatementMd(ctx context.Context, taskId string, statement MarkdownStatement) error {
@@ -364,4 +371,296 @@ func (ts *TaskSrvc) UpdateIllustrationImg(ctx context.Context, taskId string, im
 	}
 
 	return nil
+}
+
+// ExportTaskAsZip exports a task as a ZIP file and returns the ZIP bytes.
+func (ts *TaskSrvc) ExportTaskAsZip(ctx context.Context, taskId string) ([]byte, error) {
+	logger := ts.logger(ctx).With("task_id", taskId)
+	logger.Info("starting task export")
+
+	// fetch full task via narrow interface
+	t, err := ts.GetTask(ctx, taskId)
+	if err != nil {
+		logger.Error("failed to fetch task data", "error", err)
+		return nil, err
+	}
+	logger.Info("task data fetched successfully", "full_name", t.FullName)
+
+	logger.Info("mapping task to archive format")
+	task, err := ts.mapToArchiveFormat(ctx, t, logger)
+	if err != nil {
+		logger.Error("failed to map task to archive format", "error", err)
+		return nil, fmt.Errorf("failed to map task: %w", err)
+	}
+	logger.Info("task mapped to archive format successfully")
+
+	logger.Info("generating task ZIP")
+	zipBytes, err := ts.createTaskZipBytes(task)
+	if err != nil {
+		logger.Error("failed to generate task ZIP", "error", err)
+		return nil, fmt.Errorf("failed to generate ZIP: %w", err)
+	}
+
+	logger.Info("task export completed successfully", "zip_size_bytes", len(zipBytes))
+	return zipBytes, nil
+}
+
+func (ts *TaskSrvc) mapToArchiveFormat(ctx context.Context, t Task, logger *slog.Logger) (taskfs.Task, error) {
+	stories := make(map[string]taskfs.StoryMd)
+	for _, story := range t.MdStatements {
+		key := story.LangIso639
+		stories[key] = taskfs.StoryMd{
+			Story:   story.Story,
+			Input:   story.Input,
+			Output:  story.Output,
+			Notes:   story.Notes,
+			Scoring: story.Scoring,
+			Talk:    story.Talk,
+			Example: story.Example,
+		}
+	}
+	visInpSubtasks := make(map[int]bool)
+	for _, visibleInputSubtask := range t.VisInpSubtasks {
+		visInpSubtasks[visibleInputSubtask.SubtaskId] = true
+	}
+	subtasks := []taskfs.Subtask{}
+	for i, subtask := range t.Subtasks {
+		descriptions := make(map[string]string)
+		for lang, desc := range subtask.Descriptions {
+			descriptions[lang] = desc
+		}
+		subtasks = append(subtasks, taskfs.Subtask{
+			Desc:     descriptions,
+			Points:   subtask.Score,
+			VisInput: visInpSubtasks[i+1],
+		})
+	}
+	examples := []taskfs.Example{}
+	for _, example := range t.Examples {
+		examples = append(examples, taskfs.Example{
+			Input:  example.Input,
+			Output: example.Output,
+			MdNote: taskfs.I18N[string]{
+				"lv": example.MdNote,
+			},
+		})
+	}
+	images := []taskfs.Image{}
+	if len(t.MdImages) > 0 {
+		logger.Info("downloading statement images", "count", len(t.MdImages))
+	}
+	for i, image := range t.MdImages {
+		logger.Debug("downloading statement image", "filename", image.Filename, "progress", fmt.Sprintf("%d/%d", i+1, len(t.MdImages)))
+		url, err := ts.GetPublicUrlForStatementImage(ctx, image.S3Key)
+		if err != nil {
+			logger.Error("failed to get public URL for statement image", "filename", image.Filename, "s3_key", image.S3Key, "error", err)
+			return taskfs.Task{}, err
+		}
+		response, err := http.Get(url)
+		if err != nil {
+			logger.Error("failed to download statement image", "filename", image.Filename, "url", url, "error", err)
+			return taskfs.Task{}, err
+		}
+		defer response.Body.Close()
+		body, err := io.ReadAll(response.Body)
+		if err != nil {
+			logger.Error("failed to read statement image content", "filename", image.Filename, "error", err)
+			return taskfs.Task{}, err
+		}
+		images = append(images, taskfs.Image{
+			Fname:   image.Filename,
+			Content: body,
+		})
+	}
+	if len(t.MdImages) > 0 {
+		logger.Info("statement images downloaded successfully", "count", len(t.MdImages))
+	}
+	notes := make(map[string]string)
+	for _, note := range t.OriginNotes {
+		notes[note.Lang] = note.Info
+	}
+	testingType := "simple"
+	if t.Checker != "" {
+		testingType = "checker"
+	} else if t.Interactor != "" {
+		testingType = "interactor"
+	}
+	tests := []taskfs.Test{}
+	if len(t.Tests) > 0 {
+		logger.Info("downloading test files", "count", len(t.Tests))
+	}
+	for i, test := range t.Tests {
+		testLogger := logger.With("test_progress", fmt.Sprintf("%d/%d", i+1, len(t.Tests)))
+		testLogger.Debug("downloading and decompressing test files", "inp_sha2", test.InpSha2[:8]+"...", "ans_sha2", test.AnsSha2[:8]+"...")
+
+		// Download input file
+		inpUrl, err := ts.GetTestDownlUrl(ctx, test.InpSha2)
+		if err != nil {
+			testLogger.Error("failed to get input download URL", "inp_sha2", test.InpSha2, "error", err)
+			return taskfs.Task{}, fmt.Errorf("failed to get input download URL: %w", err)
+		}
+		inpResp, err := http.Get(inpUrl)
+		if err != nil {
+			testLogger.Error("failed to download input file", "url", inpUrl, "error", err)
+			return taskfs.Task{}, fmt.Errorf("failed to download input file: %w", err)
+		}
+		defer inpResp.Body.Close()
+		inpCompressed, err := io.ReadAll(inpResp.Body)
+		if err != nil {
+			testLogger.Error("failed to read input content", "error", err)
+			return taskfs.Task{}, fmt.Errorf("failed to read input content: %w", err)
+		}
+
+		// Decompress the zstd-compressed input data
+		inpContent, err := decompressWithZstd(inpCompressed)
+		if err != nil {
+			testLogger.Error("failed to decompress input content", "error", err)
+			return taskfs.Task{}, fmt.Errorf("failed to decompress input content: %w", err)
+		}
+
+		// Download answer file
+		ansUrl, err := ts.GetTestDownlUrl(ctx, test.AnsSha2)
+		if err != nil {
+			testLogger.Error("failed to get answer download URL", "ans_sha2", test.AnsSha2, "error", err)
+			return taskfs.Task{}, fmt.Errorf("failed to get answer download URL: %w", err)
+		}
+		ansResp, err := http.Get(ansUrl)
+		if err != nil {
+			testLogger.Error("failed to download answer file", "url", ansUrl, "error", err)
+			return taskfs.Task{}, fmt.Errorf("failed to download answer file: %w", err)
+		}
+		defer ansResp.Body.Close()
+		ansCompressed, err := io.ReadAll(ansResp.Body)
+		if err != nil {
+			testLogger.Error("failed to read answer content", "error", err)
+			return taskfs.Task{}, fmt.Errorf("failed to read answer content: %w", err)
+		}
+
+		// Decompress the zstd-compressed answer data
+		ansContent, err := decompressWithZstd(ansCompressed)
+		if err != nil {
+			testLogger.Error("failed to decompress answer content", "error", err)
+			return taskfs.Task{}, fmt.Errorf("failed to decompress answer content: %w", err)
+		}
+
+		tests = append(tests, taskfs.Test{
+			Input:  string(inpContent),
+			Answer: string(ansContent),
+		})
+	}
+	if len(t.Tests) > 0 {
+		logger.Info("test files downloaded successfully", "count", len(t.Tests))
+	}
+
+	scoringType := "test-sum"
+	if len(t.TestGroups) > 0 {
+		scoringType = "min-groups"
+	}
+
+	totalPoints := 0
+	if scoringType == "test-sum" {
+		totalPoints = len(t.Tests)
+	} else {
+		for _, testGroup := range t.TestGroups {
+			totalPoints += testGroup.Points
+		}
+	}
+
+	tGroups := []taskfs.TestGroup{}
+	for i, testGroup := range t.TestGroups {
+		min := testGroup.TestIDs[0]
+		max := testGroup.TestIDs[len(testGroup.TestIDs)-1]
+		subtasks := t.FindTestgroupSubtasks(i + 1)
+		if len(subtasks) == 0 {
+			tGroups = append(tGroups, taskfs.TestGroup{
+				Points:  testGroup.Points,
+				Range:   [2]int{min, max},
+				Public:  testGroup.Public,
+				Subtask: 0,
+			})
+		} else if len(subtasks) == 1 {
+			tGroups = append(tGroups, taskfs.TestGroup{
+				Points:  testGroup.Points,
+				Range:   [2]int{min, max},
+				Public:  testGroup.Public,
+				Subtask: subtasks[0],
+			})
+		} else {
+			return taskfs.Task{}, fmt.Errorf("test group %d has multiple subtasks", i+1)
+		}
+	}
+
+	res := taskfs.Task{
+		ShortID: t.ShortId,
+		FullName: taskfs.I18N[string]{
+			"lv": t.FullName,
+		},
+		ReadMe: "",
+		Statement: taskfs.Statement{
+			Stories:  stories,
+			Subtasks: subtasks,
+			Examples: examples,
+			Images:   images,
+		},
+		Origin: taskfs.Origin{
+			Olympiad: t.OriginOlympiad,
+			OlyStage: "",
+			Org:      "",
+			Notes:    notes,
+			Authors:  []string{},
+			Year:     "",
+		},
+		Testing: taskfs.Testing{
+			TestingT:   testingType,
+			MemLimMiB:  t.MemLimMegabytes,
+			CpuLimMs:   t.CpuMillis(),
+			Tests:      tests,
+			Checker:    t.Checker,
+			Interactor: t.Interactor,
+		},
+		Scoring: taskfs.Scoring{
+			ScoringT: scoringType,
+			TotalP:   totalPoints,
+			Groups:   tGroups,
+		},
+		Archive:   taskfs.Archive{},
+		Solutions: []taskfs.Solution{},
+		Metadata: taskfs.Metadata{
+			ProblemTags: []string{},
+			Difficulty:  t.DifficultyRating,
+		},
+	}
+
+	err := res.Validate()
+	if err != nil && etrace.IsCritical(err) {
+		return taskfs.Task{}, fmt.Errorf("task is invalid: %w", err)
+	}
+	return res, nil
+}
+
+// createTaskZipBytes creates a ZIP archive for a task and returns the bytes
+func (ts *TaskSrvc) createTaskZipBytes(task taskfs.Task) ([]byte, error) {
+	// Create temporary directory
+	tempDir, err := os.MkdirTemp("", "proglv-task-export-")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create temp dir: %w", err)
+	}
+	defer os.RemoveAll(tempDir) // Clean up
+
+	// Create ZIP file path
+	zipPath := filepath.Join(tempDir, task.ShortID+".zip")
+
+	// Use taskfs.WriteZip to write directly to ZIP
+	err = taskfs.WriteZip(task, zipPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to write task as ZIP: %w", err)
+	}
+
+	// Read the ZIP file bytes
+	zipBytes, err := os.ReadFile(zipPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read ZIP file: %w", err)
+	}
+
+	return zipBytes, nil
 }

@@ -29,6 +29,7 @@ type TaskSrvcClient interface {
 	UpdateStatementMd(ctx context.Context, taskId string, statement MarkdownStatement) error
 	GetPublicUrlForIllustrImg(ctx context.Context, illstrImgS3Key string) (string, error)
 	GetPublicUrlForStatementImage(ctx context.Context, statementImageS3Key string) (string, error)
+	ExportTaskAsZip(ctx context.Context, taskId string) ([]byte, error)
 }
 
 type S3BucketFacade interface {

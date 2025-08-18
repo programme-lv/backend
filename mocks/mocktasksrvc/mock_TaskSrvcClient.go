@@ -164,6 +164,65 @@ func (_c *MockTaskSrvcClient_DeleteStatementImage_Call) RunAndReturn(run func(co
 	return _c
 }
 
+// ExportTaskAsZip provides a mock function with given fields: ctx, taskId
+func (_m *MockTaskSrvcClient) ExportTaskAsZip(ctx context.Context, taskId string) ([]byte, error) {
+	ret := _m.Called(ctx, taskId)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ExportTaskAsZip")
+	}
+
+	var r0 []byte
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string) ([]byte, error)); ok {
+		return rf(ctx, taskId)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string) []byte); ok {
+		r0 = rf(ctx, taskId)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]byte)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, taskId)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockTaskSrvcClient_ExportTaskAsZip_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ExportTaskAsZip'
+type MockTaskSrvcClient_ExportTaskAsZip_Call struct {
+	*mock.Call
+}
+
+// ExportTaskAsZip is a helper method to define mock.On call
+//   - ctx context.Context
+//   - taskId string
+func (_e *MockTaskSrvcClient_Expecter) ExportTaskAsZip(ctx interface{}, taskId interface{}) *MockTaskSrvcClient_ExportTaskAsZip_Call {
+	return &MockTaskSrvcClient_ExportTaskAsZip_Call{Call: _e.mock.On("ExportTaskAsZip", ctx, taskId)}
+}
+
+func (_c *MockTaskSrvcClient_ExportTaskAsZip_Call) Run(run func(ctx context.Context, taskId string)) *MockTaskSrvcClient_ExportTaskAsZip_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string))
+	})
+	return _c
+}
+
+func (_c *MockTaskSrvcClient_ExportTaskAsZip_Call) Return(_a0 []byte, _a1 error) *MockTaskSrvcClient_ExportTaskAsZip_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockTaskSrvcClient_ExportTaskAsZip_Call) RunAndReturn(run func(context.Context, string) ([]byte, error)) *MockTaskSrvcClient_ExportTaskAsZip_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetPublicUrlForIllustrImg provides a mock function with given fields: ctx, illstrImgS3Key
 func (_m *MockTaskSrvcClient) GetPublicUrlForIllustrImg(ctx context.Context, illstrImgS3Key string) (string, error) {
 	ret := _m.Called(ctx, illstrImgS3Key)
