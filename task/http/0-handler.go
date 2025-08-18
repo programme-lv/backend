@@ -1,11 +1,14 @@
 package http
 
 import (
+	"context"
+	"log/slog"
 	"sync"
 	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/patrickmn/go-cache"
+	"github.com/programme-lv/backend/common/ctxlog"
 	"github.com/programme-lv/backend/task/srvc"
 	"github.com/programme-lv/backend/user/auth"
 	"golang.org/x/sync/singleflight"
@@ -26,7 +29,7 @@ func NewTaskHttpHandler(taskSrvc srvc.TaskSrvcClient) *taskHttpHandler {
 		taskSrvc: taskSrvc,
 		cache:    c,
 		// singleflight.Group doesn't need initialization
-		exportDir: "/tmp/proglv-task-exports",
+		exportDir: "/home/kp/progr/proglv/tasks/workspace/export",
 	}
 }
 
@@ -40,7 +43,7 @@ func (h *taskHttpHandler) RegisterRoutes(r *chi.Mux, jwtKey []byte) {
 		r.Group(func(r chi.Router) {
 			r.Use(auth.HttpJwtAllowOnlyAdmins)
 
-			r.Post("/tasks/{taskId}/export", h.ExportTask)
+			r.Get("/tasks/{taskId}/export", h.ExportTask)
 
 			// statement
 			r.Patch("/tasks/{taskId}/statements/{langIso639}", h.PutStatement)
@@ -52,4 +55,8 @@ func (h *taskHttpHandler) RegisterRoutes(r *chi.Mux, jwtKey []byte) {
 			r.Delete("/tasks/{taskId}/illustration", h.DeleteIllustrationImage)
 		})
 	})
+}
+
+func (h *taskHttpHandler) logger(ctx context.Context) *slog.Logger {
+	return ctxlog.FromContext(ctx).With("module", "task", "layer", "http")
 }

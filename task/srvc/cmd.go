@@ -219,6 +219,22 @@ func compressWithZstd(data []byte) ([]byte, error) {
 	return compressed, nil
 }
 
+// decompressWithZstd decompresses data that was compressed with Zstandard.
+// It returns the decompressed data or an error if the decompression fails.
+func decompressWithZstd(compressedData []byte) ([]byte, error) {
+	decoder, err := zstd.NewReader(nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create Zstd decoder: %w", err)
+	}
+	defer decoder.Close()
+
+	decompressed, err := decoder.DecodeAll(compressedData, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decompress data: %w", err)
+	}
+	return decompressed, nil
+}
+
 func (ts *TaskSrvc) Sha2Hex(body []byte) (sha2 string) {
 	hash := sha256.Sum256(body)
 	sha2 = fmt.Sprintf("%x", hash[:])
