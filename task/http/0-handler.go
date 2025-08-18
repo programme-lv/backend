@@ -44,16 +44,12 @@ func (h *taskHttpHandler) RegisterRoutes(r *chi.Mux, jwtKey []byte) {
 
 			// statement
 			r.Patch("/tasks/{taskId}/statements/{langIso639}", h.PutStatement)
-
-			// statement images
 			r.Post("/tasks/{taskId}/images", h.UploadStatementImage)
 			r.Delete("/tasks/{taskId}/images/{filename}", h.DeleteStatementImage)
 
-			// illustration image
+			// illustration
 			r.Post("/tasks/{taskId}/illustration", h.UploadIllustrationImage)
 			r.Delete("/tasks/{taskId}/illustration", h.DeleteIllustrationImage)
-
-			// non-admin users should use /task-list instead
 		})
 	})
 }
