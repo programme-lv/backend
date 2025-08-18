@@ -223,6 +223,68 @@ func (_c *MockTaskSrvcClient_ExportTaskAsZip_Call) RunAndReturn(run func(context
 	return _c
 }
 
+// GetCacheStats provides a mock function with no fields
+func (_m *MockTaskSrvcClient) GetCacheStats() (int64, int, error) {
+	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetCacheStats")
+	}
+
+	var r0 int64
+	var r1 int
+	var r2 error
+	if rf, ok := ret.Get(0).(func() (int64, int, error)); ok {
+		return rf()
+	}
+	if rf, ok := ret.Get(0).(func() int64); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(int64)
+	}
+
+	if rf, ok := ret.Get(1).(func() int); ok {
+		r1 = rf()
+	} else {
+		r1 = ret.Get(1).(int)
+	}
+
+	if rf, ok := ret.Get(2).(func() error); ok {
+		r2 = rf()
+	} else {
+		r2 = ret.Error(2)
+	}
+
+	return r0, r1, r2
+}
+
+// MockTaskSrvcClient_GetCacheStats_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetCacheStats'
+type MockTaskSrvcClient_GetCacheStats_Call struct {
+	*mock.Call
+}
+
+// GetCacheStats is a helper method to define mock.On call
+func (_e *MockTaskSrvcClient_Expecter) GetCacheStats() *MockTaskSrvcClient_GetCacheStats_Call {
+	return &MockTaskSrvcClient_GetCacheStats_Call{Call: _e.mock.On("GetCacheStats")}
+}
+
+func (_c *MockTaskSrvcClient_GetCacheStats_Call) Run(run func()) *MockTaskSrvcClient_GetCacheStats_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *MockTaskSrvcClient_GetCacheStats_Call) Return(totalSizeMB int64, fileCount int, err error) *MockTaskSrvcClient_GetCacheStats_Call {
+	_c.Call.Return(totalSizeMB, fileCount, err)
+	return _c
+}
+
+func (_c *MockTaskSrvcClient_GetCacheStats_Call) RunAndReturn(run func() (int64, int, error)) *MockTaskSrvcClient_GetCacheStats_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetPublicUrlForIllustrImg provides a mock function with given fields: ctx, illstrImgS3Key
 func (_m *MockTaskSrvcClient) GetPublicUrlForIllustrImg(ctx context.Context, illstrImgS3Key string) (string, error) {
 	ret := _m.Called(ctx, illstrImgS3Key)
