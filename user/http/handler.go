@@ -38,7 +38,7 @@ func WithCookieDomain(domain string) func(*UserHttpHandler) {
 
 func (h *UserHttpHandler) RegisterRoutes(r *chi.Mux) {
 	r.Group(func(r chi.Router) {
-		r.Use(auth.GetJwtAuthMiddleware(h.jwtKey))
+		r.Use(auth.HttpJwtAuthentication(h.jwtKey))
 		r.Post("/login", h.Login)
 		r.Post("/users", h.Register)
 		r.Get("/role", h.GetRole)

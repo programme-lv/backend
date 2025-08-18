@@ -15,7 +15,6 @@ import (
 	"github.com/programme-lv/backend/common/ctxlog"
 	"github.com/programme-lv/backend/exec"
 	http1 "github.com/programme-lv/backend/subm/http"
-	taskhttp "github.com/programme-lv/backend/task/http"
 	"github.com/programme-lv/backend/user/auth"
 	userhttp "github.com/programme-lv/backend/user/http"
 )
@@ -147,9 +146,13 @@ func requestLoggerMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+type HttpRouteRegistrar interface {
+	RegisterRoutes(r *chi.Mux, jwtKey []byte)
+}
+
 type HttpServer struct {
 	submHttpHandler *http1.SubmHttpHandler
-	taskHttpHandler *taskhttp.TaskHttpHandler
+	taskHttpHandler HttpRouteRegistrar
 	userHttpHandler *userhttp.UserHttpHandler
 	execSrvc        *exec.ExecSrvc
 	router          *chi.Mux
@@ -158,7 +161,7 @@ type HttpServer struct {
 
 func NewHttpServer(
 	submHttpHandler *http1.SubmHttpHandler,
-	taskHttpHandler *taskhttp.TaskHttpHandler,
+	taskHttpHandler HttpRouteRegistrar,
 	userHttpHandler *userhttp.UserHttpHandler,
 	evalSrvc *exec.ExecSrvc,
 	jwtKey []byte,
@@ -181,7 +184,7 @@ func NewHttpServer(
 		MaxAge:           3000,
 	}))
 
-	router.Use(auth.GetJwtAuthMiddleware(jwtKey))
+	router.Use(auth.HttpJwtAuthentication(jwtKey))
 
 	server := &HttpServer{
 		submHttpHandler: submHttpHandler,

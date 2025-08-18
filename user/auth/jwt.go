@@ -3,7 +3,6 @@ package auth
 import (
 	"context"
 	"errors"
-	"net/http"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -54,45 +53,8 @@ func ValidateJWT(tokenStr string, jwtKey []byte) (*JwtClaims, error) {
 	return claims, nil
 }
 
-// GetJwtAuthMiddleware validates JWT token and adds the claims to the request context
-func GetJwtAuthMiddleware(jwtKey []byte) func(next http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		hfn := func(w http.ResponseWriter, r *http.Request) {
-			// Get token from cookie instead of Authorization header
-			cookie, err := r.Cookie("auth_token")
-			if err != nil {
-				// No cookie found, continue as unauthenticated user
-				ctx := context.WithValue(r.Context(), CtxJwtClaimsKey, (*JwtClaims)(nil))
-				next.ServeHTTP(w, r.WithContext(ctx))
-				return
-			}
-
-			token := cookie.Value
-			claims, err := ValidateJWT(token, jwtKey)
-			if err != nil {
-				// Invalid token, continue as unauthenticated user
-				// Optionally, clear the invalid cookie
-				http.SetCookie(w, &http.Cookie{
-					Name:     "auth_token",
-					Value:    "",
-					Path:     "/",
-					MaxAge:   -1,
-					HttpOnly: true,
-				})
-				ctx := context.WithValue(r.Context(), CtxJwtClaimsKey, (*JwtClaims)(nil))
-				next.ServeHTTP(w, r.WithContext(ctx))
-				return
-			}
-
-			ctx := context.WithValue(r.Context(), CtxJwtClaimsKey, claims)
-			next.ServeHTTP(w, r.WithContext(ctx))
-		}
-		return http.HandlerFunc(hfn)
-	}
-}
-
-var ErrNoJwtClaims = errors.New("no JWT claims found in context")
-var ErrEmptyJwtClaims = errors.New("empty JWT claims found in context")
+var ErrNoJwtClaims = errors.New("no jwt claims found in context")
+var ErrEmptyJwtClaims = errors.New("empty jwt claims found in context")
 
 func GetUserUuidFromCtx(ctx context.Context) (uuid.UUID, error) {
 	claims, ok := ctx.Value(CtxJwtClaimsKey).(*JwtClaims)
