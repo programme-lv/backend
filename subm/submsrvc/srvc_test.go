@@ -15,7 +15,7 @@ import (
 	"github.com/peterldowns/pgtestdb/migrators/golangmigrator"
 	"github.com/programme-lv/backend/exec"
 	submadaptermock "github.com/programme-lv/backend/gen/mocks/submadapter"
-	mocktask "github.com/programme-lv/backend/mocks/task"
+	mocktask "github.com/programme-lv/backend/mocks/mocktasksrvc"
 	mockuser "github.com/programme-lv/backend/mocks/user"
 	"github.com/programme-lv/backend/subm/domain"
 	"github.com/programme-lv/backend/subm/pgrepo"
