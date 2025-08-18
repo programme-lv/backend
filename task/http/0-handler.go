@@ -15,11 +15,10 @@ import (
 )
 
 type taskHttpHandler struct {
-	taskSrvc  srvc.TaskSrvcClient
-	cache     *cache.Cache
-	sfGroup   singleflight.Group // Added singleflight group to prevent cache stampedes
-	exportMu  sync.Mutex
-	exportDir string
+	taskSrvc srvc.TaskSrvcClient
+	cache    *cache.Cache
+	sfGroup  singleflight.Group // Added singleflight group to prevent cache stampedes
+	exportMu sync.Mutex
 }
 
 func NewTaskHttpHandler(taskSrvc srvc.TaskSrvcClient) *taskHttpHandler {
@@ -29,7 +28,6 @@ func NewTaskHttpHandler(taskSrvc srvc.TaskSrvcClient) *taskHttpHandler {
 		taskSrvc: taskSrvc,
 		cache:    c,
 		// singleflight.Group doesn't need initialization
-		exportDir: "/home/kp/progr/proglv/tasks/workspace/export",
 	}
 }
 
