@@ -30,6 +30,7 @@ type TaskSrvcClient interface {
 	GetPublicUrlForIllustrImg(ctx context.Context, illstrImgS3Key string) (string, error)
 	GetPublicUrlForStatementImage(ctx context.Context, statementImageS3Key string) (string, error)
 	ExportTaskAsZip(ctx context.Context, taskId string) ([]byte, error)
+	GetCacheStats() (totalSizeMB int64, fileCount int, err error)
 }
 
 type S3BucketFacade interface {
@@ -61,6 +62,8 @@ type TaskSrvc struct {
 	s3TestfileBucket S3BucketFacade
 
 	repo TaskPgRepo
+
+	testCache *TestFileCache
 }
 
 func NewTaskSrvc(repo TaskPgRepo, publicS3, testfileS3 *s3bucket.S3Bucket) (TaskSrvcClient, error) {
@@ -68,6 +71,7 @@ func NewTaskSrvc(repo TaskPgRepo, publicS3, testfileS3 *s3bucket.S3Bucket) (Task
 		s3PublicBucket:   publicS3,
 		s3TestfileBucket: testfileS3,
 		repo:             repo,
+		testCache:        NewTestFileCache(),
 	}, nil
 }
 

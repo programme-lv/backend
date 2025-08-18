@@ -487,68 +487,75 @@ func (ts *TaskSrvc) mapToArchiveFormat(ctx context.Context, t Task, logger *slog
 	}
 	tests := []taskfs.Test{}
 	if len(t.Tests) > 0 {
-		logger.Info("downloading test files", "count", len(t.Tests))
-	}
-	for i, test := range t.Tests {
-		testLogger := logger.With("test_progress", fmt.Sprintf("%d/%d", i+1, len(t.Tests)))
-		testLogger.Debug("downloading and decompressing test files", "inp_sha2", test.InpSha2[:8]+"...", "ans_sha2", test.AnsSha2[:8]+"...")
+		logger.Info("downloading test files with caching", "count", len(t.Tests))
 
-		// Download input file
-		inpUrl, err := ts.GetTestDownlUrl(ctx, test.InpSha2)
-		if err != nil {
-			testLogger.Error("failed to get input download URL", "inp_sha2", test.InpSha2, "error", err)
-			return taskfs.Task{}, fmt.Errorf("failed to get input download URL: %w", err)
-		}
-		inpResp, err := http.Get(inpUrl)
-		if err != nil {
-			testLogger.Error("failed to download input file", "url", inpUrl, "error", err)
-			return taskfs.Task{}, fmt.Errorf("failed to download input file: %w", err)
-		}
-		defer inpResp.Body.Close()
-		inpCompressed, err := io.ReadAll(inpResp.Body)
-		if err != nil {
-			testLogger.Error("failed to read input content", "error", err)
-			return taskfs.Task{}, fmt.Errorf("failed to read input content: %w", err)
+		// Download test files in parallel
+		type testResult struct {
+			index      int
+			inputData  []byte
+			answerData []byte
+			err        error
 		}
 
-		// Decompress the zstd-compressed input data
-		inpContent, err := decompressWithZstd(inpCompressed)
-		if err != nil {
-			testLogger.Error("failed to decompress input content", "error", err)
-			return taskfs.Task{}, fmt.Errorf("failed to decompress input content: %w", err)
+		resultCh := make(chan testResult, len(t.Tests))
+
+		// Worker goroutines for parallel downloads
+		for i, test := range t.Tests {
+			go func(idx int, testData Test) {
+				// Get download URLs
+				inpUrl, err := ts.GetTestDownlUrl(ctx, testData.InpSha2)
+				if err != nil {
+					resultCh <- testResult{index: idx, err: fmt.Errorf("failed to get input URL: %w", err)}
+					return
+				}
+
+				ansUrl, err := ts.GetTestDownlUrl(ctx, testData.AnsSha2)
+				if err != nil {
+					resultCh <- testResult{index: idx, err: fmt.Errorf("failed to get answer URL: %w", err)}
+					return
+				}
+
+				// Download input and answer files using cache
+				inpContent, err := ts.testCache.GetTestFile(ctx, testData.InpSha2, inpUrl, logger)
+				if err != nil {
+					resultCh <- testResult{index: idx, err: fmt.Errorf("failed to get input file: %w", err)}
+					return
+				}
+
+				ansContent, err := ts.testCache.GetTestFile(ctx, testData.AnsSha2, ansUrl, logger)
+				if err != nil {
+					resultCh <- testResult{index: idx, err: fmt.Errorf("failed to get answer file: %w", err)}
+					return
+				}
+
+				resultCh <- testResult{
+					index:      idx,
+					inputData:  inpContent,
+					answerData: ansContent,
+					err:        nil,
+				}
+			}(i, test)
 		}
 
-		// Download answer file
-		ansUrl, err := ts.GetTestDownlUrl(ctx, test.AnsSha2)
-		if err != nil {
-			testLogger.Error("failed to get answer download URL", "ans_sha2", test.AnsSha2, "error", err)
-			return taskfs.Task{}, fmt.Errorf("failed to get answer download URL: %w", err)
-		}
-		ansResp, err := http.Get(ansUrl)
-		if err != nil {
-			testLogger.Error("failed to download answer file", "url", ansUrl, "error", err)
-			return taskfs.Task{}, fmt.Errorf("failed to download answer file: %w", err)
-		}
-		defer ansResp.Body.Close()
-		ansCompressed, err := io.ReadAll(ansResp.Body)
-		if err != nil {
-			testLogger.Error("failed to read answer content", "error", err)
-			return taskfs.Task{}, fmt.Errorf("failed to read answer content: %w", err)
+		// Collect results
+		testResults := make([]testResult, len(t.Tests))
+		for i := 0; i < len(t.Tests); i++ {
+			result := <-resultCh
+			if result.err != nil {
+				logger.Error("failed to download test file", "test_index", result.index, "error", result.err)
+				return taskfs.Task{}, result.err
+			}
+			testResults[result.index] = result
 		}
 
-		// Decompress the zstd-compressed answer data
-		ansContent, err := decompressWithZstd(ansCompressed)
-		if err != nil {
-			testLogger.Error("failed to decompress answer content", "error", err)
-			return taskfs.Task{}, fmt.Errorf("failed to decompress answer content: %w", err)
+		// Convert to taskfs.Test in original order
+		for _, result := range testResults {
+			tests = append(tests, taskfs.Test{
+				Input:  string(result.inputData),
+				Answer: string(result.answerData),
+			})
 		}
 
-		tests = append(tests, taskfs.Test{
-			Input:  string(inpContent),
-			Answer: string(ansContent),
-		})
-	}
-	if len(t.Tests) > 0 {
 		logger.Info("test files downloaded successfully", "count", len(t.Tests))
 	}
 
@@ -663,4 +670,13 @@ func (ts *TaskSrvc) createTaskZipBytes(task taskfs.Task) ([]byte, error) {
 	}
 
 	return zipBytes, nil
+}
+
+// GetCacheStats returns test file cache statistics
+func (ts *TaskSrvc) GetCacheStats() (totalSizeMB int64, fileCount int, err error) {
+	totalSize, count, err := ts.testCache.GetCacheStats()
+	if err != nil {
+		return 0, 0, err
+	}
+	return totalSize / (1024 * 1024), count, nil
 }
