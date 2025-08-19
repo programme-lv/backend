@@ -137,6 +137,8 @@ github.com/programme-lv/taskzip v0.0.0-20250819100532-5cd2f98c3a57 h1:YoUtty6+RW
 github.com/programme-lv/taskzip v0.0.0-20250819100532-5cd2f98c3a57/go.mod h1:FkPs4FV02UJQ592OXchjxXhAmtP0mAsXUJV8Pwbrj8U=
 github.com/programme-lv/taskzip v0.0.0-20250819104544-0678d28da866 h1:oUfC0pLTYsp3DTtzgnDkGa1Qnx/gQgtRdU+38R7yTWw=
 github.com/programme-lv/taskzip v0.0.0-20250819104544-0678d28da866/go.mod h1:FkPs4FV02UJQ592OXchjxXhAmtP0mAsXUJV8Pwbrj8U=
+github.com/programme-lv/taskzip v0.0.0-20250819153208-533b0aa5f181 h1:IW7Xjw25DylrWntHPps4LcHkROQO9JMnJrQUndj+BJs=
+github.com/programme-lv/taskzip v0.0.0-20250819153208-533b0aa5f181/go.mod h1:FkPs4FV02UJQ592OXchjxXhAmtP0mAsXUJV8Pwbrj8U=
 github.com/programme-lv/tester v0.2.1-0.20241227183509-d7fdd302b062 h1:ZBUngIlFFa/l3FYBNnAef5AGYdoXnZnUc5LtTfaZ6CY=
 github.com/programme-lv/tester v0.2.1-0.20241227183509-d7fdd302b062/go.mod h1:p51WPzlkjlIIIe7r5/0E1Q7AinOlIzREPrJ2Spf3gtk=
 github.com/rogpeppe/go-internal v1.9.0/go.mod h1:WtVeX8xhTBvf0smdhujwtBcq4Qrzq/fJaraNFVN+nFs=

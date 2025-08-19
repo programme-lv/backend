@@ -130,7 +130,7 @@ func (c *TestFileCache) downloadAndDecompress(ctx context.Context, url string) (
 	}
 
 	// Decompress
-	content, err := decompressWithZstd(compressed)
+	content, err := DecompressWithZstd(compressed)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decompress: %w", err)
 	}
