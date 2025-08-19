@@ -339,6 +339,12 @@ func NewTaskPgRepo(pool *pgxpool.Pool) *taskPgRepo {
 func (r *taskPgRepo) GetTaskPreview(ctx context.Context, shortId string) (srvc.TaskPreview, error) {
 	var t srvc.TaskPreview
 
+	// Initialize illustration image struct
+	illustrImg := srvc.IllustrationImage{}
+	var widthPx *int = nil
+	var heightPx *int = nil
+	var szInBytes *int = nil
+
 	// Load main task row.
 	err := r.pool.QueryRow(ctx, `
 		SELECT short_id, full_name, illustr_img_s3_key, width_px, height_px, filesize_bytes, origin_olympiad, difficulty_rating
@@ -347,15 +353,25 @@ func (r *taskPgRepo) GetTaskPreview(ctx context.Context, shortId string) (srvc.T
 	`, shortId).Scan(
 		&t.ShortId,
 		&t.FullName,
-		&t.IllustrImg.S3Key,
-		&t.IllustrImg.WidthPx,
-		&t.IllustrImg.HeightPx,
-		&t.IllustrImg.SzInBytes,
+		&illustrImg.S3Key,
+		&widthPx,
+		&heightPx,
+		&szInBytes,
 		&t.OriginOlympiad,
 		&t.DifficultyRating,
 	)
 	if err != nil {
 		return t, fmt.Errorf("failed to load task preview: %w", err)
+	}
+
+	// Set illustration image only if it has valid data
+	if illustrImg.S3Key != "" &&
+		widthPx != nil && heightPx != nil && szInBytes != nil &&
+		*widthPx > 0 && *heightPx > 0 && *szInBytes > 0 {
+		illustrImg.WidthPx = *widthPx
+		illustrImg.HeightPx = *heightPx
+		illustrImg.SzInBytes = *szInBytes
+		t.IllustrImg = &illustrImg
 	}
 
 	err = r.pool.QueryRow(ctx, `
@@ -777,10 +793,19 @@ func (r *taskPgRepo) CreateTask(ctx context.Context, t srvc.Task) error {
 	}()
 
 	// Insert main task.
+	var illustrS3Key string
+	var illustrWidthPx, illustrHeightPx, illustrSzInBytes int
+	if t.IllustrImg != nil {
+		illustrS3Key = t.IllustrImg.S3Key
+		illustrWidthPx = t.IllustrImg.WidthPx
+		illustrHeightPx = t.IllustrImg.HeightPx
+		illustrSzInBytes = t.IllustrImg.SzInBytes
+	}
+
 	_, err = tx.Exec(ctx, `
 		INSERT INTO tasks (short_id, full_name, illustr_img_s3_key, width_px, height_px, filesize_bytes, mem_lim_megabytes, cpu_time_lim_secs, origin_olympiad, difficulty_rating, checker, interactor)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-	`, t.ShortId, t.FullName, t.IllustrImg.S3Key, t.IllustrImg.WidthPx, t.IllustrImg.HeightPx, t.IllustrImg.SzInBytes, t.MemLimMegabytes, t.CpuTimeLimSecs, t.OriginOlympiad, t.DifficultyRating, t.Checker, t.Interactor)
+	`, t.ShortId, t.FullName, illustrS3Key, illustrWidthPx, illustrHeightPx, illustrSzInBytes, t.MemLimMegabytes, t.CpuTimeLimSecs, t.OriginOlympiad, t.DifficultyRating, t.Checker, t.Interactor)
 	if err != nil {
 		return fmt.Errorf("failed to insert main task: %w", err)
 	}
@@ -919,6 +944,106 @@ func (r *taskPgRepo) CreateTask(ctx context.Context, t srvc.Task) error {
 				return fmt.Errorf("failed to insert test group test ID: %w", err)
 			}
 		}
+	}
+
+	return nil
+}
+
+// DeleteTask deletes a task and all its related data from the database.
+// This includes all foreign key referenced tables that cascade delete.
+func (r *taskPgRepo) DeleteTask(ctx context.Context, shortId string) error {
+	// Check if the task exists first
+	exists, err := r.Exists(ctx, shortId)
+	if err != nil {
+		return fmt.Errorf("failed to check if task exists: %w", err)
+	}
+	if !exists {
+		return fmt.Errorf("task %s does not exist", shortId)
+	}
+
+	// Start a transaction to ensure atomicity
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer func() {
+		if err != nil {
+			_ = tx.Rollback(ctx)
+		} else {
+			err = tx.Commit(ctx)
+		}
+	}()
+
+	// Delete from all related tables first (in case of any issues with CASCADE)
+	// The foreign key constraints should handle the cascading, but we'll be explicit
+
+	// Delete task_examples
+	_, err = tx.Exec(ctx, `DELETE FROM task_examples WHERE task_short_id = $1`, shortId)
+	if err != nil {
+		return fmt.Errorf("failed to delete task examples: %w", err)
+	}
+
+	// Delete task_md_statements
+	_, err = tx.Exec(ctx, `DELETE FROM task_md_statements WHERE task_short_id = $1`, shortId)
+	if err != nil {
+		return fmt.Errorf("failed to delete task md statements: %w", err)
+	}
+
+	// Delete task_origin_notes
+	_, err = tx.Exec(ctx, `DELETE FROM task_origin_notes WHERE task_short_id = $1`, shortId)
+	if err != nil {
+		return fmt.Errorf("failed to delete task origin notes: %w", err)
+	}
+
+	// Delete task_pdf_statements
+	_, err = tx.Exec(ctx, `DELETE FROM task_pdf_statements WHERE task_short_id = $1`, shortId)
+	if err != nil {
+		return fmt.Errorf("failed to delete task pdf statements: %w", err)
+	}
+
+	// Delete task_subtask_test_ids (via task_subtasks CASCADE)
+	// Delete task_subtasks
+	_, err = tx.Exec(ctx, `DELETE FROM task_subtasks WHERE task_short_id = $1`, shortId)
+	if err != nil {
+		return fmt.Errorf("failed to delete task subtasks: %w", err)
+	}
+
+	// Delete task_images
+	_, err = tx.Exec(ctx, `DELETE FROM task_images WHERE task_short_id = $1`, shortId)
+	if err != nil {
+		return fmt.Errorf("failed to delete task images: %w", err)
+	}
+
+	// Delete task_test_group_test_ids (via task_test_groups CASCADE)
+	// Delete task_test_groups
+	_, err = tx.Exec(ctx, `DELETE FROM task_test_groups WHERE task_short_id = $1`, shortId)
+	if err != nil {
+		return fmt.Errorf("failed to delete task test groups: %w", err)
+	}
+
+	// Delete task_tests
+	_, err = tx.Exec(ctx, `DELETE FROM task_tests WHERE task_short_id = $1`, shortId)
+	if err != nil {
+		return fmt.Errorf("failed to delete task tests: %w", err)
+	}
+
+	// Delete task_vis_inp_subtask_tests (via task_vis_inp_subtasks CASCADE)
+	// Delete task_vis_inp_subtasks
+	_, err = tx.Exec(ctx, `DELETE FROM task_vis_inp_subtasks WHERE task_short_id = $1`, shortId)
+	if err != nil {
+		return fmt.Errorf("failed to delete task vis inp subtasks: %w", err)
+	}
+
+	// Finally, delete the main task record
+	result, err := tx.Exec(ctx, `DELETE FROM tasks WHERE short_id = $1`, shortId)
+	if err != nil {
+		return fmt.Errorf("failed to delete task: %w", err)
+	}
+
+	// Verify that the task was actually deleted
+	rowsAffected := result.RowsAffected()
+	if rowsAffected == 0 {
+		return fmt.Errorf("task %s was not deleted", shortId)
 	}
 
 	return nil

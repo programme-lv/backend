@@ -1,4 +1,4 @@
-package test
+package repo_test
 
 import (
 	"context"
@@ -163,6 +163,37 @@ func TestTaskPgRepo(t *testing.T) {
 		_, err = repo.GetTaskPreview(ctx, "non-existent-task")
 		assert.Error(t, err, "Getting preview for non-existent task should fail")
 		assert.Contains(t, err.Error(), "failed to load task preview", "Error message should indicate task preview loading failed")
+	})
+
+	// Test DeleteTask
+	t.Run("DeleteTask", func(t *testing.T) {
+		// First verify the task exists
+		exists, err := repo.Exists(ctx, task.ShortId)
+		require.NoError(t, err, "Failed to check if task exists before deletion")
+		assert.True(t, exists, "Task should exist before deletion")
+
+		// Delete the task
+		err = repo.DeleteTask(ctx, task.ShortId)
+		require.NoError(t, err, "Failed to delete task")
+
+		// Verify the task no longer exists
+		exists, err = repo.Exists(ctx, task.ShortId)
+		require.NoError(t, err, "Failed to check if task exists after deletion")
+		assert.False(t, exists, "Task should not exist after deletion")
+
+		// Try to get the deleted task (should fail)
+		_, err = repo.GetTask(ctx, task.ShortId)
+		assert.Error(t, err, "Getting deleted task should fail")
+
+		// Try to delete a non-existent task (should fail)
+		err = repo.DeleteTask(ctx, "non-existent-task")
+		assert.Error(t, err, "Deleting non-existent task should fail")
+		assert.Contains(t, err.Error(), "does not exist", "Error message should indicate task does not exist")
+
+		// Verify we can't list the deleted task
+		tasks, err := repo.ListTasks(ctx, 10, 0)
+		require.NoError(t, err, "Failed to list tasks after deletion")
+		assert.Len(t, tasks, 0, "Should have no tasks after deletion")
 	})
 
 }
