@@ -7,10 +7,12 @@ import (
 
 	"github.com/programme-lv/backend/common/ctxlog"
 	"github.com/programme-lv/backend/common/s3bucket"
+	"golang.org/x/sync/singleflight"
 )
 
 type TaskSrvcClient interface {
 	GetTestDownlUrl(ctx context.Context, testFileSha256 string) (string, error)
+	DownloadTestFile(ctx context.Context, testFileSha256 string) ([]byte, error)
 	UploadStatementPdf(ctx context.Context, body []byte) (string, error)
 	UploadIllustrationImg(ctx context.Context, mimeType string, body []byte) (string, error)
 	DeleteIllustrationImg(ctx context.Context, taskId string) error
@@ -38,6 +40,7 @@ type TaskSrvcClient interface {
 
 type S3BucketFacade interface {
 	Upload(content []byte, key string, mediaType string) (string, error)
+	Download(key string) ([]byte, error)
 	PresignedURL(key string, duration time.Duration) (string, error)
 	Exists(key string) (bool, error)
 	ListAndGetAllFiles(prefix string) ([]s3bucket.FileData, error)
@@ -68,12 +71,18 @@ type TaskSrvc struct {
 	repo TaskPgRepo
 
 	testCache *TestFileCache
+
+	// dlGroup deduplicates concurrent DownloadTestFile calls per key to prevent thundering herd
+	dlGroup singleflight.Group
 }
 
-func NewTaskSrvc(repo TaskPgRepo, publicS3, testfileS3 *s3bucket.S3Bucket) (TaskSrvcClient, error) {
+func NewTaskSrvc(
+	repo TaskPgRepo,
+	cdnS3, testS3 S3BucketFacade,
+) (TaskSrvcClient, error) {
 	return &TaskSrvc{
-		s3PublicBucket:   publicS3,
-		s3TestfileBucket: testfileS3,
+		s3PublicBucket:   cdnS3,
+		s3TestfileBucket: testS3,
 		repo:             repo,
 		testCache:        NewTestFileCache(),
 	}, nil

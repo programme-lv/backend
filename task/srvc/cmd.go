@@ -8,13 +8,9 @@ import (
 	"image"
 	"image/jpeg"
 	"image/png"
-	"io"
-	"log/slog"
 	"mime"
-	"net/http"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/google/uuid"
 	"github.com/klauspost/compress/zstd"
@@ -86,7 +82,7 @@ func (ts *TaskSrvc) DeleteTask(ctx context.Context, shortId string) error {
 // S3 key format: "task-pdf-statements/<sha2>.pdf"
 func (ts *TaskSrvc) UploadStatementPdf(ctx context.Context, body []byte) (string, error) {
 	l := ts.logger(ctx)
-	shaHex := ts.Sha2Hex(body)
+	shaHex := Sha2Hex(body)
 	s3Key := fmt.Sprintf("%s/%s.pdf", "task-pdf-statements", shaHex)
 	url, err := ts.s3PublicBucket.Upload(body, s3Key, "application/pdf")
 	if err != nil {
@@ -100,7 +96,7 @@ func (ts *TaskSrvc) UploadStatementPdf(ctx context.Context, body []byte) (string
 // S3 key format: "task-illustrations/<sha2>.<ext>"
 func (ts *TaskSrvc) UploadIllustrationImg(ctx context.Context, mimeType string, body []byte) (url string, err error) {
 	l := ts.logger(ctx)
-	sha2 := ts.Sha2Hex(body)
+	sha2 := Sha2Hex(body)
 	exts, err := mime.ExtensionsByType(mimeType)
 	if err != nil {
 		l.Error("failed to get file extension", "error", err)
@@ -126,7 +122,7 @@ func (ts *TaskSrvc) UploadStatementImage(ctx context.Context, taskId string, img
 	l := ts.logger(ctx)
 
 	// get the file extension from the mime type, e.g. "image/png" -> ".png"
-	ext, err := getImgExt(imageMimeType)
+	ext, err := MimeToFileExt(imageMimeType)
 	if err != nil {
 		l.Error("failed to get image file extension from mime type", "error", err)
 		return "", NewErrorImageFileExtFromMimeType(imageMimeType)
@@ -180,7 +176,7 @@ func (ts *TaskSrvc) UploadStatementImage(ctx context.Context, taskId string, img
 	return s3Uri, nil
 }
 
-func getImgExt(mimeType string) (string, error) {
+func MimeToFileExt(mimeType string) (string, error) {
 	exts, err := mime.ExtensionsByType(mimeType)
 	if err != nil {
 		return "", fmt.Errorf("failed to get file extension: %w", err)
@@ -189,6 +185,14 @@ func getImgExt(mimeType string) (string, error) {
 		return "", fmt.Errorf("file extension not found")
 	}
 	return exts[0], nil
+}
+
+func MimeFromFname(fname string) (string, error) {
+	ext := filepath.Ext(fname)
+	if ext == "" {
+		return "", fmt.Errorf("file extension not found")
+	}
+	return mime.TypeByExtension(ext), nil
 }
 
 func getImgWidthHeighPx(body []byte, mimeType string) (int, int, error) {
@@ -218,14 +222,18 @@ func getImgWidthHeighPx(body []byte, mimeType string) (int, int, error) {
 	}
 }
 
+func GetTestfileS3Key(body []byte) string {
+	shaHex := Sha2Hex(body)
+	return fmt.Sprintf("%s.zst", shaHex)
+}
+
 // UploadTestFile uploads a test input or output to S3 after compressing it with Zstandard.
 // If The test already exists, it returns no error and does nothing.
 //
 // The S3 key is the SHA256 hash of the uncompressed body with a .zst extension.
 func (ts *TaskSrvc) UploadTestFile(ctx context.Context, body []byte) error {
 	l := ts.logger(ctx)
-	shaHex := ts.Sha2Hex(body)
-	s3Key := fmt.Sprintf("%s.zst", shaHex)
+	s3Key := GetTestfileS3Key(body)
 	mediaType := "application/zstd"
 
 	exists, err := ts.s3TestfileBucket.Exists(s3Key)
@@ -238,7 +246,7 @@ func (ts *TaskSrvc) UploadTestFile(ctx context.Context, body []byte) error {
 		return nil
 	}
 
-	zstdCompressed, err := compressWithZstd(body)
+	zstdCompressed, err := CompressWithZstd(body)
 	if err != nil {
 		l.Error("failed to compress data", "error", err)
 		return NewErrorInternalServerError()
@@ -253,9 +261,9 @@ func (ts *TaskSrvc) UploadTestFile(ctx context.Context, body []byte) error {
 	return nil
 }
 
-// compressWithZstd compresses the given data using Zstandard compression.
+// CompressWithZstd compresses the given data using Zstandard compression.
 // It returns the compressed data or an error if the compression fails.
-func compressWithZstd(data []byte) ([]byte, error) {
+func CompressWithZstd(data []byte) ([]byte, error) {
 	encoder, err := zstd.NewWriter(nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Zstd encoder: %w", err)
@@ -266,9 +274,17 @@ func compressWithZstd(data []byte) ([]byte, error) {
 	return compressed, nil
 }
 
-// decompressWithZstd decompresses data that was compressed with Zstandard.
+func MustCompressWithZstd(data []byte) []byte {
+	compressed, err := CompressWithZstd(data)
+	if err != nil {
+		panic(err)
+	}
+	return compressed
+}
+
+// DecompressWithZstd decompresses data that was compressed with Zstandard.
 // It returns the decompressed data or an error if the decompression fails.
-func decompressWithZstd(compressedData []byte) ([]byte, error) {
+func DecompressWithZstd(compressedData []byte) ([]byte, error) {
 	decoder, err := zstd.NewReader(nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Zstd decoder: %w", err)
@@ -282,7 +298,7 @@ func decompressWithZstd(compressedData []byte) ([]byte, error) {
 	return decompressed, nil
 }
 
-func (ts *TaskSrvc) Sha2Hex(body []byte) (sha2 string) {
+func Sha2Hex(body []byte) (sha2 string) {
 	hash := sha256.Sum256(body)
 	sha2 = fmt.Sprintf("%x", hash[:])
 	return
@@ -427,7 +443,7 @@ func (ts *TaskSrvc) ExportTaskAsZip(ctx context.Context, taskId string) ([]byte,
 	logger.Info("task data fetched successfully", "full_name", t.FullName)
 
 	logger.Info("mapping task to archive format")
-	task, err := ts.mapToArchiveFormat(ctx, t, logger)
+	task, err := ts.mapToArchiveFormat(ctx, t)
 	if err != nil {
 		logger.Error("failed to map task to archive format", "error", err)
 		return nil, fmt.Errorf("failed to map task: %w", err)
@@ -445,7 +461,8 @@ func (ts *TaskSrvc) ExportTaskAsZip(ctx context.Context, taskId string) ([]byte,
 	return zipBytes, nil
 }
 
-func (ts *TaskSrvc) mapToArchiveFormat(ctx context.Context, t Task, logger *slog.Logger) (taskfs.Task, error) {
+func (ts *TaskSrvc) mapToArchiveFormat(ctx context.Context, t Task) (taskfs.Task, error) {
+	logger := ts.logger(ctx)
 	stories := make(map[string]taskfs.StoryMd)
 	for _, story := range t.MdStatements {
 		key := story.LangIso639
@@ -486,34 +503,16 @@ func (ts *TaskSrvc) mapToArchiveFormat(ctx context.Context, t Task, logger *slog
 		})
 	}
 	images := []taskfs.Image{}
-	if len(t.MdImages) > 0 {
-		logger.Info("downloading statement images", "count", len(t.MdImages))
-	}
-	for i, image := range t.MdImages {
-		logger.Debug("downloading statement image", "filename", image.Filename, "progress", fmt.Sprintf("%d/%d", i+1, len(t.MdImages)))
-		url, err := ts.GetPublicUrlForStatementImage(ctx, image.S3Key)
+	for _, image := range t.MdImages {
+		content, err := ts.s3PublicBucket.Download(image.S3Key)
 		if err != nil {
-			logger.Error("failed to get public URL for statement image", "filename", image.Filename, "s3_key", image.S3Key, "error", err)
-			return taskfs.Task{}, err
-		}
-		response, err := http.Get(url)
-		if err != nil {
-			logger.Error("failed to download statement image", "filename", image.Filename, "url", url, "error", err)
-			return taskfs.Task{}, err
-		}
-		defer response.Body.Close()
-		body, err := io.ReadAll(response.Body)
-		if err != nil {
-			logger.Error("failed to read statement image content", "filename", image.Filename, "error", err)
+			logger.Error("failed to download statement image from S3", "filename", image.Filename, "s3_key", image.S3Key, "error", err)
 			return taskfs.Task{}, err
 		}
 		images = append(images, taskfs.Image{
 			Fname:   image.Filename,
-			Content: body,
+			Content: content,
 		})
-	}
-	if len(t.MdImages) > 0 {
-		logger.Info("statement images downloaded successfully", "count", len(t.MdImages))
 	}
 	notes := make(map[string]string)
 	for _, note := range t.OriginNotes {
@@ -527,8 +526,6 @@ func (ts *TaskSrvc) mapToArchiveFormat(ctx context.Context, t Task, logger *slog
 	}
 	tests := []taskfs.Test{}
 	if len(t.Tests) > 0 {
-		logger.Info("downloading test files with caching", "count", len(t.Tests))
-
 		// Download test files in parallel
 		type testResult struct {
 			index      int
@@ -542,29 +539,16 @@ func (ts *TaskSrvc) mapToArchiveFormat(ctx context.Context, t Task, logger *slog
 		// Worker goroutines for parallel downloads
 		for i, test := range t.Tests {
 			go func(idx int, testData Test) {
-				// Get download URLs
-				inpUrl, err := ts.GetTestDownlUrl(ctx, testData.InpSha2)
+				// Download input and answer files via cached downloader
+				inpContent, err := ts.DownloadTestFile(ctx, testData.InpSha2)
 				if err != nil {
-					resultCh <- testResult{index: idx, err: fmt.Errorf("failed to get input URL: %w", err)}
+					resultCh <- testResult{index: idx, err: fmt.Errorf("failed to download input file: %w", err)}
 					return
 				}
 
-				ansUrl, err := ts.GetTestDownlUrl(ctx, testData.AnsSha2)
+				ansContent, err := ts.DownloadTestFile(ctx, testData.AnsSha2)
 				if err != nil {
-					resultCh <- testResult{index: idx, err: fmt.Errorf("failed to get answer URL: %w", err)}
-					return
-				}
-
-				// Download input and answer files using cache
-				inpContent, err := ts.testCache.GetTestFile(ctx, testData.InpSha2, inpUrl, logger)
-				if err != nil {
-					resultCh <- testResult{index: idx, err: fmt.Errorf("failed to get input file: %w", err)}
-					return
-				}
-
-				ansContent, err := ts.testCache.GetTestFile(ctx, testData.AnsSha2, ansUrl, logger)
-				if err != nil {
-					resultCh <- testResult{index: idx, err: fmt.Errorf("failed to get answer file: %w", err)}
+					resultCh <- testResult{index: idx, err: fmt.Errorf("failed to download answer file: %w", err)}
 					return
 				}
 
@@ -596,7 +580,6 @@ func (ts *TaskSrvc) mapToArchiveFormat(ctx context.Context, t Task, logger *slog
 			})
 		}
 
-		logger.Info("test files downloaded successfully", "count", len(t.Tests))
 	}
 
 	scoringType := "test-sum"
@@ -772,7 +755,7 @@ func (ts *TaskSrvc) ImportTaskFromZipWithId(ctx context.Context, zipBytes []byte
 	}
 
 	// Map task structure first (without heavy uploads)
-	serviceTask, err := ts.mapTaskStructureFromArchive(ctx, archTask, overrideId, l)
+	serviceTask, err := ts.mapTaskStructureFromArchive(archTask, overrideId)
 	if err != nil {
 		l.Error("failed to map task structure", "error", err)
 		return "", NewErrorInternalServerError()
@@ -789,7 +772,7 @@ func (ts *TaskSrvc) ImportTaskFromZipWithId(ctx context.Context, zipBytes []byte
 	}
 
 	// Now do the heavy uploads (images, PDFs, test files)
-	err = ts.uploadTaskAssets(ctx, archTask, &serviceTask, l)
+	err = ts.uploadTaskArchiveAssets(ctx, archTask, &serviceTask)
 	if err != nil {
 		l.Error("failed to upload task assets", "error", err)
 		return "", NewErrorInternalServerError()
@@ -806,7 +789,7 @@ func (ts *TaskSrvc) ImportTaskFromZipWithId(ctx context.Context, zipBytes []byte
 }
 
 // mapTaskStructureFromArchive maps the basic task structure without uploading heavy assets
-func (ts *TaskSrvc) mapTaskStructureFromArchive(ctx context.Context, t taskfs.Task, overrideId string, logger *slog.Logger) (Task, error) {
+func (ts *TaskSrvc) mapTaskStructureFromArchive(t taskfs.Task, overrideId string) (Task, error) {
 	res := Task{}
 	// Use override ID if provided, otherwise use original from ZIP
 	if overrideId != "" {
@@ -815,7 +798,6 @@ func (ts *TaskSrvc) mapTaskStructureFromArchive(ctx context.Context, t taskfs.Ta
 			return Task{}, fmt.Errorf("invalid override ID '%s': %w", overrideId, err)
 		}
 		res.ShortId = overrideId
-		logger.Info("using override task ID", "original_id", t.ShortID, "override_id", overrideId)
 	} else {
 		res.ShortId = t.ShortID
 	}
@@ -918,22 +900,25 @@ func (ts *TaskSrvc) mapTaskStructureFromArchive(ctx context.Context, t taskfs.Ta
 	return res, nil
 }
 
-// uploadTaskAssets handles heavy uploads (images, PDFs, test files) for task import
-func (ts *TaskSrvc) uploadTaskAssets(ctx context.Context, t taskfs.Task, res *Task, logger *slog.Logger) error {
+// uploadTaskArchiveAssets handles heavy uploads (images, PDFs, test files) for task import
+func (ts *TaskSrvc) uploadTaskArchiveAssets(ctx context.Context, t taskfs.Task, res *Task) error {
 	// Upload statement images to S3 and record metadata
 	for i, img := range t.Statement.Images {
 		// Detect mime type by extension
-		mimeType := "image/png"
-		lower := strings.ToLower(filepath.Ext(img.Fname))
-		if lower == ".jpg" || lower == ".jpeg" {
-			mimeType = "image/jpeg"
+		mimeType, err := MimeFromFname(img.Fname)
+		if err != nil {
+			return fmt.Errorf("determine mime type for %s: %w", img.Fname, err)
 		}
 		width, height, err := getImgWidthHeighPx(img.Content, mimeType)
 		if err != nil {
 			return fmt.Errorf("get image dims for %s: %w", img.Fname, err)
 		}
 		newUuid := uuid.New().String()
-		s3Key := fmt.Sprintf("task/%s/md-images/%s%s", t.ShortID, newUuid, filepath.Ext(img.Fname))
+		ext, err := MimeToFileExt(mimeType)
+		if err != nil {
+			return fmt.Errorf("get file ext for %s: %w", img.Fname, err)
+		}
+		s3Key := fmt.Sprintf("task/%s/md-images/%s%s", t.ShortID, newUuid, ext)
 		if _, err := ts.s3PublicBucket.Upload(img.Content, s3Key, mimeType); err != nil {
 			return fmt.Errorf("upload statement image %d: %w", i+1, err)
 		}
@@ -950,16 +935,19 @@ func (ts *TaskSrvc) uploadTaskAssets(ctx context.Context, t taskfs.Task, res *Ta
 	illustrImgs := t.Archive.GetIllustrImgs()
 	if len(illustrImgs) > 0 {
 		ill := illustrImgs[0]
-		illMime := "image/png"
-		ext := strings.ToLower(filepath.Ext(ill.Fname))
-		if ext == ".jpg" || ext == ".jpeg" {
-			illMime = "image/jpeg"
+		illMime, err := MimeFromFname(ill.Fname)
+		if err != nil {
+			return fmt.Errorf("determine mime type for %s: %w", ill.Fname, err)
 		}
 		width, height, err := getImgWidthHeighPx(ill.Content, illMime)
 		if err != nil {
 			return fmt.Errorf("get illustr dims: %w", err)
 		}
-		shaHex := ts.Sha2Hex(ill.Content)
+		shaHex := Sha2Hex(ill.Content)
+		ext, err := MimeToFileExt(illMime)
+		if err != nil {
+			return fmt.Errorf("get file ext for %s: %w", ill.Fname, err)
+		}
 		s3Key := fmt.Sprintf("%s/%s%s", "task-illustrations", shaHex, ext)
 		if _, err := ts.s3PublicBucket.Upload(ill.Content, s3Key, illMime); err != nil {
 			return fmt.Errorf("upload illustration: %w", err)
@@ -987,8 +975,49 @@ func (ts *TaskSrvc) uploadTaskAssets(ctx context.Context, t taskfs.Task, res *Ta
 		if err := ts.UploadTestFile(ctx, ansBytes); err != nil {
 			return fmt.Errorf("upload test answer %d: %w", i+1, err)
 		}
-		res.Tests[i] = Test{InpSha2: ts.Sha2Hex(inpBytes), AnsSha2: ts.Sha2Hex(ansBytes)}
+		res.Tests[i] = Test{InpSha2: Sha2Hex(inpBytes), AnsSha2: Sha2Hex(ansBytes)}
 	}
 
 	return nil
+}
+
+func (ts *TaskSrvc) DownloadTestFile(ctx context.Context, testFileSha256 string) ([]byte, error) {
+	logger := ts.logger(ctx)
+
+	// Try cache first
+	if content, found := ts.testCache.getFromCache(testFileSha256); found {
+		logger.Debug("test file cache hit (direct)", "sha256", testFileSha256)
+		return content, nil
+	}
+
+	// Use singleflight to prevent thundering herd for the same key
+	v, err, _ := ts.dlGroup.Do(testFileSha256, func() (any, error) {
+		// Re-check cache inside the singleflight window
+		if content, found := ts.testCache.getFromCache(testFileSha256); found {
+			return content, nil
+		}
+
+		// Download compressed from S3 by key <sha>.zst
+		s3Key := fmt.Sprintf("%s.zst", testFileSha256)
+		compressed, err := ts.s3TestfileBucket.Download(s3Key)
+		if err != nil {
+			logger.Error("failed to download test file from S3", "sha256", testFileSha256, "s3_key", s3Key, "error", err)
+			return nil, NewErrorInternalServerError()
+		}
+
+		// Decompress
+		content, err := DecompressWithZstd(compressed)
+		if err != nil {
+			logger.Error("failed to decompress test file", "sha256", testFileSha256, "error", err)
+			return nil, NewErrorInternalServerError()
+		}
+
+		// Store in cache
+		ts.testCache.storeInCache(testFileSha256, content, logger)
+		return content, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return v.([]byte), nil
 }

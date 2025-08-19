@@ -1,31 +1,34 @@
 with-expecter: true
 issue-845-fix: True
+resolve-type-alias: False
+disable-version-string: True
 packages:
   github.com/programme-lv/backend/common/s3bucket:
     config:
       all: true
       filename: "mock_{{.InterfaceName}}.go"
-      dir: "mocks/s3bucket"
+      dir: "gen/mocks/s3bucket"
       mockname: "Mock{{.InterfaceName}}"
       outpkg: "{{.PackageName}}"
   github.com/programme-lv/backend/user:
     config:
       all: true
       filename: "mock_{{.InterfaceName}}.go"
-      dir: "mocks/mockuser"
+      dir: "gen/mocks/mockuser"
       mockname: "Mock{{.InterfaceName}}"
       outpkg: "mockuser"
   github.com/programme-lv/backend/task/srvc:
+    template: "testify"
     config:
       all: true
       filename: "mock_{{.InterfaceName}}.go"
-      dir: "mocks/mocktasksrvc"
+      dir: "gen/mocks/mocktasksrvc"
       mockname: "Mock{{.InterfaceName}}"
       outpkg: "mocktasksrvc"
   github.com/programme-lv/backend/subm/submsrvc/submadapter:
     config:
       all: true
       filename: "mock_{{.InterfaceName}}.go"
-      dir: "mocks/submadapter"
+      dir: "gen/mocks/submadapter"
       mockname: "Mock{{.InterfaceName}}"
       outpkg: "{{.PackageName}}"
