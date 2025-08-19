@@ -24,6 +24,7 @@ type TaskSrvcClient interface {
 	GetTaskFullNames(ctx context.Context, shortIds []string) ([]string, error)
 	ListTasks(ctx context.Context) ([]Task, error)
 	CreateTask(ctx context.Context, task Task) error
+	DeleteTask(ctx context.Context, shortId string) error
 	ResolveNames(ctx context.Context, shortIds []string) ([]string, error)
 	SearchTasksByName(ctx context.Context, name string) ([]string, error)
 	UpdateStatementMd(ctx context.Context, taskId string, statement MarkdownStatement) error
@@ -53,6 +54,7 @@ type TaskPgRepo interface {
 	ResolveNames(ctx context.Context, shortIds []string) ([]string, error)
 	Exists(ctx context.Context, shortId string) (bool, error)
 	CreateTask(ctx context.Context, task Task) error
+	DeleteTask(ctx context.Context, shortId string) error
 	UpdateStatement(ctx context.Context, taskId string, statement MarkdownStatement) error
 	AddStatementImg(ctx context.Context, taskId string, img StatementImage) error
 	DeleteStatementImg(ctx context.Context, taskId string, filename string) error

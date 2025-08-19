@@ -69,6 +69,19 @@ func (ts *TaskSrvc) CreateTask(ctx context.Context, task Task) error {
 	return nil
 }
 
+// DeleteTask deletes a task and all its related data.
+// Note: This only deletes data from the database. S3 cleanup should be handled separately.
+func (ts *TaskSrvc) DeleteTask(ctx context.Context, shortId string) error {
+	l := ts.logger(ctx)
+	err := ts.repo.DeleteTask(ctx, shortId)
+	if err != nil {
+		l.Error("failed to delete task", "task_id", shortId, "error", err)
+		return NewErrorInternalServerError()
+	}
+	l.Info("task deleted successfully", "task_id", shortId)
+	return nil
+}
+
 // S3 bucket: "proglv-public" (as of 2024-09-29)
 // S3 key format: "task-pdf-statements/<sha2>.pdf"
 func (ts *TaskSrvc) UploadStatementPdf(ctx context.Context, body []byte) (string, error) {
