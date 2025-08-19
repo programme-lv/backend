@@ -31,6 +31,8 @@ type TaskSrvcClient interface {
 	GetPublicUrlForStatementImage(ctx context.Context, statementImageS3Key string) (string, error)
 	ExportTaskAsZip(ctx context.Context, taskId string) ([]byte, error)
 	GetCacheStats() (totalSizeMB int64, fileCount int, err error)
+	ImportTaskFromZip(ctx context.Context, zipBytes []byte) (string, error)
+	ImportTaskFromZipWithId(ctx context.Context, zipBytes []byte, overrideId string) (string, error)
 }
 
 type S3BucketFacade interface {

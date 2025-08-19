@@ -69,3 +69,12 @@ func NewErrorInternalServerError() *srvcerror.Error {
 		"iekšēja servera kļūda",
 	).SetHttpStatusCode(http.StatusInternalServerError)
 }
+
+const ErrCodeTaskAlreadyExists = "task_already_exists"
+
+func NewErrorTaskAlreadyExists(taskId string) *srvcerror.Error {
+	return srvcerror.New(
+		ErrCodeTaskAlreadyExists,
+		fmt.Sprintf("uzdevums ar ID '%s' jau eksistē", taskId),
+	).SetHttpStatusCode(http.StatusConflict)
+}
