@@ -102,5 +102,8 @@ func (ts *TaskSrvc) ResolveNames(ctx context.Context, shortIds []string) ([]stri
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve names: %w", err)
 	}
+	if len(names) != len(shortIds) {
+		return nil, fmt.Errorf("expected %d names, got %d", len(shortIds), len(names))
+	}
 	return names, nil
 }
