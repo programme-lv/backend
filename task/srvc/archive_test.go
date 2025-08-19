@@ -23,6 +23,9 @@ import (
 
 // Test archive stays the same after being imported and exported
 func TestImportExportTask(t *testing.T) {
+	// TODO: this is still a work in progress
+	// the test as of now does not pass because
+	// we cant save all archive fields to db tables
 	ctx := context.Background()
 	mockRepo := mocktasksrvc.NewMockTaskPgRepo(t)
 	mockCdnS3 := mocktasksrvc.NewMockS3BucketFacade(t)
