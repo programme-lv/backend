@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"github.com/patrickmn/go-cache"
 	"github.com/programme-lv/backend/common/ctxlog"
 	"github.com/programme-lv/backend/task/srvc"
@@ -41,7 +42,11 @@ func (h *taskHttpHandler) RegisterRoutes(r *chi.Mux, jwtKey []byte) {
 		r.Group(func(r chi.Router) {
 			r.Use(auth.HttpJwtAllowOnlyAdmins)
 
-			r.Get("/tasks/{taskId}/export", h.ExportTask)
+			r.Group(func(r chi.Router) {
+				r.Use(middleware.ThrottleBacklog(1, 2, 30*time.Second))
+				r.Get("/tasks/{taskId}/export", h.ExportTask)
+				r.Post("/tasks/upload", h.UploadTask)
+			})
 
 			// statement
 			r.Patch("/tasks/{taskId}/statements/{langIso639}", h.PutStatement)

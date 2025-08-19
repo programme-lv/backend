@@ -14,12 +14,39 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/klauspost/compress/zstd"
 	"github.com/programme-lv/taskzip/common/etrace"
+	"github.com/programme-lv/taskzip/common/zips"
 	"github.com/programme-lv/taskzip/taskfs"
 )
+
+// createProgLVTempDir creates a temporary directory under /tmp/proglv/
+func createProgLVTempDir(pattern string) (string, error) {
+	baseDir := "/tmp/proglv"
+	if err := os.MkdirAll(baseDir, 0755); err != nil {
+		return "", fmt.Errorf("failed to create base temp dir: %w", err)
+	}
+	return os.MkdirTemp(baseDir, pattern)
+}
+
+// validateTaskId validates task ID format (same rules as taskfs.Task.Validate)
+func validateTaskId(id string) error {
+	if len(id) == 0 {
+		return fmt.Errorf("task ID cannot be empty")
+	}
+	if len(id) > 20 {
+		return fmt.Errorf("task ID too long, max 20 chars")
+	}
+	for _, r := range id {
+		if !((r >= 'a' && r <= 'z') || (r >= '0' && r <= '9')) {
+			return fmt.Errorf("task ID must contain only lowercase letters and digits")
+		}
+	}
+	return nil
+}
 
 func (ts *TaskSrvc) UpdateStatementMd(ctx context.Context, taskId string, statement MarkdownStatement) error {
 	err := ts.repo.UpdateStatement(ctx, taskId, statement)
@@ -648,7 +675,7 @@ func (ts *TaskSrvc) mapToArchiveFormat(ctx context.Context, t Task, logger *slog
 // createTaskZipBytes creates a ZIP archive for a task and returns the bytes
 func (ts *TaskSrvc) createTaskZipBytes(task taskfs.Task) ([]byte, error) {
 	// Create temporary directory
-	tempDir, err := os.MkdirTemp("", "proglv-task-export-")
+	tempDir, err := createProgLVTempDir("task-export-")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create temp dir: %w", err)
 	}
@@ -679,4 +706,276 @@ func (ts *TaskSrvc) GetCacheStats() (totalSizeMB int64, fileCount int, err error
 		return 0, 0, err
 	}
 	return totalSize / (1024 * 1024), count, nil
+}
+
+// ImportTaskFromZip imports a task from a taskfs ZIP archive using the original task ID from the ZIP.
+func (ts *TaskSrvc) ImportTaskFromZip(ctx context.Context, zipBytes []byte) (string, error) {
+	return ts.ImportTaskFromZipWithId(ctx, zipBytes, "")
+}
+
+// ImportTaskFromZipWithId imports a task from a taskfs ZIP archive with optional ID override.
+// If overrideId is empty, uses the original task ID from the ZIP.
+// If overrideId is provided, validates and uses it instead of the original ID.
+func (ts *TaskSrvc) ImportTaskFromZipWithId(ctx context.Context, zipBytes []byte, overrideId string) (string, error) {
+	l := ts.logger(ctx)
+	l.Info("starting task import")
+
+	// Create temp working dir
+	tempDir, err := createProgLVTempDir("task-import-")
+	if err != nil {
+		l.Error("failed to create temp dir", "error", err)
+		return "", NewErrorInternalServerError()
+	}
+	defer os.RemoveAll(tempDir)
+
+	zipPath := filepath.Join(tempDir, "task.zip")
+	if err := os.WriteFile(zipPath, zipBytes, 0600); err != nil {
+		l.Error("failed to write zip file", "error", err)
+		return "", NewErrorInternalServerError()
+	}
+
+	// Unzip to a subdir
+	unzipDir := filepath.Join(tempDir, "unzipped")
+	if err := os.MkdirAll(unzipDir, 0755); err != nil {
+		l.Error("failed to create unzip dir", "error", err)
+		return "", NewErrorInternalServerError()
+	}
+	if err := zips.Unzip(zipPath, unzipDir); err != nil {
+		l.Error("failed to unzip archive", "error", err)
+		return "", NewErrorInternalServerError()
+	}
+
+	// Many zips contain a single top-level folder. If so, dive into it.
+	rootDir := unzipDir
+	entries, err := os.ReadDir(unzipDir)
+	if err == nil && len(entries) == 1 && entries[0].IsDir() {
+		rootDir = filepath.Join(unzipDir, entries[0].Name())
+	}
+
+	archTask, err := taskfs.Read(rootDir)
+	if err != nil && etrace.IsCritical(err) {
+		l.Error("failed to parse taskfs directory", "error", err)
+		return "", NewErrorInternalServerError()
+	}
+
+	// Map task structure first (without heavy uploads)
+	serviceTask, err := ts.mapTaskStructureFromArchive(ctx, archTask, overrideId, l)
+	if err != nil {
+		l.Error("failed to map task structure", "error", err)
+		return "", NewErrorInternalServerError()
+	}
+
+	// Check if task already exists before doing heavy uploads
+	exists, err := ts.repo.Exists(ctx, serviceTask.ShortId)
+	if err != nil {
+		l.Error("failed to check task existence", "error", err)
+		return "", NewErrorInternalServerError()
+	}
+	if exists {
+		return "", NewErrorTaskAlreadyExists(serviceTask.ShortId)
+	}
+
+	// Now do the heavy uploads (images, PDFs, test files)
+	err = ts.uploadTaskAssets(ctx, archTask, &serviceTask, l)
+	if err != nil {
+		l.Error("failed to upload task assets", "error", err)
+		return "", NewErrorInternalServerError()
+	}
+
+	// Persist in DB
+	if err := ts.repo.CreateTask(ctx, serviceTask); err != nil {
+		l.Error("failed to create task in db", "error", err)
+		return "", NewErrorInternalServerError()
+	}
+
+	l.Info("task import completed successfully", "task_id", serviceTask.ShortId)
+	return serviceTask.ShortId, nil
+}
+
+// mapTaskStructureFromArchive maps the basic task structure without uploading heavy assets
+func (ts *TaskSrvc) mapTaskStructureFromArchive(ctx context.Context, t taskfs.Task, overrideId string, logger *slog.Logger) (Task, error) {
+	res := Task{}
+	// Use override ID if provided, otherwise use original from ZIP
+	if overrideId != "" {
+		// Validate override ID format (same rules as taskfs)
+		if err := validateTaskId(overrideId); err != nil {
+			return Task{}, fmt.Errorf("invalid override ID '%s': %w", overrideId, err)
+		}
+		res.ShortId = overrideId
+		logger.Info("using override task ID", "original_id", t.ShortID, "override_id", overrideId)
+	} else {
+		res.ShortId = t.ShortID
+	}
+	// ensure illustration struct is non-nil for DB insert
+	res.IllustrImg = &IllustrationImage{}
+
+	// Choose best full name (prefer lv, then en, then any)
+	if name, ok := t.FullName["lv"]; ok && name != "" {
+		res.FullName = name
+	} else if name, ok := t.FullName["en"]; ok && name != "" {
+		res.FullName = name
+	} else {
+		for _, name := range t.FullName {
+			res.FullName = name
+			break
+		}
+	}
+
+	// Constraints
+	res.MemLimMegabytes = t.Testing.MemLimMiB
+	res.CpuTimeLimSecs = float64(t.Testing.CpuLimMs) / 1000.0
+
+	// Origin and metadata
+	res.DifficultyRating = t.Metadata.Difficulty
+	res.OriginOlympiad = t.Origin.Olympiad
+	for lang, note := range t.Origin.Notes {
+		res.OriginNotes = append(res.OriginNotes, OriginNote{Lang: lang, Info: note})
+	}
+
+	// Statements (MD)
+	for lang, story := range t.Statement.Stories {
+		res.MdStatements = append(res.MdStatements, MarkdownStatement{
+			LangIso639: lang,
+			Story:      story.Story,
+			Input:      story.Input,
+			Output:     story.Output,
+			Notes:      story.Notes,
+			Scoring:    story.Scoring,
+			Talk:       story.Talk,
+			Example:    story.Example,
+		})
+	}
+
+	// Examples
+	for _, ex := range t.Statement.Examples {
+		mdNote := ""
+		if note, ok := ex.MdNote["lv"]; ok {
+			mdNote = note
+		} else if note, ok := ex.MdNote["en"]; ok {
+			mdNote = note
+		} else {
+			for _, note := range ex.MdNote {
+				mdNote = note
+				break
+			}
+		}
+		res.Examples = append(res.Examples, Example{Input: ex.Input, Output: ex.Output, MdNote: mdNote})
+	}
+
+	// Heavy uploads will be done separately
+
+	// Checker/Interactor
+	if t.Testing.TestingT == "checker" {
+		res.Checker = t.Testing.Checker
+	}
+	if t.Testing.TestingT == "interactor" {
+		res.Interactor = t.Testing.Interactor
+	}
+
+	// Scoring groups
+	for _, group := range t.Scoring.Groups {
+		testIDs := make([]int, 0, group.Range[1]-group.Range[0]+1)
+		for id := group.Range[0]; id <= group.Range[1]; id++ {
+			testIDs = append(testIDs, id)
+		}
+		res.TestGroups = append(res.TestGroups, TestGroup{Points: group.Points, Public: group.Public, TestIDs: testIDs})
+	}
+
+	// Subtasks and descriptions; derive test links from scoring groups where possible
+	res.Subtasks = make([]Subtask, len(t.Statement.Subtasks))
+	for i, st := range t.Statement.Subtasks {
+		res.Subtasks[i] = Subtask{Score: st.Points, Descriptions: map[string]string{}}
+		for lang, desc := range st.Desc {
+			if res.Subtasks[i].Descriptions == nil {
+				res.Subtasks[i].Descriptions = make(map[string]string)
+			}
+			res.Subtasks[i].Descriptions[lang] = desc
+		}
+	}
+	// Build subtask->tests mapping from scoring groups
+	for _, group := range t.Scoring.Groups {
+		if group.Subtask < 1 || group.Subtask > len(res.Subtasks) {
+			continue
+		}
+		for id := group.Range[0]; id <= group.Range[1]; id++ {
+			res.Subtasks[group.Subtask-1].TestIDs = append(res.Subtasks[group.Subtask-1].TestIDs, id)
+		}
+	}
+
+	return res, nil
+}
+
+// uploadTaskAssets handles heavy uploads (images, PDFs, test files) for task import
+func (ts *TaskSrvc) uploadTaskAssets(ctx context.Context, t taskfs.Task, res *Task, logger *slog.Logger) error {
+	// Upload statement images to S3 and record metadata
+	for i, img := range t.Statement.Images {
+		// Detect mime type by extension
+		mimeType := "image/png"
+		lower := strings.ToLower(filepath.Ext(img.Fname))
+		if lower == ".jpg" || lower == ".jpeg" {
+			mimeType = "image/jpeg"
+		}
+		width, height, err := getImgWidthHeighPx(img.Content, mimeType)
+		if err != nil {
+			return fmt.Errorf("get image dims for %s: %w", img.Fname, err)
+		}
+		newUuid := uuid.New().String()
+		s3Key := fmt.Sprintf("task/%s/md-images/%s%s", t.ShortID, newUuid, filepath.Ext(img.Fname))
+		if _, err := ts.s3PublicBucket.Upload(img.Content, s3Key, mimeType); err != nil {
+			return fmt.Errorf("upload statement image %d: %w", i+1, err)
+		}
+		res.MdImages = append(res.MdImages, StatementImage{
+			S3Key:     s3Key,
+			Filename:  img.Fname,
+			WidthPx:   width,
+			HeightPx:  height,
+			SzInBytes: len(img.Content),
+		})
+	}
+
+	// Illustration image (optional) from reserved archive
+	illustrImgs := t.Archive.GetIllustrImgs()
+	if len(illustrImgs) > 0 {
+		ill := illustrImgs[0]
+		illMime := "image/png"
+		ext := strings.ToLower(filepath.Ext(ill.Fname))
+		if ext == ".jpg" || ext == ".jpeg" {
+			illMime = "image/jpeg"
+		}
+		width, height, err := getImgWidthHeighPx(ill.Content, illMime)
+		if err != nil {
+			return fmt.Errorf("get illustr dims: %w", err)
+		}
+		shaHex := ts.Sha2Hex(ill.Content)
+		s3Key := fmt.Sprintf("%s/%s%s", "task-illustrations", shaHex, ext)
+		if _, err := ts.s3PublicBucket.Upload(ill.Content, s3Key, illMime); err != nil {
+			return fmt.Errorf("upload illustration: %w", err)
+		}
+		res.IllustrImg = &IllustrationImage{S3Key: s3Key, WidthPx: width, HeightPx: height, SzInBytes: len(ill.Content)}
+	}
+
+	// Original PDFs (optional)
+	for _, pdf := range t.Archive.GetOgStatementPdfs() {
+		url, err := ts.UploadStatementPdf(ctx, pdf.Content)
+		if err != nil {
+			return fmt.Errorf("upload pdf: %w", err)
+		}
+		res.PdfStatements = append(res.PdfStatements, PdfStatement{LangIso639: pdf.Language, ObjectUrl: url})
+	}
+
+	// Tests: upload to testfile bucket and record sha256
+	res.Tests = make([]Test, len(t.Testing.Tests))
+	for i, test := range t.Testing.Tests {
+		inpBytes := []byte(test.Input)
+		ansBytes := []byte(test.Answer)
+		if err := ts.UploadTestFile(ctx, inpBytes); err != nil {
+			return fmt.Errorf("upload test input %d: %w", i+1, err)
+		}
+		if err := ts.UploadTestFile(ctx, ansBytes); err != nil {
+			return fmt.Errorf("upload test answer %d: %w", i+1, err)
+		}
+		res.Tests[i] = Test{InpSha2: ts.Sha2Hex(inpBytes), AnsSha2: ts.Sha2Hex(ansBytes)}
+	}
+
+	return nil
 }
