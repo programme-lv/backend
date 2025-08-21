@@ -8,6 +8,10 @@ import (
 	"github.com/programme-lv/backend/common/httpjson"
 )
 
+type UploadTaskResponse struct {
+	TaskId string `json:"task_id"`
+}
+
 // UploadTask handles task upload via multipart/form-data with field name "task_zip".
 // It calls the service to import the taskfs ZIP, and returns the created task id.
 // Optional query parameter ?override_id=<new_id> can be used to override the task's short ID.
@@ -41,5 +45,5 @@ func (h *taskHttpHandler) UploadTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_ = httpjson.Success(w, map[string]any{"taskId": createdId})
+	_ = httpjson.Success(w, UploadTaskResponse{TaskId: createdId})
 }
