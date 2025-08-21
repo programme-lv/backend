@@ -82,11 +82,26 @@ func (s *submSrvc) GetMaxScorePerTask(ctx context.Context, userUUID uuid.UUID) (
 		slog.Error("too many submissions", "user_uuid", userUUID)
 	}
 
+	taskExistsCache := make(map[string]bool)
+
 	// Filter submissions by user and collect evaluations
 	userSubmsWithEval := make([]domain.SubmJoinEval, 0)
 	for _, subm := range subms {
 		if subm.AuthorUUID != userUUID {
 			continue
+		}
+
+		// Skip tasks that don't exist anymore
+		if _, ok := taskExistsCache[subm.TaskShortID]; !ok {
+			_, err := s.taskSrvc.GetTaskFullNames(ctx, []string{subm.TaskShortID})
+			if srvcerror.Is(err, tasksrvc.ErrSomeTaskNotFound) {
+				taskExistsCache[subm.TaskShortID] = false
+				continue
+			}
+			if err != nil {
+				return nil, fmt.Errorf("could not resolve task full name: %w", err)
+			}
+			taskExistsCache[subm.TaskShortID] = true
 		}
 
 		// Skip submissions without evaluations
@@ -251,7 +266,7 @@ func (s *submSrvc) ViewSubm(ctx context.Context, submUuid uuid.UUID) (domain.Sub
 
 	userHasSolvedTheTask := false
 	userUUID, err := auth.GetUserUuidFromCtx(ctx)
-	if err == nil {
+	if err == nil && userUUID != subm.AuthorUUID {
 		userMaxScores, err := s.GetMaxScorePerTask(ctx, userUUID)
 		if err != nil {
 			log.Error("failed to get user scores", "error", err)
@@ -263,7 +278,7 @@ func (s *submSrvc) ViewSubm(ctx context.Context, submUuid uuid.UUID) (domain.Sub
 		}
 	}
 
-	if !userHasSolvedTheTask {
+	if !userHasSolvedTheTask && subm.AuthorUUID != userUUID {
 		subm.Content = ""
 	}
 

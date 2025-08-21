@@ -66,6 +66,9 @@ func (ts *TaskSrvc) GetTaskFullNames(ctx context.Context, shortIDs []string) ([]
 	if err != nil {
 		return nil, err
 	}
+	if len(fullNames) != len(shortIDs) {
+		return nil, NewErrorSomeTaskNotFound()
+	}
 	return fullNames, nil
 }
 

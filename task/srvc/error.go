@@ -16,6 +16,15 @@ func NewErrorTaskNotFound(taskId string) *srvcerror.Error {
 	)
 }
 
+const ErrSomeTaskNotFound = "some_task_not_found"
+
+func NewErrorSomeTaskNotFound() *srvcerror.Error {
+	return srvcerror.New(
+		ErrSomeTaskNotFound,
+		"daži uzdevumi netika atrasti",
+	)
+}
+
 const ErrCodeImageAlreadyExists = "image_already_exists"
 
 func NewErrorImageAlreadyExists(filename string) *srvcerror.Error {
