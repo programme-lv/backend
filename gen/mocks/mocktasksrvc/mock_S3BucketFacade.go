@@ -113,6 +113,64 @@ func (_c *MockS3BucketFacade_Delete_Call) RunAndReturn(run func(string) error) *
 	return _c
 }
 
+// Download provides a mock function with given fields: key
+func (_m *MockS3BucketFacade) Download(key string) ([]byte, error) {
+	ret := _m.Called(key)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Download")
+	}
+
+	var r0 []byte
+	var r1 error
+	if rf, ok := ret.Get(0).(func(string) ([]byte, error)); ok {
+		return rf(key)
+	}
+	if rf, ok := ret.Get(0).(func(string) []byte); ok {
+		r0 = rf(key)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]byte)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(string) error); ok {
+		r1 = rf(key)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockS3BucketFacade_Download_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Download'
+type MockS3BucketFacade_Download_Call struct {
+	*mock.Call
+}
+
+// Download is a helper method to define mock.On call
+//   - key string
+func (_e *MockS3BucketFacade_Expecter) Download(key interface{}) *MockS3BucketFacade_Download_Call {
+	return &MockS3BucketFacade_Download_Call{Call: _e.mock.On("Download", key)}
+}
+
+func (_c *MockS3BucketFacade_Download_Call) Run(run func(key string)) *MockS3BucketFacade_Download_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(string))
+	})
+	return _c
+}
+
+func (_c *MockS3BucketFacade_Download_Call) Return(_a0 []byte, _a1 error) *MockS3BucketFacade_Download_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockS3BucketFacade_Download_Call) RunAndReturn(run func(string) ([]byte, error)) *MockS3BucketFacade_Download_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // Exists provides a mock function with given fields: key
 func (_m *MockS3BucketFacade) Exists(key string) (bool, error) {
 	ret := _m.Called(key)
@@ -338,54 +396,6 @@ func (_c *MockS3BucketFacade_Upload_Call) Return(_a0 string, _a1 error) *MockS3B
 }
 
 func (_c *MockS3BucketFacade_Upload_Call) RunAndReturn(run func([]byte, string, string) (string, error)) *MockS3BucketFacade_Upload_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// Download provides a mock function with given fields: key
-func (_m *MockS3BucketFacade) Download(key string) ([]byte, error) {
-	ret := _m.Called(key)
-
-	if len(ret) == 0 {
-		panic("no return value specified for Download")
-	}
-
-	var r0 []byte
-	var r1 error
-	if rf, ok := ret.Get(0).(func(string) ([]byte, error)); ok {
-		return rf(key)
-	}
-	if rf, ok := ret.Get(0).(func(string) []byte); ok {
-		r0 = rf(key)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]byte)
-		}
-	}
-
-	if rf, ok := ret.Get(1).(func(string) error); ok {
-		r1 = rf(key)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-type MockS3BucketFacade_Download_Call struct{ *mock.Call }
-
-func (_e *MockS3BucketFacade_Expecter) Download(key interface{}) *MockS3BucketFacade_Download_Call {
-	return &MockS3BucketFacade_Download_Call{Call: _e.mock.On("Download", key)}
-}
-func (_c *MockS3BucketFacade_Download_Call) Run(run func(key string)) *MockS3BucketFacade_Download_Call {
-	_c.Call.Run(func(args mock.Arguments) { run(args[0].(string)) })
-	return _c
-}
-func (_c *MockS3BucketFacade_Download_Call) Return(_a0 []byte, _a1 error) *MockS3BucketFacade_Download_Call {
-	_c.Call.Return(_a0, _a1)
-	return _c
-}
-func (_c *MockS3BucketFacade_Download_Call) RunAndReturn(run func(string) ([]byte, error)) *MockS3BucketFacade_Download_Call {
 	_c.Call.Return(run)
 	return _c
 }

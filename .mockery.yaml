@@ -25,10 +25,10 @@ packages:
       dir: "gen/mocks/mocktasksrvc"
       mockname: "Mock{{.InterfaceName}}"
       outpkg: "mocktasksrvc"
-  github.com/programme-lv/backend/subm/submsrvc/submadapter:
+  github.com/programme-lv/backend/subm/submsrvc:
     config:
       all: true
       filename: "mock_{{.InterfaceName}}.go"
-      dir: "gen/mocks/submadapter"
+      dir: "gen/mocks/mocksubmsrvc"
       mockname: "Mock{{.InterfaceName}}"
-      outpkg: "{{.PackageName}}"
+      outpkg: "mocksubmsrvc"
