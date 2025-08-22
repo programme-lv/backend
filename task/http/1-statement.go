@@ -1,12 +1,11 @@
 package http
 
 import (
-	"encoding/json"
+	"context"
 	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
-	"net/url"
 	"path/filepath"
 	"regexp"
 	"slices"
@@ -27,24 +26,14 @@ type PutStatementRequest struct {
 	Example string `json:"example"`
 }
 
-func (h *taskHttpHandler) PutStatement(w http.ResponseWriter, r *http.Request) {
-	taskId := chi.URLParam(r, "taskId")
-	langIso639 := chi.URLParam(r, "langIso639")
+func (h *taskHttpHandler) PutStatement(ctx context.Context,
+	req PutStatementRequest, params map[string]string,
+) (response struct{}, err error) {
+	taskId := params["taskId"]
+	lang := params["langIso639"]
 
-	if langIso639 != "lv" {
-		http.Error(w, "only lv is supported", http.StatusBadRequest)
-		return
-	}
-
-	var req PutStatementRequest
-	err := json.NewDecoder(r.Body).Decode(&req)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	err = h.taskSrvc.UpdateStatementMd(r.Context(), taskId, srvc.MarkdownStatement{
-		LangIso639: langIso639,
+	err = h.taskSrvc.UpdateStatementMd(ctx, taskId, srvc.MarkdownStatement{
+		LangIso639: lang,
 		Story:      req.Story,
 		Input:      req.Input,
 		Output:     req.Output,
@@ -53,42 +42,23 @@ func (h *taskHttpHandler) PutStatement(w http.ResponseWriter, r *http.Request) {
 		Talk:       req.Talk,
 		Example:    req.Example,
 	})
-	if err != nil {
-		httpjson.HandleSrvcError(slog.Default(), w, err)
-		return
-	}
-
-	err = httpjson.Success(w, nil)
-	if err != nil {
-		slog.Error("failed to write success json", "error", err)
-	}
+	return
 }
 
-func (h *taskHttpHandler) DeleteStatementImage(w http.ResponseWriter, r *http.Request) {
-	taskId := chi.URLParam(r, "taskId")
-	filename := chi.URLParam(r, "filename")
+func (h *taskHttpHandler) DeleteStatementImage(ctx context.Context,
+	req struct{}, params map[string]string,
+) (response struct{}, err error) {
+	taskId := params["taskId"]
+	filename := params["filename"]
 
-	// URL decode the filename parameter as it may contain special characters
-	decodedFilename, err := url.QueryUnescape(filename)
+	err = h.taskSrvc.DeleteStatementImage(ctx, taskId, filename)
 	if err != nil {
-		errMsg := fmt.Sprintf("failed to decode filename: %v", err)
-		errCode := "invalid_filename"
-		httpjson.Error(w, errMsg, http.StatusBadRequest, errCode)
-		return
-	}
-
-	err = h.taskSrvc.DeleteStatementImage(r.Context(), taskId, decodedFilename)
-	if err != nil {
-		httpjson.HandleSrvcError(slog.Default(), w, err)
 		return
 	}
 
 	h.cache.Delete(taskGetCacheKey(taskId))
 
-	err = httpjson.Success(w, map[string]string{"status": "ok"})
-	if err != nil {
-		slog.Error("failed to write success json", "error", err)
-	}
+	return
 }
 
 func (h *taskHttpHandler) UploadStatementImage(w http.ResponseWriter, r *http.Request) {
@@ -166,7 +136,7 @@ func (h *taskHttpHandler) UploadStatementImage(w http.ResponseWriter, r *http.Re
 
 	uri, err := h.taskSrvc.UploadStatementImage(r.Context(), taskId, uploadedFilename, imageMimeType, imageBytes)
 	if err != nil {
-		writeSrvcError(w, err)
+		writeHttpJsonError(w, err)
 		return
 	}
 

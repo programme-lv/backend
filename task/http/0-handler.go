@@ -2,7 +2,10 @@ package http
 
 import (
 	"context"
+	"encoding/json"
 	"log/slog"
+	"net/http"
+	"reflect"
 	"sync"
 	"time"
 
@@ -10,6 +13,8 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/patrickmn/go-cache"
 	"github.com/programme-lv/backend/common/ctxlog"
+	"github.com/programme-lv/backend/common/httpjson"
+	"github.com/programme-lv/backend/common/srvcerror"
 	"github.com/programme-lv/backend/task/srvc"
 	"github.com/programme-lv/backend/user/auth"
 	"golang.org/x/sync/singleflight"
@@ -52,9 +57,9 @@ func (h *taskHttpHandler) RegisterRoutes(r *chi.Mux, jwtKey []byte) {
 			r.Delete("/tasks/{taskId}", h.DeleteTask)
 
 			// statement
-			r.Patch("/tasks/{taskId}/statements/{langIso639}", h.PutStatement)
+			r.Patch("/tasks/{taskId}/statements/{langIso639}", HttpJsonHandlerFunc(h.PutStatement))
 			r.Post("/tasks/{taskId}/images", h.UploadStatementImage)
-			r.Delete("/tasks/{taskId}/images/{filename}", h.DeleteStatementImage)
+			r.Delete("/tasks/{taskId}/images/{filename}", HttpJsonHandlerFunc(h.DeleteStatementImage))
 
 			// illustration
 			r.Post("/tasks/{taskId}/illustration", h.UploadIllustrationImage)
@@ -65,4 +70,51 @@ func (h *taskHttpHandler) RegisterRoutes(r *chi.Mux, jwtKey []byte) {
 
 func (h *taskHttpHandler) logger(ctx context.Context) *slog.Logger {
 	return ctxlog.FromContext(ctx).With("module", "task", "layer", "http")
+}
+
+type JsonHandlerFuncImpl[Q any, R any] func(ctx context.Context, request Q, params map[string]string) (response R, err error)
+
+func HttpJsonHandlerFunc[Q any, R any](handler JsonHandlerFuncImpl[Q, R]) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		params := make(map[string]string)
+
+		rctx := chi.RouteContext(r.Context())
+		if rctx != nil {
+			for i, key := range rctx.URLParams.Keys {
+				params[key] = rctx.URLParams.Values[i]
+			}
+		}
+
+		var req Q
+		t := reflect.TypeOf(req)
+		if t.Size() > 0 {
+			if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+				httpjson.BadRequest(w, err.Error())
+				return
+			}
+		}
+
+		result, err := handler(ctx, req, params)
+
+		if err != nil {
+			writeHttpJsonError(w, err)
+			return
+		}
+
+		httpjson.Success(w, result)
+	}
+}
+
+func writeHttpJsonError(w http.ResponseWriter, err error) {
+	e, ok := err.(*srvcerror.Error)
+	if !ok {
+		httpjson.InternalError(w)
+		return
+	}
+
+	msg := e.Error()
+	status := httpStatus(*e)
+	code := e.ErrorCode()
+	httpjson.Error(w, msg, status, code)
 }
