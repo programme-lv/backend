@@ -211,6 +211,65 @@ func (_c *MockTaskSrvcClient_DeleteTask_Call) RunAndReturn(run func(context.Cont
 	return _c
 }
 
+// DownloadTestFile provides a mock function with given fields: ctx, testFileSha256
+func (_m *MockTaskSrvcClient) DownloadTestFile(ctx context.Context, testFileSha256 string) ([]byte, error) {
+	ret := _m.Called(ctx, testFileSha256)
+
+	if len(ret) == 0 {
+		panic("no return value specified for DownloadTestFile")
+	}
+
+	var r0 []byte
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string) ([]byte, error)); ok {
+		return rf(ctx, testFileSha256)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string) []byte); ok {
+		r0 = rf(ctx, testFileSha256)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]byte)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, testFileSha256)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockTaskSrvcClient_DownloadTestFile_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DownloadTestFile'
+type MockTaskSrvcClient_DownloadTestFile_Call struct {
+	*mock.Call
+}
+
+// DownloadTestFile is a helper method to define mock.On call
+//   - ctx context.Context
+//   - testFileSha256 string
+func (_e *MockTaskSrvcClient_Expecter) DownloadTestFile(ctx interface{}, testFileSha256 interface{}) *MockTaskSrvcClient_DownloadTestFile_Call {
+	return &MockTaskSrvcClient_DownloadTestFile_Call{Call: _e.mock.On("DownloadTestFile", ctx, testFileSha256)}
+}
+
+func (_c *MockTaskSrvcClient_DownloadTestFile_Call) Run(run func(ctx context.Context, testFileSha256 string)) *MockTaskSrvcClient_DownloadTestFile_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string))
+	})
+	return _c
+}
+
+func (_c *MockTaskSrvcClient_DownloadTestFile_Call) Return(_a0 []byte, _a1 error) *MockTaskSrvcClient_DownloadTestFile_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockTaskSrvcClient_DownloadTestFile_Call) RunAndReturn(run func(context.Context, string) ([]byte, error)) *MockTaskSrvcClient_DownloadTestFile_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // ExportTaskAsZip provides a mock function with given fields: ctx, taskId
 func (_m *MockTaskSrvcClient) ExportTaskAsZip(ctx context.Context, taskId string) ([]byte, error) {
 	ret := _m.Called(ctx, taskId)

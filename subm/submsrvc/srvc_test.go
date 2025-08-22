@@ -14,9 +14,9 @@ import (
 	"github.com/peterldowns/pgtestdb"
 	"github.com/peterldowns/pgtestdb/migrators/golangmigrator"
 	"github.com/programme-lv/backend/exec"
-	submadaptermock "github.com/programme-lv/backend/gen/mocks/submadapter"
-	mocktask "github.com/programme-lv/backend/mocks/mocktasksrvc"
-	mockuser "github.com/programme-lv/backend/mocks/user"
+	"github.com/programme-lv/backend/gen/mocks/mocksubmsrvc"
+	"github.com/programme-lv/backend/gen/mocks/mocktasksrvc"
+	mockuser "github.com/programme-lv/backend/gen/mocks/mockuser"
 	"github.com/programme-lv/backend/subm/domain"
 	"github.com/programme-lv/backend/subm/pgrepo"
 	"github.com/programme-lv/backend/subm/submsrvc"
@@ -32,8 +32,8 @@ var mockUserUuid = uuid.New()
 
 type testSetup struct {
 	userSrvc *mockuser.MockUserSrvcClient
-	taskSrvc *mocktask.MockTaskSrvcClient
-	execSrvc *submadaptermock.MockExecSrvcFacade
+	taskSrvc *mocktasksrvc.MockTaskSrvcClient
+	execSrvc *mocksubmsrvc.MockExecSrvcFacade
 	submRepo submsrvc.SubmRepo
 	evalRepo submsrvc.EvalRepo
 	srvc     submsrvc.SubmSrvcClient
@@ -49,8 +49,8 @@ func setupSubmSrvc(t *testing.T) *testSetup {
 
 	setup := &testSetup{
 		userSrvc: mockuser.NewMockUserSrvcClient(t),
-		taskSrvc: mocktask.NewMockTaskSrvcClient(t),
-		execSrvc: submadaptermock.NewMockExecSrvcFacade(t),
+		taskSrvc: mocktasksrvc.NewMockTaskSrvcClient(t),
+		execSrvc: mocksubmsrvc.NewMockExecSrvcFacade(t),
 		submRepo: submRepo,
 		evalRepo: evalRepo,
 	}
