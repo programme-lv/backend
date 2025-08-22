@@ -24,7 +24,7 @@ func (h *taskHttpHandler) DeleteTask(w http.ResponseWriter, r *http.Request) {
 	err := h.taskSrvc.DeleteTask(ctx, taskId)
 	if err != nil {
 		logger.Error("failed to delete task", "task_id", taskId, "error", err)
-		writeSrvcError(w, err)
+		writeHttpJsonError(w, err)
 		return
 	}
 
