@@ -621,11 +621,9 @@ func (ts *TaskSrvc) mapToArchiveFormat(ctx context.Context, t Task) (taskfs.Task
 	}
 
 	res := taskfs.Task{
-		ShortID: t.ShortId,
-		FullName: taskfs.I18N[string]{
-			"lv": t.FullName,
-		},
-		ReadMe: t.Readme,
+		ShortID:  t.ShortId,
+		FullName: t.FullName,
+		ReadMe:   t.Readme,
 		Statement: taskfs.Statement{
 			Stories:  stories,
 			Subtasks: subtasks,
@@ -803,18 +801,8 @@ func (ts *TaskSrvc) mapTaskStructureFromArchive(t taskfs.Task, overrideId string
 	}
 	// ensure illustration struct is non-nil for DB insert
 	res.IllustrImg = &IllustrationImage{}
-
-	// Choose best full name (prefer lv, then en, then any)
-	if name, ok := t.FullName["lv"]; ok && name != "" {
-		res.FullName = name
-	} else if name, ok := t.FullName["en"]; ok && name != "" {
-		res.FullName = name
-	} else {
-		for _, name := range t.FullName {
-			res.FullName = name
-			break
-		}
-	}
+	res.FullName = t.FullName
+	res.OrigLang = "lv"
 
 	// Readme
 	res.Readme = t.ReadMe

@@ -1,7 +1,7 @@
 {
   "ShortId": "aplusbirc",
   "Readme": "some markdown content",
-  "FullName": "A+B=C",
+  "FullName": {"lv": "A+B=C"},
   "IllustrImg": {
     "S3Key": "task-md-images/nekoks.png",
     "WidthPx": 101,

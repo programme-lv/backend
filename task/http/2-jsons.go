@@ -176,7 +176,7 @@ func (handler *taskHttpHandler) mapTaskResponse(task *srvc.Task) *Task {
 
 	response := &Task{
 		ShortTaskID:            task.ShortId,
-		TaskFullName:           task.FullName,
+		TaskFullName:           task.DefaultFullName(),
 		MemoryLimitMegabytes:   task.MemLimMegabytes,
 		CPUTimeLimitSeconds:    task.CpuTimeLimSecs,
 		OriginOlympiad:         task.OriginOlympiad,
@@ -215,7 +215,7 @@ func (handler *taskHttpHandler) mapTaskIllustrImg(illustrImg *srvc.IllustrationI
 func (handler *taskHttpHandler) mapTaskPreview(preview srvc.TaskPreview) TaskPreview {
 	return TaskPreview{
 		ShortId:          preview.ShortId,
-		FullName:         preview.FullName,
+		FullName:         preview.DefaultFullName(),
 		IllustrImg:       handler.mapTaskIllustrImg(preview.IllustrImg),
 		DifficultyRating: preview.DifficultyRating,
 		OriginOlympiad:   preview.OriginOlympiad,

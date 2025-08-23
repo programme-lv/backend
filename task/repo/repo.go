@@ -9,15 +9,29 @@ import (
 	"github.com/programme-lv/backend/task/srvc"
 )
 
+// mustMarshalMapToJSONB converts a map into JSON bytes suitable for a jsonb parameter.
+// It never returns nil; on error it returns an empty JSON object.
+func mustMarshalMapToJSONB(m map[string]string) []byte {
+	b, err := json.Marshal(m)
+	if err != nil {
+		return []byte("{}")
+	}
+	return b
+}
+
 type taskPgRepo struct {
 	pool *pgxpool.Pool
 }
 
 func (r *taskPgRepo) SearchTasksByName(ctx context.Context, name string) ([]string, error) {
 	rows, err := r.pool.Query(ctx, `
-		SELECT short_id 
-		FROM tasks 
-		WHERE LOWER(full_name) LIKE LOWER($1)
+		SELECT short_id
+		FROM tasks
+		WHERE EXISTS (
+			SELECT 1
+			FROM jsonb_each_text(full_name_dict) AS j(lang, fname)
+			WHERE LOWER(fname) LIKE LOWER($1)
+		)
 		ORDER BY short_id
 		LIMIT 100
 	`, "%"+name+"%")
@@ -46,7 +60,10 @@ func (r *taskPgRepo) SearchTasksByName(ctx context.Context, name string) ([]stri
 func (r *taskPgRepo) ListTaskPreviews(ctx context.Context, limit int, offset int) ([]srvc.TaskPreview, error) {
 	// Query tasks table for preview data
 	rows, err := r.pool.Query(ctx, `
-		SELECT t.short_id, t.full_name, t.illustr_img_s3_key, t.width_px, t.height_px, t.filesize_bytes, 
+		SELECT t.short_id,
+		       t.full_name_dict,
+		       t.orig_lang,
+		       t.illustr_img_s3_key, t.width_px, t.height_px, t.filesize_bytes, 
 		       t.origin_olympiad, t.difficulty_rating,
 		       COALESCE(
 			       (SELECT ton.info 
@@ -78,9 +95,11 @@ func (r *taskPgRepo) ListTaskPreviews(ctx context.Context, limit int, offset int
 		var heightPx *int = nil
 		var szInBytes *int = nil
 		var story, originNote *string // Use pointers to handle NULL values
+		var fullNameBytes []byte
 		err := rows.Scan(
 			&p.ShortId,
-			&p.FullName,
+			&fullNameBytes,
+			&p.OrigLang,
 			&illustrImg.S3Key,
 			&widthPx,
 			&heightPx,
@@ -92,6 +111,13 @@ func (r *taskPgRepo) ListTaskPreviews(ctx context.Context, limit int, offset int
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan task preview: %w", err)
+		}
+
+		if len(fullNameBytes) > 0 {
+			var nameMap map[string]string
+			if uerr := json.Unmarshal(fullNameBytes, &nameMap); uerr == nil {
+				p.FullName = nameMap
+			}
 		}
 
 		// Handle NULL values
@@ -346,13 +372,15 @@ func (r *taskPgRepo) GetTaskPreview(ctx context.Context, shortId string) (srvc.T
 	var szInBytes *int = nil
 
 	// Load main task row.
+	var fullNameBytes []byte
 	err := r.pool.QueryRow(ctx, `
-		SELECT short_id, full_name, illustr_img_s3_key, width_px, height_px, filesize_bytes, origin_olympiad, difficulty_rating
+		SELECT short_id, full_name_dict, orig_lang, illustr_img_s3_key, width_px, height_px, filesize_bytes, origin_olympiad, difficulty_rating
 		FROM tasks
 		WHERE short_id = $1
 	`, shortId).Scan(
 		&t.ShortId,
-		&t.FullName,
+		&fullNameBytes,
+		&t.OrigLang,
 		&illustrImg.S3Key,
 		&widthPx,
 		&heightPx,
@@ -360,6 +388,12 @@ func (r *taskPgRepo) GetTaskPreview(ctx context.Context, shortId string) (srvc.T
 		&t.OriginOlympiad,
 		&t.DifficultyRating,
 	)
+	if err == nil && len(fullNameBytes) > 0 {
+		var nameMap map[string]string
+		if uerr := json.Unmarshal(fullNameBytes, &nameMap); uerr == nil {
+			t.FullName = nameMap
+		}
+	}
 	if err != nil {
 		return t, fmt.Errorf("failed to load task preview: %w", err)
 	}
@@ -410,13 +444,15 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 	var heightPx *int = nil
 	var szInBytes *int = nil
 	// Load main task row.
+	var fullNameBytes []byte
 	err := r.pool.QueryRow(ctx, `
-		SELECT short_id, full_name, readme, illustr_img_s3_key, width_px, height_px, filesize_bytes, mem_lim_megabytes, cpu_time_lim_secs, origin_olympiad, difficulty_rating, checker, interactor
+		SELECT short_id, full_name_dict, orig_lang, readme, illustr_img_s3_key, width_px, height_px, filesize_bytes, mem_lim_megabytes, cpu_time_lim_secs, origin_olympiad, difficulty_rating, checker, interactor
 		FROM tasks
 		WHERE short_id = $1
 	`, shortId).Scan(
 		&t.ShortId,
-		&t.FullName,
+		&fullNameBytes,
+		&t.OrigLang,
 		&t.Readme,
 		&illustrImg.S3Key,
 		&widthPx,
@@ -429,6 +465,12 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 		&t.Checker,
 		&t.Interactor,
 	)
+	if err == nil && len(fullNameBytes) > 0 {
+		var nameMap map[string]string
+		if uerr := json.Unmarshal(fullNameBytes, &nameMap); uerr == nil {
+			t.FullName = nameMap
+		}
+	}
 	if err != nil {
 		return t, fmt.Errorf("failed to load task: %w", err)
 	}
@@ -739,7 +781,11 @@ func (r *taskPgRepo) ListTasks(ctx context.Context, limit int, offset int) ([]sr
 
 func (r *taskPgRepo) ResolveNames(ctx context.Context, shortIds []string) ([]string, error) {
 	rows, err := r.pool.Query(ctx, `
-		SELECT full_name 
+		SELECT COALESCE(
+		  full_name_dict->>orig_lang,
+		  full_name_dict->>'lv',
+		  (SELECT value FROM jsonb_each_text(full_name_dict) LIMIT 1)
+		) AS full_name
 		FROM tasks 
 		WHERE short_id = ANY($1)
 		ORDER BY short_id
@@ -804,9 +850,9 @@ func (r *taskPgRepo) CreateTask(ctx context.Context, t srvc.Task) error {
 	}
 
 	_, err = tx.Exec(ctx, `
-		INSERT INTO tasks (short_id, full_name, readme, illustr_img_s3_key, width_px, height_px, filesize_bytes, mem_lim_megabytes, cpu_time_lim_secs, origin_olympiad, difficulty_rating, checker, interactor)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-	`, t.ShortId, t.FullName, t.Readme, illustrS3Key, illustrWidthPx, illustrHeightPx, illustrSzInBytes, t.MemLimMegabytes, t.CpuTimeLimSecs, t.OriginOlympiad, t.DifficultyRating, t.Checker, t.Interactor)
+		INSERT INTO tasks (short_id, full_name_dict, orig_lang, readme, illustr_img_s3_key, width_px, height_px, filesize_bytes, mem_lim_megabytes, cpu_time_lim_secs, origin_olympiad, difficulty_rating, checker, interactor)
+		VALUES ($1, $2::jsonb, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+	`, t.ShortId, mustMarshalMapToJSONB(t.FullName), t.OrigLang, t.Readme, illustrS3Key, illustrWidthPx, illustrHeightPx, illustrSzInBytes, t.MemLimMegabytes, t.CpuTimeLimSecs, t.OriginOlympiad, t.DifficultyRating, t.Checker, t.Interactor)
 	if err != nil {
 		return fmt.Errorf("failed to insert main task: %w", err)
 	}

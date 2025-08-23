@@ -5,8 +5,10 @@ import (
 )
 
 type TaskPreview struct {
-	ShortId  string
-	FullName string
+	ShortId string
+
+	FullName map[string]string
+	OrigLang string
 
 	IllustrImg *IllustrationImage
 
@@ -22,8 +24,11 @@ type Task struct {
 	// url slug friendly identifier
 	ShortId string
 
-	// full name of the task (TODO: translateable)
-	FullName string
+	// full name of the task in multiple languages (key: ISO 639 code)
+	FullName map[string]string
+
+	// original language of the task (ISO 639 code), may be empty
+	OrigLang string
 
 	// markdown with todos, notes, etc.
 	Readme string
@@ -78,6 +83,25 @@ func (t *Task) InteractorPtr() *string {
 		return &t.Interactor
 	}
 	return nil
+}
+
+// DefaultFullName returns the preferred full name, prioritizing OrigLang, then 'lv', then any available name.
+func (t *Task) DefaultFullName() string {
+	if t.FullName == nil {
+		return ""
+	}
+	if t.OrigLang != "" {
+		if v, ok := t.FullName[t.OrigLang]; ok {
+			return v
+		}
+	}
+	if v, ok := t.FullName["lv"]; ok {
+		return v
+	}
+	for _, v := range t.FullName {
+		return v
+	}
+	return ""
 }
 
 type Example struct {
@@ -175,4 +199,23 @@ type PdfStatement struct {
 type OriginNote struct {
 	Lang string
 	Info string
+}
+
+// DefaultFullName returns the preferred full name for TaskPreview.
+func (t *TaskPreview) DefaultFullName() string {
+	if t.FullName == nil {
+		return ""
+	}
+	if t.OrigLang != "" {
+		if v, ok := t.FullName[t.OrigLang]; ok {
+			return v
+		}
+	}
+	if v, ok := t.FullName["lv"]; ok {
+		return v
+	}
+	for _, v := range t.FullName {
+		return v
+	}
+	return ""
 }
