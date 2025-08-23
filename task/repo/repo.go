@@ -64,7 +64,7 @@ func (r *taskPgRepo) ListTaskPreviews(ctx context.Context, limit int, offset int
 		       t.full_name_dict,
 		       t.orig_lang,
 		       t.illustr_img_s3_key, t.width_px, t.height_px, t.filesize_bytes, 
-		       t.origin_olympiad, t.difficulty_rating,
+		       t.origin_olympiad, COALESCE(t.origin_org,''), COALESCE(t.origin_year,''), COALESCE(t.olymp_stage,''), t.difficulty_rating,
 		       COALESCE(
 			       (SELECT ton.info 
 				FROM task_origin_notes ton 
@@ -105,6 +105,9 @@ func (r *taskPgRepo) ListTaskPreviews(ctx context.Context, limit int, offset int
 			&heightPx,
 			&szInBytes,
 			&p.OriginOlympiad,
+			&p.OriginOrg,
+			&p.OriginYear,
+			&p.OlympStage,
 			&p.DifficultyRating,
 			&originNote,
 			&story,
@@ -446,7 +449,7 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 	// Load main task row.
 	var fullNameBytes []byte
 	err := r.pool.QueryRow(ctx, `
-		SELECT short_id, full_name_dict, orig_lang, readme, illustr_img_s3_key, width_px, height_px, filesize_bytes, mem_lim_megabytes, cpu_time_lim_secs, origin_olympiad, difficulty_rating, checker, interactor
+		SELECT short_id, full_name_dict, orig_lang, readme, illustr_img_s3_key, width_px, height_px, filesize_bytes, mem_lim_megabytes, cpu_time_lim_secs, origin_olympiad, COALESCE(origin_org,''), COALESCE(origin_year,''), COALESCE(olymp_stage,''), difficulty_rating, checker, interactor
 		FROM tasks
 		WHERE short_id = $1
 	`, shortId).Scan(
@@ -461,6 +464,9 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 		&t.MemLimMegabytes,
 		&t.CpuTimeLimSecs,
 		&t.OriginOlympiad,
+		&t.OriginOrg,
+		&t.OriginYear,
+		&t.OlympStage,
 		&t.DifficultyRating,
 		&t.Checker,
 		&t.Interactor,
@@ -857,9 +863,9 @@ func (r *taskPgRepo) CreateTask(ctx context.Context, t srvc.Task) error {
 	}
 
 	_, err = tx.Exec(ctx, `
-		INSERT INTO tasks (short_id, full_name_dict, orig_lang, readme, illustr_img_s3_key, width_px, height_px, filesize_bytes, mem_lim_megabytes, cpu_time_lim_secs, origin_olympiad, difficulty_rating, checker, interactor)
-		VALUES ($1, $2::jsonb, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
-	`, t.ShortId, mustMarshalMapToJSONB(t.FullName), t.OrigLang, t.Readme, illustrS3Key, illustrWidthPx, illustrHeightPx, illustrSzInBytes, t.MemLimMegabytes, t.CpuTimeLimSecs, t.OriginOlympiad, t.DifficultyRating, t.Checker, t.Interactor)
+		INSERT INTO tasks (short_id, full_name_dict, orig_lang, readme, illustr_img_s3_key, width_px, height_px, filesize_bytes, mem_lim_megabytes, cpu_time_lim_secs, origin_olympiad, origin_org, origin_year, olymp_stage, difficulty_rating, checker, interactor)
+		VALUES ($1, $2::jsonb, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+	`, t.ShortId, mustMarshalMapToJSONB(t.FullName), t.OrigLang, t.Readme, illustrS3Key, illustrWidthPx, illustrHeightPx, illustrSzInBytes, t.MemLimMegabytes, t.CpuTimeLimSecs, t.OriginOlympiad, t.OriginOrg, t.OriginYear, t.OlympStage, t.DifficultyRating, t.Checker, t.Interactor)
 	if err != nil {
 		return fmt.Errorf("failed to insert main task: %w", err)
 	}

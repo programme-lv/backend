@@ -629,12 +629,13 @@ func (ts *TaskSrvc) mapToArchiveFormat(ctx context.Context, t Task) (taskfs.Task
 			Images:   images,
 		},
 		Origin: taskfs.Origin{
+			Lang:     t.OrigLang,
 			Olympiad: t.OriginOlympiad,
-			OlyStage: "",
-			Org:      "",
+			OlyStage: t.OlympStage,
+			Org:      t.OriginOrg,
 			Notes:    notes,
 			Authors:  []string{},
-			Year:     "",
+			Year:     t.OriginYear,
 		},
 		Testing: taskfs.Testing{
 			TestingT:   testingType,
@@ -800,7 +801,10 @@ func (ts *TaskSrvc) mapTaskStructureFromArchive(t taskfs.Task, overrideId string
 	// ensure illustration struct is non-nil for DB insert
 	res.IllustrImg = &IllustrationImage{}
 	res.FullName = t.FullName
-	res.OrigLang = "lv"
+	res.OrigLang = t.Origin.Lang
+	res.OlympStage = t.Origin.OlyStage
+	res.OriginOrg = t.Origin.Org
+	res.OriginYear = t.Origin.Year
 
 	// Readme
 	res.Readme = t.ReadMe

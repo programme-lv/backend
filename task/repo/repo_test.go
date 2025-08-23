@@ -85,6 +85,8 @@ func TestTaskPgRepo(t *testing.T) {
 	assert.Equal(t, 256, retrievedTask.MemLimMegabytes, "MemLimMegabytes mismatch")
 	assert.Equal(t, 0.6, retrievedTask.CpuTimeLimSecs, "CpuTimeLimSecs mismatch")
 	assert.Equal(t, "LIO", retrievedTask.OriginOlympiad, "OriginOlympiad mismatch")
+	assert.Equal(t, "PPS", retrievedTask.OriginOrg, "OriginOrg mismatch")
+	assert.Equal(t, "2024/2025", retrievedTask.OriginYear, "OriginYear mismatch")
 	assert.Equal(t, 3, retrievedTask.DifficultyRating, "DifficultyRating mismatch")
 	assert.Contains(t, retrievedTask.Checker, "#include", "Checker mismatch")
 	assert.Equal(t, "", retrievedTask.Interactor, "Interactor mismatch")
@@ -148,6 +150,8 @@ func TestTaskPgRepo(t *testing.T) {
 		assert.Equal(t, "A+B=C", taskPreview.DefaultFullName(), "Preview FullName mismatch")
 		assert.Equal(t, "task-md-images/nekoks.png", taskPreview.IllustrImg.S3Key, "Preview IllustrImgS3Key mismatch")
 		assert.Equal(t, "LIO", taskPreview.OriginOlympiad, "Preview OriginOlympiad mismatch")
+		assert.Equal(t, "", taskPreview.OriginOrg, "Preview OriginOrg mismatch")
+		assert.Equal(t, "", taskPreview.OriginYear, "Preview OriginYear mismatch")
 		assert.Equal(t, 3, taskPreview.DifficultyRating, "Preview DifficultyRating mismatch")
 
 		// Verify illustration image fields

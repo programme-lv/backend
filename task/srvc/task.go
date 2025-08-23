@@ -16,6 +16,9 @@ type TaskPreview struct {
 
 	OriginOlympiad string
 	OriginNote     string
+	OriginOrg      string
+	OriginYear     string
+	OlympStage     string
 
 	MdStatementStory string
 }
@@ -44,6 +47,9 @@ type Task struct {
 	OriginOlympiad   string
 	OriginNotes      []OriginNote
 	DifficultyRating int
+	OriginOrg        string
+	OriginYear       string
+	OlympStage       string
 
 	// statement
 	MdStatements   []MarkdownStatement

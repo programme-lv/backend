@@ -11,6 +11,8 @@
   "MemLimMegabytes": 256,
   "CpuTimeLimSecs": 0.6,
   "OriginOlympiad": "LIO",
+  "OriginOrg": "PPS",
+  "OriginYear": "2024/2025",
   "DifficultyRating": 3,
   "OriginNotes": [
     {
