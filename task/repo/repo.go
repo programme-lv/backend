@@ -622,9 +622,16 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 	var examples []srvc.Example
 	for exRows.Next() {
 		var ex srvc.Example
-		if err := exRows.Scan(&ex.Input, &ex.Output, &ex.MdNote); err != nil {
+		var noteBytes []byte
+		if err := exRows.Scan(&ex.Input, &ex.Output, &noteBytes); err != nil {
 			exRows.Close()
 			return t, fmt.Errorf("failed to load example: %w", err)
+		}
+		if len(noteBytes) > 0 {
+			var noteMap map[string]string
+			if uerr := json.Unmarshal(noteBytes, &noteMap); uerr == nil {
+				ex.MdNote = noteMap
+			}
 		}
 		examples = append(examples, ex)
 	}
@@ -927,8 +934,8 @@ func (r *taskPgRepo) CreateTask(ctx context.Context, t srvc.Task) error {
 	for _, ex := range t.Examples {
 		_, err = tx.Exec(ctx, `
 			INSERT INTO task_examples (task_short_id, input, output, md_note)
-			VALUES ($1, $2, $3, $4)
-		`, t.ShortId, ex.Input, ex.Output, ex.MdNote)
+			VALUES ($1, $2, $3, $4::jsonb)
+		`, t.ShortId, ex.Input, ex.Output, mustMarshalMapToJSONB(ex.MdNote))
 		if err != nil {
 			return fmt.Errorf("failed to insert example: %w", err)
 		}

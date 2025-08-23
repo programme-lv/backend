@@ -108,6 +108,7 @@ func TestTaskPgRepo(t *testing.T) {
 	assert.Len(t, retrievedTask.Examples, 2, "Examples length mismatch")
 	assert.Contains(t, retrievedTask.Examples[0].Input, "1 3 6 3 -1 4", "Example input mismatch")
 	assert.Contains(t, retrievedTask.Examples[1].Output, "0", "Example output mismatch")
+	assert.Contains(t, retrievedTask.Examples[1].MdNote["en"], "Uzdevuma tekstā dotie trīs testi")
 
 	assert.Len(t, retrievedTask.Tests, 1, "Tests length mismatch")
 	assert.Contains(t, retrievedTask.Tests[0].InpSha2, "c21d04a1cb0bc201602720f10cbdda6319140e031de2b9753509f589a63d4339", "Test hash mismatch")
