@@ -443,7 +443,7 @@ func (ts *TaskSrvc) ExportTaskAsZip(ctx context.Context, taskId string) ([]byte,
 	logger.Info("task data fetched successfully", "full_name", t.FullName)
 
 	logger.Info("mapping task to archive format")
-	task, err := ts.mapToArchiveFormat(ctx, t)
+	task, err := ts.mapToArchive(ctx, t)
 	if err != nil {
 		logger.Error("failed to map task to archive format", "error", err)
 		return nil, fmt.Errorf("failed to map task: %w", err)
@@ -461,7 +461,7 @@ func (ts *TaskSrvc) ExportTaskAsZip(ctx context.Context, taskId string) ([]byte,
 	return zipBytes, nil
 }
 
-func (ts *TaskSrvc) mapToArchiveFormat(ctx context.Context, t Task) (taskfs.Task, error) {
+func (ts *TaskSrvc) mapToArchive(ctx context.Context, t Task) (taskfs.Task, error) {
 	logger := ts.logger(ctx)
 	stories := make(map[string]taskfs.StoryMd)
 	for _, story := range t.MdStatements {
@@ -634,7 +634,7 @@ func (ts *TaskSrvc) mapToArchiveFormat(ctx context.Context, t Task) (taskfs.Task
 			OlyStage: t.OlympStage,
 			Org:      t.OriginOrg,
 			Notes:    notes,
-			Authors:  []string{},
+			Authors:  t.Authors,
 			Year:     t.OriginYear,
 		},
 		Testing: taskfs.Testing{
@@ -752,7 +752,7 @@ func (ts *TaskSrvc) ImportTaskFromZipWithId(ctx context.Context, zipBytes []byte
 	}
 
 	// Map task structure first (without heavy uploads)
-	serviceTask, err := ts.mapTaskStructureFromArchive(archTask, overrideId)
+	serviceTask, err := ts.mapFromArchive(archTask, overrideId)
 	if err != nil {
 		l.Error("failed to map task structure", "error", err)
 		return "", NewErrorInternalServerError()
@@ -785,8 +785,8 @@ func (ts *TaskSrvc) ImportTaskFromZipWithId(ctx context.Context, zipBytes []byte
 	return serviceTask.ShortId, nil
 }
 
-// mapTaskStructureFromArchive maps the basic task structure without uploading heavy assets
-func (ts *TaskSrvc) mapTaskStructureFromArchive(t taskfs.Task, overrideId string) (Task, error) {
+// mapFromArchive maps the basic task structure without uploading heavy assets
+func (ts *TaskSrvc) mapFromArchive(t taskfs.Task, overrideId string) (Task, error) {
 	res := Task{}
 	// Use override ID if provided, otherwise use original from ZIP
 	if overrideId != "" {
@@ -805,6 +805,7 @@ func (ts *TaskSrvc) mapTaskStructureFromArchive(t taskfs.Task, overrideId string
 	res.OlympStage = t.Origin.OlyStage
 	res.OriginOrg = t.Origin.Org
 	res.OriginYear = t.Origin.Year
+	res.Authors = t.Origin.Authors
 
 	// Readme
 	res.Readme = t.ReadMe

@@ -66,6 +66,9 @@ type Task struct {
 
 	// scoring
 	TestGroups []TestGroup
+
+	// metadata: authors (free-form names)
+	Authors []string
 }
 
 func (t *Task) CpuMillis() int {
