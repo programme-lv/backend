@@ -8,6 +8,7 @@
     "HeightPx": 102,
     "SzInBytes": 103
   },
+  "Authors": ["Kaspars", "Pēteris"],
   "MemLimMegabytes": 256,
   "CpuTimeLimSecs": 0.6,
   "OriginOlympiad": "LIO",

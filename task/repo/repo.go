@@ -14,7 +14,17 @@ import (
 func mustMarshalMapToJSONB(m map[string]string) []byte {
 	b, err := json.Marshal(m)
 	if err != nil {
-		return []byte("{}")
+		panic(err)
+	}
+	return b
+}
+
+// mustMarshalSliceToJSONB converts a slice of strings into JSON bytes suitable for a jsonb parameter.
+// It never returns nil; on error it returns an empty JSON array.
+func mustMarshalSliceToJSONB(s []string) []byte {
+	b, err := json.Marshal(s)
+	if err != nil {
+		panic(err)
 	}
 	return b
 }
@@ -448,8 +458,9 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 	var szInBytes *int = nil
 	// Load main task row.
 	var fullNameBytes []byte
+	var authorsBytes []byte
 	err := r.pool.QueryRow(ctx, `
-		SELECT short_id, full_name_dict, orig_lang, readme, illustr_img_s3_key, width_px, height_px, filesize_bytes, mem_lim_megabytes, cpu_time_lim_secs, origin_olympiad, COALESCE(origin_org,''), COALESCE(origin_year,''), COALESCE(olymp_stage,''), difficulty_rating, checker, interactor
+		SELECT short_id, full_name_dict, orig_lang, readme, illustr_img_s3_key, width_px, height_px, filesize_bytes, mem_lim_megabytes, cpu_time_lim_secs, origin_olympiad, COALESCE(origin_org,''), COALESCE(origin_year,''), COALESCE(olymp_stage,''), COALESCE(authors,'[]'::jsonb), difficulty_rating, checker, interactor
 		FROM tasks
 		WHERE short_id = $1
 	`, shortId).Scan(
@@ -467,6 +478,7 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 		&t.OriginOrg,
 		&t.OriginYear,
 		&t.OlympStage,
+		&authorsBytes,
 		&t.DifficultyRating,
 		&t.Checker,
 		&t.Interactor,
@@ -475,6 +487,12 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 		var nameMap map[string]string
 		if uerr := json.Unmarshal(fullNameBytes, &nameMap); uerr == nil {
 			t.FullName = nameMap
+		}
+	}
+	if err == nil && len(authorsBytes) > 0 {
+		var authors []string
+		if uerr := json.Unmarshal(authorsBytes, &authors); uerr == nil {
+			t.Authors = authors
 		}
 	}
 	if err != nil {
@@ -863,9 +881,9 @@ func (r *taskPgRepo) CreateTask(ctx context.Context, t srvc.Task) error {
 	}
 
 	_, err = tx.Exec(ctx, `
-		INSERT INTO tasks (short_id, full_name_dict, orig_lang, readme, illustr_img_s3_key, width_px, height_px, filesize_bytes, mem_lim_megabytes, cpu_time_lim_secs, origin_olympiad, origin_org, origin_year, olymp_stage, difficulty_rating, checker, interactor)
-		VALUES ($1, $2::jsonb, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
-	`, t.ShortId, mustMarshalMapToJSONB(t.FullName), t.OrigLang, t.Readme, illustrS3Key, illustrWidthPx, illustrHeightPx, illustrSzInBytes, t.MemLimMegabytes, t.CpuTimeLimSecs, t.OriginOlympiad, t.OriginOrg, t.OriginYear, t.OlympStage, t.DifficultyRating, t.Checker, t.Interactor)
+		INSERT INTO tasks (short_id, full_name_dict, orig_lang, readme, illustr_img_s3_key, width_px, height_px, filesize_bytes, mem_lim_megabytes, cpu_time_lim_secs, origin_olympiad, origin_org, origin_year, olymp_stage, authors, difficulty_rating, checker, interactor)
+		VALUES ($1, $2::jsonb, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15::jsonb, $16, $17, $18)
+	`, t.ShortId, mustMarshalMapToJSONB(t.FullName), t.OrigLang, t.Readme, illustrS3Key, illustrWidthPx, illustrHeightPx, illustrSzInBytes, t.MemLimMegabytes, t.CpuTimeLimSecs, t.OriginOlympiad, t.OriginOrg, t.OriginYear, t.OlympStage, mustMarshalSliceToJSONB(t.Authors), t.DifficultyRating, t.Checker, t.Interactor)
 	if err != nil {
 		return fmt.Errorf("failed to insert main task: %w", err)
 	}

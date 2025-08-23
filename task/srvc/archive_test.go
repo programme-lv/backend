@@ -110,9 +110,12 @@ func TestImportExportTask(t *testing.T) {
 	require.Equal(t, expected.Statement, exported.Statement)
 	require.Equal(t, expected.Origin, exported.Origin)
 	require.Equal(t, expected.Testing, exported.Testing)
+	require.Equal(t, expected.Scoring, exported.Scoring)
+	require.Equal(t, expected.Metadata, exported.Metadata)
+	require.Equal(t, expected.Archive, exported.Archive)
+	require.Equal(t, expected.Solutions, exported.Solutions)
 
-	// TODO: compare the rest of the task
-	require.Equal(t, uncropped, exported)
+	require.Equal(t, expected, exported)
 }
 
 // when using require.Equal, too much gets printed to the console
