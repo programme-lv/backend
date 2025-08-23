@@ -80,7 +80,7 @@ func TestTaskPgRepo(t *testing.T) {
 
 	// Verify task fields
 	assert.Equal(t, "aplusbirc", retrievedTask.ShortId, "ShortId mismatch")
-	assert.Equal(t, "A+B=C", retrievedTask.FullName, "FullName mismatch")
+	assert.Equal(t, "A+B=C", retrievedTask.DefaultFullName(), "FullName mismatch")
 	assert.Equal(t, "task-md-images/nekoks.png", retrievedTask.IllustrImg.S3Key, "IllustrImgS3Key mismatch")
 	assert.Equal(t, 256, retrievedTask.MemLimMegabytes, "MemLimMegabytes mismatch")
 	assert.Equal(t, 0.6, retrievedTask.CpuTimeLimSecs, "CpuTimeLimSecs mismatch")
@@ -144,7 +144,7 @@ func TestTaskPgRepo(t *testing.T) {
 
 		// Verify basic task preview fields
 		assert.Equal(t, "aplusbirc", taskPreview.ShortId, "Preview ShortId mismatch")
-		assert.Equal(t, "A+B=C", taskPreview.FullName, "Preview FullName mismatch")
+		assert.Equal(t, "A+B=C", taskPreview.DefaultFullName(), "Preview FullName mismatch")
 		assert.Equal(t, "task-md-images/nekoks.png", taskPreview.IllustrImg.S3Key, "Preview IllustrImgS3Key mismatch")
 		assert.Equal(t, "LIO", taskPreview.OriginOlympiad, "Preview OriginOlympiad mismatch")
 		assert.Equal(t, 3, taskPreview.DifficultyRating, "Preview DifficultyRating mismatch")

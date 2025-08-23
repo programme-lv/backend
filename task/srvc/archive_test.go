@@ -107,6 +107,7 @@ func TestImportExportTask(t *testing.T) {
 	require.Equal(t, expected.ShortID, exported.ShortID)
 	require.Equal(t, expected.ReadMe, exported.ReadMe)
 	require.Equal(t, expected.FullName, exported.FullName)
+	require.Equal(t, expected.Statement, exported.Statement)
 
 	// TODO: compare the rest of the task
 	require.Equal(t, uncropped, exported)
