@@ -497,9 +497,7 @@ func (ts *TaskSrvc) mapToArchiveFormat(ctx context.Context, t Task) (taskfs.Task
 		examples = append(examples, taskfs.Example{
 			Input:  example.Input,
 			Output: example.Output,
-			MdNote: taskfs.I18N[string]{
-				"lv": example.MdNote,
-			},
+			MdNote: taskfs.I18N[string](example.MdNote),
 		})
 	}
 	images := []taskfs.Image{}
@@ -834,18 +832,7 @@ func (ts *TaskSrvc) mapTaskStructureFromArchive(t taskfs.Task, overrideId string
 
 	// Examples
 	for _, ex := range t.Statement.Examples {
-		mdNote := ""
-		if note, ok := ex.MdNote["lv"]; ok {
-			mdNote = note
-		} else if note, ok := ex.MdNote["en"]; ok {
-			mdNote = note
-		} else {
-			for _, note := range ex.MdNote {
-				mdNote = note
-				break
-			}
-		}
-		res.Examples = append(res.Examples, Example{Input: ex.Input, Output: ex.Output, MdNote: mdNote})
+		res.Examples = append(res.Examples, Example{Input: ex.Input, Output: ex.Output, MdNote: map[string]string(ex.MdNote)})
 	}
 
 	// Heavy uploads will be done separately

@@ -107,7 +107,7 @@ func (t *Task) DefaultFullName() string {
 type Example struct {
 	Input  string
 	Output string
-	MdNote string
+	MdNote map[string]string
 }
 
 type VisibleInputSubtask struct {

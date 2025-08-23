@@ -54,9 +54,9 @@
     {
       "Input": "6\r\n1 3 6 3 -1 4\r\n",
       "Output": "1\r\n-1 4 3\r\n",
-      "MdNote": ""
+      "MdNote": {"lv": "Uzdevuma tekstā dotie trīs testi"}
     },
-    { "Input": "5\r\n6 -1 13 -8 20\r\n", "Output": "0\r\n", "MdNote": "" }
+    { "Input": "5\r\n6 -1 13 -8 20\r\n", "Output": "0\r\n", "MdNote": {"en": "Uzdevuma tekstā dotie trīs testi"} }
   ],
   "Tests": [
     {

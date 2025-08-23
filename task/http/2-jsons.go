@@ -94,10 +94,23 @@ func mapTaskMdStatement(md *srvc.MarkdownStatement) MdStatement {
 func mapTaskExamples(examples []srvc.Example) []Example {
 	response := make([]Example, len(examples))
 	for i, e := range examples {
+		mdNote := ""
+		if e.MdNote != nil {
+			if v, ok := e.MdNote["lv"]; ok {
+				mdNote = v
+			} else if v, ok := e.MdNote["en"]; ok {
+				mdNote = v
+			} else {
+				for _, v := range e.MdNote {
+					mdNote = v
+					break
+				}
+			}
+		}
 		response[i] = Example{
 			Input:  e.Input,
 			Output: e.Output,
-			MdNote: e.MdNote,
+			MdNote: mdNote,
 		}
 	}
 	return response
