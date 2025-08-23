@@ -104,6 +104,11 @@ func TestImportExportTask(t *testing.T) {
 	exported = replaceLongContentWithChecksum(exported)
 
 	// 5. compare the retrieved task with the expected
+	require.Equal(t, expected.ShortID, exported.ShortID)
+	require.Equal(t, expected.ReadMe, exported.ReadMe)
+	require.Equal(t, expected.FullName, exported.FullName)
+
+	// TODO: compare the rest of the task
 	require.Equal(t, uncropped, exported)
 }
 

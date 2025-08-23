@@ -25,6 +25,9 @@ type Task struct {
 	// full name of the task (TODO: translateable)
 	FullName string
 
+	// markdown with todos, notes, etc.
+	Readme string
+
 	// illustration image
 	IllustrImg *IllustrationImage
 
