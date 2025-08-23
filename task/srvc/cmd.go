@@ -625,7 +625,7 @@ func (ts *TaskSrvc) mapToArchiveFormat(ctx context.Context, t Task) (taskfs.Task
 		FullName: taskfs.I18N[string]{
 			"lv": t.FullName,
 		},
-		ReadMe: "",
+		ReadMe: t.Readme,
 		Statement: taskfs.Statement{
 			Stories:  stories,
 			Subtasks: subtasks,
@@ -815,6 +815,9 @@ func (ts *TaskSrvc) mapTaskStructureFromArchive(t taskfs.Task, overrideId string
 			break
 		}
 	}
+
+	// Readme
+	res.Readme = t.ReadMe
 
 	// Constraints
 	res.MemLimMegabytes = t.Testing.MemLimMiB
