@@ -52,6 +52,10 @@ type TaskSrvcClient interface {
 	GetTaskFullNames(ctx context.Context, shortIds []string) ([]string, error)
 	ResolveNames(ctx context.Context, shortIds []string) ([]string, error)
 	SearchTasksByName(ctx context.Context, name string) ([]string, error)
+
+	// original file archive
+	UploadOgFileArchive(ctx context.Context, zipBytes []byte) (string, error)
+	DownloadOgFileArchive(ctx context.Context, s3Key string) ([]byte, error)
 }
 
 type S3BucketFacade interface {

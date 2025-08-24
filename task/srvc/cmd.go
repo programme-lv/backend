@@ -118,6 +118,27 @@ func (ts *TaskSrvc) UploadIllustrationImg(ctx context.Context, mimeType string, 
 	return s3Key, nil
 }
 
+// upload and return s3 key. use a new uuid in the filename instead of a sha256 hash
+func (ts *TaskSrvc) UploadOgFileArchive(ctx context.Context, zipBytes []byte) (string, error) {
+	archiveUuid := uuid.New().String()
+	s3Key := fmt.Sprintf("og-file-archives/%s.zip", archiveUuid)
+	_, err := ts.s3PublicBucket.Upload(zipBytes, s3Key, "application/zip")
+	if err != nil {
+		ts.logger(ctx).Error("failed to upload og file archive to S3", "error", err)
+		return "", NewErrorInternalServerError()
+	}
+	return s3Key, nil
+}
+
+func (ts *TaskSrvc) DownloadOgFileArchive(ctx context.Context, s3Key string) ([]byte, error) {
+	body, err := ts.s3PublicBucket.Download(s3Key)
+	if err != nil {
+		ts.logger(ctx).Error("failed to download og file archive from S3", "error", err)
+		return nil, NewErrorInternalServerError()
+	}
+	return body, nil
+}
+
 // S3 key format: "task-md-images/<uuid>.<extension>"
 // returns s3 uri, e.g. s3://proglv-public/task/<taskId>/md-images/<uuid>.png
 func (ts *TaskSrvc) UploadStatementImage(ctx context.Context, taskId string, imgFilename string, imageMimeType string, body []byte) (url string, err error) {
