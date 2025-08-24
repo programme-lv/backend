@@ -1,0 +1,4 @@
+BEGIN;
+UPDATE tasks SET readme = '' WHERE readme IS NULL;
+ALTER TABLE tasks ALTER COLUMN readme SET NOT NULL;
+COMMIT;
