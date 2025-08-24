@@ -788,6 +788,34 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 	tgRows.Close()
 	t.TestGroups = testGroups
 
+	// Load Solutions.
+	solutionRows, err := r.pool.Query(ctx, `
+		SELECT fname, content, subtasks 
+		FROM task_solutions 
+		WHERE task_id = $1
+	`, shortId)
+	if err != nil {
+		return t, fmt.Errorf("failed to load solutions: %w", err)
+	}
+	var solutions []srvc.Solution
+	for solutionRows.Next() {
+		var sol srvc.Solution
+		var subtasksBytes []byte
+		if err := solutionRows.Scan(&sol.Fname, &sol.Content, &subtasksBytes); err != nil {
+			solutionRows.Close()
+			return t, fmt.Errorf("failed to load solution: %w", err)
+		}
+		if len(subtasksBytes) > 0 {
+			var subtasks []int
+			if uerr := json.Unmarshal(subtasksBytes, &subtasks); uerr == nil {
+				sol.Subtasks = subtasks
+			}
+		}
+		solutions = append(solutions, sol)
+	}
+	solutionRows.Close()
+	t.Solutions = solutions
+
 	return t, nil
 }
 
@@ -1033,6 +1061,21 @@ func (r *taskPgRepo) CreateTask(ctx context.Context, t srvc.Task) error {
 		}
 	}
 
+	// Insert solutions.
+	for _, sol := range t.Solutions {
+		subtasksBytes, err := json.Marshal(sol.Subtasks)
+		if err != nil {
+			return fmt.Errorf("failed to marshal solution subtasks: %w", err)
+		}
+		_, err = tx.Exec(ctx, `
+			INSERT INTO task_solutions (task_id, fname, content, subtasks)
+			VALUES ($1, $2, $3, $4)
+		`, t.ShortId, sol.Fname, sol.Content, subtasksBytes)
+		if err != nil {
+			return fmt.Errorf("failed to insert solution: %w", err)
+		}
+	}
+
 	return nil
 }
 
@@ -1119,6 +1162,12 @@ func (r *taskPgRepo) DeleteTask(ctx context.Context, shortId string) error {
 	_, err = tx.Exec(ctx, `DELETE FROM task_vis_inp_subtasks WHERE task_short_id = $1`, shortId)
 	if err != nil {
 		return fmt.Errorf("failed to delete task vis inp subtasks: %w", err)
+	}
+
+	// Delete task_solutions
+	_, err = tx.Exec(ctx, `DELETE FROM task_solutions WHERE task_id = $1`, shortId)
+	if err != nil {
+		return fmt.Errorf("failed to delete task solutions: %w", err)
 	}
 
 	// Finally, delete the main task record

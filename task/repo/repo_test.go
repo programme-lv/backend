@@ -126,6 +126,23 @@ func TestTaskPgRepo(t *testing.T) {
 	assert.Equal(t, 2, retrievedTask.TestGroups[0].Points, "First test group points mismatch")
 	assert.True(t, retrievedTask.TestGroups[0].Public, "First test group should be public")
 
+	// Verify Solutions
+	assert.Len(t, retrievedTask.Solutions, 2, "Solutions length mismatch")
+
+	solutionMap := make(map[string]srvc.Solution)
+	for _, sol := range retrievedTask.Solutions {
+		solutionMap[sol.Fname] = sol
+	}
+
+	cppSol := solutionMap["solution.cpp"]
+	assert.Equal(t, "solution.cpp", cppSol.Fname, "C++ solution filename")
+	assert.Contains(t, cppSol.Content, "#include <iostream>", "C++ solution content")
+	assert.Equal(t, []int{1, 2, 3, 4, 5}, cppSol.Subtasks, "C++ solution subtasks")
+
+	pySol := solutionMap["partial.py"]
+	assert.Equal(t, "partial.py", pySol.Fname, "Python solution filename")
+	assert.Equal(t, []int{1, 2}, pySol.Subtasks, "Python solution subtasks")
+
 	// Test ResolveNames
 	names, err := repo.ResolveNames(ctx, []string{task.ShortId})
 	require.NoError(t, err, "Failed to resolve names")
@@ -181,6 +198,11 @@ func TestTaskPgRepo(t *testing.T) {
 		require.NoError(t, err, "Failed to check if task exists before deletion")
 		assert.True(t, exists, "Task should exist before deletion")
 
+		// Verify solutions exist before deletion
+		taskBeforeDeletion, err := repo.GetTask(ctx, task.ShortId)
+		require.NoError(t, err, "Failed to get task before deletion")
+		assert.Len(t, taskBeforeDeletion.Solutions, 2, "Should have solutions before deletion")
+
 		// Delete the task
 		err = repo.DeleteTask(ctx, task.ShortId)
 		require.NoError(t, err, "Failed to delete task")
@@ -189,6 +211,12 @@ func TestTaskPgRepo(t *testing.T) {
 		exists, err = repo.Exists(ctx, task.ShortId)
 		require.NoError(t, err, "Failed to check if task exists after deletion")
 		assert.False(t, exists, "Task should not exist after deletion")
+
+		// Verify solutions are also deleted (check directly in database)
+		var solutionCount int
+		err = pool.QueryRow(ctx, "SELECT COUNT(*) FROM task_solutions WHERE task_id = $1", task.ShortId).Scan(&solutionCount)
+		require.NoError(t, err, "Failed to count solutions after deletion")
+		assert.Equal(t, 0, solutionCount, "All solutions should be deleted")
 
 		// Try to get the deleted task (should fail)
 		_, err = repo.GetTask(ctx, task.ShortId)

@@ -660,6 +660,15 @@ func (ts *TaskSrvc) mapToTaskfs(ctx context.Context, t Task) (taskfs.Task, error
 		taskfsArchive = taskfs.Archive{}
 	}
 
+	solutions := []taskfs.Solution{}
+	for _, solution := range t.Solutions {
+		solutions = append(solutions, taskfs.Solution{
+			Fname:    solution.Fname,
+			Content:  solution.Content,
+			Subtasks: solution.Subtasks,
+		})
+	}
+
 	res := taskfs.Task{
 		ShortID:  t.ShortId,
 		FullName: t.FullName,
@@ -693,7 +702,7 @@ func (ts *TaskSrvc) mapToTaskfs(ctx context.Context, t Task) (taskfs.Task, error
 			Groups:   tGroups,
 		},
 		Archive:   taskfsArchive,
-		Solutions: []taskfs.Solution{},
+		Solutions: solutions,
 		Metadata: taskfs.Metadata{
 			ProblemTags: t.ProblemTags,
 			Difficulty:  t.DifficultyRating,
@@ -923,6 +932,14 @@ func (ts *TaskSrvc) mapFromTaskfs(t taskfs.Task, overrideId string) (Task, error
 		}
 		for id := group.Range[0]; id <= group.Range[1]; id++ {
 			res.Subtasks[group.Subtask-1].TestIDs = append(res.Subtasks[group.Subtask-1].TestIDs, id)
+		}
+	}
+	res.Solutions = make([]Solution, len(t.Solutions))
+	for i, solution := range t.Solutions {
+		res.Solutions[i] = Solution{
+			Fname:    solution.Fname,
+			Content:  solution.Content,
+			Subtasks: solution.Subtasks,
 		}
 	}
 
