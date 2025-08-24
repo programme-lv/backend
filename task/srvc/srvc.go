@@ -2,6 +2,7 @@ package srvc
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"time"
 
@@ -11,32 +12,46 @@ import (
 )
 
 type TaskSrvcClient interface {
-	GetTestDownlUrl(ctx context.Context, testFileSha256 string) (string, error)
-	DownloadTestFile(ctx context.Context, testFileSha256 string) ([]byte, error)
-	UploadStatementPdf(ctx context.Context, body []byte) (string, error)
-	UploadIllustrationImg(ctx context.Context, mimeType string, body []byte) (string, error)
-	DeleteIllustrationImg(ctx context.Context, taskId string) error
-	UpdateIllustrationImg(ctx context.Context, taskId string, img IllustrationImage) error
-	UploadStatementImage(ctx context.Context, taskId string, filename string, mimeType string, body []byte) (string, error)
-	DeleteStatementImage(ctx context.Context, taskId string, filename string) error
-	UploadTestFile(ctx context.Context, body []byte) error
 	GetTask(ctx context.Context, shortId string) (Task, error)
-	GetTaskPreview(ctx context.Context, shortId string) (TaskPreview, error)
-	ListTaskPreviews(ctx context.Context) ([]TaskPreview, error)
-	GetTaskFullNames(ctx context.Context, shortIds []string) ([]string, error)
 	ListTasks(ctx context.Context) ([]Task, error)
 	CreateTask(ctx context.Context, task Task) error
 	DeleteTask(ctx context.Context, shortId string) error
+
+	// test files
+	UploadTestFile(ctx context.Context, body []byte) error
+	GetTestDownlUrl(ctx context.Context, testFileSha256 string) (string, error)
+	DownloadTestFile(ctx context.Context, testFileSha256 string) ([]byte, error)
+
+	// original pdf statement
+	UploadStatementPdf(ctx context.Context, body []byte) (string, error)
+	GetHttpUrlForPdfStatement(ctx context.Context, pdfStatementS3Key string) (string, error)
+
+	// illustration image
+	UploadIllustrationImg(ctx context.Context, mimeType string, body []byte) (string, error)
+	DeleteIllustrationImg(ctx context.Context, taskId string) error
+	UpdateIllustrationImg(ctx context.Context, taskId string, img IllustrationImage) error
+	GetHttpUrlForIllustrImg(ctx context.Context, illstrImgS3Key string) (string, error)
+
+	// markdown statement
+	UpdateStatementMd(ctx context.Context, taskId string, statement MarkdownStatement) error
+
+	// markdown statement image
+	UploadStatementImage(ctx context.Context, taskId string, filename string, mimeType string, body []byte) (string, error)
+	DeleteStatementImage(ctx context.Context, taskId string, filename string) error
+	GetHttpUrlForStatementImage(ctx context.Context, statementImageS3Key string) (string, error)
+
+	// website
+	GetTaskPreview(ctx context.Context, shortId string) (TaskPreview, error)
+	ListTaskPreviews(ctx context.Context) ([]TaskPreview, error)
+
+	// taskzip archive format
+	ImportTaskFromZip(ctx context.Context, zipBytes []byte, overrideId string) (string, error)
+	ExportTaskAsZip(ctx context.Context, taskId string) ([]byte, error)
+
+	// unorganized
+	GetTaskFullNames(ctx context.Context, shortIds []string) ([]string, error)
 	ResolveNames(ctx context.Context, shortIds []string) ([]string, error)
 	SearchTasksByName(ctx context.Context, name string) ([]string, error)
-	UpdateStatementMd(ctx context.Context, taskId string, statement MarkdownStatement) error
-	GetPublicUrlForIllustrImg(ctx context.Context, illstrImgS3Key string) (string, error)
-	GetPublicUrlForStatementImage(ctx context.Context, statementImageS3Key string) (string, error)
-	GetPublicUrlForPdfStatement(ctx context.Context, pdfStatementS3Key string) (string, error)
-	ExportTaskAsZip(ctx context.Context, taskId string) ([]byte, error)
-	GetCacheStats() (totalSizeMB int64, fileCount int, err error)
-	ImportTaskFromZip(ctx context.Context, zipBytes []byte) (string, error)
-	ImportTaskFromZipWithId(ctx context.Context, zipBytes []byte, overrideId string) (string, error)
 }
 
 type S3BucketFacade interface {
@@ -91,4 +106,20 @@ func NewTaskSrvc(
 
 func (ts *TaskSrvc) logger(ctx context.Context) *slog.Logger {
 	return ctxlog.FromContext(ctx).With("module", "task", "layer", "srvc")
+}
+
+// UploadTaskArchive uploads the provided ZIP bytes to the public bucket and returns its S3 key.
+// S3 key format: "task-archives/<shortId>.zip"
+func (ts *TaskSrvc) UploadTaskArchive(ctx context.Context, shortId string, zipBytes []byte) (string, error) {
+	l := ts.logger(ctx)
+	if shortId == "" {
+		return "", fmt.Errorf("shortId must not be empty")
+	}
+	s3Key := fmt.Sprintf("%s/%s.zip", "task-archives", shortId)
+	_, err := ts.s3PublicBucket.Upload(zipBytes, s3Key, "application/zip")
+	if err != nil {
+		l.Error("failed to upload archive to S3", "error", err)
+		return "", NewErrorInternalServerError()
+	}
+	return s3Key, nil
 }

@@ -89,6 +89,7 @@ func TestTaskPgRepo(t *testing.T) {
 	assert.Equal(t, "2024/2025", retrievedTask.OriginYear, "OriginYear mismatch")
 	assert.Contains(t, retrievedTask.ProblemTags, "two-sum", "ProblemTags missing two-sum")
 	assert.Equal(t, []string{"Kaspars", "Pēteris"}, retrievedTask.Authors, "Authors mismatch")
+	assert.Equal(t, "task-archives/aplusbirc.zip", retrievedTask.ArchiveS3Key, "ArchiveS3Key mismatch")
 	assert.Equal(t, 3, retrievedTask.DifficultyRating, "DifficultyRating mismatch")
 	assert.Contains(t, retrievedTask.Checker, "#include", "Checker mismatch")
 	assert.Equal(t, "", retrievedTask.Interactor, "Interactor mismatch")

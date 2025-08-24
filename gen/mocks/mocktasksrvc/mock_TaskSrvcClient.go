@@ -329,74 +329,12 @@ func (_c *MockTaskSrvcClient_ExportTaskAsZip_Call) RunAndReturn(run func(context
 	return _c
 }
 
-// GetCacheStats provides a mock function with no fields
-func (_m *MockTaskSrvcClient) GetCacheStats() (int64, int, error) {
-	ret := _m.Called()
-
-	if len(ret) == 0 {
-		panic("no return value specified for GetCacheStats")
-	}
-
-	var r0 int64
-	var r1 int
-	var r2 error
-	if rf, ok := ret.Get(0).(func() (int64, int, error)); ok {
-		return rf()
-	}
-	if rf, ok := ret.Get(0).(func() int64); ok {
-		r0 = rf()
-	} else {
-		r0 = ret.Get(0).(int64)
-	}
-
-	if rf, ok := ret.Get(1).(func() int); ok {
-		r1 = rf()
-	} else {
-		r1 = ret.Get(1).(int)
-	}
-
-	if rf, ok := ret.Get(2).(func() error); ok {
-		r2 = rf()
-	} else {
-		r2 = ret.Error(2)
-	}
-
-	return r0, r1, r2
-}
-
-// MockTaskSrvcClient_GetCacheStats_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetCacheStats'
-type MockTaskSrvcClient_GetCacheStats_Call struct {
-	*mock.Call
-}
-
-// GetCacheStats is a helper method to define mock.On call
-func (_e *MockTaskSrvcClient_Expecter) GetCacheStats() *MockTaskSrvcClient_GetCacheStats_Call {
-	return &MockTaskSrvcClient_GetCacheStats_Call{Call: _e.mock.On("GetCacheStats")}
-}
-
-func (_c *MockTaskSrvcClient_GetCacheStats_Call) Run(run func()) *MockTaskSrvcClient_GetCacheStats_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run()
-	})
-	return _c
-}
-
-func (_c *MockTaskSrvcClient_GetCacheStats_Call) Return(totalSizeMB int64, fileCount int, err error) *MockTaskSrvcClient_GetCacheStats_Call {
-	_c.Call.Return(totalSizeMB, fileCount, err)
-	return _c
-}
-
-func (_c *MockTaskSrvcClient_GetCacheStats_Call) RunAndReturn(run func() (int64, int, error)) *MockTaskSrvcClient_GetCacheStats_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// GetPublicUrlForIllustrImg provides a mock function with given fields: ctx, illstrImgS3Key
-func (_m *MockTaskSrvcClient) GetPublicUrlForIllustrImg(ctx context.Context, illstrImgS3Key string) (string, error) {
+// GetHttpUrlForIllustrImg provides a mock function with given fields: ctx, illstrImgS3Key
+func (_m *MockTaskSrvcClient) GetHttpUrlForIllustrImg(ctx context.Context, illstrImgS3Key string) (string, error) {
 	ret := _m.Called(ctx, illstrImgS3Key)
 
 	if len(ret) == 0 {
-		panic("no return value specified for GetPublicUrlForIllustrImg")
+		panic("no return value specified for GetHttpUrlForIllustrImg")
 	}
 
 	var r0 string
@@ -419,41 +357,41 @@ func (_m *MockTaskSrvcClient) GetPublicUrlForIllustrImg(ctx context.Context, ill
 	return r0, r1
 }
 
-// MockTaskSrvcClient_GetPublicUrlForIllustrImg_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetPublicUrlForIllustrImg'
-type MockTaskSrvcClient_GetPublicUrlForIllustrImg_Call struct {
+// MockTaskSrvcClient_GetHttpUrlForIllustrImg_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetHttpUrlForIllustrImg'
+type MockTaskSrvcClient_GetHttpUrlForIllustrImg_Call struct {
 	*mock.Call
 }
 
-// GetPublicUrlForIllustrImg is a helper method to define mock.On call
+// GetHttpUrlForIllustrImg is a helper method to define mock.On call
 //   - ctx context.Context
 //   - illstrImgS3Key string
-func (_e *MockTaskSrvcClient_Expecter) GetPublicUrlForIllustrImg(ctx interface{}, illstrImgS3Key interface{}) *MockTaskSrvcClient_GetPublicUrlForIllustrImg_Call {
-	return &MockTaskSrvcClient_GetPublicUrlForIllustrImg_Call{Call: _e.mock.On("GetPublicUrlForIllustrImg", ctx, illstrImgS3Key)}
+func (_e *MockTaskSrvcClient_Expecter) GetHttpUrlForIllustrImg(ctx interface{}, illstrImgS3Key interface{}) *MockTaskSrvcClient_GetHttpUrlForIllustrImg_Call {
+	return &MockTaskSrvcClient_GetHttpUrlForIllustrImg_Call{Call: _e.mock.On("GetHttpUrlForIllustrImg", ctx, illstrImgS3Key)}
 }
 
-func (_c *MockTaskSrvcClient_GetPublicUrlForIllustrImg_Call) Run(run func(ctx context.Context, illstrImgS3Key string)) *MockTaskSrvcClient_GetPublicUrlForIllustrImg_Call {
+func (_c *MockTaskSrvcClient_GetHttpUrlForIllustrImg_Call) Run(run func(ctx context.Context, illstrImgS3Key string)) *MockTaskSrvcClient_GetHttpUrlForIllustrImg_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		run(args[0].(context.Context), args[1].(string))
 	})
 	return _c
 }
 
-func (_c *MockTaskSrvcClient_GetPublicUrlForIllustrImg_Call) Return(_a0 string, _a1 error) *MockTaskSrvcClient_GetPublicUrlForIllustrImg_Call {
+func (_c *MockTaskSrvcClient_GetHttpUrlForIllustrImg_Call) Return(_a0 string, _a1 error) *MockTaskSrvcClient_GetHttpUrlForIllustrImg_Call {
 	_c.Call.Return(_a0, _a1)
 	return _c
 }
 
-func (_c *MockTaskSrvcClient_GetPublicUrlForIllustrImg_Call) RunAndReturn(run func(context.Context, string) (string, error)) *MockTaskSrvcClient_GetPublicUrlForIllustrImg_Call {
+func (_c *MockTaskSrvcClient_GetHttpUrlForIllustrImg_Call) RunAndReturn(run func(context.Context, string) (string, error)) *MockTaskSrvcClient_GetHttpUrlForIllustrImg_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
-// GetPublicUrlForPdfStatement provides a mock function with given fields: ctx, pdfStatementS3Key
-func (_m *MockTaskSrvcClient) GetPublicUrlForPdfStatement(ctx context.Context, pdfStatementS3Key string) (string, error) {
+// GetHttpUrlForPdfStatement provides a mock function with given fields: ctx, pdfStatementS3Key
+func (_m *MockTaskSrvcClient) GetHttpUrlForPdfStatement(ctx context.Context, pdfStatementS3Key string) (string, error) {
 	ret := _m.Called(ctx, pdfStatementS3Key)
 
 	if len(ret) == 0 {
-		panic("no return value specified for GetPublicUrlForPdfStatement")
+		panic("no return value specified for GetHttpUrlForPdfStatement")
 	}
 
 	var r0 string
@@ -476,41 +414,41 @@ func (_m *MockTaskSrvcClient) GetPublicUrlForPdfStatement(ctx context.Context, p
 	return r0, r1
 }
 
-// MockTaskSrvcClient_GetPublicUrlForPdfStatement_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetPublicUrlForPdfStatement'
-type MockTaskSrvcClient_GetPublicUrlForPdfStatement_Call struct {
+// MockTaskSrvcClient_GetHttpUrlForPdfStatement_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetHttpUrlForPdfStatement'
+type MockTaskSrvcClient_GetHttpUrlForPdfStatement_Call struct {
 	*mock.Call
 }
 
-// GetPublicUrlForPdfStatement is a helper method to define mock.On call
+// GetHttpUrlForPdfStatement is a helper method to define mock.On call
 //   - ctx context.Context
 //   - pdfStatementS3Key string
-func (_e *MockTaskSrvcClient_Expecter) GetPublicUrlForPdfStatement(ctx interface{}, pdfStatementS3Key interface{}) *MockTaskSrvcClient_GetPublicUrlForPdfStatement_Call {
-	return &MockTaskSrvcClient_GetPublicUrlForPdfStatement_Call{Call: _e.mock.On("GetPublicUrlForPdfStatement", ctx, pdfStatementS3Key)}
+func (_e *MockTaskSrvcClient_Expecter) GetHttpUrlForPdfStatement(ctx interface{}, pdfStatementS3Key interface{}) *MockTaskSrvcClient_GetHttpUrlForPdfStatement_Call {
+	return &MockTaskSrvcClient_GetHttpUrlForPdfStatement_Call{Call: _e.mock.On("GetHttpUrlForPdfStatement", ctx, pdfStatementS3Key)}
 }
 
-func (_c *MockTaskSrvcClient_GetPublicUrlForPdfStatement_Call) Run(run func(ctx context.Context, pdfStatementS3Key string)) *MockTaskSrvcClient_GetPublicUrlForPdfStatement_Call {
+func (_c *MockTaskSrvcClient_GetHttpUrlForPdfStatement_Call) Run(run func(ctx context.Context, pdfStatementS3Key string)) *MockTaskSrvcClient_GetHttpUrlForPdfStatement_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		run(args[0].(context.Context), args[1].(string))
 	})
 	return _c
 }
 
-func (_c *MockTaskSrvcClient_GetPublicUrlForPdfStatement_Call) Return(_a0 string, _a1 error) *MockTaskSrvcClient_GetPublicUrlForPdfStatement_Call {
+func (_c *MockTaskSrvcClient_GetHttpUrlForPdfStatement_Call) Return(_a0 string, _a1 error) *MockTaskSrvcClient_GetHttpUrlForPdfStatement_Call {
 	_c.Call.Return(_a0, _a1)
 	return _c
 }
 
-func (_c *MockTaskSrvcClient_GetPublicUrlForPdfStatement_Call) RunAndReturn(run func(context.Context, string) (string, error)) *MockTaskSrvcClient_GetPublicUrlForPdfStatement_Call {
+func (_c *MockTaskSrvcClient_GetHttpUrlForPdfStatement_Call) RunAndReturn(run func(context.Context, string) (string, error)) *MockTaskSrvcClient_GetHttpUrlForPdfStatement_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
-// GetPublicUrlForStatementImage provides a mock function with given fields: ctx, statementImageS3Key
-func (_m *MockTaskSrvcClient) GetPublicUrlForStatementImage(ctx context.Context, statementImageS3Key string) (string, error) {
+// GetHttpUrlForStatementImage provides a mock function with given fields: ctx, statementImageS3Key
+func (_m *MockTaskSrvcClient) GetHttpUrlForStatementImage(ctx context.Context, statementImageS3Key string) (string, error) {
 	ret := _m.Called(ctx, statementImageS3Key)
 
 	if len(ret) == 0 {
-		panic("no return value specified for GetPublicUrlForStatementImage")
+		panic("no return value specified for GetHttpUrlForStatementImage")
 	}
 
 	var r0 string
@@ -533,31 +471,31 @@ func (_m *MockTaskSrvcClient) GetPublicUrlForStatementImage(ctx context.Context,
 	return r0, r1
 }
 
-// MockTaskSrvcClient_GetPublicUrlForStatementImage_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetPublicUrlForStatementImage'
-type MockTaskSrvcClient_GetPublicUrlForStatementImage_Call struct {
+// MockTaskSrvcClient_GetHttpUrlForStatementImage_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetHttpUrlForStatementImage'
+type MockTaskSrvcClient_GetHttpUrlForStatementImage_Call struct {
 	*mock.Call
 }
 
-// GetPublicUrlForStatementImage is a helper method to define mock.On call
+// GetHttpUrlForStatementImage is a helper method to define mock.On call
 //   - ctx context.Context
 //   - statementImageS3Key string
-func (_e *MockTaskSrvcClient_Expecter) GetPublicUrlForStatementImage(ctx interface{}, statementImageS3Key interface{}) *MockTaskSrvcClient_GetPublicUrlForStatementImage_Call {
-	return &MockTaskSrvcClient_GetPublicUrlForStatementImage_Call{Call: _e.mock.On("GetPublicUrlForStatementImage", ctx, statementImageS3Key)}
+func (_e *MockTaskSrvcClient_Expecter) GetHttpUrlForStatementImage(ctx interface{}, statementImageS3Key interface{}) *MockTaskSrvcClient_GetHttpUrlForStatementImage_Call {
+	return &MockTaskSrvcClient_GetHttpUrlForStatementImage_Call{Call: _e.mock.On("GetHttpUrlForStatementImage", ctx, statementImageS3Key)}
 }
 
-func (_c *MockTaskSrvcClient_GetPublicUrlForStatementImage_Call) Run(run func(ctx context.Context, statementImageS3Key string)) *MockTaskSrvcClient_GetPublicUrlForStatementImage_Call {
+func (_c *MockTaskSrvcClient_GetHttpUrlForStatementImage_Call) Run(run func(ctx context.Context, statementImageS3Key string)) *MockTaskSrvcClient_GetHttpUrlForStatementImage_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		run(args[0].(context.Context), args[1].(string))
 	})
 	return _c
 }
 
-func (_c *MockTaskSrvcClient_GetPublicUrlForStatementImage_Call) Return(_a0 string, _a1 error) *MockTaskSrvcClient_GetPublicUrlForStatementImage_Call {
+func (_c *MockTaskSrvcClient_GetHttpUrlForStatementImage_Call) Return(_a0 string, _a1 error) *MockTaskSrvcClient_GetHttpUrlForStatementImage_Call {
 	_c.Call.Return(_a0, _a1)
 	return _c
 }
 
-func (_c *MockTaskSrvcClient_GetPublicUrlForStatementImage_Call) RunAndReturn(run func(context.Context, string) (string, error)) *MockTaskSrvcClient_GetPublicUrlForStatementImage_Call {
+func (_c *MockTaskSrvcClient_GetHttpUrlForStatementImage_Call) RunAndReturn(run func(context.Context, string) (string, error)) *MockTaskSrvcClient_GetHttpUrlForStatementImage_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -792,69 +730,12 @@ func (_c *MockTaskSrvcClient_GetTestDownlUrl_Call) RunAndReturn(run func(context
 	return _c
 }
 
-// ImportTaskFromZip provides a mock function with given fields: ctx, zipBytes
-func (_m *MockTaskSrvcClient) ImportTaskFromZip(ctx context.Context, zipBytes []byte) (string, error) {
-	ret := _m.Called(ctx, zipBytes)
-
-	if len(ret) == 0 {
-		panic("no return value specified for ImportTaskFromZip")
-	}
-
-	var r0 string
-	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, []byte) (string, error)); ok {
-		return rf(ctx, zipBytes)
-	}
-	if rf, ok := ret.Get(0).(func(context.Context, []byte) string); ok {
-		r0 = rf(ctx, zipBytes)
-	} else {
-		r0 = ret.Get(0).(string)
-	}
-
-	if rf, ok := ret.Get(1).(func(context.Context, []byte) error); ok {
-		r1 = rf(ctx, zipBytes)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// MockTaskSrvcClient_ImportTaskFromZip_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ImportTaskFromZip'
-type MockTaskSrvcClient_ImportTaskFromZip_Call struct {
-	*mock.Call
-}
-
-// ImportTaskFromZip is a helper method to define mock.On call
-//   - ctx context.Context
-//   - zipBytes []byte
-func (_e *MockTaskSrvcClient_Expecter) ImportTaskFromZip(ctx interface{}, zipBytes interface{}) *MockTaskSrvcClient_ImportTaskFromZip_Call {
-	return &MockTaskSrvcClient_ImportTaskFromZip_Call{Call: _e.mock.On("ImportTaskFromZip", ctx, zipBytes)}
-}
-
-func (_c *MockTaskSrvcClient_ImportTaskFromZip_Call) Run(run func(ctx context.Context, zipBytes []byte)) *MockTaskSrvcClient_ImportTaskFromZip_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].([]byte))
-	})
-	return _c
-}
-
-func (_c *MockTaskSrvcClient_ImportTaskFromZip_Call) Return(_a0 string, _a1 error) *MockTaskSrvcClient_ImportTaskFromZip_Call {
-	_c.Call.Return(_a0, _a1)
-	return _c
-}
-
-func (_c *MockTaskSrvcClient_ImportTaskFromZip_Call) RunAndReturn(run func(context.Context, []byte) (string, error)) *MockTaskSrvcClient_ImportTaskFromZip_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// ImportTaskFromZipWithId provides a mock function with given fields: ctx, zipBytes, overrideId
-func (_m *MockTaskSrvcClient) ImportTaskFromZipWithId(ctx context.Context, zipBytes []byte, overrideId string) (string, error) {
+// ImportTaskFromZip provides a mock function with given fields: ctx, zipBytes, overrideId
+func (_m *MockTaskSrvcClient) ImportTaskFromZip(ctx context.Context, zipBytes []byte, overrideId string) (string, error) {
 	ret := _m.Called(ctx, zipBytes, overrideId)
 
 	if len(ret) == 0 {
-		panic("no return value specified for ImportTaskFromZipWithId")
+		panic("no return value specified for ImportTaskFromZip")
 	}
 
 	var r0 string
@@ -877,32 +758,32 @@ func (_m *MockTaskSrvcClient) ImportTaskFromZipWithId(ctx context.Context, zipBy
 	return r0, r1
 }
 
-// MockTaskSrvcClient_ImportTaskFromZipWithId_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ImportTaskFromZipWithId'
-type MockTaskSrvcClient_ImportTaskFromZipWithId_Call struct {
+// MockTaskSrvcClient_ImportTaskFromZip_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ImportTaskFromZip'
+type MockTaskSrvcClient_ImportTaskFromZip_Call struct {
 	*mock.Call
 }
 
-// ImportTaskFromZipWithId is a helper method to define mock.On call
+// ImportTaskFromZip is a helper method to define mock.On call
 //   - ctx context.Context
 //   - zipBytes []byte
 //   - overrideId string
-func (_e *MockTaskSrvcClient_Expecter) ImportTaskFromZipWithId(ctx interface{}, zipBytes interface{}, overrideId interface{}) *MockTaskSrvcClient_ImportTaskFromZipWithId_Call {
-	return &MockTaskSrvcClient_ImportTaskFromZipWithId_Call{Call: _e.mock.On("ImportTaskFromZipWithId", ctx, zipBytes, overrideId)}
+func (_e *MockTaskSrvcClient_Expecter) ImportTaskFromZip(ctx interface{}, zipBytes interface{}, overrideId interface{}) *MockTaskSrvcClient_ImportTaskFromZip_Call {
+	return &MockTaskSrvcClient_ImportTaskFromZip_Call{Call: _e.mock.On("ImportTaskFromZip", ctx, zipBytes, overrideId)}
 }
 
-func (_c *MockTaskSrvcClient_ImportTaskFromZipWithId_Call) Run(run func(ctx context.Context, zipBytes []byte, overrideId string)) *MockTaskSrvcClient_ImportTaskFromZipWithId_Call {
+func (_c *MockTaskSrvcClient_ImportTaskFromZip_Call) Run(run func(ctx context.Context, zipBytes []byte, overrideId string)) *MockTaskSrvcClient_ImportTaskFromZip_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		run(args[0].(context.Context), args[1].([]byte), args[2].(string))
 	})
 	return _c
 }
 
-func (_c *MockTaskSrvcClient_ImportTaskFromZipWithId_Call) Return(_a0 string, _a1 error) *MockTaskSrvcClient_ImportTaskFromZipWithId_Call {
+func (_c *MockTaskSrvcClient_ImportTaskFromZip_Call) Return(_a0 string, _a1 error) *MockTaskSrvcClient_ImportTaskFromZip_Call {
 	_c.Call.Return(_a0, _a1)
 	return _c
 }
 
-func (_c *MockTaskSrvcClient_ImportTaskFromZipWithId_Call) RunAndReturn(run func(context.Context, []byte, string) (string, error)) *MockTaskSrvcClient_ImportTaskFromZipWithId_Call {
+func (_c *MockTaskSrvcClient_ImportTaskFromZip_Call) RunAndReturn(run func(context.Context, []byte, string) (string, error)) *MockTaskSrvcClient_ImportTaskFromZip_Call {
 	_c.Call.Return(run)
 	return _c
 }

@@ -86,7 +86,7 @@ func TestImportExportTask(t *testing.T) {
 		createdTask = task
 		return nil
 	})
-	importedTaskId, err := taskSrvc.ImportTaskFromZip(ctx, newZipBytes)
+	importedTaskId, err := taskSrvc.ImportTaskFromZip(ctx, newZipBytes, "")
 	require.NoError(t, err, "Failed to import task from ZIP")
 
 	// 4. map the imported task to the archive format
