@@ -653,7 +653,7 @@ func (ts *TaskSrvc) mapToArchive(ctx context.Context, t Task) (taskfs.Task, erro
 		Archive:   taskfs.Archive{},
 		Solutions: []taskfs.Solution{},
 		Metadata: taskfs.Metadata{
-			ProblemTags: []string{},
+			ProblemTags: t.ProblemTags,
 			Difficulty:  t.DifficultyRating,
 		},
 	}
@@ -817,6 +817,7 @@ func (ts *TaskSrvc) mapFromArchive(t taskfs.Task, overrideId string) (Task, erro
 	// Origin and metadata
 	res.DifficultyRating = t.Metadata.Difficulty
 	res.OriginOlympiad = t.Origin.Olympiad
+	res.ProblemTags = t.Metadata.ProblemTags
 	for lang, note := range t.Origin.Notes {
 		res.OriginNotes = append(res.OriginNotes, OriginNote{Lang: lang, Info: note})
 	}
