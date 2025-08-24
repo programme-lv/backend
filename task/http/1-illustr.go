@@ -1,11 +1,9 @@
 package http
 
 import (
-	"crypto/sha256"
 	"fmt"
 	"io"
 	"log/slog"
-	"mime"
 	"net/http"
 	"strings"
 
@@ -60,13 +58,6 @@ func (h *taskHttpHandler) UploadIllustrationImage(w http.ResponseWriter, r *http
 		return
 	}
 
-	// Upload the illustration image to S3
-	uri, err := h.taskSrvc.UploadIllustrationImg(r.Context(), imageMimeType, imageBytes)
-	if err != nil {
-		httpjson.HandleSrvcError(slog.Default(), w, err)
-		return
-	}
-
 	// Get image dimensions
 	width, height, err := getImageDimensions(imageBytes, imageMimeType)
 	if err != nil {
@@ -84,17 +75,12 @@ func (h *taskHttpHandler) UploadIllustrationImage(w http.ResponseWriter, r *http
 		return
 	}
 
-	// Create the S3 key using the same logic as the service
-	sha2 := fmt.Sprintf("%x", sha256.Sum256(imageBytes))
-	exts, err := mime.ExtensionsByType(imageMimeType)
-	if err != nil || len(exts) == 0 {
-		errMsg := fmt.Sprintf("failed to get file extension for MIME type: %s", imageMimeType)
-		errCode := "invalid_mime_type"
-		httpjson.Error(w, errMsg, http.StatusBadRequest, errCode)
+	// Upload the illustration image to S3
+	s3Key, err := h.taskSrvc.UploadIllustrationImg(r.Context(), imageMimeType, imageBytes)
+	if err != nil {
+		httpjson.HandleSrvcError(slog.Default(), w, err)
 		return
 	}
-	ext := exts[0]
-	s3Key := fmt.Sprintf("task-illustrations/%s%s", sha2, ext)
 
 	// Update the task with the illustration image information
 	sizeInBytes := len(imageBytes)
@@ -113,7 +99,7 @@ func (h *taskHttpHandler) UploadIllustrationImage(w http.ResponseWriter, r *http
 
 	h.cache.Delete(taskGetCacheKey(taskId))
 
-	err = httpjson.Success(w, map[string]string{"url": uri})
+	err = httpjson.Success(w, map[string]string{"s3_key": s3Key})
 	if err != nil {
 		slog.Error("failed to write success json", "error", err)
 	}

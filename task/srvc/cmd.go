@@ -11,7 +11,6 @@ import (
 	"mime"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/google/uuid"
 	"github.com/klauspost/compress/zstd"
@@ -81,21 +80,23 @@ func (ts *TaskSrvc) DeleteTask(ctx context.Context, shortId string) error {
 
 // S3 bucket: "proglv-public" (as of 2024-09-29)
 // S3 key format: "task-pdf-statements/<sha2>.pdf"
-func (ts *TaskSrvc) UploadStatementPdf(ctx context.Context, body []byte) (string, error) {
+// returns s3 key for the uploaded pdf statement
+func (ts *TaskSrvc) UploadStatementPdf(ctx context.Context, body []byte) (s3Key string, err error) {
 	l := ts.logger(ctx)
 	shaHex := Sha2Hex(body)
-	s3Key := fmt.Sprintf("%s/%s.pdf", "task-pdf-statements", shaHex)
-	url, err := ts.s3PublicBucket.Upload(body, s3Key, "application/pdf")
+	s3Key = fmt.Sprintf("%s/%s.pdf", "task-pdf-statements", shaHex)
+	_, err = ts.s3PublicBucket.Upload(body, s3Key, "application/pdf")
 	if err != nil {
 		l.Error("failed to upload PDF to S3", "error", err)
 		return "", NewErrorInternalServerError()
 	}
-	return url, nil
+	return s3Key, nil
 }
 
 // S3 bucket: "proglv-public" (as of 2024-09-29)
 // S3 key format: "task-illustrations/<sha2>.<ext>"
-func (ts *TaskSrvc) UploadIllustrationImg(ctx context.Context, mimeType string, body []byte) (url string, err error) {
+// returns s3 key for the uploaded illustration image
+func (ts *TaskSrvc) UploadIllustrationImg(ctx context.Context, mimeType string, body []byte) (s3Key string, err error) {
 	l := ts.logger(ctx)
 	sha2 := Sha2Hex(body)
 	exts, err := mime.ExtensionsByType(mimeType)
@@ -108,13 +109,13 @@ func (ts *TaskSrvc) UploadIllustrationImg(ctx context.Context, mimeType string, 
 		return "", NewErrorImageFileExtFromMimeType(mimeType)
 	}
 	ext := exts[0]
-	s3Key := fmt.Sprintf("%s/%s%s", "task-illustrations", sha2, ext)
-	url, err = ts.s3PublicBucket.Upload(body, s3Key, mimeType)
+	s3Key = fmt.Sprintf("%s/%s%s", "task-illustrations", sha2, ext)
+	_, err = ts.s3PublicBucket.Upload(body, s3Key, mimeType)
 	if err != nil {
 		l.Error("failed to upload illustration to S3", "error", err)
 		return "", NewErrorInternalServerError()
 	}
-	return url, nil
+	return s3Key, nil
 }
 
 // S3 key format: "task-md-images/<uuid>.<extension>"
@@ -960,15 +961,11 @@ func (ts *TaskSrvc) uploadTaskArchiveAssets(ctx context.Context, t taskfs.Task, 
 
 	// Original PDFs (optional)
 	for _, pdf := range t.Archive.GetOgStatementPdfs() {
-		url, err := ts.UploadStatementPdf(ctx, pdf.Content)
+		s3Key, err := ts.UploadStatementPdf(ctx, pdf.Content)
 		if err != nil && etrace.IsCritical(err) {
 			return fmt.Errorf("upload pdf: %w", err)
 		}
-		// Derive S3 key from returned URL (public bucket)
-		key := url
-		key = strings.TrimPrefix(key, "https://proglv-public.s3.eu-central-1.amazonaws.com/")
-		key = strings.TrimPrefix(key, "s3://proglv-dev/")
-		res.PdfStatements = append(res.PdfStatements, PdfStatement{LangIso639: pdf.Language, S3Key: key})
+		res.PdfStatements = append(res.PdfStatements, PdfStatement{LangIso639: pdf.Language, S3Key: s3Key})
 	}
 
 	// Tests: upload to testfile bucket and record sha256
