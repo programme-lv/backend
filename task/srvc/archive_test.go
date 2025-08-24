@@ -47,47 +47,52 @@ func TestImportExportTask(t *testing.T) {
 	require.NoError(t, err)
 
 	// 3. import and fetch task from database
-	mockCdnS3.EXPECT().Exists(mock.Anything).Return(false, nil)
 	for _, img := range expected.Statement.Images {
 		mime, _ := srvc.MimeFromFname(img.Fname)
 		mockCdnS3.EXPECT().Upload(img.Content, mock.Anything, mime).RunAndReturn(func(content []byte, key string, mimeType string) (string, error) {
-			mockCdnS3.EXPECT().Download(key).Return(content, nil)
+			mockCdnS3.EXPECT().Download(key).Return(content, nil).Once()
 			return "", nil
-		})
+		}).Once()
 	}
 	for _, img := range expected.Archive.GetIllustrImgs() {
 		mime, _ := srvc.MimeFromFname(img.Fname)
 		mockCdnS3.EXPECT().Upload(img.Content, mock.Anything, mime).RunAndReturn(func(content []byte, key string, mimeType string) (string, error) {
-			mockCdnS3.EXPECT().Download(key).Return(content, nil)
+			mockCdnS3.EXPECT().Download(key).Return(content, nil).Maybe()
 			return "", nil
-		})
+		}).Once()
 	}
 	for _, pdf := range expected.Archive.GetOgStatementPdfs() {
 		mockCdnS3.EXPECT().Upload(pdf.Content, mock.Anything, "application/pdf").RunAndReturn(func(content []byte, key string, mimeType string) (string, error) {
-			mockCdnS3.EXPECT().Download(key).Return(content, nil)
+			mockCdnS3.EXPECT().Download(key).Return(content, nil).Maybe()
 			return "", nil
-		})
+		}).Once()
 	}
 	for _, test := range expected.Testing.Tests {
 		inBytes := []byte(test.Input)
-		ansBytes := []byte(test.Answer)
-		mockTestS3.EXPECT().Exists(srvc.GetTestfileS3Key(inBytes)).Return(false, nil)
-		mockTestS3.EXPECT().Exists(srvc.GetTestfileS3Key(ansBytes)).Return(false, nil)
+		mockTestS3.EXPECT().Exists(srvc.GetTestfileS3Key(inBytes)).Return(false, nil).Once()
+		keyToValue := make(map[string][]byte)
 		mockTestS3.EXPECT().Upload(srvc.MustCompressWithZstd(inBytes), mock.Anything, "application/zstd").RunAndReturn(func(content []byte, key string, mimeType string) (string, error) {
-			mockTestS3.EXPECT().Download(key).Return(content, nil)
+			keyToValue[key] = content
 			return "", nil
-		})
+		}).Once()
+
+		ansBytes := []byte(test.Answer)
+		mockTestS3.EXPECT().Exists(srvc.GetTestfileS3Key(ansBytes)).Return(false, nil).Once()
 		mockTestS3.EXPECT().Upload(srvc.MustCompressWithZstd(ansBytes), mock.Anything, "application/zstd").RunAndReturn(func(content []byte, key string, mimeType string) (string, error) {
-			mockTestS3.EXPECT().Download(key).Return(content, nil)
+			keyToValue[key] = content
 			return "", nil
-		})
+		}).Once()
+		for key, value := range keyToValue {
+			mockTestS3.EXPECT().Download(key).Return(value, nil)
+		}
 	}
 	zipBytes, err := srvc.TaskfsArchiveToZip(expected.Archive)
 	require.NoError(t, err)
 	mockCdnS3.EXPECT().Upload(zipBytes, mock.Anything, "application/zip").RunAndReturn(func(content []byte, key string, mimeType string) (string, error) {
-		mockCdnS3.EXPECT().Download(key).Return(content, nil)
+		mockCdnS3.EXPECT().Download(key).Return(content, nil).Once()
 		return "", nil
-	})
+	}).Once()
+
 	mockRepo.EXPECT().Exists(ctx, "kvadrputekl").Return(false, nil).Once()
 	var createdTask srvc.Task
 	mockRepo.EXPECT().CreateTask(ctx, mock.Anything).RunAndReturn(func(ctx context.Context, task srvc.Task) error {
