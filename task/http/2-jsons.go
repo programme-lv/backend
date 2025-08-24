@@ -127,7 +127,12 @@ func (handler *taskHttpHandler) mapTaskResponse(task *srvc.Task) *Task {
 	defaultPdfStatementUrl := new(string)
 	for _, pdfStatement := range pdfStatements {
 		if pdfStatement.LangIso639 == "lv" {
-			*defaultPdfStatementUrl = pdfStatement.ObjectUrl
+			url, err := handler.taskSrvc.GetPublicUrlForPdfStatement(context.TODO(), pdfStatement.S3Key)
+			if err != nil {
+				slog.Error("failed to get public url for pdf statement", "error", err)
+				url = ""
+			}
+			*defaultPdfStatementUrl = url
 		}
 	}
 

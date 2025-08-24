@@ -11,6 +11,7 @@ import (
 	"mime"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/klauspost/compress/zstd"
@@ -960,10 +961,14 @@ func (ts *TaskSrvc) uploadTaskArchiveAssets(ctx context.Context, t taskfs.Task, 
 	// Original PDFs (optional)
 	for _, pdf := range t.Archive.GetOgStatementPdfs() {
 		url, err := ts.UploadStatementPdf(ctx, pdf.Content)
-		if err != nil {
+		if err != nil && etrace.IsCritical(err) {
 			return fmt.Errorf("upload pdf: %w", err)
 		}
-		res.PdfStatements = append(res.PdfStatements, PdfStatement{LangIso639: pdf.Language, ObjectUrl: url})
+		// Derive S3 key from returned URL (public bucket)
+		key := url
+		key = strings.TrimPrefix(key, "https://proglv-public.s3.eu-central-1.amazonaws.com/")
+		key = strings.TrimPrefix(key, "s3://proglv-dev/")
+		res.PdfStatements = append(res.PdfStatements, PdfStatement{LangIso639: pdf.Language, S3Key: key})
 	}
 
 	// Tests: upload to testfile bucket and record sha256

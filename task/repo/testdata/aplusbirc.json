@@ -38,7 +38,7 @@
   "PdfStatements": [
     {
       "LangIso639": "lv",
-      "ObjectUrl": "https://proglv-public.s3.eu-central-1.amazonaws.com/task-pdf-statements/7a25c752637f3b913bac77e962e80c153b52caf1cd824f4b81da0c31df7f5f19.pdf"
+      "S3Key": "task-pdf-statements/7a25c752637f3b913bac77e962e80c153b52caf1cd824f4b81da0c31df7f5f19.pdf"
     }
   ],
   "VisInpSubtasks": [

@@ -448,6 +448,63 @@ func (_c *MockTaskSrvcClient_GetPublicUrlForIllustrImg_Call) RunAndReturn(run fu
 	return _c
 }
 
+// GetPublicUrlForPdfStatement provides a mock function with given fields: ctx, pdfStatementS3Key
+func (_m *MockTaskSrvcClient) GetPublicUrlForPdfStatement(ctx context.Context, pdfStatementS3Key string) (string, error) {
+	ret := _m.Called(ctx, pdfStatementS3Key)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetPublicUrlForPdfStatement")
+	}
+
+	var r0 string
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string) (string, error)); ok {
+		return rf(ctx, pdfStatementS3Key)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string) string); ok {
+		r0 = rf(ctx, pdfStatementS3Key)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, pdfStatementS3Key)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockTaskSrvcClient_GetPublicUrlForPdfStatement_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetPublicUrlForPdfStatement'
+type MockTaskSrvcClient_GetPublicUrlForPdfStatement_Call struct {
+	*mock.Call
+}
+
+// GetPublicUrlForPdfStatement is a helper method to define mock.On call
+//   - ctx context.Context
+//   - pdfStatementS3Key string
+func (_e *MockTaskSrvcClient_Expecter) GetPublicUrlForPdfStatement(ctx interface{}, pdfStatementS3Key interface{}) *MockTaskSrvcClient_GetPublicUrlForPdfStatement_Call {
+	return &MockTaskSrvcClient_GetPublicUrlForPdfStatement_Call{Call: _e.mock.On("GetPublicUrlForPdfStatement", ctx, pdfStatementS3Key)}
+}
+
+func (_c *MockTaskSrvcClient_GetPublicUrlForPdfStatement_Call) Run(run func(ctx context.Context, pdfStatementS3Key string)) *MockTaskSrvcClient_GetPublicUrlForPdfStatement_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string))
+	})
+	return _c
+}
+
+func (_c *MockTaskSrvcClient_GetPublicUrlForPdfStatement_Call) Return(_a0 string, _a1 error) *MockTaskSrvcClient_GetPublicUrlForPdfStatement_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockTaskSrvcClient_GetPublicUrlForPdfStatement_Call) RunAndReturn(run func(context.Context, string) (string, error)) *MockTaskSrvcClient_GetPublicUrlForPdfStatement_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetPublicUrlForStatementImage provides a mock function with given fields: ctx, statementImageS3Key
 func (_m *MockTaskSrvcClient) GetPublicUrlForStatementImage(ctx context.Context, statementImageS3Key string) (string, error) {
 	ret := _m.Called(ctx, statementImageS3Key)

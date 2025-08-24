@@ -90,6 +90,15 @@ func (ts *TaskSrvc) GetPublicUrlForStatementImage(ctx context.Context, s3Key str
 	}
 }
 
+func (ts *TaskSrvc) GetPublicUrlForPdfStatement(ctx context.Context, s3Key string) (string, error) {
+	if ts.s3PublicBucket.Bucket() == "proglv-public" {
+		cloudfrontEndpoint := "https://dvhk4hiwp1rmf.cloudfront.net/"
+		return cloudfrontEndpoint + s3Key, nil
+	} else {
+		return ts.s3PublicBucket.PresignedURL(s3Key, 24*time.Hour)
+	}
+}
+
 // GetTestDownlUrl implements submadapter.TaskSrvcFacade.
 func (ts *TaskSrvc) GetTestDownlUrl(ctx context.Context, testFileSha256 string) (string, error) {
 	presignedUrl, err := ts.s3TestfileBucket.PresignedURL(fmt.Sprintf("%s.zst", testFileSha256), time.Hour*24)
