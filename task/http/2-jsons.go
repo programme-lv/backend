@@ -127,7 +127,7 @@ func (handler *taskHttpHandler) mapTaskResponse(task *srvc.Task) *Task {
 	defaultPdfStatementUrl := new(string)
 	for _, pdfStatement := range pdfStatements {
 		if pdfStatement.LangIso639 == "lv" {
-			url, err := handler.taskSrvc.GetPublicUrlForPdfStatement(context.TODO(), pdfStatement.S3Key)
+			url, err := handler.taskSrvc.GetHttpUrlForPdfStatement(context.TODO(), pdfStatement.S3Key)
 			if err != nil {
 				slog.Error("failed to get public url for pdf statement", "error", err)
 				url = ""
@@ -216,7 +216,7 @@ func (handler *taskHttpHandler) mapTaskIllustrImg(illustrImg *srvc.IllustrationI
 		return nil
 	}
 
-	httpUrl, err := handler.taskSrvc.GetPublicUrlForIllustrImg(context.TODO(), illustrImg.S3Key)
+	httpUrl, err := handler.taskSrvc.GetHttpUrlForIllustrImg(context.TODO(), illustrImg.S3Key)
 	if err != nil {
 		slog.Error("failed to get public url for illustration image", "error", err)
 		return nil
@@ -245,7 +245,7 @@ func (handler *taskHttpHandler) mapTaskPreview(preview srvc.TaskPreview) TaskPre
 func (handler *taskHttpHandler) mapTaskStatementImages(images []srvc.StatementImage) []StatementImage {
 	response := make([]StatementImage, len(images))
 	for i, image := range images {
-		httpUrl, err := handler.taskSrvc.GetPublicUrlForStatementImage(context.TODO(), image.S3Key)
+		httpUrl, err := handler.taskSrvc.GetHttpUrlForStatementImage(context.TODO(), image.S3Key)
 		if err != nil {
 			slog.Error("failed to get public url for statement image", "error", err)
 			httpUrl = ""

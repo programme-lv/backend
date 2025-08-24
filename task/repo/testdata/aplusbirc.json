@@ -15,6 +15,7 @@
   "OriginOrg": "PPS",
   "OriginYear": "2024/2025",
   "ProblemTags": ["two-sum","arrays"],
+  "ArchiveS3Key": "task-archives/aplusbirc.zip",
   "DifficultyRating": 3,
   "OriginNotes": [
     {

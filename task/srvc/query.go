@@ -72,7 +72,7 @@ func (ts *TaskSrvc) GetTaskFullNames(ctx context.Context, shortIDs []string) ([]
 	return fullNames, nil
 }
 
-func (ts *TaskSrvc) GetPublicUrlForIllustrImg(ctx context.Context, s3Key string) (string, error) {
+func (ts *TaskSrvc) GetHttpUrlForIllustrImg(ctx context.Context, s3Key string) (string, error) {
 	if ts.s3PublicBucket.Bucket() == "proglv-public" {
 		cloudfrontEndpoint := "https://dvhk4hiwp1rmf.cloudfront.net/"
 		return cloudfrontEndpoint + s3Key, nil
@@ -81,7 +81,7 @@ func (ts *TaskSrvc) GetPublicUrlForIllustrImg(ctx context.Context, s3Key string)
 	}
 }
 
-func (ts *TaskSrvc) GetPublicUrlForStatementImage(ctx context.Context, s3Key string) (string, error) {
+func (ts *TaskSrvc) GetHttpUrlForStatementImage(ctx context.Context, s3Key string) (string, error) {
 	if ts.s3PublicBucket.Bucket() == "proglv-public" {
 		cloudfrontEndpoint := "https://dvhk4hiwp1rmf.cloudfront.net/"
 		return cloudfrontEndpoint + s3Key, nil
@@ -90,7 +90,7 @@ func (ts *TaskSrvc) GetPublicUrlForStatementImage(ctx context.Context, s3Key str
 	}
 }
 
-func (ts *TaskSrvc) GetPublicUrlForPdfStatement(ctx context.Context, s3Key string) (string, error) {
+func (ts *TaskSrvc) GetHttpUrlForPdfStatement(ctx context.Context, s3Key string) (string, error) {
 	if ts.s3PublicBucket.Bucket() == "proglv-public" {
 		cloudfrontEndpoint := "https://dvhk4hiwp1rmf.cloudfront.net/"
 		return cloudfrontEndpoint + s3Key, nil

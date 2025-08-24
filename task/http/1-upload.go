@@ -39,7 +39,7 @@ func (h *taskHttpHandler) UploadTask(w http.ResponseWriter, r *http.Request) {
 	// Check for optional ID override
 	overrideId := r.URL.Query().Get("override_id")
 
-	createdId, err := h.taskSrvc.ImportTaskFromZipWithId(r.Context(), zipBytes, overrideId)
+	createdId, err := h.taskSrvc.ImportTaskFromZip(r.Context(), zipBytes, overrideId)
 	if err != nil {
 		httpjson.HandleSrvcError(logger, w, err)
 		return

@@ -72,6 +72,9 @@ type Task struct {
 
 	// metadata: problem tags (free-form short labels)
 	ProblemTags []string
+
+	// original full archive S3 key (optional)
+	ArchiveS3Key string
 }
 
 func (t *Task) CpuMillis() int {

@@ -694,24 +694,10 @@ func (ts *TaskSrvc) createTaskZipBytes(task taskfs.Task) ([]byte, error) {
 	return zipBytes, nil
 }
 
-// GetCacheStats returns test file cache statistics
-func (ts *TaskSrvc) GetCacheStats() (totalSizeMB int64, fileCount int, err error) {
-	totalSize, count, err := ts.testCache.GetCacheStats()
-	if err != nil {
-		return 0, 0, err
-	}
-	return totalSize / (1024 * 1024), count, nil
-}
-
-// ImportTaskFromZip imports a task from a taskfs ZIP archive using the original task ID from the ZIP.
-func (ts *TaskSrvc) ImportTaskFromZip(ctx context.Context, zipBytes []byte) (string, error) {
-	return ts.ImportTaskFromZipWithId(ctx, zipBytes, "")
-}
-
-// ImportTaskFromZipWithId imports a task from a taskfs ZIP archive with optional ID override.
+// ImportTaskFromZip imports a task from a taskfs ZIP archive with optional ID override.
 // If overrideId is empty, uses the original task ID from the ZIP.
 // If overrideId is provided, validates and uses it instead of the original ID.
-func (ts *TaskSrvc) ImportTaskFromZipWithId(ctx context.Context, zipBytes []byte, overrideId string) (string, error) {
+func (ts *TaskSrvc) ImportTaskFromZip(ctx context.Context, zipBytes []byte, overrideId string) (string, error) {
 	l := ts.logger(ctx)
 	l.Info("starting task import")
 
