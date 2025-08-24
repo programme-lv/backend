@@ -113,9 +113,7 @@ func TestImportExportTask(t *testing.T) {
 	require.Equal(t, expected.Scoring, exported.Scoring)
 	require.Equal(t, expected.Metadata, exported.Metadata)
 	require.Equal(t, expected.Archive, exported.Archive)
-	require.Equal(t, expected.Solutions, exported.Solutions)
-
-	require.Equal(t, expected, exported)
+	require.Equal(t, uncropped, exported)
 }
 
 // when using require.Equal, too much gets printed to the console

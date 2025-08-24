@@ -69,6 +69,9 @@ type Task struct {
 
 	// metadata: authors (free-form names)
 	Authors []string
+
+	// metadata: problem tags (free-form short labels)
+	ProblemTags []string
 }
 
 func (t *Task) CpuMillis() int {
