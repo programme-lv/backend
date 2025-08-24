@@ -211,6 +211,65 @@ func (_c *MockTaskSrvcClient_DeleteTask_Call) RunAndReturn(run func(context.Cont
 	return _c
 }
 
+// DownloadOgFileArchive provides a mock function with given fields: ctx, s3Key
+func (_m *MockTaskSrvcClient) DownloadOgFileArchive(ctx context.Context, s3Key string) ([]byte, error) {
+	ret := _m.Called(ctx, s3Key)
+
+	if len(ret) == 0 {
+		panic("no return value specified for DownloadOgFileArchive")
+	}
+
+	var r0 []byte
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string) ([]byte, error)); ok {
+		return rf(ctx, s3Key)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string) []byte); ok {
+		r0 = rf(ctx, s3Key)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]byte)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, s3Key)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockTaskSrvcClient_DownloadOgFileArchive_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DownloadOgFileArchive'
+type MockTaskSrvcClient_DownloadOgFileArchive_Call struct {
+	*mock.Call
+}
+
+// DownloadOgFileArchive is a helper method to define mock.On call
+//   - ctx context.Context
+//   - s3Key string
+func (_e *MockTaskSrvcClient_Expecter) DownloadOgFileArchive(ctx interface{}, s3Key interface{}) *MockTaskSrvcClient_DownloadOgFileArchive_Call {
+	return &MockTaskSrvcClient_DownloadOgFileArchive_Call{Call: _e.mock.On("DownloadOgFileArchive", ctx, s3Key)}
+}
+
+func (_c *MockTaskSrvcClient_DownloadOgFileArchive_Call) Run(run func(ctx context.Context, s3Key string)) *MockTaskSrvcClient_DownloadOgFileArchive_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string))
+	})
+	return _c
+}
+
+func (_c *MockTaskSrvcClient_DownloadOgFileArchive_Call) Return(_a0 []byte, _a1 error) *MockTaskSrvcClient_DownloadOgFileArchive_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockTaskSrvcClient_DownloadOgFileArchive_Call) RunAndReturn(run func(context.Context, string) ([]byte, error)) *MockTaskSrvcClient_DownloadOgFileArchive_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // DownloadTestFile provides a mock function with given fields: ctx, testFileSha256
 func (_m *MockTaskSrvcClient) DownloadTestFile(ctx context.Context, testFileSha256 string) ([]byte, error) {
 	ret := _m.Called(ctx, testFileSha256)
@@ -1172,6 +1231,63 @@ func (_c *MockTaskSrvcClient_UploadIllustrationImg_Call) Return(_a0 string, _a1 
 }
 
 func (_c *MockTaskSrvcClient_UploadIllustrationImg_Call) RunAndReturn(run func(context.Context, string, []byte) (string, error)) *MockTaskSrvcClient_UploadIllustrationImg_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// UploadOgFileArchive provides a mock function with given fields: ctx, zipBytes
+func (_m *MockTaskSrvcClient) UploadOgFileArchive(ctx context.Context, zipBytes []byte) (string, error) {
+	ret := _m.Called(ctx, zipBytes)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UploadOgFileArchive")
+	}
+
+	var r0 string
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, []byte) (string, error)); ok {
+		return rf(ctx, zipBytes)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, []byte) string); ok {
+		r0 = rf(ctx, zipBytes)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, []byte) error); ok {
+		r1 = rf(ctx, zipBytes)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockTaskSrvcClient_UploadOgFileArchive_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UploadOgFileArchive'
+type MockTaskSrvcClient_UploadOgFileArchive_Call struct {
+	*mock.Call
+}
+
+// UploadOgFileArchive is a helper method to define mock.On call
+//   - ctx context.Context
+//   - zipBytes []byte
+func (_e *MockTaskSrvcClient_Expecter) UploadOgFileArchive(ctx interface{}, zipBytes interface{}) *MockTaskSrvcClient_UploadOgFileArchive_Call {
+	return &MockTaskSrvcClient_UploadOgFileArchive_Call{Call: _e.mock.On("UploadOgFileArchive", ctx, zipBytes)}
+}
+
+func (_c *MockTaskSrvcClient_UploadOgFileArchive_Call) Run(run func(ctx context.Context, zipBytes []byte)) *MockTaskSrvcClient_UploadOgFileArchive_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].([]byte))
+	})
+	return _c
+}
+
+func (_c *MockTaskSrvcClient_UploadOgFileArchive_Call) Return(_a0 string, _a1 error) *MockTaskSrvcClient_UploadOgFileArchive_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockTaskSrvcClient_UploadOgFileArchive_Call) RunAndReturn(run func(context.Context, []byte) (string, error)) *MockTaskSrvcClient_UploadOgFileArchive_Call {
 	_c.Call.Return(run)
 	return _c
 }
