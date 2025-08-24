@@ -871,6 +871,24 @@ func (ts *TaskSrvc) mapFromArchive(t taskfs.Task, overrideId string) (Task, erro
 			res.Subtasks[i].Descriptions[lang] = desc
 		}
 	}
+	res.VisInpSubtasks = make([]VisibleInputSubtask, 0)
+	for i, st := range t.Statement.Subtasks {
+		stId := i + 1
+		if st.VisInput {
+			tests := make([]VisInpSubtaskTest, 0)
+			for _, group := range t.Scoring.Groups {
+				if group.Subtask == stId {
+					for testId := group.Range[0]; testId <= group.Range[1]; testId++ {
+						tests = append(tests, VisInpSubtaskTest{TestId: testId, Input: t.Testing.Tests[testId-1].Input})
+					}
+				}
+			}
+			res.VisInpSubtasks = append(res.VisInpSubtasks, VisibleInputSubtask{
+				SubtaskId: stId,
+				Tests:     tests,
+			})
+		}
+	}
 	// Build subtask->tests mapping from scoring groups
 	for _, group := range t.Scoring.Groups {
 		if group.Subtask < 1 || group.Subtask > len(res.Subtasks) {

@@ -107,6 +107,7 @@ func TestImportExportTask(t *testing.T) {
 	require.Equal(t, expected.ShortID, exported.ShortID)
 	require.Equal(t, expected.ReadMe, exported.ReadMe)
 	require.Equal(t, expected.FullName, exported.FullName)
+	require.True(t, expected.Statement.Subtasks[0].VisInput)
 	require.Equal(t, expected.Statement, exported.Statement)
 	require.Equal(t, expected.Origin, exported.Origin)
 	require.Equal(t, expected.Testing, exported.Testing)
