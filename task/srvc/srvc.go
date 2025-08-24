@@ -2,7 +2,6 @@ package srvc
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"time"
 
@@ -110,20 +109,4 @@ func NewTaskSrvc(
 
 func (ts *TaskSrvc) logger(ctx context.Context) *slog.Logger {
 	return ctxlog.FromContext(ctx).With("module", "task", "layer", "srvc")
-}
-
-// UploadTaskArchive uploads the provided ZIP bytes to the public bucket and returns its S3 key.
-// S3 key format: "task-archives/<shortId>.zip"
-func (ts *TaskSrvc) UploadTaskArchive(ctx context.Context, shortId string, zipBytes []byte) (string, error) {
-	l := ts.logger(ctx)
-	if shortId == "" {
-		return "", fmt.Errorf("shortId must not be empty")
-	}
-	s3Key := fmt.Sprintf("%s/%s.zip", "task-archives", shortId)
-	_, err := ts.s3PublicBucket.Upload(zipBytes, s3Key, "application/zip")
-	if err != nil {
-		l.Error("failed to upload archive to S3", "error", err)
-		return "", NewErrorInternalServerError()
-	}
-	return s3Key, nil
 }
