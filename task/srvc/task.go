@@ -74,7 +74,9 @@ type Task struct {
 	ProblemTags []string
 
 	// original full archive S3 key (optional)
-	ArchiveS3Key string
+	OgFilesZipS3Key string
+
+	Solutions []Solution
 }
 
 func (t *Task) CpuMillis() int {
@@ -233,4 +235,10 @@ func (t *TaskPreview) DefaultFullName() string {
 		return v
 	}
 	return ""
+}
+
+type Solution struct {
+	Fname    string
+	Content  string
+	Subtasks []int // which subtasks should it solve
 }

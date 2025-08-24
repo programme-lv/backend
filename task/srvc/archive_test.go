@@ -63,8 +63,10 @@ func TestImportExportTask(t *testing.T) {
 		})
 	}
 	for _, pdf := range expected.Archive.GetOgStatementPdfs() {
-		mockCdnS3.EXPECT().Upload(pdf.Content, mock.Anything, "application/pdf").Return("", nil)
-		mockCdnS3.EXPECT().Download(mock.Anything).Return(pdf.Content, nil)
+		mockCdnS3.EXPECT().Upload(pdf.Content, mock.Anything, "application/pdf").RunAndReturn(func(content []byte, key string, mimeType string) (string, error) {
+			mockCdnS3.EXPECT().Download(key).Return(content, nil)
+			return "", nil
+		})
 	}
 	for _, test := range expected.Testing.Tests {
 		inBytes := []byte(test.Input)
@@ -80,10 +82,17 @@ func TestImportExportTask(t *testing.T) {
 			return "", nil
 		})
 	}
+	zipBytes, err := srvc.TaskfsArchiveToZip(expected.Archive)
+	require.NoError(t, err)
+	mockCdnS3.EXPECT().Upload(zipBytes, mock.Anything, "application/zip").RunAndReturn(func(content []byte, key string, mimeType string) (string, error) {
+		mockCdnS3.EXPECT().Download(key).Return(content, nil)
+		return "", nil
+	})
 	mockRepo.EXPECT().Exists(ctx, "kvadrputekl").Return(false, nil).Once()
 	var createdTask srvc.Task
 	mockRepo.EXPECT().CreateTask(ctx, mock.Anything).RunAndReturn(func(ctx context.Context, task srvc.Task) error {
 		createdTask = task
+		t.Logf("Created task with OgFilesZipS3Key: %s", task.OgFilesZipS3Key)
 		return nil
 	})
 	importedTaskId, err := taskSrvc.ImportTaskFromZip(ctx, newZipBytes, "")
@@ -101,7 +110,6 @@ func TestImportExportTask(t *testing.T) {
 	require.NoError(t, err)
 	exported, err := taskfs.ReadZip(exportPath)
 	require.NoError(t, err)
-	exported = replaceLongContentWithChecksum(exported)
 
 	// 5. compare the retrieved task with the expected
 	require.Equal(t, expected.ShortID, exported.ShortID)
@@ -114,7 +122,8 @@ func TestImportExportTask(t *testing.T) {
 	require.Equal(t, expected.Scoring, exported.Scoring)
 	require.Equal(t, expected.Metadata, exported.Metadata)
 	require.Equal(t, expected.Archive, exported.Archive)
-	require.Equal(t, uncropped, exported)
+	require.Equal(t, expected.Solutions, exported.Solutions)
+	require.Equal(t, expected, exported)
 }
 
 // when using require.Equal, too much gets printed to the console

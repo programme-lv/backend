@@ -1,6 +1,7 @@
 package srvc
 
 import (
+	"archive/zip"
 	"bytes"
 	"context"
 	"crypto/sha256"
@@ -8,6 +9,7 @@ import (
 	"image"
 	"image/jpeg"
 	"image/png"
+	"io"
 	"mime"
 	"os"
 	"path/filepath"
@@ -466,7 +468,7 @@ func (ts *TaskSrvc) ExportTaskAsZip(ctx context.Context, taskId string) ([]byte,
 	logger.Info("task data fetched successfully", "full_name", t.FullName)
 
 	logger.Info("mapping task to archive format")
-	task, err := ts.mapToArchive(ctx, t)
+	task, err := ts.mapToTaskfs(ctx, t)
 	if err != nil {
 		logger.Error("failed to map task to archive format", "error", err)
 		return nil, fmt.Errorf("failed to map task: %w", err)
@@ -484,7 +486,7 @@ func (ts *TaskSrvc) ExportTaskAsZip(ctx context.Context, taskId string) ([]byte,
 	return zipBytes, nil
 }
 
-func (ts *TaskSrvc) mapToArchive(ctx context.Context, t Task) (taskfs.Task, error) {
+func (ts *TaskSrvc) mapToTaskfs(ctx context.Context, t Task) (taskfs.Task, error) {
 	logger := ts.logger(ctx)
 	stories := make(map[string]taskfs.StoryMd)
 	for _, story := range t.MdStatements {
@@ -641,6 +643,23 @@ func (ts *TaskSrvc) mapToArchive(ctx context.Context, t Task) (taskfs.Task, erro
 		}
 	}
 
+	var taskfsArchive taskfs.Archive
+	if t.OgFilesZipS3Key != "" {
+		taskFsArchiveBytes, err := ts.DownloadOgFileArchive(ctx, t.OgFilesZipS3Key)
+		if err != nil {
+			logger.Error("failed to download og file archive", "s3_key", t.OgFilesZipS3Key, "error", err)
+			taskfsArchive = taskfs.Archive{}
+		} else {
+			taskfsArchive, err = TaskfsArchiveFromZip(taskFsArchiveBytes)
+			if err != nil {
+				logger.Error("failed to parse og file archive", "s3_key", t.OgFilesZipS3Key, "error", err)
+				taskfsArchive = taskfs.Archive{}
+			}
+		}
+	} else {
+		taskfsArchive = taskfs.Archive{}
+	}
+
 	res := taskfs.Task{
 		ShortID:  t.ShortId,
 		FullName: t.FullName,
@@ -673,7 +692,7 @@ func (ts *TaskSrvc) mapToArchive(ctx context.Context, t Task) (taskfs.Task, erro
 			TotalP:   totalPoints,
 			Groups:   tGroups,
 		},
-		Archive:   taskfs.Archive{},
+		Archive:   taskfsArchive,
 		Solutions: []taskfs.Solution{},
 		Metadata: taskfs.Metadata{
 			ProblemTags: t.ProblemTags,
@@ -681,8 +700,7 @@ func (ts *TaskSrvc) mapToArchive(ctx context.Context, t Task) (taskfs.Task, erro
 		},
 	}
 
-	err := res.Validate()
-	if err != nil && etrace.IsCritical(err) {
+	if err := res.Validate(); err != nil && etrace.IsCritical(err) {
 		return taskfs.Task{}, fmt.Errorf("task is invalid: %w", err)
 	}
 	return res, nil
@@ -761,7 +779,7 @@ func (ts *TaskSrvc) ImportTaskFromZip(ctx context.Context, zipBytes []byte, over
 	}
 
 	// Map task structure first (without heavy uploads)
-	serviceTask, err := ts.mapFromArchive(archTask, overrideId)
+	serviceTask, err := ts.mapFromTaskfs(archTask, overrideId)
 	if err != nil {
 		l.Error("failed to map task structure", "error", err)
 		return "", NewErrorInternalServerError()
@@ -794,8 +812,8 @@ func (ts *TaskSrvc) ImportTaskFromZip(ctx context.Context, zipBytes []byte, over
 	return serviceTask.ShortId, nil
 }
 
-// mapFromArchive maps the basic task structure without uploading heavy assets
-func (ts *TaskSrvc) mapFromArchive(t taskfs.Task, overrideId string) (Task, error) {
+// mapFromTaskfs maps the basic task structure without uploading heavy assets
+func (ts *TaskSrvc) mapFromTaskfs(t taskfs.Task, overrideId string) (Task, error) {
 	res := Task{}
 	// Use override ID if provided, otherwise use original from ZIP
 	if overrideId != "" {
@@ -989,7 +1007,76 @@ func (ts *TaskSrvc) uploadTaskArchiveAssets(ctx context.Context, t taskfs.Task, 
 		res.Tests[i] = Test{InpSha2: Sha2Hex(inpBytes), AnsSha2: Sha2Hex(ansBytes)}
 	}
 
+	// Original file archive
+	zipBytes, err := TaskfsArchiveToZip(t.Archive)
+	if err != nil {
+		return fmt.Errorf("create zip from archive: %w", err)
+	}
+	s3Key, err := ts.UploadOgFileArchive(ctx, zipBytes)
+	if err != nil {
+		return fmt.Errorf("upload og file archive: %w", err)
+	}
+	res.OgFilesZipS3Key = s3Key
+
 	return nil
+}
+
+func TaskfsArchiveToZip(archive taskfs.Archive) ([]byte, error) {
+	buf := bytes.NewBuffer(nil)
+	zipWriter := zip.NewWriter(buf)
+	defer zipWriter.Close()
+	for _, file := range archive.Files {
+		writer, err := zipWriter.Create(file.RelPath)
+		if err != nil {
+			return nil, fmt.Errorf("create zip entry for %s: %w", file.RelPath, err)
+		}
+		if _, err := writer.Write(file.Content); err != nil {
+			return nil, fmt.Errorf("write file content to zip: %w", err)
+		}
+	}
+	if err := zipWriter.Close(); err != nil {
+		return nil, fmt.Errorf("close zip writer: %w", err)
+	}
+	return buf.Bytes(), nil
+}
+
+func TaskfsArchiveFromZip(zipBytes []byte) (taskfs.Archive, error) {
+	if len(zipBytes) < 4 {
+		return taskfs.Archive{}, fmt.Errorf("open zip reader: data too short (%d bytes)", len(zipBytes))
+	}
+	// Check if it looks like a ZIP file (starts with "PK")
+	if zipBytes[0] != 0x50 || zipBytes[1] != 0x4B {
+		return taskfs.Archive{}, fmt.Errorf("open zip reader: not a ZIP file (starts with %02x%02x, expected 504B)", zipBytes[0], zipBytes[1])
+	}
+	reader, err := zip.NewReader(bytes.NewReader(zipBytes), int64(len(zipBytes)))
+	if err != nil {
+		return taskfs.Archive{}, fmt.Errorf("open zip reader: %w", err)
+	}
+
+	var files []taskfs.ArchiveFile
+	for _, file := range reader.File {
+		if file.FileInfo().IsDir() {
+			continue
+		}
+
+		rc, err := file.Open()
+		if err != nil {
+			return taskfs.Archive{}, fmt.Errorf("open file %s in zip: %w", file.Name, err)
+		}
+
+		content, err := io.ReadAll(rc)
+		rc.Close()
+		if err != nil {
+			return taskfs.Archive{}, fmt.Errorf("read file %s content: %w", file.Name, err)
+		}
+
+		files = append(files, taskfs.ArchiveFile{
+			RelPath: file.Name,
+			Content: content,
+		})
+	}
+
+	return taskfs.Archive{Files: files}, nil
 }
 
 func (ts *TaskSrvc) DownloadTestFile(ctx context.Context, testFileSha256 string) ([]byte, error) {

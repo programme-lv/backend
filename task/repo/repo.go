@@ -481,7 +481,7 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 		&t.OlympStage,
 		&authorsBytes,
 		&problemTagsBytes,
-		&t.ArchiveS3Key,
+		&t.OgFilesZipS3Key,
 		&t.DifficultyRating,
 		&t.Checker,
 		&t.Interactor,
@@ -892,7 +892,7 @@ func (r *taskPgRepo) CreateTask(ctx context.Context, t srvc.Task) error {
 	_, err = tx.Exec(ctx, `
 		INSERT INTO tasks (short_id, full_name_dict, orig_lang, readme, illustr_img_s3_key, width_px, height_px, filesize_bytes, mem_lim_megabytes, cpu_time_lim_secs, origin_olympiad, origin_org, origin_year, olymp_stage, authors, problem_tags, archive_s3_key, difficulty_rating, checker, interactor)
 		VALUES ($1, $2::jsonb, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15::jsonb, $16::jsonb, $17, $18, $19, $20)
-	`, t.ShortId, mustMarshalMapToJSONB(t.FullName), t.OrigLang, t.Readme, illustrS3Key, illustrWidthPx, illustrHeightPx, illustrSzInBytes, t.MemLimMegabytes, t.CpuTimeLimSecs, t.OriginOlympiad, t.OriginOrg, t.OriginYear, t.OlympStage, mustMarshalSliceToJSONB(t.Authors), mustMarshalSliceToJSONB(t.ProblemTags), t.ArchiveS3Key, t.DifficultyRating, t.Checker, t.Interactor)
+	`, t.ShortId, mustMarshalMapToJSONB(t.FullName), t.OrigLang, t.Readme, illustrS3Key, illustrWidthPx, illustrHeightPx, illustrSzInBytes, t.MemLimMegabytes, t.CpuTimeLimSecs, t.OriginOlympiad, t.OriginOrg, t.OriginYear, t.OlympStage, mustMarshalSliceToJSONB(t.Authors), mustMarshalSliceToJSONB(t.ProblemTags), t.OgFilesZipS3Key, t.DifficultyRating, t.Checker, t.Interactor)
 	if err != nil {
 		return fmt.Errorf("failed to insert main task: %w", err)
 	}
