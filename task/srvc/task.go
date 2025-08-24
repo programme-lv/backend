@@ -204,7 +204,7 @@ func (t *Task) FindTestgroupSubtasks(testGroupId int) []int {
 // PdfStatement represents a PDF statement with language and checksum.
 type PdfStatement struct {
 	LangIso639 string
-	ObjectUrl  string
+	S3Key      string
 }
 
 // OriginNote represents origin notes with language and information.

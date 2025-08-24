@@ -104,7 +104,7 @@ func TestTaskPgRepo(t *testing.T) {
 	assert.Contains(t, retrievedTask.MdStatements[0].Story, "Dotas $N$ kartītes", "MdStatements story mismatch")
 
 	assert.Len(t, retrievedTask.PdfStatements, 1, "PdfStatements length mismatch")
-	assert.Contains(t, retrievedTask.PdfStatements[0].ObjectUrl, "proglv-public.s3.eu-central-1.amazonaws.com", "PdfStatements URL mismatch")
+	assert.Contains(t, retrievedTask.PdfStatements[0].S3Key, "task-pdf-statements/7a25c752637f3b913bac77e962e80c153b52caf1cd824f4b81da0c31df7f5f19.pdf", "PdfStatements S3Key mismatch")
 
 	assert.Len(t, retrievedTask.VisInpSubtasks, 1, "VisInpSubtasks length mismatch")
 	assert.Len(t, retrievedTask.VisInpSubtasks[0].Tests, 3, "VisInpSubtasks tests length mismatch")

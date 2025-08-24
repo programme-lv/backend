@@ -1,4 +1,4 @@
--- Schema dump of 'proglv' generated Sun Jun  8 11:50:33 UTC 2025
+-- Schema dump of 'proglv' generated Sun Aug 24 08:25:33 UTC 2025
                                Table "public.eval_test_groups"
      Column      |   Type    | Collation | Nullable |                 Default                 
 -----------------+-----------+-----------+----------+-----------------------------------------
@@ -109,7 +109,7 @@ Foreign-key constraints:
  task_short_id | text    |           | not null | 
  input         | text    |           |          | 
  output        | text    |           |          | 
- md_note       | text    |           |          | 
+ md_note       | jsonb   |           |          | 
 Indexes:
     "task_examples_pkey" PRIMARY KEY, btree (id)
 Foreign-key constraints:
@@ -166,7 +166,7 @@ Foreign-key constraints:
  id            | integer |           | not null | nextval('task_pdf_statements_id_seq'::regclass)
  task_short_id | text    |           | not null | 
  lang_iso639   | text    |           |          | 
- object_url    | text    |           |          | 
+ s3_key        | text    |           |          | 
 Indexes:
     "task_pdf_statements_pkey" PRIMARY KEY, btree (id)
 Foreign-key constraints:
@@ -260,21 +260,28 @@ Foreign-key constraints:
 Referenced by:
     TABLE "task_vis_inp_subtask_tests" CONSTRAINT "fk_vis_inp_subtask_tests" FOREIGN KEY (subtask_id) REFERENCES task_vis_inp_subtasks(id) ON DELETE CASCADE
 
-                          Table "public.tasks"
-       Column       |       Type       | Collation | Nullable | Default 
---------------------+------------------+-----------+----------+---------
- short_id           | text             |           | not null | 
- full_name          | text             |           | not null | 
- illustr_img_s3_key | text             |           |          | 
- mem_lim_megabytes  | integer          |           | not null | 
- cpu_time_lim_secs  | double precision |           | not null | 
- origin_olympiad    | text             |           |          | 
- difficulty_rating  | integer          |           |          | 
- checker            | text             |           |          | 
- interactor         | text             |           |          | 
- width_px           | integer          |           |          | 
- height_px          | integer          |           |          | 
- filesize_bytes     | integer          |           |          | 
+                            Table "public.tasks"
+       Column       |         Type          | Collation | Nullable | Default 
+--------------------+-----------------------+-----------+----------+---------
+ short_id           | text                  |           | not null | 
+ illustr_img_s3_key | text                  |           |          | 
+ mem_lim_megabytes  | integer               |           | not null | 
+ cpu_time_lim_secs  | double precision      |           | not null | 
+ origin_olympiad    | text                  |           |          | 
+ difficulty_rating  | integer               |           |          | 
+ checker            | text                  |           |          | 
+ interactor         | text                  |           |          | 
+ width_px           | integer               |           |          | 
+ height_px          | integer               |           |          | 
+ filesize_bytes     | integer               |           |          | 
+ readme             | text                  |           | not null | 
+ full_name_dict     | jsonb                 |           |          | 
+ orig_lang          | character varying(3)  |           |          | 
+ origin_org         | text                  |           |          | 
+ origin_year        | character varying(9)  |           |          | 
+ olymp_stage        | character varying(20) |           |          | 
+ authors            | jsonb                 |           |          | 
+ problem_tags       | jsonb                 |           |          | 
 Indexes:
     "tasks_pkey" PRIMARY KEY, btree (short_id)
 Referenced by:

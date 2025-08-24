@@ -32,6 +32,7 @@ type TaskSrvcClient interface {
 	UpdateStatementMd(ctx context.Context, taskId string, statement MarkdownStatement) error
 	GetPublicUrlForIllustrImg(ctx context.Context, illstrImgS3Key string) (string, error)
 	GetPublicUrlForStatementImage(ctx context.Context, statementImageS3Key string) (string, error)
+	GetPublicUrlForPdfStatement(ctx context.Context, pdfStatementS3Key string) (string, error)
 	ExportTaskAsZip(ctx context.Context, taskId string) ([]byte, error)
 	GetCacheStats() (totalSizeMB int64, fileCount int, err error)
 	ImportTaskFromZip(ctx context.Context, zipBytes []byte) (string, error)

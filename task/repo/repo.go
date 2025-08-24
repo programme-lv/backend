@@ -578,7 +578,7 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 
 	// Load PDF statements.
 	pdfRows, err := r.pool.Query(ctx, `
-		SELECT lang_iso639, object_url 
+		SELECT lang_iso639, s3_key 
 		FROM task_pdf_statements 
 		WHERE task_short_id = $1
 	`, shortId)
@@ -588,7 +588,7 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 	var pdfStatements []srvc.PdfStatement
 	for pdfRows.Next() {
 		var pdf srvc.PdfStatement
-		if err := pdfRows.Scan(&pdf.LangIso639, &pdf.ObjectUrl); err != nil {
+		if err := pdfRows.Scan(&pdf.LangIso639, &pdf.S3Key); err != nil {
 			pdfRows.Close()
 			return t, fmt.Errorf("failed to load pdf statement: %w", err)
 		}
@@ -932,9 +932,9 @@ func (r *taskPgRepo) CreateTask(ctx context.Context, t srvc.Task) error {
 	// Insert PDF statements.
 	for _, pdf := range t.PdfStatements {
 		_, err = tx.Exec(ctx, `
-			INSERT INTO task_pdf_statements (task_short_id, lang_iso639, object_url)
+			INSERT INTO task_pdf_statements (task_short_id, lang_iso639, s3_key)
 			VALUES ($1, $2, $3)
-		`, t.ShortId, pdf.LangIso639, pdf.ObjectUrl)
+		`, t.ShortId, pdf.LangIso639, pdf.S3Key)
 		if err != nil {
 			return fmt.Errorf("failed to insert pdf statement: %w", err)
 		}
