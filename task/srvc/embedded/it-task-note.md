@@ -11,8 +11,8 @@ jums ir "jāsinhronizē" ( *flush* ) izvaddatu plūsma ( *stdout* ) pēc katra v
     "data": [
         ["C++","`std::cout << something << std::endl;` ... \"std::endl\" nodrošina sinhronizāciju"],
         ["Go","`fmt.Println(something)` ... standarta datu plūsma nav īpaši jāsinhronizē"],
-        ["Java","`System.out.println(something);\nSystem.out.flush();`"],
-        ["Pascal","`writeln(something);\nflush(output);`"],
+        ["Java","`System.out.println(something); System.out.flush();`"],
+        ["Pascal","`writeln(something); flush(output);`"],
         ["Python","`print(something, flush=True)`"]
     ]
 }
