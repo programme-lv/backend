@@ -56,7 +56,10 @@ func (ts *TaskSrvc) GetTask(ctx context.Context, id string) (res Task, err error
 	}
 	if task.Interactor != "" {
 		for i := range task.MdStatements {
-			task.MdStatements[i].Notes += itTaskNote
+			if task.MdStatements[i].Notes == "" {
+				task.MdStatements[i].Notes = itTaskNote
+			}
+			// task.MdStatements[i].Notes = itTaskNote
 		}
 	}
 	return task, nil

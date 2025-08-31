@@ -65,6 +65,7 @@ type Task struct {
 	OriginNotes            map[string]string  `json:"origin_notes"`
 	VisibleInputSubtasks   []VisInputSubtask  `json:"visible_input_subtasks"`
 	StatementSubtasks      []SubtaskOverview  `json:"statement_subtasks"`
+	TestingType            string             `json:"testing_type"`
 }
 
 type SubtaskOverview struct {
@@ -192,6 +193,11 @@ func (handler *taskHttpHandler) mapTaskResponse(task *srvc.Task) *Task {
 		})
 	}
 
+	testingType := "checker"
+	if task.Interactor != "" {
+		testingType = "interactor"
+	}
+
 	response := &Task{
 		ShortTaskID:            task.ShortId,
 		TaskFullName:           task.DefaultFullName(),
@@ -207,6 +213,7 @@ func (handler *taskHttpHandler) mapTaskResponse(task *srvc.Task) *Task {
 		OriginNotes:            originNotesAsAMap,
 		VisibleInputSubtasks:   visInputSubtasks,
 		StatementSubtasks:      subtasks,
+		TestingType:            testingType,
 	}
 	return response
 }

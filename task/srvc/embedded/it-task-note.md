@@ -1,4 +1,3 @@
-Šis ir "interaktīvs" uzdevums.
 Lai garantētu, ka jūsu programmas "vaicājumus" saņem vērtēšanas sistēma,
 jums ir "jāsinhronizē" ( *flush* ) izvaddatu plūsma ( *stdout* ) pēc katra vaicājuma.
 
