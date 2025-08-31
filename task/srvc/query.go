@@ -2,6 +2,7 @@ package srvc
 
 import (
 	"context"
+	_ "embed"
 	"fmt"
 	"time"
 )
@@ -38,6 +39,9 @@ func (ts *TaskSrvc) ListTaskPreviews(ctx context.Context) ([]TaskPreview, error)
 	return taskPreviews, nil
 }
 
+//go:embed embedded/it-task-note.md
+var itTaskNote string
+
 func (ts *TaskSrvc) GetTask(ctx context.Context, id string) (res Task, err error) {
 	exists, err := ts.repo.Exists(ctx, id)
 	if err != nil {
@@ -49,6 +53,11 @@ func (ts *TaskSrvc) GetTask(ctx context.Context, id string) (res Task, err error
 	task, err := ts.repo.GetTask(ctx, id)
 	if err != nil {
 		return Task{}, err
+	}
+	if task.Interactor != "" {
+		for i := range task.MdStatements {
+			task.MdStatements[i].Notes += itTaskNote
+		}
 	}
 	return task, nil
 }
