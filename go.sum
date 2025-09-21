@@ -132,6 +132,8 @@ github.com/programme-lv/taskzip v0.0.0-20250824065300-09516cb8eb8c h1:y5M2U5pVAD
 github.com/programme-lv/taskzip v0.0.0-20250824065300-09516cb8eb8c/go.mod h1:N8q1TTv6EIILV4K2FZLL9gry32mx1g1zxpKvZbFU1d0=
 github.com/programme-lv/tester v0.2.1-0.20241227183509-d7fdd302b062 h1:ZBUngIlFFa/l3FYBNnAef5AGYdoXnZnUc5LtTfaZ6CY=
 github.com/programme-lv/tester v0.2.1-0.20241227183509-d7fdd302b062/go.mod h1:p51WPzlkjlIIIe7r5/0E1Q7AinOlIzREPrJ2Spf3gtk=
+github.com/programme-lv/tester v0.2.1-0.20250921185832-644962ca4dfe h1:Jb67zjpFdZNxoUDS0CGxn8+KNlzrCVYGC2GHrQcy8f0=
+github.com/programme-lv/tester v0.2.1-0.20250921185832-644962ca4dfe/go.mod h1:p51WPzlkjlIIIe7r5/0E1Q7AinOlIzREPrJ2Spf3gtk=
 github.com/rogpeppe/go-internal v1.9.0/go.mod h1:WtVeX8xhTBvf0smdhujwtBcq4Qrzq/fJaraNFVN+nFs=
 github.com/rogpeppe/go-internal v1.13.1 h1:KvO1DLK/DRN07sQ1LQKScxyZJuNnedQ5/wKSR38lUII=
 github.com/rogpeppe/go-internal v1.13.1/go.mod h1:uMEvuHeurkdAXX61udpOXGD/AzZDWNMNyH2VO9fmH0o=

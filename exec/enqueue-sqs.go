@@ -10,7 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/google/uuid"
 	"github.com/klauspost/compress/zstd"
-	"github.com/programme-lv/tester"
+	testerapi "github.com/programme-lv/tester/api"
 )
 
 // Enqueues code for evaluation into AWS SQS:
@@ -25,29 +25,27 @@ func enqueue(
 	params TestingParams,
 	client *sqs.Client,
 	submQ string,
-	respQ string,
 ) error {
-	testsTester := make([]tester.ReqTest, len(tests))
+	testsTester := make([]testerapi.Test, len(tests))
 	for i, test := range tests {
-		testsTester[i] = tester.ReqTest{
-			ID: i + 1,
-
-			InSha256:  test.InSha256,
-			InUrl:     test.InDownlUrl,
-			InContent: test.InContent,
-
-			AnsSha256:  test.AnsSha256,
-			AnsUrl:     test.AnsDownlUrl,
-			AnsContent: test.AnsContent,
+		testsTester[i] = testerapi.Test{
+			In: testerapi.File{
+				Sha256:  test.InSha256,
+				Url:     test.InDownlUrl,
+				Content: test.InContent,
+			},
+			Ans: testerapi.File{
+				Sha256:  test.AnsSha256,
+				Url:     test.AnsDownlUrl,
+				Content: test.AnsContent,
+			},
 		}
 	}
 
-	jsonReq, err := json.Marshal(tester.EvalReq{
-		EvalUuid:  uuid.String(),
-		ResSqsUrl: respQ,
-		Code:      code,
-		Language: tester.Language{
-			LangID:        lang.ShortId,
+	jsonReq, err := json.Marshal(testerapi.ExecReq{
+		Uuid: uuid.String(),
+		Code: code,
+		Lang: testerapi.PrLang{
 			LangName:      lang.Display,
 			CodeFname:     lang.CodeFname,
 			CompileCmd:    lang.CompCmd,
@@ -57,8 +55,8 @@ func enqueue(
 		Tests:      testsTester,
 		Checker:    params.Checker,
 		Interactor: params.Interactor,
-		CpuMillis:  params.CpuMs,
-		MemoryKiB:  params.MemKiB,
+		CpuMs:      int32(params.CpuMs),
+		RamKiB:     int32(params.MemKiB),
 	})
 	if err != nil {
 		format := "failed to marshal eval request: %w"
