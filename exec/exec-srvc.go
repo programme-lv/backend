@@ -221,7 +221,6 @@ func (e *ExecSrvc) Enqueue(
 		params,
 		e.sqsClient,
 		e.submQ,
-		e.respQ,
 	)
 	if err != nil {
 		return err

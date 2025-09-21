@@ -23,7 +23,7 @@ require (
 	github.com/peterldowns/pgtestdb v0.1.1
 	github.com/peterldowns/pgtestdb/migrators/golangmigrator v0.1.1
 	github.com/programme-lv/taskzip v0.0.0-20250824065300-09516cb8eb8c
-	github.com/programme-lv/tester v0.2.1-0.20241227183509-d7fdd302b062
+	github.com/programme-lv/tester v0.2.1-0.20250921185832-644962ca4dfe
 	github.com/stretchr/testify v1.10.0
 	github.com/thoas/go-funk v0.9.3
 	golang.org/x/crypto v0.36.0

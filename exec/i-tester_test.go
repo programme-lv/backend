@@ -154,7 +154,6 @@ func TestEnqueueAndReceiveResults(t *testing.T) {
 		},
 		sqsClient,
 		submSqsUrl,
-		responseSqsUrl,
 	)
 	require.NoError(t, err)
 
