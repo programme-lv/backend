@@ -3,3 +3,60 @@ To start server without processing tester results from SQS
 ```
 go run cmd/server/main.go -listen-sqs=false
 ```
+
+## Development
+
+set up an .env file
+
+```
+JWT_KEY=...
+
+SQS_SUBM_QUEUE_URL=...
+SQS_RESPONSE_QUEUE_URL=...
+
+EXTERNAL_EVAL_KEY=...
+
+POSTGRES_DB=...
+POSTGRES_USER=...
+POSTGRES_PORT=...
+POSTGRES_SSLMODE=...
+POSTGRES_HOST=...
+POSTGRES_PW_SECRET_NAME='...
+
+COOKIE_DOMAIN=...
+
+S3_EXEC_BUCKET=...
+S3_PUBLIC_BUCKET=...
+S3_TESTING_BUCKET=...
+S3_TESTFILE_BUCKET=...
+```
+
+let's clone the database from prod
+
+we will need docker for this. ensure you can run docker ps
+
+the in from .scripts/local-pg run docker compose up -d
+
+then we need to dump the prod.
+
+i think we should place all the uni test types in a taskfile that would also
+help setting up the necessary environment variables
+
+installing dependencies:
+```bash
+apt install postgresql-client
+go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
+```
+
+workflow of setting up new dev environment with db
+
+if you have access to the prod db, dump it into a .dump file.
+otherwise, ask someone to give you the .dump file
+
+run docker compose up -d in postgres/
+```bash
+cd postgres
+docker compose up -d
+sleep 5
+./import.sh
+```

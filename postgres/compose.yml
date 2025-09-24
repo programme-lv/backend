@@ -3,11 +3,11 @@ services:
     image: postgres:17
     container_name: local-proglv-pg
     environment:
-      POSTGRES_USER: proglv
-      POSTGRES_PASSWORD: proglv
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: pw
       POSTGRES_DB: proglv
     ports:
-      - "5433:5432"
+      - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
 
