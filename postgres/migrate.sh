@@ -68,7 +68,7 @@ echo "PG_DB:   $DB"
 
 read -p "Press Enter to run migrations..." _
 
-pushd "$ROOT_DIR" >/dev/null
+pushd "$SCRIPT_DIR" >/dev/null
 migrate -source file://./migrate -database "postgres://$USER:$PASSWORD@$HOST:$PORT/$DB?sslmode=disable" up
 popd >/dev/null
 

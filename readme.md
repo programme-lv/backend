@@ -60,3 +60,8 @@ docker compose up -d
 sleep 5
 ./import.sh
 ```
+
+To update postgres schema, create a migration script in ./postgres/migrate/ and then run
+./postgres/migrate.sh. 
+After making changes to DB, run ./postgres/print.sh to update the schema.txt in ./docs/schema.txt
+
