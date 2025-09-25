@@ -2,10 +2,8 @@ package http
 
 import (
 	"context"
-	"encoding/json"
 	"log/slog"
 	"net/http"
-	"reflect"
 	"sync"
 	"time"
 
@@ -13,6 +11,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/patrickmn/go-cache"
 	"github.com/programme-lv/backend/common/ctxlog"
+	hf "github.com/programme-lv/backend/common/httpfunc"
 	"github.com/programme-lv/backend/common/jsonresp"
 	"github.com/programme-lv/backend/common/srvcerror"
 	"github.com/programme-lv/backend/task/srvc"
@@ -57,9 +56,9 @@ func (h *taskHttpHandler) RegisterRoutes(r *chi.Mux, jwtKey []byte) {
 			r.Delete("/tasks/{taskId}", h.DeleteTask)
 
 			// statement
-			r.Patch("/tasks/{taskId}/statements/{langIso639}", HttpJsonHandlerNoResp(h.PutStatement))
+			r.Patch("/tasks/{taskId}/statements/{langIso639}", hf.JsonNoResp(h.PutStatement))
 			r.Post("/tasks/{taskId}/images", h.UploadStatementImage)
-			r.Delete("/tasks/{taskId}/images/{filename}", HttpJsonHandlerNoReqNoResp(h.DeleteStatementImage))
+			r.Delete("/tasks/{taskId}/images/{filename}", hf.JsonNoReqNoResp(h.DeleteStatementImage))
 
 			// illustration
 			r.Post("/tasks/{taskId}/illustration", h.UploadIllustrationImage)
@@ -72,82 +71,7 @@ func (h *taskHttpHandler) logger(ctx context.Context) *slog.Logger {
 	return ctxlog.FromContext(ctx).With("module", "task", "layer", "http")
 }
 
-type JsonHandlerFuncImpl[Q any, R any] func(ctx context.Context, request Q) (response R, err error)
-
-func HttpJsonHandlerFunc[Q any, R any](handler JsonHandlerFuncImpl[Q, R]) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-
-		var req Q
-		t := reflect.TypeOf(req)
-		if t.Size() > 0 {
-			if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-				jsonresp.BadRequest(w, err.Error())
-				return
-			}
-		}
-
-		result, err := handler(ctx, req)
-
-		if err != nil {
-			writeHttpJsonError(w, err)
-			return
-		}
-
-		jsonresp.Success(w, result)
-	}
-}
-
-// Handler when there is no request body, but there is a JSON response
-type JsonHandlerNoReq[R any] func(ctx context.Context) (response R, err error)
-
-func HttpJsonHandlerNoReq[R any](handler JsonHandlerNoReq[R]) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-		result, err := handler(ctx)
-		if err != nil {
-			writeHttpJsonError(w, err)
-			return
-		}
-		jsonresp.Success(w, result)
-	}
-}
-
-// Handler when there is a request body, but no JSON response body
-type JsonHandlerNoResp[Q any] func(ctx context.Context, request Q) (err error)
-
-func HttpJsonHandlerNoResp[Q any](handler JsonHandlerNoResp[Q]) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-		var req Q
-		t := reflect.TypeOf(req)
-		if t.Size() > 0 {
-			if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-				jsonresp.BadRequest(w, err.Error())
-				return
-			}
-		}
-		if err := handler(ctx, req); err != nil {
-			writeHttpJsonError(w, err)
-			return
-		}
-		jsonresp.Success(w, struct{}{})
-	}
-}
-
-// Handler when there is neither request body nor response body
-type JsonHandlerNoReqNoResp func(ctx context.Context) (err error)
-
-func HttpJsonHandlerNoReqNoResp(handler JsonHandlerNoReqNoResp) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-		if err := handler(ctx); err != nil {
-			writeHttpJsonError(w, err)
-			return
-		}
-		jsonresp.Success(w, struct{}{})
-	}
-}
+// generic helpers moved to common/httpfunc
 
 func writeHttpJsonError(w http.ResponseWriter, err error) {
 	e, ok := err.(*srvcerror.Error)
