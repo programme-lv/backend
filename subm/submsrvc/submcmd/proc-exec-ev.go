@@ -66,8 +66,6 @@ func applyExecEventToEval(eval subm.Eval, event exec.Event) subm.Eval {
 	case exec.ReceivedSubmission:
 	case exec.StartedCompiling:
 		eval.Stage = subm.EvalStageCompiling
-	case exec.StartedTesting:
-		eval.Stage = subm.EvalStageTesting
 	case exec.FinishedTesting:
 		eval.Stage = subm.EvalStageFinished
 	case exec.InternalServerError:
@@ -83,12 +81,14 @@ func applyExecEventToEval(eval subm.Eval, event exec.Event) subm.Eval {
 			Message: u.ErrorMsg,
 		}
 	case exec.ReachedTest:
+		eval.Stage = subm.EvalStageTesting
 		if u.TestId > len(eval.Tests) {
 			slog.Error("reached test out of bounds", "test_id", u.TestId, "eval", fmt.Sprintf("%+v", eval))
 			return eval
 		}
 		eval.Tests[u.TestId-1].Reached = true
 	case exec.FinishedTest:
+		eval.Stage = subm.EvalStageTesting
 		if u.TestID > len(eval.Tests) {
 			slog.Error("finished test out of bounds", "test_id", u.TestID, "eval", fmt.Sprintf("%+v", eval))
 			return eval
@@ -118,6 +118,7 @@ func applyExecEventToEval(eval subm.Eval, event exec.Event) subm.Eval {
 			eval.Tests[u.TestID-1].MemKiB = &memKiB
 		}
 	case exec.IgnoredTest:
+		eval.Stage = subm.EvalStageTesting
 		if u.TestId > len(eval.Tests) {
 			slog.Error("ignored test out of bounds", "test_id", u.TestId, "eval", fmt.Sprintf("%+v", eval))
 			return eval

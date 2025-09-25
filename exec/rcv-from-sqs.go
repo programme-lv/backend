@@ -11,7 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/google/uuid"
-	"github.com/programme-lv/tester/sqsgath"
+	"github.com/programme-lv/tester/api"
 )
 
 // Starts receiving msgs until ctx is cancelled and passes them to handler function
@@ -54,7 +54,7 @@ func StartReceivingResultsFromSqs(ctx context.Context,
 							continue
 						}
 
-						var header sqsgath.Header
+						var header api.Header
 						err = json.Unmarshal([]byte(*msg.Body), &header)
 						if err != nil {
 							logger.Error("failed to unmarshal message", "error", err)
@@ -74,8 +74,8 @@ func StartReceivingResultsFromSqs(ctx context.Context,
 						}
 
 						switch header.MsgType {
-						case sqsgath.MsgTypeStartedEvaluation:
-							startedEvaluation := sqsgath.StartedEvaluation{}
+						case api.StartJob:
+							startedEvaluation := api.StartedEvaluation{}
 							err = json.Unmarshal([]byte(*msg.Body), &startedEvaluation)
 							startedAt, err := time.Parse(time.RFC3339, startedEvaluation.StartedTime)
 							if err != nil {
@@ -86,48 +86,40 @@ func StartReceivingResultsFromSqs(ctx context.Context,
 								SysInfo:   startedEvaluation.SystemInfo,
 								StartedAt: startedAt,
 							}
-						case sqsgath.MsgTypeStartedCompilation:
-							startedCompilation := sqsgath.StartedCompilation{}
+						case api.StartCompile:
+							startedCompilation := api.StartedCompilation{}
 							err = json.Unmarshal([]byte(*msg.Body), &startedCompilation)
 							msgs[i].Data = StartedCompiling{}
-						case sqsgath.MsgTypeFinishedCompilation:
-							finishedCompilation := sqsgath.FinishedCompilation{}
+						case api.FinishCompile:
+							finishedCompilation := api.FinishedCompilation{}
 							err = json.Unmarshal([]byte(*msg.Body), &finishedCompilation)
 							msgs[i].Data = FinishedCompiling{
 								RuntimeData: mapRunData(finishedCompilation.RuntimeData),
 							}
-						case sqsgath.MsgTypeStartedTesting:
-							startedTesting := sqsgath.StartedTesting{}
-							err = json.Unmarshal([]byte(*msg.Body), &startedTesting)
-							msgs[i].Data = StartedTesting{}
-						case sqsgath.MsgTypeReachedTest:
-							reachedTest := sqsgath.ReachedTest{}
+						case api.ReachTest:
+							reachedTest := api.ReachedTest{}
 							err = json.Unmarshal([]byte(*msg.Body), &reachedTest)
 							msgs[i].Data = ReachedTest{
 								TestId: int(reachedTest.TestId),
 								In:     reachedTest.Input,
 								Ans:    reachedTest.Answer,
 							}
-						case sqsgath.MsgTypeIgnoredTest:
-							ignoredTest := sqsgath.IgnoredTest{}
+						case api.IgnoreTest:
+							ignoredTest := api.IgnoredTest{}
 							err = json.Unmarshal([]byte(*msg.Body), &ignoredTest)
 							msgs[i].Data = IgnoredTest{
 								TestId: int(ignoredTest.TestId),
 							}
-						case sqsgath.MsgTypeFinishedTest:
-							finishTest := sqsgath.FinishedTest{}
+						case api.FinishTest:
+							finishTest := api.FinishedTest{}
 							err = json.Unmarshal([]byte(*msg.Body), &finishTest)
 							msgs[i].Data = FinishedTest{
 								TestID:  int(finishTest.TestId),
 								Subm:    mapRunData(finishTest.Submission),
 								Checker: mapRunData(finishTest.Checker),
 							}
-						case sqsgath.MsgTypeFinishedTesting:
-							finishTesting := sqsgath.FinishedTesting{}
-							err = json.Unmarshal([]byte(*msg.Body), &finishTesting)
-							msgs[i].Data = FinishedTesting{}
-						case sqsgath.MsgTypeFinishedEvaluation:
-							finishEval := sqsgath.FinishedEvaluation{}
+						case api.FinishJob:
+							finishEval := api.FinishedEvaluation{}
 							err = json.Unmarshal([]byte(*msg.Body), &finishEval)
 							if finishEval.CompileError {
 								msgs[i].Data = CompilationError{
@@ -138,7 +130,7 @@ func StartReceivingResultsFromSqs(ctx context.Context,
 									ErrorMsg: finishEval.ErrorMessage,
 								}
 							} else {
-								continue
+								msgs[i].Data = FinishedTesting{}
 							}
 						}
 
@@ -182,7 +174,7 @@ type SqsResponseMsg struct {
 	Data     Event  // data specific to the message / event type
 }
 
-func mapRunData(rd *sqsgath.RuntimeData) *RunData {
+func mapRunData(rd *api.RuntimeData) *RunData {
 	if rd != nil {
 		return &RunData{
 			StdIn:    rd.Stdin,

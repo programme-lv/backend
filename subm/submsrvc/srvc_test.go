@@ -221,7 +221,6 @@ func TestUserMaxScores(t *testing.T) {
 
 	// Simulate evaluation events
 	mockCh <- exec.ReceivedSubmission{SysInfo: "test", StartedAt: time.Now()}
-	mockCh <- exec.StartedTesting{}
 	mockCh <- exec.ReachedTest{TestId: 1}
 	mockCh <- exec.FinishedTest{TestID: 1, Subm: &exec.RunData{ExitCode: 0}, Checker: &exec.RunData{ExitCode: 0}} // AC
 	mockCh <- exec.ReachedTest{TestId: 2}
@@ -282,7 +281,6 @@ func TestUserMaxScores(t *testing.T) {
 
 	// Simulate evaluation events - both tests pass this time
 	mockCh2 <- exec.ReceivedSubmission{SysInfo: "test", StartedAt: time.Now()}
-	mockCh2 <- exec.StartedTesting{}
 	mockCh2 <- exec.ReachedTest{TestId: 1}
 	mockCh2 <- exec.FinishedTest{TestID: 1, Subm: &exec.RunData{ExitCode: 0}, Checker: &exec.RunData{ExitCode: 0}} // AC
 	mockCh2 <- exec.ReachedTest{TestId: 2}
@@ -348,7 +346,6 @@ func newMockExecEventChannel(t *testing.T) <-chan exec.Event {
 			exec.FinishedCompiling{
 				RuntimeData: getExampleRunData(),
 			},
-			exec.StartedTesting{},
 			exec.ReachedTest{
 				TestId: 1,
 				In:     getExampleStrPtr(),

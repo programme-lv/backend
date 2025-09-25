@@ -124,8 +124,6 @@ func (o *ExecResStreamOrganizer) Add(
 		return o.compileError()
 	case FinishedCompiling:
 		return o.finishCompile()
-	case StartedTesting:
-		return o.startTesting()
 	case ReachedTest:
 		return o.reachTest(e.TestId)
 	case IgnoredTest:
@@ -191,7 +189,16 @@ func (o *ExecResStreamOrganizer) receiveSubm() (
 	if o.hasCompilation {
 		nxt, err = o.startCompile()
 	} else {
-		nxt, err = o.startTesting()
+		nxt, err = o.reachTest(1)
+		if err != nil {
+			return append(res, nxt...), err
+		}
+		res = append(res, nxt...)
+		nxt, err = o.ignoreTest(1)
+		if err != nil {
+			return append(res, nxt...), err
+		}
+		res = append(res, nxt...)
 	}
 	if err != nil {
 		return append(res, nxt...), err
@@ -280,43 +287,7 @@ func (o *ExecResStreamOrganizer) finishCompile() (
 	}
 	res = append(res, nxt...)
 
-	nxt, err = o.startTesting()
-	if err != nil {
-		return append(res, nxt...), err
-	}
-	return append(res, nxt...), nil
-}
-
-// startTesting initiates test execution phase.
-// Requires compilation success if compiled.
-func (o *ExecResStreamOrganizer) startTesting() (
-	[]Event,
-	error,
-) {
-	if !o.rcvEvKeys[StartedTestingType] ||
-		o.retKeys[StartedTestingType] {
-		return nil, nil
-	}
-
-	// Check dependencies
-	if o.hasCompilation {
-		if !o.retKeys[FinishedCompilationType] {
-			return nil, nil
-		}
-	} else if !o.retKeys[ReceivedSubmissionType] {
-		return nil, nil
-	}
-
-	e, err := o.getSingleEvent(StartedTestingType)
-	if err != nil {
-		return nil, err
-	}
-
-	o.retKeys[StartedTestingType] = true
-	res := []Event{e}
-
-	// Try reach and ignore paths for first test
-	nxt, err := o.reachTest(1)
+	nxt, err = o.reachTest(1)
 	if err != nil {
 		return append(res, nxt...), err
 	}
@@ -340,7 +311,11 @@ func (o *ExecResStreamOrganizer) reachTest(
 		return nil, nil
 	}
 
-	if !o.retKeys[StartedTestingType] {
+	if o.hasCompilation {
+		if !o.retKeys[FinishedCompilationType] {
+			return nil, nil
+		}
+	} else if !o.retKeys[ReceivedSubmissionType] {
 		return nil, nil
 	}
 
@@ -388,7 +363,11 @@ func (o *ExecResStreamOrganizer) ignoreTest(
 		return nil, nil
 	}
 
-	if !o.retKeys[StartedTestingType] {
+	if o.hasCompilation {
+		if !o.retKeys[FinishedCompilationType] {
+			return nil, nil
+		}
+	} else if !o.retKeys[ReceivedSubmissionType] {
 		return nil, nil
 	}
 
