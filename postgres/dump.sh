@@ -34,13 +34,13 @@ done
 
 if [[ "$HELP" == "true" ]]; then
 	echo "Usage: $0 [--host HOST] [--user USER] [--password PW] [--db DB] [--port PORT] [--outfile FILE] [--tag PG_TAG] [--prod]" >&2
-	echo "Defaults: host=postgres user=postgres db=postgres port=5432 tag=17 outfile=./DB-YYYY-MM-DD_HHMMSS.dump password=password123 (unless --prod)" >&2
+	echo "Defaults: host from --prod/.env.prod or localhost; user=postgres; db=proglv; port=5432; tag=17; outfile=./DB-YYYY-MM-DD_HHMMSS.dump; password=pw (unless --prod)" >&2
 	exit 0
 fi
 
 # Defaults
 USER="${USER:-postgres}"
-DB="${DB:-postgres}"
+DB="${DB:-proglv}"
 PORT="${PORT:-5432}"
 PG_TAG="${PG_TAG:-17}"
 
@@ -59,7 +59,7 @@ if [[ -z "${PASSWORD}" ]]; then
 			exit 1
 		fi
 	else
-		PASSWORD="password123"
+		PASSWORD="pw"
 	fi
 fi
 
