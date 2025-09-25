@@ -1,4 +1,4 @@
-package httpjson
+package jsonresp
 
 import (
 	"context"

@@ -4,7 +4,7 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/programme-lv/backend/common/httpjson"
+	"github.com/programme-lv/backend/common/jsonresp"
 	"github.com/programme-lv/backend/plang"
 )
 
@@ -27,7 +27,7 @@ func (httpserver *HttpServer) listProgrammingLangs(w http.ResponseWriter, r *htt
 
 	langs, err := plang.ListProgrammingLanguages()
 	if err != nil {
-		httpjson.HandleSrvcError(slog.Default(), w, err)
+		jsonresp.HandleSrvcError(slog.Default(), w, err)
 		return
 	}
 
@@ -56,5 +56,5 @@ func (httpserver *HttpServer) listProgrammingLangs(w http.ResponseWriter, r *htt
 
 	response := mapProgLangsResponse(langs)
 
-	httpjson.Success(w, response)
+	jsonresp.Success(w, response)
 }

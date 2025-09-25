@@ -8,8 +8,8 @@ import (
 	"strings"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/programme-lv/backend/common/httpjson"
 	"github.com/programme-lv/backend/common/img"
+	"github.com/programme-lv/backend/common/jsonresp"
 	"github.com/programme-lv/backend/common/mimetype"
 	"github.com/programme-lv/backend/task/srvc"
 )
@@ -21,7 +21,7 @@ func (h *taskHttpHandler) UploadIllustrationImage(w http.ResponseWriter, r *http
 	if err != nil {
 		errMsg := fmt.Sprintf("failed to parse multipart form (maybe the image is too large?): %v", err)
 		errCode := "failed_to_parse_multipart_form"
-		httpjson.Error(w, errMsg, http.StatusBadRequest, errCode)
+		jsonresp.Error(w, errMsg, http.StatusBadRequest, errCode)
 		return
 	}
 
@@ -30,7 +30,7 @@ func (h *taskHttpHandler) UploadIllustrationImage(w http.ResponseWriter, r *http
 	if err != nil {
 		errMsg := fmt.Sprintf("failed to get image: %v", err)
 		errCode := "failed_to_get_image"
-		httpjson.Error(w, errMsg, http.StatusBadRequest, errCode)
+		jsonresp.Error(w, errMsg, http.StatusBadRequest, errCode)
 		return
 	}
 	defer image.Close()
@@ -40,7 +40,7 @@ func (h *taskHttpHandler) UploadIllustrationImage(w http.ResponseWriter, r *http
 	if err != nil {
 		errMsg := fmt.Sprintf("failed to get MIME types: %v", err)
 		errCode := "failed_to_get_mimes"
-		httpjson.Error(w, errMsg, http.StatusBadRequest, errCode)
+		jsonresp.Error(w, errMsg, http.StatusBadRequest, errCode)
 		return
 	}
 
@@ -48,7 +48,7 @@ func (h *taskHttpHandler) UploadIllustrationImage(w http.ResponseWriter, r *http
 	if !strings.HasPrefix(imageMimeType, "image/") {
 		errMsg := fmt.Sprintf("uploaded file is not an image (detected MIME type: %s)", imageMimeType)
 		errCode := "invalid_mime_type"
-		httpjson.Error(w, errMsg, http.StatusBadRequest, errCode)
+		jsonresp.Error(w, errMsg, http.StatusBadRequest, errCode)
 		return
 	}
 
@@ -56,7 +56,7 @@ func (h *taskHttpHandler) UploadIllustrationImage(w http.ResponseWriter, r *http
 	if err != nil {
 		errMsg := fmt.Sprintf("failed to read image: %v", err)
 		errCode := "failed_to_read_image"
-		httpjson.Error(w, errMsg, http.StatusBadRequest, errCode)
+		jsonresp.Error(w, errMsg, http.StatusBadRequest, errCode)
 		return
 	}
 
@@ -65,7 +65,7 @@ func (h *taskHttpHandler) UploadIllustrationImage(w http.ResponseWriter, r *http
 	if err != nil {
 		errMsg := fmt.Sprintf("failed to get image dimensions: %v", err)
 		errCode := "failed_to_get_image_dimensions"
-		httpjson.Error(w, errMsg, http.StatusBadRequest, errCode)
+		jsonresp.Error(w, errMsg, http.StatusBadRequest, errCode)
 		return
 	}
 
@@ -73,14 +73,14 @@ func (h *taskHttpHandler) UploadIllustrationImage(w http.ResponseWriter, r *http
 	if width > 2000 || height > 2000 || width == 0 || height == 0 {
 		errMsg := "image dimensions are inadequate (must be between 1x1 and 2000x2000 pixels)"
 		errCode := "inadequate_image_dimensions"
-		httpjson.Error(w, errMsg, http.StatusBadRequest, errCode)
+		jsonresp.Error(w, errMsg, http.StatusBadRequest, errCode)
 		return
 	}
 
 	// Upload the illustration image to S3
 	s3Key, err := h.taskSrvc.UploadIllustrationImg(r.Context(), imageMimeType, imageBytes)
 	if err != nil {
-		httpjson.HandleSrvcError(slog.Default(), w, err)
+		jsonresp.HandleSrvcError(slog.Default(), w, err)
 		return
 	}
 
@@ -95,13 +95,13 @@ func (h *taskHttpHandler) UploadIllustrationImage(w http.ResponseWriter, r *http
 
 	err = h.taskSrvc.UpdateIllustrationImg(r.Context(), taskId, illustrationImg)
 	if err != nil {
-		httpjson.HandleSrvcError(slog.Default(), w, err)
+		jsonresp.HandleSrvcError(slog.Default(), w, err)
 		return
 	}
 
 	h.cache.Delete(taskGetCacheKey(taskId))
 
-	err = httpjson.Success(w, map[string]string{"s3_key": s3Key})
+	err = jsonresp.Success(w, map[string]string{"s3_key": s3Key})
 	if err != nil {
 		slog.Error("failed to write success json", "error", err)
 	}
@@ -112,13 +112,13 @@ func (h *taskHttpHandler) DeleteIllustrationImage(w http.ResponseWriter, r *http
 
 	err := h.taskSrvc.DeleteIllustrationImg(r.Context(), taskId)
 	if err != nil {
-		httpjson.HandleSrvcError(slog.Default(), w, err)
+		jsonresp.HandleSrvcError(slog.Default(), w, err)
 		return
 	}
 
 	h.cache.Delete(taskGetCacheKey(taskId))
 
-	err = httpjson.Success(w, map[string]string{"status": "ok"})
+	err = jsonresp.Success(w, map[string]string{"status": "ok"})
 	if err != nil {
 		slog.Error("failed to write success json", "error", err)
 	}

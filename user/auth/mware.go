@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/programme-lv/backend/common/httpjson"
+	"github.com/programme-lv/backend/common/jsonresp"
 )
 
 // HttpJwtAllowOnlyAdmins is a middleware that ensures only admin users can access the route
@@ -12,11 +12,11 @@ func HttpJwtAllowOnlyAdmins(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		claims, ok := r.Context().Value(CtxJwtClaimsKey).(*JwtClaims)
 		if !ok || claims == nil {
-			httpjson.Unauthorized(w, "failed to authenticate user via jwt")
+			jsonresp.Unauthorized(w, "failed to authenticate user via jwt")
 			return
 		}
 		if claims.Username != "admin" {
-			httpjson.Forbidden(w, "access is restricted to admins only")
+			jsonresp.Forbidden(w, "access is restricted to admins only")
 			return
 		}
 		next.ServeHTTP(w, r)

@@ -7,7 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/programme-lv/backend/common/ctxlog"
-	"github.com/programme-lv/backend/common/httpjson"
+	"github.com/programme-lv/backend/common/jsonresp"
 	"github.com/programme-lv/backend/subm/submerror"
 	"github.com/programme-lv/backend/subm/submsrvc/submcmd"
 	"github.com/programme-lv/backend/user/auth"
@@ -27,7 +27,7 @@ func (h *SubmHttpHandler) PostSubm(w http.ResponseWriter, r *http.Request) {
 	claims := r.Context().Value(auth.CtxJwtClaimsKey).(*auth.JwtClaims)
 	if claims == nil {
 		log.Warn("JWT token missing")
-		httpjson.HandleErrorWithContext(r.Context(), w, submerror.ErrJwtTokenMissing())
+		jsonresp.HandleErrorWithContext(r.Context(), w, submerror.ErrJwtTokenMissing())
 		return
 	}
 
@@ -40,7 +40,7 @@ func (h *SubmHttpHandler) PostSubm(w http.ResponseWriter, r *http.Request) {
 
 	if claims.Username != request.Username {
 		log.Warn("unauthorized username mismatch", "jwt_username", claims.Username, "request_username", request.Username)
-		httpjson.HandleErrorWithContext(r.Context(), w, submerror.ErrUnauthorizedUsernameMismatch())
+		jsonresp.HandleErrorWithContext(r.Context(), w, submerror.ErrUnauthorizedUsernameMismatch())
 		return
 	}
 
@@ -51,7 +51,7 @@ func (h *SubmHttpHandler) PostSubm(w http.ResponseWriter, r *http.Request) {
 	if exists && now.Sub(lastTime) < 10*time.Second {
 		h.rateLock.Unlock()
 		log.Warn("submission too frequent", "username", request.Username, "last_time", lastTime)
-		httpjson.HandleErrorWithContext(r.Context(), w, submerror.ErrSubmissionTooFrequent(10))
+		jsonresp.HandleErrorWithContext(r.Context(), w, submerror.ErrSubmissionTooFrequent(10))
 		return
 	}
 	h.lastSubmTime[request.Username] = now
@@ -67,7 +67,7 @@ func (h *SubmHttpHandler) PostSubm(w http.ResponseWriter, r *http.Request) {
 	author, err := h.userSrvc.GetUserByUsername(r.Context(), request.Username)
 	if err != nil {
 		log.Error("failed to get user by username", "username", request.Username, "error", err)
-		httpjson.HandleErrorWithContext(r.Context(), w, err)
+		jsonresp.HandleErrorWithContext(r.Context(), w, err)
 		return
 	}
 
@@ -83,7 +83,7 @@ func (h *SubmHttpHandler) PostSubm(w http.ResponseWriter, r *http.Request) {
 	})
 	if err != nil {
 		log.Error("failed to submit solution", "subm_uuid", submUUID, "error", err)
-		httpjson.HandleErrorWithContext(r.Context(), w, err)
+		jsonresp.HandleErrorWithContext(r.Context(), w, err)
 		return
 	}
 
@@ -92,14 +92,14 @@ func (h *SubmHttpHandler) PostSubm(w http.ResponseWriter, r *http.Request) {
 	subm, err := h.submSrvc.ViewSubm(r.Context(), submUUID)
 	if err != nil {
 		log.Error("failed to get submission after creation", "subm_uuid", submUUID, "error", err)
-		httpjson.HandleErrorWithContext(r.Context(), w, err)
+		jsonresp.HandleErrorWithContext(r.Context(), w, err)
 		return
 	}
 
 	response, err := h.mapSubm(r.Context(), subm)
 	if err != nil {
 		log.Error("failed to map submission", "subm_uuid", submUUID, "error", err)
-		httpjson.HandleErrorWithContext(r.Context(), w, err)
+		jsonresp.HandleErrorWithContext(r.Context(), w, err)
 		return
 	}
 

@@ -8,10 +8,9 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	fname "github.com/programme-lv/backend/common/fname"
-	"github.com/programme-lv/backend/common/httpjson"
+	"github.com/programme-lv/backend/common/jsonresp"
 	"github.com/programme-lv/backend/common/mimetype"
 )
-
 
 func (h *taskHttpHandler) UploadStatementImage(w http.ResponseWriter, r *http.Request) {
 	taskId := chi.URLParam(r, "taskId")
@@ -20,7 +19,7 @@ func (h *taskHttpHandler) UploadStatementImage(w http.ResponseWriter, r *http.Re
 	if err != nil {
 		errMsg := fmt.Sprintf("failed to parse multipart form (maybe the image is too large?): %v", err)
 		errCode := "failed_to_parse_multipart_form"
-		httpjson.Error(w, errMsg, http.StatusBadRequest, errCode)
+		jsonresp.Error(w, errMsg, http.StatusBadRequest, errCode)
 		return
 	}
 
@@ -29,7 +28,7 @@ func (h *taskHttpHandler) UploadStatementImage(w http.ResponseWriter, r *http.Re
 	if err != nil {
 		errMsg := fmt.Sprintf("failed to get image: %v", err)
 		errCode := "failed_to_get_image"
-		httpjson.Error(w, errMsg, http.StatusBadRequest, errCode)
+		jsonresp.Error(w, errMsg, http.StatusBadRequest, errCode)
 		return
 	}
 	defer image.Close()
@@ -41,7 +40,7 @@ func (h *taskHttpHandler) UploadStatementImage(w http.ResponseWriter, r *http.Re
 		if ve, ok := vErr.(*fname.FilenameValidationError); ok {
 			code = ve.Code
 		}
-		httpjson.Error(w, vErr.Error(), http.StatusBadRequest, code)
+		jsonresp.Error(w, vErr.Error(), http.StatusBadRequest, code)
 		return
 	}
 
@@ -50,7 +49,7 @@ func (h *taskHttpHandler) UploadStatementImage(w http.ResponseWriter, r *http.Re
 	if err != nil {
 		errMsg := fmt.Sprintf("failed to get MIME types: %v", err)
 		errCode := "failed_to_get_mimes"
-		httpjson.Error(w, errMsg, http.StatusBadRequest, errCode)
+		jsonresp.Error(w, errMsg, http.StatusBadRequest, errCode)
 		return
 	}
 
@@ -58,7 +57,7 @@ func (h *taskHttpHandler) UploadStatementImage(w http.ResponseWriter, r *http.Re
 	if !mimetype.IsExtensionValidForMIME(imageFilenameExt, imageMimeType) {
 		errMsg := fmt.Sprintf("file extension '%s' does not match detected MIME type '%s'", imageFilenameExt, imageMimeType)
 		errCode := "invalid_file_extension"
-		httpjson.Error(w, errMsg, http.StatusBadRequest, errCode)
+		jsonresp.Error(w, errMsg, http.StatusBadRequest, errCode)
 		return
 	}
 
@@ -66,7 +65,7 @@ func (h *taskHttpHandler) UploadStatementImage(w http.ResponseWriter, r *http.Re
 	if err != nil {
 		errMsg := fmt.Sprintf("failed to read image: %v", err)
 		errCode := "failed_to_read_image"
-		httpjson.Error(w, errMsg, http.StatusBadRequest, errCode)
+		jsonresp.Error(w, errMsg, http.StatusBadRequest, errCode)
 		return
 	}
 
@@ -78,7 +77,7 @@ func (h *taskHttpHandler) UploadStatementImage(w http.ResponseWriter, r *http.Re
 
 	h.cache.Delete(taskGetCacheKey(taskId))
 
-	err = httpjson.Success(w, uri)
+	err = jsonresp.Success(w, uri)
 	if err != nil {
 		slog.Error("failed to write success json", "error", err)
 	}

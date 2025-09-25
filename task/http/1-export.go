@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/programme-lv/backend/common/httpjson"
+	"github.com/programme-lv/backend/common/jsonresp"
 )
 
 // ExportTask exports a task as a ZIP file and streams it directly to the client.
@@ -37,7 +37,7 @@ func (h *taskHttpHandler) ExportTask(w http.ResponseWriter, r *http.Request) {
 	zipBytes, err := h.taskSrvc.ExportTaskAsZip(r.Context(), taskId)
 	if err != nil {
 		logger.Error("failed to export task", "error", err)
-		httpjson.HandleSrvcError(logger, w, err)
+		jsonresp.HandleSrvcError(logger, w, err)
 		return
 	}
 

@@ -3,7 +3,7 @@ package http
 import (
 	"net/http"
 
-	"github.com/programme-lv/backend/common/httpjson"
+	"github.com/programme-lv/backend/common/jsonresp"
 	"github.com/programme-lv/backend/user/auth"
 )
 
@@ -18,15 +18,15 @@ func (httpserver *UserHttpHandler) GetRole(w http.ResponseWriter, r *http.Reques
 
 	// If no claims (not logged in) or claims retrieval failed, user is a guest
 	if !ok || claims == nil {
-		httpjson.Success(w, RoleResponse{Role: "guest"})
+		jsonresp.Success(w, RoleResponse{Role: "guest"})
 		return
 	}
 
 	if claims.Username == "admin" {
-		httpjson.Success(w, RoleResponse{Role: "admin"})
+		jsonresp.Success(w, RoleResponse{Role: "admin"})
 		return
 	}
 
 	// Return the role from JWT claims
-	httpjson.Success(w, RoleResponse{Role: "user"})
+	jsonresp.Success(w, RoleResponse{Role: "user"})
 }
