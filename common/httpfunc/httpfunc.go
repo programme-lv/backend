@@ -34,7 +34,7 @@ func Json[Q any, R any](handler HandlerFuncImpl[Q, R]) http.HandlerFunc {
 
 type HandlerNoReq[R any] func(ctx context.Context) (response R, err error)
 
-func JsonNoReq[R any](handler HandlerNoReq[R]) http.HandlerFunc {
+func NoReqJsonResp[R any](handler HandlerNoReq[R]) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		result, err := handler(ctx)
@@ -48,7 +48,7 @@ func JsonNoReq[R any](handler HandlerNoReq[R]) http.HandlerFunc {
 
 type HandlerNoResp[Q any] func(ctx context.Context, request Q) (err error)
 
-func JsonNoResp[Q any](handler HandlerNoResp[Q]) http.HandlerFunc {
+func JsonReqNoResp[Q any](handler HandlerNoResp[Q]) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		var req Q
@@ -69,7 +69,7 @@ func JsonNoResp[Q any](handler HandlerNoResp[Q]) http.HandlerFunc {
 
 type HandlerNoReqNoResp func(ctx context.Context) (err error)
 
-func JsonNoReqNoResp(handler HandlerNoReqNoResp) http.HandlerFunc {
+func NoReqNoResp(handler HandlerNoReqNoResp) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		if err := handler(ctx); err != nil {
