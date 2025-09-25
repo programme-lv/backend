@@ -17,11 +17,11 @@ type PutStatementReq struct {
 	Example string `json:"example"`
 }
 
-func (h *taskHttpHandler) PutStatement(ctx context.Context, req PutStatementReq) (Empty, error) {
+func (h *taskHttpHandler) PutStatement(ctx context.Context, req PutStatementReq) error {
 	taskId := chi.URLParamFromCtx(ctx, "taskId")
 	lang := chi.URLParamFromCtx(ctx, "langIso639")
 
-	err := h.taskSrvc.UpdateStatementMd(ctx, taskId, srvc.MarkdownStatement{
+	return h.taskSrvc.UpdateStatementMd(ctx, taskId, srvc.MarkdownStatement{
 		LangIso639: lang,
 		Story:      req.Story,
 		Input:      req.Input,
@@ -31,19 +31,16 @@ func (h *taskHttpHandler) PutStatement(ctx context.Context, req PutStatementReq)
 		Talk:       req.Talk,
 		Example:    req.Example,
 	})
-	return Empty{}, err
 }
 
-func (h *taskHttpHandler) DeleteStatementImage(ctx context.Context, req Empty) (Empty, error) {
+func (h *taskHttpHandler) DeleteStatementImage(ctx context.Context) error {
 	taskId := chi.URLParamFromCtx(ctx, "taskId")
 	filename := chi.URLParamFromCtx(ctx, "filename")
 
-	err := h.taskSrvc.DeleteStatementImage(ctx, taskId, filename)
-	if err != nil {
-		return Empty{}, err
+	if err := h.taskSrvc.DeleteStatementImage(ctx, taskId, filename); err != nil {
+		return err
 	}
 
 	h.cache.Delete(taskGetCacheKey(taskId))
-
-	return Empty{}, nil
+	return nil
 }
