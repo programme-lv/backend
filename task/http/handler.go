@@ -72,19 +72,11 @@ func (h *taskHttpHandler) logger(ctx context.Context) *slog.Logger {
 	return ctxlog.FromContext(ctx).With("module", "task", "layer", "http")
 }
 
-type JsonHandlerFuncImpl[Q any, R any] func(ctx context.Context, request Q, params map[string]string) (response R, err error)
+type JsonHandlerFuncImpl[Q any, R any] func(ctx context.Context, request Q) (response R, err error)
 
 func HttpJsonHandlerFunc[Q any, R any](handler JsonHandlerFuncImpl[Q, R]) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		params := make(map[string]string)
-
-		rctx := chi.RouteContext(r.Context())
-		if rctx != nil {
-			for i, key := range rctx.URLParams.Keys {
-				params[key] = rctx.URLParams.Values[i]
-			}
-		}
 
 		var req Q
 		t := reflect.TypeOf(req)
@@ -95,7 +87,7 @@ func HttpJsonHandlerFunc[Q any, R any](handler JsonHandlerFuncImpl[Q, R]) http.H
 			}
 		}
 
-		result, err := handler(ctx, req, params)
+		result, err := handler(ctx, req)
 
 		if err != nil {
 			writeHttpJsonError(w, err)

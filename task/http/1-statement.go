@@ -1,7 +1,6 @@
 package http
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"log/slog"
@@ -11,53 +10,8 @@ import (
 	fname "github.com/programme-lv/backend/common/fname"
 	"github.com/programme-lv/backend/common/httpjson"
 	"github.com/programme-lv/backend/common/mimetype"
-	"github.com/programme-lv/backend/task/srvc"
 )
 
-type PutStatementReq struct {
-	Story   string `json:"story"`
-	Input   string `json:"input"`
-	Output  string `json:"output"`
-	Notes   string `json:"notes"`
-	Scoring string `json:"scoring"`
-	Talk    string `json:"talk"`
-	Example string `json:"example"`
-}
-
-func (h *taskHttpHandler) PutStatement(ctx context.Context,
-	req PutStatementReq, params map[string]string,
-) (response Empty, err error) {
-	taskId := params["taskId"]
-	lang := params["langIso639"]
-
-	err = h.taskSrvc.UpdateStatementMd(ctx, taskId, srvc.MarkdownStatement{
-		LangIso639: lang,
-		Story:      req.Story,
-		Input:      req.Input,
-		Output:     req.Output,
-		Notes:      req.Notes,
-		Scoring:    req.Scoring,
-		Talk:       req.Talk,
-		Example:    req.Example,
-	})
-	return
-}
-
-func (h *taskHttpHandler) DeleteStatementImage(ctx context.Context,
-	req struct{}, params map[string]string,
-) (response struct{}, err error) {
-	taskId := params["taskId"]
-	filename := params["filename"]
-
-	err = h.taskSrvc.DeleteStatementImage(ctx, taskId, filename)
-	if err != nil {
-		return
-	}
-
-	h.cache.Delete(taskGetCacheKey(taskId))
-
-	return
-}
 
 func (h *taskHttpHandler) UploadStatementImage(w http.ResponseWriter, r *http.Request) {
 	taskId := chi.URLParam(r, "taskId")
