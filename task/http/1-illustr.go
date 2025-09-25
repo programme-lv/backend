@@ -9,6 +9,8 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/programme-lv/backend/common/httpjson"
+	"github.com/programme-lv/backend/common/img"
+	"github.com/programme-lv/backend/common/mimetype"
 	"github.com/programme-lv/backend/task/srvc"
 )
 
@@ -34,7 +36,7 @@ func (h *taskHttpHandler) UploadIllustrationImage(w http.ResponseWriter, r *http
 	defer image.Close()
 
 	// get specified and detected MIME types
-	_, imageMimeType, err := getUploadedFileMIMEs(image, header)
+	_, imageMimeType, err := mimetype.GetUploadedFileMIMEs(image, header)
 	if err != nil {
 		errMsg := fmt.Sprintf("failed to get MIME types: %v", err)
 		errCode := "failed_to_get_mimes"
@@ -59,7 +61,7 @@ func (h *taskHttpHandler) UploadIllustrationImage(w http.ResponseWriter, r *http
 	}
 
 	// Get image dimensions
-	width, height, err := getImageDimensions(imageBytes, imageMimeType)
+	width, height, err := img.GetImageDimensions(imageBytes, imageMimeType)
 	if err != nil {
 		errMsg := fmt.Sprintf("failed to get image dimensions: %v", err)
 		errCode := "failed_to_get_image_dimensions"

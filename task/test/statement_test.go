@@ -29,7 +29,7 @@ func GetTask(t *testing.T, h http.Handler, taskId string) *httptest.ResponseReco
 	return w
 }
 
-func PatchStatement(t *testing.T, h http.Handler, taskId string, req taskhttp.PutStatementRequest, token string) *httptest.ResponseRecorder {
+func PatchStatement(t *testing.T, h http.Handler, taskId string, req taskhttp.PutStatementReq, token string) *httptest.ResponseRecorder {
 	method := http.MethodPatch
 	url := fmt.Sprintf("/tasks/%s/statements/lv", taskId)
 
@@ -64,7 +64,7 @@ func TestPutStatementHttpRequest(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 0, len(taskBefore.MdStatements))
 
-	req := taskhttp.PutStatementRequest{
+	req := taskhttp.PutStatementReq{
 		Story:   "story",
 		Input:   "input",
 		Output:  "output",

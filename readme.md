@@ -65,3 +65,4 @@ To update postgres schema, create a migration script in ./postgres/migrate/ and 
 ./postgres/migrate.sh. 
 After making changes to DB, run ./postgres/print.sh to update the schema.txt in ./docs/schema.txt
 
+A big TODO is to get rid of the ./http directory.
