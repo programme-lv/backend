@@ -7,6 +7,8 @@ import (
 	"github.com/programme-lv/backend/task/srvc"
 )
 
+type Empty struct{}
+
 type Example struct {
 	Input  string `json:"input"`
 	Output string `json:"output"`

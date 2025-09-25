@@ -6,17 +6,15 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
-	"path/filepath"
-	"regexp"
-	"slices"
-	"strings"
 
 	"github.com/go-chi/chi/v5"
+	fname "github.com/programme-lv/backend/common/fname"
 	"github.com/programme-lv/backend/common/httpjson"
+	"github.com/programme-lv/backend/common/mimetype"
 	"github.com/programme-lv/backend/task/srvc"
 )
 
-type PutStatementRequest struct {
+type PutStatementReq struct {
 	Story   string `json:"story"`
 	Input   string `json:"input"`
 	Output  string `json:"output"`
@@ -27,8 +25,8 @@ type PutStatementRequest struct {
 }
 
 func (h *taskHttpHandler) PutStatement(ctx context.Context,
-	req PutStatementRequest, params map[string]string,
-) (response struct{}, err error) {
+	req PutStatementReq, params map[string]string,
+) (response Empty, err error) {
 	taskId := params["taskId"]
 	lang := params["langIso639"]
 
@@ -83,34 +81,18 @@ func (h *taskHttpHandler) UploadStatementImage(w http.ResponseWriter, r *http.Re
 	defer image.Close()
 
 	uploadedFilename := header.Filename
-	// let's make sure the filename is clean and safe. allow only alphanumeric characters, underscores, and hyphens
-	filenameWithoutExt := strings.TrimSuffix(uploadedFilename, filepath.Ext(uploadedFilename))
-	imageFilenameExt := filepath.Ext(uploadedFilename)
-	// otherwise throw bad request with a list of allowed characters
-	allowedChars := regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
-	if !allowedChars.MatchString(filenameWithoutExt) {
-		errMsg := fmt.Sprintf("invalid filename (only alphanumeric characters, underscores, and hyphens are allowed): %s", uploadedFilename)
-		errCode := "invalid_filename"
-		httpjson.Error(w, errMsg, http.StatusBadRequest, errCode)
-		return
-	}
-	if len(filenameWithoutExt) > 100 {
-		errMsg := fmt.Sprintf("filename is too long (max 100 characters): %s", filenameWithoutExt)
-		errCode := "filename_too_long"
-		httpjson.Error(w, errMsg, http.StatusBadRequest, errCode)
-		return
-	}
-
-	cantContain := []string{"CON", "PRN", "AUX", "NUL", "COM", "LPT"}
-	if len(filenameWithoutExt) < 4 && slices.Contains(cantContain, filenameWithoutExt) {
-		errMsg := fmt.Sprintf("invalid filename (may contain reserved filenames): %s", filenameWithoutExt)
-		errCode := "invalid_filename"
-		httpjson.Error(w, errMsg, http.StatusBadRequest, errCode)
+	_, imageFilenameExt, vErr := fname.ValidateUploadedImageFilename(uploadedFilename)
+	if vErr != nil {
+		code := "invalid_filename"
+		if ve, ok := vErr.(*fname.FilenameValidationError); ok {
+			code = ve.Code
+		}
+		httpjson.Error(w, vErr.Error(), http.StatusBadRequest, code)
 		return
 	}
 
 	// get specified and detected MIME types
-	_, imageMimeType, err := getUploadedFileMIMEs(image, header)
+	_, imageMimeType, err := mimetype.GetUploadedFileMIMEs(image, header)
 	if err != nil {
 		errMsg := fmt.Sprintf("failed to get MIME types: %v", err)
 		errCode := "failed_to_get_mimes"
@@ -119,7 +101,7 @@ func (h *taskHttpHandler) UploadStatementImage(w http.ResponseWriter, r *http.Re
 	}
 
 	// can we somehow check that imageFilenameExt matches the mime type?
-	if !isExtensionValidForMIME(imageFilenameExt, imageMimeType) {
+	if !mimetype.IsExtensionValidForMIME(imageFilenameExt, imageMimeType) {
 		errMsg := fmt.Sprintf("file extension '%s' does not match detected MIME type '%s'", imageFilenameExt, imageMimeType)
 		errCode := "invalid_file_extension"
 		httpjson.Error(w, errMsg, http.StatusBadRequest, errCode)
