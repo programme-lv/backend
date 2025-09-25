@@ -22,7 +22,6 @@ func TestProcessResultsAnyOrderWithCompilation(
 		FinishedCompiling{
 			RuntimeData: getExampleRunData(),
 		},
-		StartedTesting{},
 		ReachedTest{
 			TestId: 1,
 			In:     getExampleStrPtr(),
@@ -60,7 +59,6 @@ func TestProcessResultsAnyOrderNoCompilation(
 			SysInfo:   "some sys info",
 			StartedAt: time.Now(),
 		},
-		StartedTesting{},
 		ReachedTest{
 			TestId: 1,
 			In:     getExampleStrPtr(),

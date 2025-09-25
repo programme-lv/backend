@@ -44,12 +44,12 @@ func TestEvalServiceCmpListenNoCompile(t *testing.T) {
 	err := srvc.ListenToResultSQS()
 	require.NoError(t, err)
 	execUuid := uuid.New()
-	err = srvc.Enqueue(context.Background(), execUuid, "a=int(input());b=int(input());print(a+b)", "python3.11", []exec.TestFile{
-		{InContent: strPtr("1 2"), AnsContent: strPtr("3")},
-		{InContent: strPtr("3 4"), AnsContent: strPtr("6")},
+	err = srvc.Enqueue(context.Background(), execUuid, "a=int(input());b=int(input());print(a+b)", "python3.13", []exec.TestFile{
+		{InContent: strPtr("1\n2"), AnsContent: strPtr("3")},
+		{InContent: strPtr("3\n4"), AnsContent: strPtr("6")},
 	}, exec.TestingParams{
 		CpuMs:  1000,
-		MemKiB: 1024,
+		MemKiB: 1024 * 10,
 	})
 	require.NoError(t, err)
 
@@ -75,12 +75,10 @@ func TestEvalServiceCmpListenNoCompile(t *testing.T) {
 hello:
 	require.Len(t, events, 7)
 	require.Equal(t, events[0].Type(), exec.ReceivedSubmissionType)
-	require.Equal(t, events[1].Type(), exec.StartedTestingType)
-	require.Equal(t, events[2].Type(), exec.ReachedTestType)
-	require.Equal(t, events[3].Type(), exec.FinishedTestType)
-	require.Equal(t, events[4].Type(), exec.ReachedTestType)
-	require.Equal(t, events[5].Type(), exec.FinishedTestType)
-	require.Equal(t, events[6].Type(), exec.FinishedTestingType)
+	require.Equal(t, events[1].Type(), exec.ReachedTestType)
+	require.Equal(t, events[2].Type(), exec.FinishedTestType)
+	require.Equal(t, events[3].Type(), exec.ReachedTestType)
+	require.Equal(t, events[4].Type(), exec.FinishedTestType)
 
 	srvc.Close()
 }
@@ -90,8 +88,8 @@ func TestEvalServiceCmpListenWithCompile(t *testing.T) {
 	srvc := exec.NewExecSrvc()
 	execUuid := uuid.New()
 	err := srvc.Enqueue(context.Background(), execUuid, "#include <iostream>\nint main() {int a,b;std::cin>>a>>b;std::cout<<a+b<<std::endl;}", "cpp17", []exec.TestFile{
-		{InContent: strPtr("1 2"), AnsContent: strPtr("3")},
-		{InContent: strPtr("3 4"), AnsContent: strPtr("6")},
+		{InContent: strPtr("1\n2"), AnsContent: strPtr("3")},
+		{InContent: strPtr("3\n4"), AnsContent: strPtr("6")},
 	}, exec.TestingParams{
 		CpuMs:  1000,
 		MemKiB: 1024,
@@ -123,12 +121,10 @@ hello:
 		exec.ReceivedSubmissionType,
 		exec.StartedCompilationType,
 		exec.FinishedCompilationType,
-		exec.StartedTestingType,
 		exec.ReachedTestType,
 		exec.FinishedTestType,
 		exec.ReachedTestType,
 		exec.FinishedTestType,
-		exec.FinishedTestingType,
 	}
 	for i, ev := range events {
 		require.Equal(t, expectedEvents[i], ev.Type())

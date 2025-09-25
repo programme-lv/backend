@@ -46,7 +46,6 @@ func TestEnqueueAndReceiveResults(t *testing.T) {
 	receivedStartedEvaluation := false
 	receivedStartedCompilation := false
 	receivedFinishedCompilation := false
-	receivedStartedTesting := false
 	receivedReachedTest := false
 	receivedFinishedTesting := false
 	receivedAll := make(chan uuid.UUID, 1)
@@ -90,8 +89,6 @@ func TestEnqueueAndReceiveResults(t *testing.T) {
 			receivedStartedCompilation = true
 		case FinishedCompilationType:
 			receivedFinishedCompilation = true
-		case StartedTestingType:
-			receivedStartedTesting = true
 		case ReachedTestType:
 			reachedTest := msg.Data.(ReachedTest)
 			receivedReachedTest = true
@@ -118,7 +115,7 @@ func TestEnqueueAndReceiveResults(t *testing.T) {
 			}
 		}
 		if receivedStartedEvaluation &&
-			receivedStartedTesting && receivedFinishedTesting {
+			receivedFinishedTesting {
 			everythingExceptTests = true
 		}
 		if everythingExceptTests && allTestsReceived {
@@ -168,7 +165,6 @@ func TestEnqueueAndReceiveResults(t *testing.T) {
 	require.True(t, receivedStartedEvaluation)
 	require.False(t, receivedStartedCompilation)
 	require.False(t, receivedFinishedCompilation)
-	require.True(t, receivedStartedTesting)
 	require.True(t, receivedReachedTest)
 	require.True(t, receivedFinishedTesting)
 	require.Empty(t, unreachedTestIDs)

@@ -11,7 +11,6 @@ const (
 	StartedCompilationType  = "started_compilation"
 	FinishedCompilationType = "finished_compilation"
 	CompilationErrorType    = "compilation_error"
-	StartedTestingType      = "started_testing"
 	ReachedTestType         = "reached_test"
 	IgnoredTestType         = "ignored_test"
 	FinishedTestType        = "finished_test"
@@ -40,12 +39,6 @@ type FinishedCompiling struct {
 
 func (s FinishedCompiling) Type() string {
 	return FinishedCompilationType
-}
-
-type StartedTesting struct{}
-
-func (s StartedTesting) Type() string {
-	return StartedTestingType
 }
 
 type ReachedTest struct {
