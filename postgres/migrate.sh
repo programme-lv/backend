@@ -30,7 +30,7 @@ done
 
 if [[ "$HELP" == "true" ]]; then
 	echo "Usage: $0 [--host HOST] [--port PORT] [--user USER] [--db DB] [--password PW] [--prod]" >&2
-	echo "Defaults (dev): host=localhost port=5432 user=postgres db=programme_lv password=password123" >&2
+	echo "Defaults (dev): host=localhost port=5432 user=postgres db=proglv password=pw" >&2
 	exit 0
 fi
 
@@ -38,7 +38,7 @@ fi
 HOST="${HOST:-localhost}"
 PORT="${PORT:-5432}"
 USER="${USER:-postgres}"
-DB="${DB:-programme_lv}"
+DB="${DB:-proglv}"
 PASSWORD="${PASSWORD:-}"
 
 if [[ "$PROD" == "true" ]]; then
@@ -46,14 +46,14 @@ if [[ "$PROD" == "true" ]]; then
 	if [[ -f "$ENV_FILE" ]]; then
 		[[ -z "$HOST" || "$HOST" == "localhost" ]] && HOST="$(grep -E '^POSTGRES_HOST=' "$ENV_FILE" | cut -d '=' -f2- | tr -d "'" || true)"
 		[[ -z "$USER" || "$USER" == "postgres" ]] && USER="$(grep -E '^POSTGRES_USER=' "$ENV_FILE" | cut -d '=' -f2- | tr -d "'" || true)"
-		[[ -z "$DB" || "$DB" == "programme_lv" ]] && DB="$(grep -E '^POSTGRES_DB=' "$ENV_FILE" | cut -d '=' -f2- | tr -d "'" || true)"
+		[[ -z "$DB" || "$DB" == "proglv" ]] && DB="$(grep -E '^POSTGRES_DB=' "$ENV_FILE" | cut -d '=' -f2- | tr -d "'" || true)"
 		[[ -z "$PASSWORD" ]] && PASSWORD="$(grep -E '^POSTGRES_PW=' "$ENV_FILE" | cut -d '=' -f2- | tr -d "'" || true)"
 	fi
 fi
 
 if [[ -z "$PASSWORD" ]]; then
 	# Dev default
-	PASSWORD="password123"
+	PASSWORD="pw"
 fi
 
 if ! command -v migrate >/dev/null 2>&1; then

@@ -30,7 +30,7 @@ done
 
 if [[ "$HELP" == "true" ]]; then
 	echo "Usage: $0 [--host HOST] [--user USER] [--password PW] [--db DB] [--port PORT] [--file DUMP_FILE]" >&2
-	echo "Defaults: host=localhost; user=postgres; db=postgres; port=5432; password=password123. If --file not provided, picks newest *.dump in CWD." >&2
+	echo "Defaults: host=localhost; user=postgres; db=proglv; port=5432; password=pw. If --file not provided, picks newest *.dump in CWD." >&2
 	exit 0
 fi
 

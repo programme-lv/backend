@@ -1,4 +1,4 @@
--- Schema dump of 'proglv' generated Sun Aug 24 08:25:33 UTC 2025
+-- Schema dump of 'proglv' generated Thu Sep 25 10:10:20 AM UTC 2025
                                Table "public.eval_test_groups"
      Column      |   Type    | Collation | Nullable |                 Default                 
 -----------------+-----------+-----------+----------+-----------------------------------------
@@ -172,6 +172,23 @@ Indexes:
 Foreign-key constraints:
     "fk_pdf_statements_task" FOREIGN KEY (task_short_id) REFERENCES tasks(short_id) ON DELETE CASCADE
 
+                     Table "public.task_solutions"
+  Column  |          Type          | Collation | Nullable |   Default   
+----------+------------------------+-----------+----------+-------------
+ task_id  | text                   |           | not null | 
+ fname    | character varying(255) |           | not null | 
+ content  | text                   |           | not null | 
+ subtasks | jsonb                  |           | not null | '[]'::jsonb
+Indexes:
+    "task_solutions_pkey" PRIMARY KEY, btree (task_id, fname)
+Check constraints:
+    "check_content_length" CHECK (length(content) <= 1000000)
+    "check_content_not_empty" CHECK (length(TRIM(BOTH FROM content)) > 0)
+    "check_fname_length" CHECK (length(fname::text) <= 255)
+    "check_fname_not_empty" CHECK (length(TRIM(BOTH FROM fname)) > 0)
+Foreign-key constraints:
+    "fk_solutions_task" FOREIGN KEY (task_id) REFERENCES tasks(short_id)
+
                               Table "public.task_subtask_test_ids"
    Column   |  Type   | Collation | Nullable |                      Default                      
 ------------+---------+-----------+----------+---------------------------------------------------
@@ -260,9 +277,9 @@ Foreign-key constraints:
 Referenced by:
     TABLE "task_vis_inp_subtask_tests" CONSTRAINT "fk_vis_inp_subtask_tests" FOREIGN KEY (subtask_id) REFERENCES task_vis_inp_subtasks(id) ON DELETE CASCADE
 
-                            Table "public.tasks"
-       Column       |         Type          | Collation | Nullable | Default 
---------------------+-----------------------+-----------+----------+---------
+                             Table "public.tasks"
+       Column       |         Type          | Collation | Nullable | Default  
+--------------------+-----------------------+-----------+----------+----------
  short_id           | text                  |           | not null | 
  illustr_img_s3_key | text                  |           |          | 
  mem_lim_megabytes  | integer               |           | not null | 
@@ -282,6 +299,7 @@ Referenced by:
  olymp_stage        | character varying(20) |           |          | 
  authors            | jsonb                 |           |          | 
  problem_tags       | jsonb                 |           |          | 
+ archive_s3_key     | text                  |           | not null | ''::text
 Indexes:
     "tasks_pkey" PRIMARY KEY, btree (short_id)
 Referenced by:
@@ -289,6 +307,7 @@ Referenced by:
     TABLE "task_md_statements" CONSTRAINT "fk_md_statements_task" FOREIGN KEY (task_short_id) REFERENCES tasks(short_id) ON DELETE CASCADE
     TABLE "task_origin_notes" CONSTRAINT "fk_origin_notes_task" FOREIGN KEY (task_short_id) REFERENCES tasks(short_id) ON DELETE CASCADE
     TABLE "task_pdf_statements" CONSTRAINT "fk_pdf_statements_task" FOREIGN KEY (task_short_id) REFERENCES tasks(short_id) ON DELETE CASCADE
+    TABLE "task_solutions" CONSTRAINT "fk_solutions_task" FOREIGN KEY (task_id) REFERENCES tasks(short_id)
     TABLE "task_subtasks" CONSTRAINT "fk_subtasks_task" FOREIGN KEY (task_short_id) REFERENCES tasks(short_id) ON DELETE CASCADE
     TABLE "task_images" CONSTRAINT "fk_task_images_task" FOREIGN KEY (task_short_id) REFERENCES tasks(short_id) ON DELETE CASCADE
     TABLE "task_test_groups" CONSTRAINT "fk_test_groups_task" FOREIGN KEY (task_short_id) REFERENCES tasks(short_id) ON DELETE CASCADE
@@ -312,42 +331,43 @@ Indexes:
 Referenced by:
     TABLE "submissions" CONSTRAINT "fk_author" FOREIGN KEY (author_uuid) REFERENCES users(uuid) ON DELETE CASCADE
 
-                       List of relations
- Schema |               Name                |   Type   | Owner  
---------+-----------------------------------+----------+--------
- public | eval_test_groups                  | table    | proglv
- public | eval_test_results                 | table    | proglv
- public | evaluations                       | table    | proglv
- public | schema_migrations                 | table    | proglv
- public | submissions                       | table    | proglv
- public | subtasks                          | table    | proglv
- public | subtasks_id_seq                   | sequence | proglv
- public | task_examples                     | table    | proglv
- public | task_examples_id_seq              | sequence | proglv
- public | task_images                       | table    | proglv
- public | task_md_statements                | table    | proglv
- public | task_md_statements_id_seq         | sequence | proglv
- public | task_origin_notes                 | table    | proglv
- public | task_origin_notes_id_seq          | sequence | proglv
- public | task_pdf_statements               | table    | proglv
- public | task_pdf_statements_id_seq        | sequence | proglv
- public | task_subtask_test_ids             | table    | proglv
- public | task_subtask_test_ids_id_seq      | sequence | proglv
- public | task_subtasks                     | table    | proglv
- public | task_subtasks_id_seq              | sequence | proglv
- public | task_test_group_test_ids          | table    | proglv
- public | task_test_group_test_ids_id_seq   | sequence | proglv
- public | task_test_groups                  | table    | proglv
- public | task_test_groups_id_seq           | sequence | proglv
- public | task_tests                        | table    | proglv
- public | task_tests_id_seq                 | sequence | proglv
- public | task_vis_inp_subtask_tests        | table    | proglv
- public | task_vis_inp_subtask_tests_id_seq | sequence | proglv
- public | task_vis_inp_subtasks             | table    | proglv
- public | task_vis_inp_subtasks_id_seq      | sequence | proglv
- public | tasks                             | table    | proglv
- public | test_groups_id_seq                | sequence | proglv
- public | tests_id_seq                      | sequence | proglv
- public | users                             | table    | proglv
-(34 rows)
+                        List of relations
+ Schema |               Name                |   Type   |  Owner   
+--------+-----------------------------------+----------+----------
+ public | eval_test_groups                  | table    | postgres
+ public | eval_test_results                 | table    | postgres
+ public | evaluations                       | table    | postgres
+ public | schema_migrations                 | table    | postgres
+ public | submissions                       | table    | postgres
+ public | subtasks                          | table    | postgres
+ public | subtasks_id_seq                   | sequence | postgres
+ public | task_examples                     | table    | postgres
+ public | task_examples_id_seq              | sequence | postgres
+ public | task_images                       | table    | postgres
+ public | task_md_statements                | table    | postgres
+ public | task_md_statements_id_seq         | sequence | postgres
+ public | task_origin_notes                 | table    | postgres
+ public | task_origin_notes_id_seq          | sequence | postgres
+ public | task_pdf_statements               | table    | postgres
+ public | task_pdf_statements_id_seq        | sequence | postgres
+ public | task_solutions                    | table    | postgres
+ public | task_subtask_test_ids             | table    | postgres
+ public | task_subtask_test_ids_id_seq      | sequence | postgres
+ public | task_subtasks                     | table    | postgres
+ public | task_subtasks_id_seq              | sequence | postgres
+ public | task_test_group_test_ids          | table    | postgres
+ public | task_test_group_test_ids_id_seq   | sequence | postgres
+ public | task_test_groups                  | table    | postgres
+ public | task_test_groups_id_seq           | sequence | postgres
+ public | task_tests                        | table    | postgres
+ public | task_tests_id_seq                 | sequence | postgres
+ public | task_vis_inp_subtask_tests        | table    | postgres
+ public | task_vis_inp_subtask_tests_id_seq | sequence | postgres
+ public | task_vis_inp_subtasks             | table    | postgres
+ public | task_vis_inp_subtasks_id_seq      | sequence | postgres
+ public | tasks                             | table    | postgres
+ public | test_groups_id_seq                | sequence | postgres
+ public | tests_id_seq                      | sequence | postgres
+ public | users                             | table    | postgres
+(35 rows)
 
