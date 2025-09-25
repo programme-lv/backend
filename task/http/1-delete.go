@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/programme-lv/backend/common/httpjson"
+	"github.com/programme-lv/backend/common/jsonresp"
 )
 
 // DeleteTask deletes a task and all its related data (admin-only endpoint)
@@ -15,7 +15,7 @@ func (h *taskHttpHandler) DeleteTask(w http.ResponseWriter, r *http.Request) {
 
 	if taskId == "" {
 		logger.Error("missing task ID parameter")
-		httpjson.BadRequest(w, "task ID is required")
+		jsonresp.BadRequest(w, "task ID is required")
 		return
 	}
 
@@ -33,7 +33,7 @@ func (h *taskHttpHandler) DeleteTask(w http.ResponseWriter, r *http.Request) {
 	h.cache.Delete(cacheKey)
 
 	logger.Info("task deleted successfully", "task_id", taskId)
-	httpjson.Success(w, map[string]string{
+	jsonresp.Success(w, map[string]string{
 		"message": "task deleted successfully",
 		"task_id": taskId,
 	})

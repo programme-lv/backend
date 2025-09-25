@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/programme-lv/backend/common/httpjson"
+	"github.com/programme-lv/backend/common/jsonresp"
 	"github.com/programme-lv/backend/user/auth"
 )
 
@@ -25,7 +25,7 @@ func (httpserver *UserHttpHandler) Login(w http.ResponseWriter, r *http.Request)
 
 	user, err := httpserver.userSrvc.Login(r.Context(), request.Username, request.Password)
 	if err != nil {
-		httpjson.HandleSrvcError(slog.Default(), w, err)
+		jsonresp.HandleSrvcError(slog.Default(), w, err)
 		return
 	}
 
@@ -37,7 +37,7 @@ func (httpserver *UserHttpHandler) Login(w http.ResponseWriter, r *http.Request)
 		httpserver.jwtKey, validFor)
 	if err != nil {
 		err = fmt.Errorf("failed to generate JWT: %w", err)
-		httpjson.HandleSrvcError(slog.Default(), w, err)
+		jsonresp.HandleSrvcError(slog.Default(), w, err)
 		return
 	}
 
@@ -55,7 +55,7 @@ func (httpserver *UserHttpHandler) Login(w http.ResponseWriter, r *http.Request)
 	}
 	http.SetCookie(w, &cookie)
 
-	httpjson.Success(w, User{
+	jsonresp.Success(w, User{
 		UUID:      user.UUID.String(),
 		Username:  user.Username,
 		Email:     user.Email,

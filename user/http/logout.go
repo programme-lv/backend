@@ -3,7 +3,7 @@ package http
 import (
 	"net/http"
 
-	"github.com/programme-lv/backend/common/httpjson"
+	"github.com/programme-lv/backend/common/jsonresp"
 )
 
 // Logout handles user logout by clearing the auth_token cookie
@@ -21,5 +21,5 @@ func (httpserver *UserHttpHandler) Logout(w http.ResponseWriter, r *http.Request
 	}
 	http.SetCookie(w, &cookie)
 
-	httpjson.Success(w, map[string]string{"message": "Logout successful"})
+	jsonresp.Success(w, map[string]string{"message": "Logout successful"})
 }

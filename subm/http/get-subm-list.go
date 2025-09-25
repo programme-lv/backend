@@ -7,7 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/programme-lv/backend/common/ctxlog"
-	"github.com/programme-lv/backend/common/httpjson"
+	"github.com/programme-lv/backend/common/jsonresp"
 	"github.com/programme-lv/backend/subm/domain"
 	"github.com/programme-lv/backend/subm/submsrvc/submquery"
 	"github.com/programme-lv/backend/user/auth"
@@ -53,7 +53,7 @@ func (h *SubmHttpHandler) GetSubmList(w http.ResponseWriter, r *http.Request) {
 
 	search := r.URL.Query().Get("search")
 	if len(search) > 100 {
-		httpjson.BadRequest(w, "Search query too long")
+		jsonresp.BadRequest(w, "Search query too long")
 		return
 	}
 
@@ -67,12 +67,12 @@ func (h *SubmHttpHandler) GetSubmList(w http.ResponseWriter, r *http.Request) {
 	if onlyMy {
 		userUuid, err := auth.GetUserUuidFromCtx(r.Context())
 		if err == auth.ErrNoJwtClaims || err == auth.ErrEmptyJwtClaims {
-			httpjson.Unauthorized(w, "jwt claims are missing")
+			jsonresp.Unauthorized(w, "jwt claims are missing")
 			return
 		}
 		if err != nil {
 			log.Error("failed to get user uuid from context", "error", err)
-			httpjson.HandleErrorWithContext(r.Context(), w, err)
+			jsonresp.HandleErrorWithContext(r.Context(), w, err)
 			return
 		}
 		authorUuid = &userUuid
@@ -89,7 +89,7 @@ func (h *SubmHttpHandler) GetSubmList(w http.ResponseWriter, r *http.Request) {
 	if cachedResponse, found := h.submCache.Get(cacheKey); found {
 		if response, ok := cachedResponse.(PaginatedResponse); ok {
 			log.Info("returning cached submission list", "limit", limit, "offset", offset, "search", search)
-			httpjson.Success(w, response)
+			jsonresp.Success(w, response)
 			return
 		}
 	}
@@ -160,11 +160,11 @@ func (h *SubmHttpHandler) GetSubmList(w http.ResponseWriter, r *http.Request) {
 	})
 
 	if err != nil {
-		httpjson.HandleErrorWithContext(r.Context(), w, err)
+		jsonresp.HandleErrorWithContext(r.Context(), w, err)
 		return
 	}
 
 	response := result.(PaginatedResponse)
 	log.Info("returning submission list", "count", len(response.Page.([]SubmListEntry)), "total", response.Pagination.Total)
-	httpjson.Success(w, response)
+	jsonresp.Success(w, response)
 }

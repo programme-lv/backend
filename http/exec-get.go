@@ -7,7 +7,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
-	"github.com/programme-lv/backend/common/httpjson"
+	"github.com/programme-lv/backend/common/jsonresp"
 )
 
 func (httpserver *HttpServer) execGet(w http.ResponseWriter, r *http.Request) {
@@ -20,9 +20,9 @@ func (httpserver *HttpServer) execGet(w http.ResponseWriter, r *http.Request) {
 
 	exec, err := httpserver.execSrvc.Get(context.TODO(), execUuid)
 	if err != nil {
-		httpjson.HandleSrvcError(slog.Default(), w, err)
+		jsonresp.HandleSrvcError(slog.Default(), w, err)
 		return
 	}
 
-	httpjson.Success(w, exec)
+	jsonresp.Success(w, exec)
 }

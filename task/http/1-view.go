@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/programme-lv/backend/common/httpjson"
+	"github.com/programme-lv/backend/common/jsonresp"
 )
 
 const taskGetCacheKeyPrefix = "task_get:"
@@ -23,7 +23,7 @@ func (httpserver *taskHttpHandler) ViewTask(w http.ResponseWriter, r *http.Reque
 	// Try to get task from cache
 	if cachedTask, found := httpserver.cache.Get(cacheKey); found {
 		if task, ok := cachedTask.(*Task); ok {
-			httpjson.Success(w, task)
+			jsonresp.Success(w, task)
 			return
 		}
 	}
@@ -53,12 +53,12 @@ func (httpserver *taskHttpHandler) ViewTask(w http.ResponseWriter, r *http.Reque
 	})
 
 	if err != nil {
-		httpjson.HandleSrvcError(slog.Default(), w, err)
+		jsonresp.HandleSrvcError(slog.Default(), w, err)
 		return
 	}
 
 	response, _ := result.(*Task)
-	httpjson.Success(w, response)
+	jsonresp.Success(w, response)
 }
 
 const taskPreviewListCacheKey = "task_preview_list"
@@ -77,7 +77,7 @@ func (h *taskHttpHandler) ViewTaskList(w http.ResponseWriter, r *http.Request) {
 	// Try to get from cache
 	if cached, found := h.cache.Get(taskPreviewListCacheKey); found {
 		if previews, ok := cached.([]TaskPreview); ok {
-			httpjson.Success(w, previews)
+			jsonresp.Success(w, previews)
 			return
 		}
 	}
@@ -102,10 +102,10 @@ func (h *taskHttpHandler) ViewTaskList(w http.ResponseWriter, r *http.Request) {
 	})
 
 	if err != nil {
-		httpjson.HandleSrvcError(slog.Default(), w, err)
+		jsonresp.HandleSrvcError(slog.Default(), w, err)
 		return
 	}
 
 	previewList, _ := result.([]TaskPreview)
-	httpjson.Success(w, previewList)
+	jsonresp.Success(w, previewList)
 }

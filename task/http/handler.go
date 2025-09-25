@@ -13,7 +13,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/patrickmn/go-cache"
 	"github.com/programme-lv/backend/common/ctxlog"
-	"github.com/programme-lv/backend/common/httpjson"
+	"github.com/programme-lv/backend/common/jsonresp"
 	"github.com/programme-lv/backend/common/srvcerror"
 	"github.com/programme-lv/backend/task/srvc"
 	"github.com/programme-lv/backend/user/auth"
@@ -82,7 +82,7 @@ func HttpJsonHandlerFunc[Q any, R any](handler JsonHandlerFuncImpl[Q, R]) http.H
 		t := reflect.TypeOf(req)
 		if t.Size() > 0 {
 			if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-				httpjson.BadRequest(w, err.Error())
+				jsonresp.BadRequest(w, err.Error())
 				return
 			}
 		}
@@ -94,7 +94,7 @@ func HttpJsonHandlerFunc[Q any, R any](handler JsonHandlerFuncImpl[Q, R]) http.H
 			return
 		}
 
-		httpjson.Success(w, result)
+		jsonresp.Success(w, result)
 	}
 }
 
@@ -109,7 +109,7 @@ func HttpJsonHandlerNoReq[R any](handler JsonHandlerNoReq[R]) http.HandlerFunc {
 			writeHttpJsonError(w, err)
 			return
 		}
-		httpjson.Success(w, result)
+		jsonresp.Success(w, result)
 	}
 }
 
@@ -123,7 +123,7 @@ func HttpJsonHandlerNoResp[Q any](handler JsonHandlerNoResp[Q]) http.HandlerFunc
 		t := reflect.TypeOf(req)
 		if t.Size() > 0 {
 			if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-				httpjson.BadRequest(w, err.Error())
+				jsonresp.BadRequest(w, err.Error())
 				return
 			}
 		}
@@ -131,7 +131,7 @@ func HttpJsonHandlerNoResp[Q any](handler JsonHandlerNoResp[Q]) http.HandlerFunc
 			writeHttpJsonError(w, err)
 			return
 		}
-		httpjson.Success(w, struct{}{})
+		jsonresp.Success(w, struct{}{})
 	}
 }
 
@@ -145,19 +145,19 @@ func HttpJsonHandlerNoReqNoResp(handler JsonHandlerNoReqNoResp) http.HandlerFunc
 			writeHttpJsonError(w, err)
 			return
 		}
-		httpjson.Success(w, struct{}{})
+		jsonresp.Success(w, struct{}{})
 	}
 }
 
 func writeHttpJsonError(w http.ResponseWriter, err error) {
 	e, ok := err.(*srvcerror.Error)
 	if !ok {
-		httpjson.InternalError(w)
+		jsonresp.InternalError(w)
 		return
 	}
 
 	msg := e.Error()
 	status := httpStatus(*e)
 	code := e.ErrorCode()
-	httpjson.Error(w, msg, status, code)
+	jsonresp.Error(w, msg, status, code)
 }

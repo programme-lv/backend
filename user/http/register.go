@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/programme-lv/backend/common/httpjson"
+	"github.com/programme-lv/backend/common/jsonresp"
 	"github.com/programme-lv/backend/user"
 )
 
@@ -42,7 +42,7 @@ func (httpserver *UserHttpHandler) Register(w http.ResponseWriter, r *http.Reque
 	})
 
 	if err != nil {
-		httpjson.HandleSrvcError(slog.Default(), w, err)
+		jsonresp.HandleSrvcError(slog.Default(), w, err)
 		return
 	}
 
@@ -54,5 +54,5 @@ func (httpserver *UserHttpHandler) Register(w http.ResponseWriter, r *http.Reque
 		Lastname:  user.Lastname,
 	}
 
-	httpjson.Success(w, response)
+	jsonresp.Success(w, response)
 }
