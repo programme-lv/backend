@@ -40,9 +40,24 @@ fi
 
 # Defaults
 USER="${USER:-postgres}"
-DB="${DB:-proglv}"
 PORT="${PORT:-5432}"
 PG_TAG="${PG_TAG:-17}"
+
+# Resolve database from .env.prod if --prod is set, otherwise use "proglv"
+if [[ -z "${DB}" ]]; then
+	if [[ "$PROD" == "true" ]]; then
+		ENV_FILE="$ROOT_DIR/.env.prod"
+		if [[ -f "$ENV_FILE" ]]; then
+			DB="$(grep -E "^POSTGRES_DB=" "$ENV_FILE" | cut -d '=' -f2- | tr -d "'" || true)"
+		fi
+		if [[ -z "${DB}" ]]; then
+			echo "Error: --prod set but database not provided and POSTGRES_DB not found in .env.prod." >&2
+			exit 1
+		fi
+	else
+		DB="proglv"
+	fi
+fi
 
 TIMESTAMP="$(date +%F_%H%M%S)"
 OUTFILE="${OUTFILE:-./${DB}-${TIMESTAMP}.dump}"
@@ -110,5 +125,4 @@ PGPASSWORD="$PASSWORD" pg_dump \
 	"$DB"
 
 echo "Done."
-
 
