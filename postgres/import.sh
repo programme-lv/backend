@@ -2,9 +2,6 @@
 
 set -euo pipefail # exit on error, print commands, fail on errors in pipes
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
-ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd -P)"
-
 # Parse flags (order-independent)
 HOST=""
 USER=""
