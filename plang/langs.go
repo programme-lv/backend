@@ -102,10 +102,10 @@ func getHardcodedLanguageList() []ProgrammingLang {
 		{
 			ID:               "python3.13",
 			FullName:         "Python 3.13",
-			CodeFilename:     "main.py",
+			CodeFilename:     "solution.py",
 			CompileCmd:       nil,
-			ExecuteCmd:       "python3.13 main.py",
-			EnvVersionCmd:    "python3.13 --version",
+			ExecuteCmd:       "python3.13 solution.py",
+			EnvVersionCmd:    "python3.13 --version | grep 3.13",
 			HelloWorldCode:   `print("Hello, World!")`,
 			MonacoId:         "python",
 			CompiledFilename: nil,
@@ -161,15 +161,47 @@ func main() {
 		},
 		{
 			ID:            "cpp17",
-			FullName:      "C++17 (GCC)",
-			CodeFilename:  "main.cpp",
-			CompileCmd:    strPtr("g++ -std=c++17 -o main main.cpp"),
-			ExecuteCmd:    "./main",
-			EnvVersionCmd: "g++ --version",
+			FullName:      "C++17",
+			CodeFilename:  "solution.cpp",
+			CompileCmd:    strPtr("g++ -std=c++17 -O2 -o solution solution.cpp"),
+			ExecuteCmd:    "./solution",
+			EnvVersionCmd: "g++ -std=c++17 -x c++ -o /dev/null - <<< 'int main(){}'",
 			HelloWorldCode: `#include <iostream>
 int main() { std::cout << "Hello, World!" << std::endl; }`,
 			MonacoId:         "cpp",
+			CompiledFilename: strPtr("solution"),
+			Enabled:          true,
+		},
+		{
+			ID:            "go1.25",
+			FullName:      "Go 1.25",
+			CodeFilename:  "main.go",
+			CompileCmd:    strPtr("go build main.go"),
+			ExecuteCmd:    "./main",
+			EnvVersionCmd: "go version | grep 1.25",
+			HelloWorldCode: `package main
+import "fmt"
+func main() {
+    fmt.Println("Hello, World!")
+}`,
+			MonacoId:         "go",
 			CompiledFilename: strPtr("main"),
+			Enabled:          true,
+		},
+		{
+			ID:            "java25",
+			FullName:      "Java SE 25",
+			CodeFilename:  "Main.java",
+			CompileCmd:    strPtr("javac --release 25 Main.java"),
+			ExecuteCmd:    "java -Xss64M -Xmx1024M -Xms8M -XX:NewRatio=2 -XX:TieredStopAtLevel=1 -XX:+UseSerialGC Main",
+			EnvVersionCmd: "java --version | grep 25",
+			HelloWorldCode: `public class Main {
+    public static void main(String[] args) {
+        System.out.println("Hello, World!");
+    }
+}`,
+			MonacoId:         "java",
+			CompiledFilename: strPtr("Main.class"),
 			Enabled:          true,
 		},
 	}
