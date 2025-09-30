@@ -95,16 +95,12 @@ func applyExecEventToEval(eval subm.Eval, event exec.Event) subm.Eval {
 		}
 		eval.Tests[u.TestID-1].Finished = true
 		if u.Subm != nil {
-			if u.Subm.ExitCode != 0 {
-				eval.Tests[u.TestID-1].Re = true
-			} else if u.Subm.StdErr != "" {
-				eval.Tests[u.TestID-1].Re = true
-			} else if u.Subm.Signal != nil {
-				eval.Tests[u.TestID-1].Re = true
-			} else if u.Subm.CpuMs > int64(eval.CpuLimMs) {
-				eval.Tests[u.TestID-1].Tle = true
-			} else if u.Subm.MemKiB > int64(eval.MemLimKiB) {
+			if u.Subm.IsOomKilled || u.Subm.MemKiB >= int64(eval.MemLimKiB) {
 				eval.Tests[u.TestID-1].Mle = true
+			} else if u.Subm.ExitCode != 0 || u.Subm.StdErr != "" || u.Subm.Signal != nil {
+				eval.Tests[u.TestID-1].Re = true
+			} else if u.Subm.CpuMs >= int64(eval.CpuLimMs) {
+				eval.Tests[u.TestID-1].Tle = true
 			} else if u.Checker != nil {
 				if u.Checker.ExitCode == 0 {
 					eval.Tests[u.TestID-1].Ac = true

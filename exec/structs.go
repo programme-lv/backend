@@ -114,18 +114,32 @@ type TestRes struct {
 
 // Runtime Data
 type RunData struct {
-	StdIn      string  `json:"in"`          // standard input
-	StdOut     string  `json:"out"`         // standard output
-	StdErr     string  `json:"err"`         // standard error
-	CpuMs      int64   `json:"cpu_ms"`      // cpu user-mode time in milliseconds
-	WallMs     int64   `json:"wall_ms"`     // wall clock time in milliseconds
-	MemKiB     int64   `json:"mem_kib"`     // memory usage (resident set size) in kibibytes
-	ExitCode   int64   `json:"exit"`        // exit code
-	CtxSwV     int64   `json:"ctx_sw_v"`    // voluntary context switches, e.g. waiting for I/O
-	CtxSwF     int64   `json:"ctx_sw_f"`    // involuntary context switches, e.g. waiting for CPU
-	Signal     *int64  `json:"signal"`      // exit signal if any
-	IsolStatus *string `json:"isol_status"` // isolate sandbox execution environment status
+	StdIn       string  `json:"in"`            // standard input
+	StdOut      string  `json:"out"`           // standard output
+	StdErr      string  `json:"err"`           // standard error
+	CpuMs       int64   `json:"cpu_ms"`        // cpu user-mode time in milliseconds
+	WallMs      int64   `json:"wall_ms"`       // wall clock time in milliseconds
+	MemKiB      int64   `json:"mem_kib"`       // memory usage (resident set size) in kibibytes
+	ExitCode    int64   `json:"exit"`          // exit code
+	CtxSwV      int64   `json:"ctx_sw_v"`      // voluntary context switches, e.g. waiting for I/O
+	CtxSwF      int64   `json:"ctx_sw_f"`      // involuntary context switches, e.g. waiting for CPU
+	Signal      *int64  `json:"signal"`        // exit signal if any
+	IsOomKilled bool    `json:"is_oom_killed"` // whether the process was killed due to memory exhaustion
+	IsolStatus  *string `json:"isol_status"`   // isolate sandbox execution environment status
+	IsolMsg     *string `json:"isol_msg"`      // isolate sandbox execution environment message
 }
+
+/*
+time:0.002
+time-wall:0.045
+max-rss:2624
+csw-voluntary:6
+csw-forced:2
+cg-mem:38248
+exitcode:2
+status:RE
+message:Exited with error status 2
+*/
 
 // type Text struct {
 // 	PvRect  string // preview rectangle cutout
