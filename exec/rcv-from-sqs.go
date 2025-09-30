@@ -74,8 +74,8 @@ func StartReceivingResultsFromSqs(ctx context.Context,
 						}
 
 						switch header.MsgType {
-						case api.StartJob:
-							startedEvaluation := api.StartedEvaluation{}
+						case api.StartJobMsg:
+							startedEvaluation := api.StartJob{}
 							err = json.Unmarshal([]byte(*msg.Body), &startedEvaluation)
 							startedAt, err := time.Parse(time.RFC3339, startedEvaluation.StartedTime)
 							if err != nil {
@@ -86,40 +86,40 @@ func StartReceivingResultsFromSqs(ctx context.Context,
 								SysInfo:   startedEvaluation.SystemInfo,
 								StartedAt: startedAt,
 							}
-						case api.StartCompile:
-							startedCompilation := api.StartedCompilation{}
+						case api.StartCompileMsg:
+							startedCompilation := api.StartCompile{}
 							err = json.Unmarshal([]byte(*msg.Body), &startedCompilation)
 							msgs[i].Data = StartedCompiling{}
-						case api.FinishCompile:
-							finishedCompilation := api.FinishedCompilation{}
+						case api.FinishCompileMsg:
+							finishedCompilation := api.FinishCompile{}
 							err = json.Unmarshal([]byte(*msg.Body), &finishedCompilation)
 							msgs[i].Data = FinishedCompiling{
 								RuntimeData: mapRunData(finishedCompilation.RuntimeData),
 							}
-						case api.ReachTest:
-							reachedTest := api.ReachedTest{}
+						case api.ReachTestMsg:
+							reachedTest := api.ReachTest{}
 							err = json.Unmarshal([]byte(*msg.Body), &reachedTest)
 							msgs[i].Data = ReachedTest{
 								TestId: int(reachedTest.TestId),
 								In:     reachedTest.Input,
 								Ans:    reachedTest.Answer,
 							}
-						case api.IgnoreTest:
-							ignoredTest := api.IgnoredTest{}
+						case api.IgnoreTestMsg:
+							ignoredTest := api.IgnoreTest{}
 							err = json.Unmarshal([]byte(*msg.Body), &ignoredTest)
 							msgs[i].Data = IgnoredTest{
 								TestId: int(ignoredTest.TestId),
 							}
-						case api.FinishTest:
-							finishTest := api.FinishedTest{}
+						case api.FinishTestMsg:
+							finishTest := api.FinishTest{}
 							err = json.Unmarshal([]byte(*msg.Body), &finishTest)
 							msgs[i].Data = FinishedTest{
 								TestID:  int(finishTest.TestId),
 								Subm:    mapRunData(finishTest.Submission),
 								Checker: mapRunData(finishTest.Checker),
 							}
-						case api.FinishJob:
-							finishEval := api.FinishedEvaluation{}
+						case api.FinishJobMsg:
+							finishEval := api.FinishJob{}
 							err = json.Unmarshal([]byte(*msg.Body), &finishEval)
 							if finishEval.CompileError {
 								msgs[i].Data = CompilationError{
@@ -180,13 +180,20 @@ func mapRunData(rd *api.RuntimeData) *RunData {
 			StdIn:    rd.Stdin,
 			StdOut:   rd.Stdout,
 			StdErr:   rd.Stderr,
-			CpuMs:    rd.CpuMillis,
-			WallMs:   rd.WallMillis,
-			MemKiB:   rd.MemoryKiBytes,
 			ExitCode: rd.ExitCode,
-			CtxSwV:   rd.CtxSwV,
-			CtxSwF:   rd.CtxSwF,
-			Signal:   rd.ExitSignal,
+
+			CpuMs:  rd.CpuMillis,
+			WallMs: rd.WallMillis,
+			MemKiB: rd.RamKiBytes,
+
+			CtxSwV: rd.CtxSwV,
+			CtxSwF: rd.CtxSwF,
+
+			Signal:      rd.ExitSignal,
+			IsOomKilled: rd.CgOomKilled,
+
+			IsolStatus: rd.IsolateStatus,
+			IsolMsg:    rd.IsolateMsg,
 		}
 	}
 	return nil
