@@ -17,7 +17,6 @@ import (
 	"github.com/programme-lv/backend/common/srvcerror"
 	"github.com/programme-lv/backend/task/srvc"
 	"github.com/programme-lv/backend/user/auth"
-	"golang.org/x/sync/singleflight"
 
 	cache "github.com/Code-Hex/go-generics-cache"
 )
@@ -25,7 +24,6 @@ import (
 type taskHttpHandler struct {
 	taskSrvc srvc.TaskSrvcClient
 	cache    *oldCache.Cache
-	sfGroup  singleflight.Group // Added singleflight group to prevent cache stampedes
 	exportMu sync.Mutex
 
 	getTaskViewCache *cache.Cache[string, Task]
@@ -59,6 +57,7 @@ func (h *taskHttpHandler) RegisterRoutes(r *chi.Mux, jwtKey []byte) {
 		r.Group(func(r chi.Router) {
 			r.Use(auth.HttpJwtAllowOnlyAdmins)
 
+			// resource-intensive routes
 			r.Group(func(r chi.Router) {
 				r.Use(middleware.ThrottleBacklog(1, 2, 30*time.Second))
 				r.Get("/tasks/{taskId}/export", h.ExportTask)
@@ -66,7 +65,7 @@ func (h *taskHttpHandler) RegisterRoutes(r *chi.Mux, jwtKey []byte) {
 			})
 
 			// task management
-			r.Delete("/tasks/{taskId}", h.DeleteTask)
+			r.Delete("/tasks/{taskId}", hf.NoReqNoResp(h.DeleteTask))
 
 			// statement
 			r.Patch("/tasks/{taskId}/statements/{langIso639}", hf.JsonReqNoResp(h.PutStatement))
@@ -74,8 +73,8 @@ func (h *taskHttpHandler) RegisterRoutes(r *chi.Mux, jwtKey []byte) {
 			r.Delete("/tasks/{taskId}/images/{filename}", hf.NoReqNoResp(h.DeleteStatementImage))
 
 			// illustration
-			r.Post("/tasks/{taskId}/illustration", h.UploadIllustrationImage)
-			r.Delete("/tasks/{taskId}/illustration", h.DeleteIllustrationImage)
+			r.Post("/tasks/{taskId}/illustration", h.UploadIllustration)
+			r.Delete("/tasks/{taskId}/illustration", hf.NoReqNoResp(h.DeleteIllustration))
 		})
 	})
 }
@@ -94,12 +93,7 @@ func writeHttpJsonError(w http.ResponseWriter, err error) {
 	}
 
 	msg := e.Error()
-	status := httpStatus(*e)
+	status := httpStatus(e)
 	code := e.ErrorCode()
 	jsonresp.Error(w, msg, status, code)
-}
-
-func getTaskListCacheKey() string {
-	const taskPreviewListCacheKey = "task_preview_list"
-	return taskPreviewListCacheKey
 }

@@ -1,13 +1,18 @@
 package http
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/programme-lv/backend/common/srvcerror"
 	"github.com/programme-lv/backend/task/srvc"
 )
 
-func httpStatus(e srvcerror.Error) int {
+var (
+	ErrBadRequest = errors.New("bad request")
+)
+
+func httpStatus(e error) int {
 	codeMap := map[string]int{
 		srvc.ErrCodeImageAlreadyExists:        http.StatusConflict,
 		srvc.ErrCodeTaskNotFound:              http.StatusNotFound,
@@ -19,8 +24,14 @@ func httpStatus(e srvcerror.Error) int {
 		srvc.ErrCodeFailedToGetTaskFromDb:     http.StatusInternalServerError,
 	}
 
-	if code, ok := codeMap[e.ErrorCode()]; ok {
-		return code
+	if err, ok := e.(*srvcerror.Error); ok {
+		if code, ok := codeMap[err.ErrorCode()]; ok {
+			return code
+		}
+	}
+
+	if errors.Is(e, ErrBadRequest) {
+		return http.StatusBadRequest
 	}
 
 	return http.StatusInternalServerError

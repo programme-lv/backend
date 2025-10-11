@@ -9,6 +9,16 @@ import (
 
 type Empty struct{}
 
+type TaskPreview struct {
+	ShortId          string             `json:"short_id"`
+	FullName         string             `json:"full_name"`
+	IllustrImg       *IllustrationImage `json:"illustr_img"`
+	DifficultyRating int                `json:"difficulty_rating"`
+	OriginOlympiad   string             `json:"origin_olympiad"`
+	OriginNote       string             `json:"origin_note"`
+	MdStatementStory string             `json:"md_statement_story"`
+}
+
 type Example struct {
 	Input  string `json:"input"`
 	Output string `json:"output"`
