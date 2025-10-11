@@ -7,7 +7,6 @@ import (
 	"reflect"
 
 	"github.com/programme-lv/backend/common/jsonresp"
-	"github.com/programme-lv/backend/common/srvcerror"
 )
 
 type HandlerFuncImpl[Q any, R any] func(ctx context.Context, request Q) (response R, err error)
@@ -81,7 +80,12 @@ func NoReqNoResp(handler HandlerNoReqNoResp) http.HandlerFunc {
 }
 
 func writeError(w http.ResponseWriter, err error) {
-	e, ok := err.(*srvcerror.Error)
+	type httpStatusCoder interface {
+		Error() string
+		HttpStatusCode() int
+		ErrorCode() string
+	}
+	e, ok := err.(httpStatusCoder)
 	if !ok {
 		jsonresp.InternalError(w)
 		return
