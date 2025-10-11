@@ -99,7 +99,7 @@ func (h *taskHttpHandler) UploadIllustrationImage(w http.ResponseWriter, r *http
 		return
 	}
 
-	h.cache.Delete(taskGetCacheKey(taskId))
+	h.getTaskViewCache.Delete(taskId)
 
 	err = jsonresp.Success(w, map[string]string{"s3_key": s3Key})
 	if err != nil {
@@ -116,7 +116,7 @@ func (h *taskHttpHandler) DeleteIllustrationImage(w http.ResponseWriter, r *http
 		return
 	}
 
-	h.cache.Delete(taskGetCacheKey(taskId))
+	h.getTaskViewCache.Delete(taskId)
 
 	err = jsonresp.Success(w, map[string]string{"status": "ok"})
 	if err != nil {

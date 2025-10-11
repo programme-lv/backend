@@ -30,7 +30,8 @@ func (e *Eval) CalculateScore() ScoreInfo {
 	yellow := 0
 	purple := 0
 
-	if e.ScoreUnit == ScoreUnitTestGroup {
+	switch e.ScoreUnit {
+	case ScoreUnitTestGroup:
 		for _, testGroup := range e.Groups {
 			maxScore += testGroup.Points
 		}
@@ -65,7 +66,7 @@ func (e *Eval) CalculateScore() ScoreInfo {
 		} else {
 			purple = 100
 		}
-	} else if e.ScoreUnit == ScoreUnitTest {
+	case ScoreUnitTest:
 		maxScore += len(e.Tests)
 		if e.Error == nil {
 			for _, test := range e.Tests {
