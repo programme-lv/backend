@@ -119,7 +119,7 @@ func mapTaskExamples(examples []srvc.Example) []Example {
 	return response
 }
 
-func (handler *taskHttpHandler) mapTaskResponse(task *srvc.Task) *Task {
+func (h *taskHttpHandler) mapTaskResponse(task srvc.Task) Task {
 	difficultyRating := new(int)
 	if task.DifficultyRating != 0 {
 		difficultyRating = new(int)
@@ -130,7 +130,7 @@ func (handler *taskHttpHandler) mapTaskResponse(task *srvc.Task) *Task {
 	defaultPdfStatementUrl := new(string)
 	for _, pdfStatement := range pdfStatements {
 		if pdfStatement.LangIso639 == "lv" {
-			url, err := handler.taskSrvc.GetHttpUrlForPdfStatement(context.TODO(), pdfStatement.S3Key)
+			url, err := h.taskSrvc.GetHttpUrlForPdfStatement(context.TODO(), pdfStatement.S3Key)
 			if err != nil {
 				slog.Error("failed to get public url for pdf statement", "error", err)
 				url = ""
@@ -200,16 +200,16 @@ func (handler *taskHttpHandler) mapTaskResponse(task *srvc.Task) *Task {
 		testingType = "interactor"
 	}
 
-	response := &Task{
+	response := Task{
 		ShortTaskID:            task.ShortId,
 		TaskFullName:           task.DefaultFullName(),
 		MemoryLimitMegabytes:   task.MemLimMegabytes,
 		CPUTimeLimitSeconds:    task.CpuTimeLimSecs,
 		OriginOlympiad:         task.OriginOlympiad,
-		IllustrationImg:        handler.mapTaskIllustrImg(task.IllustrImg),
+		IllustrationImg:        h.mapTaskIllustrImg(task.IllustrImg),
 		DifficultyRating:       difficultyRating,
 		DefaultMDStatement:     defaultMdStatement,
-		StatementImages:        handler.mapTaskStatementImages(task.MdImages),
+		StatementImages:        h.mapTaskStatementImages(task.MdImages),
 		Examples:               mapTaskExamples(task.Examples),
 		DefaultPDFStatementURL: defaultPdfStatementUrl,
 		OriginNotes:            originNotesAsAMap,
@@ -220,12 +220,12 @@ func (handler *taskHttpHandler) mapTaskResponse(task *srvc.Task) *Task {
 	return response
 }
 
-func (handler *taskHttpHandler) mapTaskIllustrImg(illustrImg *srvc.IllustrationImage) *IllustrationImage {
+func (h *taskHttpHandler) mapTaskIllustrImg(illustrImg *srvc.IllustrationImage) *IllustrationImage {
 	if illustrImg == nil || illustrImg.S3Key == "" {
 		return nil
 	}
 
-	httpUrl, err := handler.taskSrvc.GetHttpUrlForIllustrImg(context.TODO(), illustrImg.S3Key)
+	httpUrl, err := h.taskSrvc.GetHttpUrlForIllustrImg(context.TODO(), illustrImg.S3Key)
 	if err != nil {
 		slog.Error("failed to get public url for illustration image", "error", err)
 		return nil
@@ -239,11 +239,11 @@ func (handler *taskHttpHandler) mapTaskIllustrImg(illustrImg *srvc.IllustrationI
 	}
 }
 
-func (handler *taskHttpHandler) mapTaskPreview(preview srvc.TaskPreview) TaskPreview {
+func (h *taskHttpHandler) mapTaskPreview(preview srvc.TaskPreview) TaskPreview {
 	return TaskPreview{
 		ShortId:          preview.ShortId,
 		FullName:         preview.DefaultFullName(),
-		IllustrImg:       handler.mapTaskIllustrImg(preview.IllustrImg),
+		IllustrImg:       h.mapTaskIllustrImg(preview.IllustrImg),
 		DifficultyRating: preview.DifficultyRating,
 		OriginOlympiad:   preview.OriginOlympiad,
 		OriginNote:       preview.OriginNote,
@@ -251,10 +251,10 @@ func (handler *taskHttpHandler) mapTaskPreview(preview srvc.TaskPreview) TaskPre
 	}
 }
 
-func (handler *taskHttpHandler) mapTaskStatementImages(images []srvc.StatementImage) []StatementImage {
+func (h *taskHttpHandler) mapTaskStatementImages(images []srvc.StatementImage) []StatementImage {
 	response := make([]StatementImage, len(images))
 	for i, image := range images {
-		httpUrl, err := handler.taskSrvc.GetHttpUrlForStatementImage(context.TODO(), image.S3Key)
+		httpUrl, err := h.taskSrvc.GetHttpUrlForStatementImage(context.TODO(), image.S3Key)
 		if err != nil {
 			slog.Error("failed to get public url for statement image", "error", err)
 			httpUrl = ""

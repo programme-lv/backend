@@ -29,8 +29,7 @@ func (h *taskHttpHandler) DeleteTask(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Clear any cached data for this task
-	cacheKey := taskGetCacheKey(taskId)
-	h.cache.Delete(cacheKey)
+	h.getTaskViewCache.Delete(taskId)
 
 	logger.Info("task deleted successfully", "task_id", taskId)
 	jsonresp.Success(w, map[string]string{

@@ -75,7 +75,7 @@ func (h *taskHttpHandler) UploadStatementImage(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	h.cache.Delete(taskGetCacheKey(taskId))
+	h.getTaskViewCache.Delete(taskId)
 
 	err = jsonresp.Success(w, uri)
 	if err != nil {
