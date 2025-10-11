@@ -44,6 +44,7 @@ func (h *taskHttpHandler) DeleteStatementImage(ctx context.Context) error {
 	}
 
 	h.getTaskViewCache.Delete(taskId)
+	h.getTaskListCache.Delete("")
 	return nil
 }
 
@@ -83,4 +84,41 @@ func (h *taskHttpHandler) GetTaskList(ctx context.Context) ([]TaskPreview, error
 	exp := cache.WithExpiration(5 * time.Second)
 	h.getTaskListCache.Set("", previews, exp)
 	return previews, nil
+}
+
+func (h *taskHttpHandler) DeleteIllustration(ctx context.Context) error {
+	taskId := chi.URLParamFromCtx(ctx, "taskId")
+
+	err := h.taskSrvc.DeleteIllustrationImg(ctx, taskId)
+	if err != nil {
+		return err
+	}
+
+	h.getTaskViewCache.Delete(taskId)
+	h.getTaskListCache.Delete("")
+
+	return nil
+}
+
+// DeleteTaskOld deletes a task and all its related data (admin-only endpoint)
+func (h *taskHttpHandler) DeleteTask(ctx context.Context) error {
+	logger := h.logger(ctx)
+	taskId := chi.URLParamFromCtx(ctx, "taskId")
+
+	if taskId == "" {
+		return ErrBadRequest
+	}
+
+	err := h.taskSrvc.DeleteTask(ctx, taskId)
+	if err != nil {
+		return err
+	}
+
+	// Clear any cached data for this task
+	h.getTaskViewCache.Delete(taskId)
+	h.getTaskListCache.Delete("")
+
+	logger.Info("task deleted successfully", "task_id", taskId)
+
+	return nil
 }
