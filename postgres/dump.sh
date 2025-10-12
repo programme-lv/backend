@@ -103,7 +103,7 @@ pg_dump --version
 
 echo "Dumping ${DB} from ${HOST}:${PORT} to ${OUTFILE}..."
 
-read -p "Continue (y/n)? " choice
+read -p -r "Continue (y/n)? " choice
 case "$choice" in
 	y|Y ) echo "Proceeding...";;
 	n|N ) echo "Aborted."; exit 1;;

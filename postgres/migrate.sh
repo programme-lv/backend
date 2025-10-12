@@ -72,7 +72,7 @@ echo "PG_PORT: $PORT"
 echo "PG_USER: $USER"
 echo "PG_DB:   $DB"
 
-read -p "Press Enter to run migrations..." _
+read -p -r "Press Enter to run migrations..." _
 
 SSLMODE="disable"
 if [[ "$PROD" == "true" ]]; then
