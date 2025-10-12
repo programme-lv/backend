@@ -34,11 +34,11 @@ func TestPostStatementImageHttpRequest(t *testing.T) {
 	require.Equal(t, http.StatusUnauthorized, w.Code)
 
 	// 2. Generate a valid auth token
-	token, err := auth.GenerateJWT(
+	token, generateJWTErr := auth.GenerateJWT(
 		"admin",
 		"admin@example.com", uuid.Nil,
 		[]byte("test"), 24*time.Hour)
-	require.NoError(t, err)
+	require.NoError(t, generateJWTErr)
 
 	// 3. Upload with authentication - should succeed
 	w = UploadStatementImage(t, taskHttpHandler, "aplusb", "./testdata/seifs.png", token)

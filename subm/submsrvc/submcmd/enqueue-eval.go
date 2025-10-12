@@ -5,6 +5,7 @@ import (
 	"log/slog"
 
 	"github.com/google/uuid"
+	"github.com/programme-lv/backend/common/srvcerror"
 	"github.com/programme-lv/backend/exec"
 	subm "github.com/programme-lv/backend/subm/domain"
 	decorator "github.com/programme-lv/backend/subm/srvccqs"
@@ -20,7 +21,7 @@ type EnqueueEvalParams struct {
 
 type EnqueueEvalCmdHandler struct {
 	EnqueueExec     func(ctx context.Context, execUuid uuid.UUID, srcCode string, prLangId string, tests []exec.TestFile, params exec.TestingParams) error
-	GetTestDownlUrl func(ctx context.Context, testFileSha256 string) (string, error)
+	GetTestDownlUrl func(ctx context.Context, testFileSha256 string) (string, *srvcerror.Error)
 }
 
 func (h EnqueueEvalCmdHandler) Handle(ctx context.Context, p EnqueueEvalParams) error {

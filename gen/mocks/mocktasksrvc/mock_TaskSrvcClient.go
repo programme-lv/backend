@@ -25,18 +25,20 @@ func (_m *MockTaskSrvcClient) EXPECT() *MockTaskSrvcClient_Expecter {
 }
 
 // CreateTask provides a mock function with given fields: ctx, task
-func (_m *MockTaskSrvcClient) CreateTask(ctx context.Context, task srvc.Task) error {
+func (_m *MockTaskSrvcClient) CreateTask(ctx context.Context, task srvc.Task) *srvcerror.Error {
 	ret := _m.Called(ctx, task)
 
 	if len(ret) == 0 {
 		panic("no return value specified for CreateTask")
 	}
 
-	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, srvc.Task) error); ok {
+	var r0 *srvcerror.Error
+	if rf, ok := ret.Get(0).(func(context.Context, srvc.Task) *srvcerror.Error); ok {
 		r0 = rf(ctx, task)
 	} else {
-		r0 = ret.Error(0)
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*srvcerror.Error)
+		}
 	}
 
 	return r0
@@ -61,12 +63,12 @@ func (_c *MockTaskSrvcClient_CreateTask_Call) Run(run func(ctx context.Context, 
 	return _c
 }
 
-func (_c *MockTaskSrvcClient_CreateTask_Call) Return(_a0 error) *MockTaskSrvcClient_CreateTask_Call {
+func (_c *MockTaskSrvcClient_CreateTask_Call) Return(_a0 *srvcerror.Error) *MockTaskSrvcClient_CreateTask_Call {
 	_c.Call.Return(_a0)
 	return _c
 }
 
-func (_c *MockTaskSrvcClient_CreateTask_Call) RunAndReturn(run func(context.Context, srvc.Task) error) *MockTaskSrvcClient_CreateTask_Call {
+func (_c *MockTaskSrvcClient_CreateTask_Call) RunAndReturn(run func(context.Context, srvc.Task) *srvcerror.Error) *MockTaskSrvcClient_CreateTask_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -220,7 +222,7 @@ func (_c *MockTaskSrvcClient_DeleteTask_Call) RunAndReturn(run func(context.Cont
 }
 
 // DownloadOgFileArchive provides a mock function with given fields: ctx, s3Key
-func (_m *MockTaskSrvcClient) DownloadOgFileArchive(ctx context.Context, s3Key string) ([]byte, error) {
+func (_m *MockTaskSrvcClient) DownloadOgFileArchive(ctx context.Context, s3Key string) ([]byte, *srvcerror.Error) {
 	ret := _m.Called(ctx, s3Key)
 
 	if len(ret) == 0 {
@@ -228,8 +230,8 @@ func (_m *MockTaskSrvcClient) DownloadOgFileArchive(ctx context.Context, s3Key s
 	}
 
 	var r0 []byte
-	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string) ([]byte, error)); ok {
+	var r1 *srvcerror.Error
+	if rf, ok := ret.Get(0).(func(context.Context, string) ([]byte, *srvcerror.Error)); ok {
 		return rf(ctx, s3Key)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, string) []byte); ok {
@@ -240,10 +242,12 @@ func (_m *MockTaskSrvcClient) DownloadOgFileArchive(ctx context.Context, s3Key s
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, string) *srvcerror.Error); ok {
 		r1 = rf(ctx, s3Key)
 	} else {
-		r1 = ret.Error(1)
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*srvcerror.Error)
+		}
 	}
 
 	return r0, r1
@@ -268,18 +272,18 @@ func (_c *MockTaskSrvcClient_DownloadOgFileArchive_Call) Run(run func(ctx contex
 	return _c
 }
 
-func (_c *MockTaskSrvcClient_DownloadOgFileArchive_Call) Return(_a0 []byte, _a1 error) *MockTaskSrvcClient_DownloadOgFileArchive_Call {
+func (_c *MockTaskSrvcClient_DownloadOgFileArchive_Call) Return(_a0 []byte, _a1 *srvcerror.Error) *MockTaskSrvcClient_DownloadOgFileArchive_Call {
 	_c.Call.Return(_a0, _a1)
 	return _c
 }
 
-func (_c *MockTaskSrvcClient_DownloadOgFileArchive_Call) RunAndReturn(run func(context.Context, string) ([]byte, error)) *MockTaskSrvcClient_DownloadOgFileArchive_Call {
+func (_c *MockTaskSrvcClient_DownloadOgFileArchive_Call) RunAndReturn(run func(context.Context, string) ([]byte, *srvcerror.Error)) *MockTaskSrvcClient_DownloadOgFileArchive_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // DownloadTestFile provides a mock function with given fields: ctx, testFileSha256
-func (_m *MockTaskSrvcClient) DownloadTestFile(ctx context.Context, testFileSha256 string) ([]byte, error) {
+func (_m *MockTaskSrvcClient) DownloadTestFile(ctx context.Context, testFileSha256 string) ([]byte, *srvcerror.Error) {
 	ret := _m.Called(ctx, testFileSha256)
 
 	if len(ret) == 0 {
@@ -287,8 +291,8 @@ func (_m *MockTaskSrvcClient) DownloadTestFile(ctx context.Context, testFileSha2
 	}
 
 	var r0 []byte
-	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string) ([]byte, error)); ok {
+	var r1 *srvcerror.Error
+	if rf, ok := ret.Get(0).(func(context.Context, string) ([]byte, *srvcerror.Error)); ok {
 		return rf(ctx, testFileSha256)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, string) []byte); ok {
@@ -299,10 +303,12 @@ func (_m *MockTaskSrvcClient) DownloadTestFile(ctx context.Context, testFileSha2
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, string) *srvcerror.Error); ok {
 		r1 = rf(ctx, testFileSha256)
 	} else {
-		r1 = ret.Error(1)
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*srvcerror.Error)
+		}
 	}
 
 	return r0, r1
@@ -327,12 +333,12 @@ func (_c *MockTaskSrvcClient_DownloadTestFile_Call) Run(run func(ctx context.Con
 	return _c
 }
 
-func (_c *MockTaskSrvcClient_DownloadTestFile_Call) Return(_a0 []byte, _a1 error) *MockTaskSrvcClient_DownloadTestFile_Call {
+func (_c *MockTaskSrvcClient_DownloadTestFile_Call) Return(_a0 []byte, _a1 *srvcerror.Error) *MockTaskSrvcClient_DownloadTestFile_Call {
 	_c.Call.Return(_a0, _a1)
 	return _c
 }
 
-func (_c *MockTaskSrvcClient_DownloadTestFile_Call) RunAndReturn(run func(context.Context, string) ([]byte, error)) *MockTaskSrvcClient_DownloadTestFile_Call {
+func (_c *MockTaskSrvcClient_DownloadTestFile_Call) RunAndReturn(run func(context.Context, string) ([]byte, *srvcerror.Error)) *MockTaskSrvcClient_DownloadTestFile_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -399,7 +405,7 @@ func (_c *MockTaskSrvcClient_ExportTaskAsZip_Call) RunAndReturn(run func(context
 }
 
 // GetHttpUrlForIllustrImg provides a mock function with given fields: ctx, illstrImgS3Key
-func (_m *MockTaskSrvcClient) GetHttpUrlForIllustrImg(ctx context.Context, illstrImgS3Key string) (string, error) {
+func (_m *MockTaskSrvcClient) GetHttpUrlForIllustrImg(ctx context.Context, illstrImgS3Key string) (string, *srvcerror.Error) {
 	ret := _m.Called(ctx, illstrImgS3Key)
 
 	if len(ret) == 0 {
@@ -407,8 +413,8 @@ func (_m *MockTaskSrvcClient) GetHttpUrlForIllustrImg(ctx context.Context, illst
 	}
 
 	var r0 string
-	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string) (string, error)); ok {
+	var r1 *srvcerror.Error
+	if rf, ok := ret.Get(0).(func(context.Context, string) (string, *srvcerror.Error)); ok {
 		return rf(ctx, illstrImgS3Key)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, string) string); ok {
@@ -417,10 +423,12 @@ func (_m *MockTaskSrvcClient) GetHttpUrlForIllustrImg(ctx context.Context, illst
 		r0 = ret.Get(0).(string)
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, string) *srvcerror.Error); ok {
 		r1 = rf(ctx, illstrImgS3Key)
 	} else {
-		r1 = ret.Error(1)
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*srvcerror.Error)
+		}
 	}
 
 	return r0, r1
@@ -445,18 +453,18 @@ func (_c *MockTaskSrvcClient_GetHttpUrlForIllustrImg_Call) Run(run func(ctx cont
 	return _c
 }
 
-func (_c *MockTaskSrvcClient_GetHttpUrlForIllustrImg_Call) Return(_a0 string, _a1 error) *MockTaskSrvcClient_GetHttpUrlForIllustrImg_Call {
+func (_c *MockTaskSrvcClient_GetHttpUrlForIllustrImg_Call) Return(_a0 string, _a1 *srvcerror.Error) *MockTaskSrvcClient_GetHttpUrlForIllustrImg_Call {
 	_c.Call.Return(_a0, _a1)
 	return _c
 }
 
-func (_c *MockTaskSrvcClient_GetHttpUrlForIllustrImg_Call) RunAndReturn(run func(context.Context, string) (string, error)) *MockTaskSrvcClient_GetHttpUrlForIllustrImg_Call {
+func (_c *MockTaskSrvcClient_GetHttpUrlForIllustrImg_Call) RunAndReturn(run func(context.Context, string) (string, *srvcerror.Error)) *MockTaskSrvcClient_GetHttpUrlForIllustrImg_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // GetHttpUrlForPdfStatement provides a mock function with given fields: ctx, pdfStatementS3Key
-func (_m *MockTaskSrvcClient) GetHttpUrlForPdfStatement(ctx context.Context, pdfStatementS3Key string) (string, error) {
+func (_m *MockTaskSrvcClient) GetHttpUrlForPdfStatement(ctx context.Context, pdfStatementS3Key string) (string, *srvcerror.Error) {
 	ret := _m.Called(ctx, pdfStatementS3Key)
 
 	if len(ret) == 0 {
@@ -464,8 +472,8 @@ func (_m *MockTaskSrvcClient) GetHttpUrlForPdfStatement(ctx context.Context, pdf
 	}
 
 	var r0 string
-	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string) (string, error)); ok {
+	var r1 *srvcerror.Error
+	if rf, ok := ret.Get(0).(func(context.Context, string) (string, *srvcerror.Error)); ok {
 		return rf(ctx, pdfStatementS3Key)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, string) string); ok {
@@ -474,10 +482,12 @@ func (_m *MockTaskSrvcClient) GetHttpUrlForPdfStatement(ctx context.Context, pdf
 		r0 = ret.Get(0).(string)
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, string) *srvcerror.Error); ok {
 		r1 = rf(ctx, pdfStatementS3Key)
 	} else {
-		r1 = ret.Error(1)
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*srvcerror.Error)
+		}
 	}
 
 	return r0, r1
@@ -502,18 +512,18 @@ func (_c *MockTaskSrvcClient_GetHttpUrlForPdfStatement_Call) Run(run func(ctx co
 	return _c
 }
 
-func (_c *MockTaskSrvcClient_GetHttpUrlForPdfStatement_Call) Return(_a0 string, _a1 error) *MockTaskSrvcClient_GetHttpUrlForPdfStatement_Call {
+func (_c *MockTaskSrvcClient_GetHttpUrlForPdfStatement_Call) Return(_a0 string, _a1 *srvcerror.Error) *MockTaskSrvcClient_GetHttpUrlForPdfStatement_Call {
 	_c.Call.Return(_a0, _a1)
 	return _c
 }
 
-func (_c *MockTaskSrvcClient_GetHttpUrlForPdfStatement_Call) RunAndReturn(run func(context.Context, string) (string, error)) *MockTaskSrvcClient_GetHttpUrlForPdfStatement_Call {
+func (_c *MockTaskSrvcClient_GetHttpUrlForPdfStatement_Call) RunAndReturn(run func(context.Context, string) (string, *srvcerror.Error)) *MockTaskSrvcClient_GetHttpUrlForPdfStatement_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // GetHttpUrlForStatementImage provides a mock function with given fields: ctx, statementImageS3Key
-func (_m *MockTaskSrvcClient) GetHttpUrlForStatementImage(ctx context.Context, statementImageS3Key string) (string, error) {
+func (_m *MockTaskSrvcClient) GetHttpUrlForStatementImage(ctx context.Context, statementImageS3Key string) (string, *srvcerror.Error) {
 	ret := _m.Called(ctx, statementImageS3Key)
 
 	if len(ret) == 0 {
@@ -521,8 +531,8 @@ func (_m *MockTaskSrvcClient) GetHttpUrlForStatementImage(ctx context.Context, s
 	}
 
 	var r0 string
-	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string) (string, error)); ok {
+	var r1 *srvcerror.Error
+	if rf, ok := ret.Get(0).(func(context.Context, string) (string, *srvcerror.Error)); ok {
 		return rf(ctx, statementImageS3Key)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, string) string); ok {
@@ -531,10 +541,12 @@ func (_m *MockTaskSrvcClient) GetHttpUrlForStatementImage(ctx context.Context, s
 		r0 = ret.Get(0).(string)
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, string) *srvcerror.Error); ok {
 		r1 = rf(ctx, statementImageS3Key)
 	} else {
-		r1 = ret.Error(1)
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*srvcerror.Error)
+		}
 	}
 
 	return r0, r1
@@ -559,12 +571,12 @@ func (_c *MockTaskSrvcClient_GetHttpUrlForStatementImage_Call) Run(run func(ctx 
 	return _c
 }
 
-func (_c *MockTaskSrvcClient_GetHttpUrlForStatementImage_Call) Return(_a0 string, _a1 error) *MockTaskSrvcClient_GetHttpUrlForStatementImage_Call {
+func (_c *MockTaskSrvcClient_GetHttpUrlForStatementImage_Call) Return(_a0 string, _a1 *srvcerror.Error) *MockTaskSrvcClient_GetHttpUrlForStatementImage_Call {
 	_c.Call.Return(_a0, _a1)
 	return _c
 }
 
-func (_c *MockTaskSrvcClient_GetHttpUrlForStatementImage_Call) RunAndReturn(run func(context.Context, string) (string, error)) *MockTaskSrvcClient_GetHttpUrlForStatementImage_Call {
+func (_c *MockTaskSrvcClient_GetHttpUrlForStatementImage_Call) RunAndReturn(run func(context.Context, string) (string, *srvcerror.Error)) *MockTaskSrvcClient_GetHttpUrlForStatementImage_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -629,7 +641,7 @@ func (_c *MockTaskSrvcClient_GetTask_Call) RunAndReturn(run func(context.Context
 }
 
 // GetTaskFullNames provides a mock function with given fields: ctx, shortIds
-func (_m *MockTaskSrvcClient) GetTaskFullNames(ctx context.Context, shortIds []string) ([]string, error) {
+func (_m *MockTaskSrvcClient) GetTaskFullNames(ctx context.Context, shortIds []string) ([]string, *srvcerror.Error) {
 	ret := _m.Called(ctx, shortIds)
 
 	if len(ret) == 0 {
@@ -637,8 +649,8 @@ func (_m *MockTaskSrvcClient) GetTaskFullNames(ctx context.Context, shortIds []s
 	}
 
 	var r0 []string
-	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, []string) ([]string, error)); ok {
+	var r1 *srvcerror.Error
+	if rf, ok := ret.Get(0).(func(context.Context, []string) ([]string, *srvcerror.Error)); ok {
 		return rf(ctx, shortIds)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, []string) []string); ok {
@@ -649,10 +661,12 @@ func (_m *MockTaskSrvcClient) GetTaskFullNames(ctx context.Context, shortIds []s
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, []string) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, []string) *srvcerror.Error); ok {
 		r1 = rf(ctx, shortIds)
 	} else {
-		r1 = ret.Error(1)
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*srvcerror.Error)
+		}
 	}
 
 	return r0, r1
@@ -677,18 +691,18 @@ func (_c *MockTaskSrvcClient_GetTaskFullNames_Call) Run(run func(ctx context.Con
 	return _c
 }
 
-func (_c *MockTaskSrvcClient_GetTaskFullNames_Call) Return(_a0 []string, _a1 error) *MockTaskSrvcClient_GetTaskFullNames_Call {
+func (_c *MockTaskSrvcClient_GetTaskFullNames_Call) Return(_a0 []string, _a1 *srvcerror.Error) *MockTaskSrvcClient_GetTaskFullNames_Call {
 	_c.Call.Return(_a0, _a1)
 	return _c
 }
 
-func (_c *MockTaskSrvcClient_GetTaskFullNames_Call) RunAndReturn(run func(context.Context, []string) ([]string, error)) *MockTaskSrvcClient_GetTaskFullNames_Call {
+func (_c *MockTaskSrvcClient_GetTaskFullNames_Call) RunAndReturn(run func(context.Context, []string) ([]string, *srvcerror.Error)) *MockTaskSrvcClient_GetTaskFullNames_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // GetTaskPreview provides a mock function with given fields: ctx, shortId
-func (_m *MockTaskSrvcClient) GetTaskPreview(ctx context.Context, shortId string) (srvc.TaskPreview, error) {
+func (_m *MockTaskSrvcClient) GetTaskPreview(ctx context.Context, shortId string) (srvc.TaskPreview, *srvcerror.Error) {
 	ret := _m.Called(ctx, shortId)
 
 	if len(ret) == 0 {
@@ -696,8 +710,8 @@ func (_m *MockTaskSrvcClient) GetTaskPreview(ctx context.Context, shortId string
 	}
 
 	var r0 srvc.TaskPreview
-	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string) (srvc.TaskPreview, error)); ok {
+	var r1 *srvcerror.Error
+	if rf, ok := ret.Get(0).(func(context.Context, string) (srvc.TaskPreview, *srvcerror.Error)); ok {
 		return rf(ctx, shortId)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, string) srvc.TaskPreview); ok {
@@ -706,10 +720,12 @@ func (_m *MockTaskSrvcClient) GetTaskPreview(ctx context.Context, shortId string
 		r0 = ret.Get(0).(srvc.TaskPreview)
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, string) *srvcerror.Error); ok {
 		r1 = rf(ctx, shortId)
 	} else {
-		r1 = ret.Error(1)
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*srvcerror.Error)
+		}
 	}
 
 	return r0, r1
@@ -734,18 +750,18 @@ func (_c *MockTaskSrvcClient_GetTaskPreview_Call) Run(run func(ctx context.Conte
 	return _c
 }
 
-func (_c *MockTaskSrvcClient_GetTaskPreview_Call) Return(_a0 srvc.TaskPreview, _a1 error) *MockTaskSrvcClient_GetTaskPreview_Call {
+func (_c *MockTaskSrvcClient_GetTaskPreview_Call) Return(_a0 srvc.TaskPreview, _a1 *srvcerror.Error) *MockTaskSrvcClient_GetTaskPreview_Call {
 	_c.Call.Return(_a0, _a1)
 	return _c
 }
 
-func (_c *MockTaskSrvcClient_GetTaskPreview_Call) RunAndReturn(run func(context.Context, string) (srvc.TaskPreview, error)) *MockTaskSrvcClient_GetTaskPreview_Call {
+func (_c *MockTaskSrvcClient_GetTaskPreview_Call) RunAndReturn(run func(context.Context, string) (srvc.TaskPreview, *srvcerror.Error)) *MockTaskSrvcClient_GetTaskPreview_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // GetTestDownlUrl provides a mock function with given fields: ctx, testFileSha256
-func (_m *MockTaskSrvcClient) GetTestDownlUrl(ctx context.Context, testFileSha256 string) (string, error) {
+func (_m *MockTaskSrvcClient) GetTestDownlUrl(ctx context.Context, testFileSha256 string) (string, *srvcerror.Error) {
 	ret := _m.Called(ctx, testFileSha256)
 
 	if len(ret) == 0 {
@@ -753,8 +769,8 @@ func (_m *MockTaskSrvcClient) GetTestDownlUrl(ctx context.Context, testFileSha25
 	}
 
 	var r0 string
-	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string) (string, error)); ok {
+	var r1 *srvcerror.Error
+	if rf, ok := ret.Get(0).(func(context.Context, string) (string, *srvcerror.Error)); ok {
 		return rf(ctx, testFileSha256)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, string) string); ok {
@@ -763,10 +779,12 @@ func (_m *MockTaskSrvcClient) GetTestDownlUrl(ctx context.Context, testFileSha25
 		r0 = ret.Get(0).(string)
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, string) *srvcerror.Error); ok {
 		r1 = rf(ctx, testFileSha256)
 	} else {
-		r1 = ret.Error(1)
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*srvcerror.Error)
+		}
 	}
 
 	return r0, r1
@@ -791,18 +809,18 @@ func (_c *MockTaskSrvcClient_GetTestDownlUrl_Call) Run(run func(ctx context.Cont
 	return _c
 }
 
-func (_c *MockTaskSrvcClient_GetTestDownlUrl_Call) Return(_a0 string, _a1 error) *MockTaskSrvcClient_GetTestDownlUrl_Call {
+func (_c *MockTaskSrvcClient_GetTestDownlUrl_Call) Return(_a0 string, _a1 *srvcerror.Error) *MockTaskSrvcClient_GetTestDownlUrl_Call {
 	_c.Call.Return(_a0, _a1)
 	return _c
 }
 
-func (_c *MockTaskSrvcClient_GetTestDownlUrl_Call) RunAndReturn(run func(context.Context, string) (string, error)) *MockTaskSrvcClient_GetTestDownlUrl_Call {
+func (_c *MockTaskSrvcClient_GetTestDownlUrl_Call) RunAndReturn(run func(context.Context, string) (string, *srvcerror.Error)) *MockTaskSrvcClient_GetTestDownlUrl_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // ImportTaskFromZip provides a mock function with given fields: ctx, zipBytes, overrideId
-func (_m *MockTaskSrvcClient) ImportTaskFromZip(ctx context.Context, zipBytes []byte, overrideId string) (string, error) {
+func (_m *MockTaskSrvcClient) ImportTaskFromZip(ctx context.Context, zipBytes []byte, overrideId string) (string, *srvcerror.Error) {
 	ret := _m.Called(ctx, zipBytes, overrideId)
 
 	if len(ret) == 0 {
@@ -810,8 +828,8 @@ func (_m *MockTaskSrvcClient) ImportTaskFromZip(ctx context.Context, zipBytes []
 	}
 
 	var r0 string
-	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, []byte, string) (string, error)); ok {
+	var r1 *srvcerror.Error
+	if rf, ok := ret.Get(0).(func(context.Context, []byte, string) (string, *srvcerror.Error)); ok {
 		return rf(ctx, zipBytes, overrideId)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, []byte, string) string); ok {
@@ -820,10 +838,12 @@ func (_m *MockTaskSrvcClient) ImportTaskFromZip(ctx context.Context, zipBytes []
 		r0 = ret.Get(0).(string)
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, []byte, string) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, []byte, string) *srvcerror.Error); ok {
 		r1 = rf(ctx, zipBytes, overrideId)
 	} else {
-		r1 = ret.Error(1)
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*srvcerror.Error)
+		}
 	}
 
 	return r0, r1
@@ -849,12 +869,12 @@ func (_c *MockTaskSrvcClient_ImportTaskFromZip_Call) Run(run func(ctx context.Co
 	return _c
 }
 
-func (_c *MockTaskSrvcClient_ImportTaskFromZip_Call) Return(_a0 string, _a1 error) *MockTaskSrvcClient_ImportTaskFromZip_Call {
+func (_c *MockTaskSrvcClient_ImportTaskFromZip_Call) Return(_a0 string, _a1 *srvcerror.Error) *MockTaskSrvcClient_ImportTaskFromZip_Call {
 	_c.Call.Return(_a0, _a1)
 	return _c
 }
 
-func (_c *MockTaskSrvcClient_ImportTaskFromZip_Call) RunAndReturn(run func(context.Context, []byte, string) (string, error)) *MockTaskSrvcClient_ImportTaskFromZip_Call {
+func (_c *MockTaskSrvcClient_ImportTaskFromZip_Call) RunAndReturn(run func(context.Context, []byte, string) (string, *srvcerror.Error)) *MockTaskSrvcClient_ImportTaskFromZip_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -980,7 +1000,7 @@ func (_c *MockTaskSrvcClient_ListTasks_Call) RunAndReturn(run func(context.Conte
 }
 
 // ResolveNames provides a mock function with given fields: ctx, shortIds
-func (_m *MockTaskSrvcClient) ResolveNames(ctx context.Context, shortIds []string) ([]string, error) {
+func (_m *MockTaskSrvcClient) ResolveNames(ctx context.Context, shortIds []string) ([]string, *srvcerror.Error) {
 	ret := _m.Called(ctx, shortIds)
 
 	if len(ret) == 0 {
@@ -988,8 +1008,8 @@ func (_m *MockTaskSrvcClient) ResolveNames(ctx context.Context, shortIds []strin
 	}
 
 	var r0 []string
-	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, []string) ([]string, error)); ok {
+	var r1 *srvcerror.Error
+	if rf, ok := ret.Get(0).(func(context.Context, []string) ([]string, *srvcerror.Error)); ok {
 		return rf(ctx, shortIds)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, []string) []string); ok {
@@ -1000,10 +1020,12 @@ func (_m *MockTaskSrvcClient) ResolveNames(ctx context.Context, shortIds []strin
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, []string) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, []string) *srvcerror.Error); ok {
 		r1 = rf(ctx, shortIds)
 	} else {
-		r1 = ret.Error(1)
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*srvcerror.Error)
+		}
 	}
 
 	return r0, r1
@@ -1028,18 +1050,18 @@ func (_c *MockTaskSrvcClient_ResolveNames_Call) Run(run func(ctx context.Context
 	return _c
 }
 
-func (_c *MockTaskSrvcClient_ResolveNames_Call) Return(_a0 []string, _a1 error) *MockTaskSrvcClient_ResolveNames_Call {
+func (_c *MockTaskSrvcClient_ResolveNames_Call) Return(_a0 []string, _a1 *srvcerror.Error) *MockTaskSrvcClient_ResolveNames_Call {
 	_c.Call.Return(_a0, _a1)
 	return _c
 }
 
-func (_c *MockTaskSrvcClient_ResolveNames_Call) RunAndReturn(run func(context.Context, []string) ([]string, error)) *MockTaskSrvcClient_ResolveNames_Call {
+func (_c *MockTaskSrvcClient_ResolveNames_Call) RunAndReturn(run func(context.Context, []string) ([]string, *srvcerror.Error)) *MockTaskSrvcClient_ResolveNames_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // SearchTasksByName provides a mock function with given fields: ctx, name
-func (_m *MockTaskSrvcClient) SearchTasksByName(ctx context.Context, name string) ([]string, error) {
+func (_m *MockTaskSrvcClient) SearchTasksByName(ctx context.Context, name string) ([]string, *srvcerror.Error) {
 	ret := _m.Called(ctx, name)
 
 	if len(ret) == 0 {
@@ -1047,8 +1069,8 @@ func (_m *MockTaskSrvcClient) SearchTasksByName(ctx context.Context, name string
 	}
 
 	var r0 []string
-	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string) ([]string, error)); ok {
+	var r1 *srvcerror.Error
+	if rf, ok := ret.Get(0).(func(context.Context, string) ([]string, *srvcerror.Error)); ok {
 		return rf(ctx, name)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, string) []string); ok {
@@ -1059,10 +1081,12 @@ func (_m *MockTaskSrvcClient) SearchTasksByName(ctx context.Context, name string
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, string) *srvcerror.Error); ok {
 		r1 = rf(ctx, name)
 	} else {
-		r1 = ret.Error(1)
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*srvcerror.Error)
+		}
 	}
 
 	return r0, r1
@@ -1087,29 +1111,31 @@ func (_c *MockTaskSrvcClient_SearchTasksByName_Call) Run(run func(ctx context.Co
 	return _c
 }
 
-func (_c *MockTaskSrvcClient_SearchTasksByName_Call) Return(_a0 []string, _a1 error) *MockTaskSrvcClient_SearchTasksByName_Call {
+func (_c *MockTaskSrvcClient_SearchTasksByName_Call) Return(_a0 []string, _a1 *srvcerror.Error) *MockTaskSrvcClient_SearchTasksByName_Call {
 	_c.Call.Return(_a0, _a1)
 	return _c
 }
 
-func (_c *MockTaskSrvcClient_SearchTasksByName_Call) RunAndReturn(run func(context.Context, string) ([]string, error)) *MockTaskSrvcClient_SearchTasksByName_Call {
+func (_c *MockTaskSrvcClient_SearchTasksByName_Call) RunAndReturn(run func(context.Context, string) ([]string, *srvcerror.Error)) *MockTaskSrvcClient_SearchTasksByName_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // UpdateIllustrationImg provides a mock function with given fields: ctx, taskId, img
-func (_m *MockTaskSrvcClient) UpdateIllustrationImg(ctx context.Context, taskId string, img srvc.IllustrationImage) error {
+func (_m *MockTaskSrvcClient) UpdateIllustrationImg(ctx context.Context, taskId string, img srvc.IllustrationImage) *srvcerror.Error {
 	ret := _m.Called(ctx, taskId, img)
 
 	if len(ret) == 0 {
 		panic("no return value specified for UpdateIllustrationImg")
 	}
 
-	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, srvc.IllustrationImage) error); ok {
+	var r0 *srvcerror.Error
+	if rf, ok := ret.Get(0).(func(context.Context, string, srvc.IllustrationImage) *srvcerror.Error); ok {
 		r0 = rf(ctx, taskId, img)
 	} else {
-		r0 = ret.Error(0)
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*srvcerror.Error)
+		}
 	}
 
 	return r0
@@ -1135,12 +1161,12 @@ func (_c *MockTaskSrvcClient_UpdateIllustrationImg_Call) Run(run func(ctx contex
 	return _c
 }
 
-func (_c *MockTaskSrvcClient_UpdateIllustrationImg_Call) Return(_a0 error) *MockTaskSrvcClient_UpdateIllustrationImg_Call {
+func (_c *MockTaskSrvcClient_UpdateIllustrationImg_Call) Return(_a0 *srvcerror.Error) *MockTaskSrvcClient_UpdateIllustrationImg_Call {
 	_c.Call.Return(_a0)
 	return _c
 }
 
-func (_c *MockTaskSrvcClient_UpdateIllustrationImg_Call) RunAndReturn(run func(context.Context, string, srvc.IllustrationImage) error) *MockTaskSrvcClient_UpdateIllustrationImg_Call {
+func (_c *MockTaskSrvcClient_UpdateIllustrationImg_Call) RunAndReturn(run func(context.Context, string, srvc.IllustrationImage) *srvcerror.Error) *MockTaskSrvcClient_UpdateIllustrationImg_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -1196,7 +1222,7 @@ func (_c *MockTaskSrvcClient_UpdateStatementMd_Call) RunAndReturn(run func(conte
 }
 
 // UploadIllustrationImg provides a mock function with given fields: ctx, mimeType, body
-func (_m *MockTaskSrvcClient) UploadIllustrationImg(ctx context.Context, mimeType string, body []byte) (string, error) {
+func (_m *MockTaskSrvcClient) UploadIllustrationImg(ctx context.Context, mimeType string, body []byte) (string, *srvcerror.Error) {
 	ret := _m.Called(ctx, mimeType, body)
 
 	if len(ret) == 0 {
@@ -1204,8 +1230,8 @@ func (_m *MockTaskSrvcClient) UploadIllustrationImg(ctx context.Context, mimeTyp
 	}
 
 	var r0 string
-	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, []byte) (string, error)); ok {
+	var r1 *srvcerror.Error
+	if rf, ok := ret.Get(0).(func(context.Context, string, []byte) (string, *srvcerror.Error)); ok {
 		return rf(ctx, mimeType, body)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, string, []byte) string); ok {
@@ -1214,10 +1240,12 @@ func (_m *MockTaskSrvcClient) UploadIllustrationImg(ctx context.Context, mimeTyp
 		r0 = ret.Get(0).(string)
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, string, []byte) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, string, []byte) *srvcerror.Error); ok {
 		r1 = rf(ctx, mimeType, body)
 	} else {
-		r1 = ret.Error(1)
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*srvcerror.Error)
+		}
 	}
 
 	return r0, r1
@@ -1243,18 +1271,18 @@ func (_c *MockTaskSrvcClient_UploadIllustrationImg_Call) Run(run func(ctx contex
 	return _c
 }
 
-func (_c *MockTaskSrvcClient_UploadIllustrationImg_Call) Return(_a0 string, _a1 error) *MockTaskSrvcClient_UploadIllustrationImg_Call {
+func (_c *MockTaskSrvcClient_UploadIllustrationImg_Call) Return(_a0 string, _a1 *srvcerror.Error) *MockTaskSrvcClient_UploadIllustrationImg_Call {
 	_c.Call.Return(_a0, _a1)
 	return _c
 }
 
-func (_c *MockTaskSrvcClient_UploadIllustrationImg_Call) RunAndReturn(run func(context.Context, string, []byte) (string, error)) *MockTaskSrvcClient_UploadIllustrationImg_Call {
+func (_c *MockTaskSrvcClient_UploadIllustrationImg_Call) RunAndReturn(run func(context.Context, string, []byte) (string, *srvcerror.Error)) *MockTaskSrvcClient_UploadIllustrationImg_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // UploadOgFileArchive provides a mock function with given fields: ctx, zipBytes
-func (_m *MockTaskSrvcClient) UploadOgFileArchive(ctx context.Context, zipBytes []byte) (string, error) {
+func (_m *MockTaskSrvcClient) UploadOgFileArchive(ctx context.Context, zipBytes []byte) (string, *srvcerror.Error) {
 	ret := _m.Called(ctx, zipBytes)
 
 	if len(ret) == 0 {
@@ -1262,8 +1290,8 @@ func (_m *MockTaskSrvcClient) UploadOgFileArchive(ctx context.Context, zipBytes 
 	}
 
 	var r0 string
-	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, []byte) (string, error)); ok {
+	var r1 *srvcerror.Error
+	if rf, ok := ret.Get(0).(func(context.Context, []byte) (string, *srvcerror.Error)); ok {
 		return rf(ctx, zipBytes)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, []byte) string); ok {
@@ -1272,10 +1300,12 @@ func (_m *MockTaskSrvcClient) UploadOgFileArchive(ctx context.Context, zipBytes 
 		r0 = ret.Get(0).(string)
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, []byte) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, []byte) *srvcerror.Error); ok {
 		r1 = rf(ctx, zipBytes)
 	} else {
-		r1 = ret.Error(1)
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*srvcerror.Error)
+		}
 	}
 
 	return r0, r1
@@ -1300,18 +1330,18 @@ func (_c *MockTaskSrvcClient_UploadOgFileArchive_Call) Run(run func(ctx context.
 	return _c
 }
 
-func (_c *MockTaskSrvcClient_UploadOgFileArchive_Call) Return(_a0 string, _a1 error) *MockTaskSrvcClient_UploadOgFileArchive_Call {
+func (_c *MockTaskSrvcClient_UploadOgFileArchive_Call) Return(_a0 string, _a1 *srvcerror.Error) *MockTaskSrvcClient_UploadOgFileArchive_Call {
 	_c.Call.Return(_a0, _a1)
 	return _c
 }
 
-func (_c *MockTaskSrvcClient_UploadOgFileArchive_Call) RunAndReturn(run func(context.Context, []byte) (string, error)) *MockTaskSrvcClient_UploadOgFileArchive_Call {
+func (_c *MockTaskSrvcClient_UploadOgFileArchive_Call) RunAndReturn(run func(context.Context, []byte) (string, *srvcerror.Error)) *MockTaskSrvcClient_UploadOgFileArchive_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // UploadStatementImage provides a mock function with given fields: ctx, taskId, filename, mimeType, body
-func (_m *MockTaskSrvcClient) UploadStatementImage(ctx context.Context, taskId string, filename string, mimeType string, body []byte) (string, error) {
+func (_m *MockTaskSrvcClient) UploadStatementImage(ctx context.Context, taskId string, filename string, mimeType string, body []byte) (string, *srvcerror.Error) {
 	ret := _m.Called(ctx, taskId, filename, mimeType, body)
 
 	if len(ret) == 0 {
@@ -1319,8 +1349,8 @@ func (_m *MockTaskSrvcClient) UploadStatementImage(ctx context.Context, taskId s
 	}
 
 	var r0 string
-	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, string, string, []byte) (string, error)); ok {
+	var r1 *srvcerror.Error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, string, []byte) (string, *srvcerror.Error)); ok {
 		return rf(ctx, taskId, filename, mimeType, body)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, string, string, string, []byte) string); ok {
@@ -1329,10 +1359,12 @@ func (_m *MockTaskSrvcClient) UploadStatementImage(ctx context.Context, taskId s
 		r0 = ret.Get(0).(string)
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, string, string, string, []byte) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, string, string, string, []byte) *srvcerror.Error); ok {
 		r1 = rf(ctx, taskId, filename, mimeType, body)
 	} else {
-		r1 = ret.Error(1)
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*srvcerror.Error)
+		}
 	}
 
 	return r0, r1
@@ -1360,18 +1392,18 @@ func (_c *MockTaskSrvcClient_UploadStatementImage_Call) Run(run func(ctx context
 	return _c
 }
 
-func (_c *MockTaskSrvcClient_UploadStatementImage_Call) Return(_a0 string, _a1 error) *MockTaskSrvcClient_UploadStatementImage_Call {
+func (_c *MockTaskSrvcClient_UploadStatementImage_Call) Return(_a0 string, _a1 *srvcerror.Error) *MockTaskSrvcClient_UploadStatementImage_Call {
 	_c.Call.Return(_a0, _a1)
 	return _c
 }
 
-func (_c *MockTaskSrvcClient_UploadStatementImage_Call) RunAndReturn(run func(context.Context, string, string, string, []byte) (string, error)) *MockTaskSrvcClient_UploadStatementImage_Call {
+func (_c *MockTaskSrvcClient_UploadStatementImage_Call) RunAndReturn(run func(context.Context, string, string, string, []byte) (string, *srvcerror.Error)) *MockTaskSrvcClient_UploadStatementImage_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // UploadStatementPdf provides a mock function with given fields: ctx, body
-func (_m *MockTaskSrvcClient) UploadStatementPdf(ctx context.Context, body []byte) (string, error) {
+func (_m *MockTaskSrvcClient) UploadStatementPdf(ctx context.Context, body []byte) (string, *srvcerror.Error) {
 	ret := _m.Called(ctx, body)
 
 	if len(ret) == 0 {
@@ -1379,8 +1411,8 @@ func (_m *MockTaskSrvcClient) UploadStatementPdf(ctx context.Context, body []byt
 	}
 
 	var r0 string
-	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, []byte) (string, error)); ok {
+	var r1 *srvcerror.Error
+	if rf, ok := ret.Get(0).(func(context.Context, []byte) (string, *srvcerror.Error)); ok {
 		return rf(ctx, body)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, []byte) string); ok {
@@ -1389,10 +1421,12 @@ func (_m *MockTaskSrvcClient) UploadStatementPdf(ctx context.Context, body []byt
 		r0 = ret.Get(0).(string)
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, []byte) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, []byte) *srvcerror.Error); ok {
 		r1 = rf(ctx, body)
 	} else {
-		r1 = ret.Error(1)
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*srvcerror.Error)
+		}
 	}
 
 	return r0, r1
@@ -1417,29 +1451,31 @@ func (_c *MockTaskSrvcClient_UploadStatementPdf_Call) Run(run func(ctx context.C
 	return _c
 }
 
-func (_c *MockTaskSrvcClient_UploadStatementPdf_Call) Return(_a0 string, _a1 error) *MockTaskSrvcClient_UploadStatementPdf_Call {
+func (_c *MockTaskSrvcClient_UploadStatementPdf_Call) Return(_a0 string, _a1 *srvcerror.Error) *MockTaskSrvcClient_UploadStatementPdf_Call {
 	_c.Call.Return(_a0, _a1)
 	return _c
 }
 
-func (_c *MockTaskSrvcClient_UploadStatementPdf_Call) RunAndReturn(run func(context.Context, []byte) (string, error)) *MockTaskSrvcClient_UploadStatementPdf_Call {
+func (_c *MockTaskSrvcClient_UploadStatementPdf_Call) RunAndReturn(run func(context.Context, []byte) (string, *srvcerror.Error)) *MockTaskSrvcClient_UploadStatementPdf_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // UploadTestFile provides a mock function with given fields: ctx, body
-func (_m *MockTaskSrvcClient) UploadTestFile(ctx context.Context, body []byte) error {
+func (_m *MockTaskSrvcClient) UploadTestFile(ctx context.Context, body []byte) *srvcerror.Error {
 	ret := _m.Called(ctx, body)
 
 	if len(ret) == 0 {
 		panic("no return value specified for UploadTestFile")
 	}
 
-	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, []byte) error); ok {
+	var r0 *srvcerror.Error
+	if rf, ok := ret.Get(0).(func(context.Context, []byte) *srvcerror.Error); ok {
 		r0 = rf(ctx, body)
 	} else {
-		r0 = ret.Error(0)
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*srvcerror.Error)
+		}
 	}
 
 	return r0
@@ -1464,12 +1500,12 @@ func (_c *MockTaskSrvcClient_UploadTestFile_Call) Run(run func(ctx context.Conte
 	return _c
 }
 
-func (_c *MockTaskSrvcClient_UploadTestFile_Call) Return(_a0 error) *MockTaskSrvcClient_UploadTestFile_Call {
+func (_c *MockTaskSrvcClient_UploadTestFile_Call) Return(_a0 *srvcerror.Error) *MockTaskSrvcClient_UploadTestFile_Call {
 	_c.Call.Return(_a0)
 	return _c
 }
 
-func (_c *MockTaskSrvcClient_UploadTestFile_Call) RunAndReturn(run func(context.Context, []byte) error) *MockTaskSrvcClient_UploadTestFile_Call {
+func (_c *MockTaskSrvcClient_UploadTestFile_Call) RunAndReturn(run func(context.Context, []byte) *srvcerror.Error) *MockTaskSrvcClient_UploadTestFile_Call {
 	_c.Call.Return(run)
 	return _c
 }
