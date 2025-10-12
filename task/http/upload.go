@@ -26,29 +26,33 @@ func (h *taskHttpHandler) UploadTask(w http.ResponseWriter, r *http.Request) {
 	logger := h.logger(r.Context()).With("handler", "UploadTask")
 
 	if err := r.ParseMultipartForm(512 << 20); err != nil { // 512MB cap
-		jsonresp.Error(w, fmt.Sprintf("failed to parse multipart form: %v", err), http.StatusBadRequest, "failed_to_parse_multipart_form")
+		msg := fmt.Sprintf("parse multipart form: %v", err)
+		jsonresp.BadRequest(w, msg)
 		return
 	}
 
 	file, _, err := r.FormFile("task_zip")
 	if err != nil {
-		jsonresp.Error(w, fmt.Sprintf("failed to read task_zip: %v", err), http.StatusBadRequest, "missing_task_zip")
+		msg := fmt.Sprintf("read task_zip: %v", err)
+		jsonresp.BadRequest(w, msg)
 		return
 	}
 	defer file.Close()
 
 	zipBytes, err := io.ReadAll(file)
 	if err != nil {
-		jsonresp.Error(w, fmt.Sprintf("failed to read zip bytes: %v", err), http.StatusBadRequest, "failed_to_read_zip")
+		msg := fmt.Sprintf("read all zip bytes: %v", err)
+		logger.Error(msg, "error", err)
+		jsonresp.BadRequest(w, msg)
 		return
 	}
 
-	// Check for optional ID override
+	// check for optional ID override
 	overrideId := r.URL.Query().Get("override_id")
 
 	createdId, err := h.taskSrvc.ImportTaskFromZip(r.Context(), zipBytes, overrideId)
 	if err != nil {
-		jsonresp.HandleSrvcError(logger, w, err)
+		jsonresp.FromError(w, err)
 		return
 	}
 
@@ -61,17 +65,15 @@ func (h *taskHttpHandler) UploadStatementImage(w http.ResponseWriter, r *http.Re
 	err := r.ParseMultipartForm(10 << 20) // max 10MB
 	if err != nil {
 		errMsg := fmt.Sprintf("failed to parse multipart form (maybe the image is too large?): %v", err)
-		errCode := "failed_to_parse_multipart_form"
-		jsonresp.Error(w, errMsg, http.StatusBadRequest, errCode)
+		jsonresp.BadRequest(w, errMsg)
 		return
 	}
 
 	// get image as byte array
 	image, header, err := r.FormFile("image")
 	if err != nil {
-		errMsg := fmt.Sprintf("failed to get image: %v", err)
-		errCode := "failed_to_get_image"
-		jsonresp.Error(w, errMsg, http.StatusBadRequest, errCode)
+		msg := fmt.Sprintf("failed to get image: %v", err)
+		jsonresp.BadRequest(w, msg)
 		return
 	}
 	defer image.Close()
@@ -98,23 +100,21 @@ func (h *taskHttpHandler) UploadStatementImage(w http.ResponseWriter, r *http.Re
 
 	// can we somehow check that imageFilenameExt matches the mime type?
 	if !mimetype.IsExtensionValidForMIME(imageFilenameExt, imageMimeType) {
-		errMsg := fmt.Sprintf("file extension '%s' does not match detected MIME type '%s'", imageFilenameExt, imageMimeType)
-		errCode := "invalid_file_extension"
-		jsonresp.Error(w, errMsg, http.StatusBadRequest, errCode)
+		msg := fmt.Sprintf("file ext '%s' does not match detected MIME type '%s'", imageFilenameExt, imageMimeType)
+		jsonresp.BadRequest(w, msg)
 		return
 	}
 
 	imageBytes, err := io.ReadAll(image)
 	if err != nil {
-		errMsg := fmt.Sprintf("failed to read image: %v", err)
-		errCode := "failed_to_read_image"
-		jsonresp.Error(w, errMsg, http.StatusBadRequest, errCode)
+		msg := fmt.Sprintf("failed to read image: %v", err)
+		jsonresp.BadRequest(w, msg)
 		return
 	}
 
 	uri, err := h.taskSrvc.UploadStatementImage(r.Context(), taskId, uploadedFilename, imageMimeType, imageBytes)
 	if err != nil {
-		writeHttpJsonError(w, err)
+		jsonresp.FromError(w, err)
 		return
 	}
 

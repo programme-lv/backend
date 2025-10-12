@@ -39,50 +39,50 @@ func Error(w http.ResponseWriter, errMsg string, statusCode int, errCode string)
 	return json.NewEncoder(w).Encode(resp)
 }
 
-func InternalError(w http.ResponseWriter) error {
-	resp := JsonResponse{
-		Status:  "error",
-		ErrMsg:  "internal server error; please contact the administrator",
-		ErrCode: "undefined_internal_server_error",
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusInternalServerError)
-	return json.NewEncoder(w).Encode(resp)
+type HttpStatusCoder interface {
+	Error() string
+	HttpStatusCode() int
+	ErrorCode() string
 }
 
-func BadRequest(w http.ResponseWriter, errMsg string) error {
-	resp := JsonResponse{
-		Status:  "error",
-		ErrMsg:  errMsg,
-		ErrCode: "http_bad_request",
+// assume error implements httpStatusCoder interface
+func FromError(w http.ResponseWriter, err error) {
+	e, ok := err.(HttpStatusCoder)
+	if !ok {
+		debugMsg := "error does not implement httpStatusCoder interface"
+		slog.Error(debugMsg, "error", err)
+
+		InternalError(w)
+	} else {
+		Error(w,
+			e.Error(),
+			e.HttpStatusCode(),
+			e.ErrorCode(),
+		)
 	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusBadRequest)
-	return json.NewEncoder(w).Encode(resp)
 }
 
-func Forbidden(w http.ResponseWriter, errMsg string) error {
-	resp := JsonResponse{
-		Status:  "error",
-		ErrMsg:  errMsg,
-		ErrCode: "http_forbidden",
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusForbidden)
-	return json.NewEncoder(w).Encode(resp)
+// shorthand for jsonresp.FromError(w, ErrInternalServerError)
+func InternalError(w http.ResponseWriter) {
+	FromError(w, ErrInternalServerError)
 }
 
-func Unauthorized(w http.ResponseWriter, errMsg string) error {
-	resp := JsonResponse{
-		Status:  "error",
-		ErrMsg:  errMsg,
-		ErrCode: "http_unauthorized",
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusUnauthorized)
-	return json.NewEncoder(w).Encode(resp)
+// shorthand for jsonresp.FromError(w, ErrHttpBadRequest.WithMsg(errMsg))
+func BadRequest(w http.ResponseWriter, errMsg string) {
+	FromError(w, ErrHttpBadRequest.WithMsg(errMsg))
 }
 
+// shorthand for jsonresp.FromError(w, ErrHttpForbidden.WithMsg(errMsg))
+func Forbidden(w http.ResponseWriter, errMsg string) {
+	FromError(w, ErrHttpForbidden.WithMsg(errMsg))
+}
+
+// shorthand for jsonresp.FromError(w, ErrHttpUnauthorized.WithMsg(errMsg))
+func Unauthorized(w http.ResponseWriter, errMsg string) {
+	FromError(w, ErrHttpUnauthorized.WithMsg(errMsg))
+}
+
+// deprecated
 func HandleSrvcError(logger *slog.Logger, w http.ResponseWriter, err error) {
 	srvcErr := &srvcerror.Error{}
 	if errors.As(err, &srvcErr) {
