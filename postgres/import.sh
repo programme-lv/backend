@@ -40,6 +40,7 @@ HOST="${HOST:-localhost}"
 
 # Determine dump file if not provided: pick newest *.dump in CWD
 if [[ -z "${DUMP_FILE}" ]]; then
+	# shellcheck disable=SC2012
 	DUMP_FILE="$(ls -1t -- *.dump 2>/dev/null | head -n 1 || true)"
 	if [[ -z "${DUMP_FILE}" ]]; then
 		echo "Error: no dump file provided and no *.dump files found in current directory." >&2
@@ -62,7 +63,7 @@ pg_restore --version
 
 echo "Importing '$DUMP_FILE' into ${DB} on ${HOST}:${PORT} as ${USER}..."
 
-read -p "Continue (y/n)? " choice
+read -p -r "Continue (y/n)? " choice
 case "$choice" in
 	y|Y ) echo "Proceeding...";;
 	n|N ) echo "Aborted."; exit 1;;
