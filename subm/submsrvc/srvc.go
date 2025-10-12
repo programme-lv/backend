@@ -293,12 +293,12 @@ func (s *submSrvc) ListSubms(ctx context.Context, filter submquery.ListSubmsPara
 	taskIds := make([]string, 0)
 	langIds := make([]string, 0)
 
-	var err error
 	if filter.Search != "" {
 		// get all possible task matches
-		taskIds, err = s.taskSrvc.SearchTasksByName(ctx, filter.Search)
-		if err != nil {
-			return nil, fmt.Errorf("failed to search tasks by name: %w", err)
+		var searchTasksByNameErr *srvcerror.Error
+		taskIds, searchTasksByNameErr = s.taskSrvc.SearchTasksByName(ctx, filter.Search)
+		if searchTasksByNameErr != nil {
+			return nil, fmt.Errorf("failed to search tasks by name: %w", searchTasksByNameErr)
 		}
 		taskIds = append(taskIds, filter.Search)
 
@@ -411,12 +411,12 @@ func (s *submSrvc) CountSubms(ctx context.Context, search string, author *uuid.U
 	taskIds := make([]string, 0)
 	langIds := make([]string, 0)
 
-	var err error
 	if search != "" {
 		// get all possible task matches
-		taskIds, err = s.taskSrvc.SearchTasksByName(ctx, search)
-		if err != nil {
-			return 0, fmt.Errorf("failed to search tasks by name: %w", err)
+		var searchTasksByNameErr *srvcerror.Error
+		taskIds, searchTasksByNameErr = s.taskSrvc.SearchTasksByName(ctx, search)
+		if searchTasksByNameErr != nil {
+			return 0, fmt.Errorf("failed to search tasks by name: %w", searchTasksByNameErr)
 		}
 		taskIds = append(taskIds, search)
 

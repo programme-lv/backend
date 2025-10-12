@@ -55,13 +55,13 @@ func TestPutStatementHttpRequest(t *testing.T) {
 	ts := newTaskSrvc(t)
 	taskHttpHandler := newTaskHttpHandler(ts)
 
-	err := ts.CreateTask(context.Background(), srvc.Task{
+	createTaskErr := ts.CreateTask(context.Background(), srvc.Task{
 		ShortId: "aplusb",
 	})
-	require.NoError(t, err)
+	require.NoError(t, createTaskErr)
 
-	taskBefore, err := ts.GetTask(context.Background(), "aplusb")
-	require.NoError(t, err)
+	taskBefore, getTaskErr := ts.GetTask(context.Background(), "aplusb")
+	require.NoError(t, getTaskErr)
 	require.Equal(t, 0, len(taskBefore.MdStatements))
 
 	req := taskhttp.PutStatementReq{
