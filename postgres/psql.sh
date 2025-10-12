@@ -13,7 +13,6 @@ DB="${PGDATABASE:-}"
 PASSWORD="${PGPASSWORD:-}"
 
 PROD="false"
-HELP="false"
 
 REMAINING_ARGS=()
 
