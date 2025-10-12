@@ -9,25 +9,28 @@ import (
 	"github.com/programme-lv/backend/common/srvcerror"
 )
 
-func (ts *TaskSrvc) SearchTasksByName(ctx context.Context, name string) ([]string, error) {
+func (ts *TaskSrvc) SearchTasksByName(ctx context.Context, name string) ([]string, *srvcerror.Error) {
 	taskIds, err := ts.repo.SearchTasksByName(ctx, name)
 	if err != nil {
-		return nil, err
+		ts.logger(ctx).Error("search tasks by name", "error", err)
+		return nil, NewErrorInternalServerError()
 	}
 	return taskIds, nil
 }
 
-func (ts *TaskSrvc) GetTaskPreview(ctx context.Context, id string) (res TaskPreview, err error) {
-	exists, err := ts.repo.Exists(ctx, id)
-	if err != nil {
-		return TaskPreview{}, err
+func (ts *TaskSrvc) GetTaskPreview(ctx context.Context, id string) (res TaskPreview, err *srvcerror.Error) {
+	exists, errDb := ts.repo.Exists(ctx, id)
+	if errDb != nil {
+		ts.logger(ctx).Error("exists task preview", "error", errDb)
+		return TaskPreview{}, NewErrorInternalServerError()
 	}
 	if !exists {
 		return TaskPreview{}, NewErrorTaskNotFound(id)
 	}
-	taskPreview, err := ts.repo.GetTaskPreview(ctx, id)
-	if err != nil {
-		return TaskPreview{}, err
+	taskPreview, errDb := ts.repo.GetTaskPreview(ctx, id)
+	if errDb != nil {
+		ts.logger(ctx).Error("get task preview", "error", errDb)
+		return TaskPreview{}, NewErrorInternalServerError()
 	}
 	return taskPreview, nil
 }
@@ -78,10 +81,11 @@ func (ts *TaskSrvc) ListTasks(ctx context.Context) ([]Task, *srvcerror.Error) {
 	return tasks, nil
 }
 
-func (ts *TaskSrvc) GetTaskFullNames(ctx context.Context, shortIDs []string) ([]string, error) {
+func (ts *TaskSrvc) GetTaskFullNames(ctx context.Context, shortIDs []string) ([]string, *srvcerror.Error) {
 	fullNames, err := ts.repo.ResolveNames(ctx, shortIDs)
 	if err != nil {
-		return nil, err
+		ts.logger(ctx).Error("resolve names (full names)", "error", err)
+		return nil, NewErrorInternalServerError()
 	}
 	if len(fullNames) != len(shortIDs) {
 		return nil, NewErrorSomeTaskNotFound()
@@ -89,50 +93,67 @@ func (ts *TaskSrvc) GetTaskFullNames(ctx context.Context, shortIDs []string) ([]
 	return fullNames, nil
 }
 
-func (ts *TaskSrvc) GetHttpUrlForIllustrImg(ctx context.Context, s3Key string) (string, error) {
+func (ts *TaskSrvc) GetHttpUrlForIllustrImg(ctx context.Context, s3Key string) (string, *srvcerror.Error) {
 	if ts.s3PublicBucket.Bucket() == "proglv-public" {
 		cloudfrontEndpoint := "https://dvhk4hiwp1rmf.cloudfront.net/"
 		return cloudfrontEndpoint + s3Key, nil
 	} else {
-		return ts.s3PublicBucket.PresignedURL(s3Key, 24*time.Hour)
+		url, err := ts.s3PublicBucket.PresignedURL(s3Key, 24*time.Hour)
+		if err != nil {
+			ts.logger(ctx).Error("presign illustrate image", "error", err)
+			return "", NewErrorInternalServerError()
+		}
+		return url, nil
 	}
 }
 
-func (ts *TaskSrvc) GetHttpUrlForStatementImage(ctx context.Context, s3Key string) (string, error) {
+func (ts *TaskSrvc) GetHttpUrlForStatementImage(ctx context.Context, s3Key string) (string, *srvcerror.Error) {
 	if ts.s3PublicBucket.Bucket() == "proglv-public" {
 		cloudfrontEndpoint := "https://dvhk4hiwp1rmf.cloudfront.net/"
 		return cloudfrontEndpoint + s3Key, nil
 	} else {
-		return ts.s3PublicBucket.PresignedURL(s3Key, 24*time.Hour)
+		url, err := ts.s3PublicBucket.PresignedURL(s3Key, 24*time.Hour)
+		if err != nil {
+			ts.logger(ctx).Error("presign statement image", "error", err)
+			return "", NewErrorInternalServerError()
+		}
+		return url, nil
 	}
 }
 
-func (ts *TaskSrvc) GetHttpUrlForPdfStatement(ctx context.Context, s3Key string) (string, error) {
+func (ts *TaskSrvc) GetHttpUrlForPdfStatement(ctx context.Context, s3Key string) (string, *srvcerror.Error) {
 	if ts.s3PublicBucket.Bucket() == "proglv-public" {
 		cloudfrontEndpoint := "https://dvhk4hiwp1rmf.cloudfront.net/"
 		return cloudfrontEndpoint + s3Key, nil
 	} else {
-		return ts.s3PublicBucket.PresignedURL(s3Key, 24*time.Hour)
+		url, err := ts.s3PublicBucket.PresignedURL(s3Key, 24*time.Hour)
+		if err != nil {
+			ts.logger(ctx).Error("presign pdf statement", "error", err)
+			return "", NewErrorInternalServerError()
+		}
+		return url, nil
 	}
 }
 
 // GetTestDownlUrl implements submadapter.TaskSrvcFacade.
-func (ts *TaskSrvc) GetTestDownlUrl(ctx context.Context, testFileSha256 string) (string, error) {
+func (ts *TaskSrvc) GetTestDownlUrl(ctx context.Context, testFileSha256 string) (string, *srvcerror.Error) {
 	presignedUrl, err := ts.s3TestfileBucket.PresignedURL(fmt.Sprintf("%s.zst", testFileSha256), time.Hour*24)
 	if err != nil {
-		return "", fmt.Errorf("failed to get presigned URL: %w", err)
+		ts.logger(ctx).Error("presign test file", "error", err)
+		return "", NewErrorInternalServerError()
 	}
 	return presignedUrl, nil
 }
 
 // ResolveNames implements TaskSrvcClient.
-func (ts *TaskSrvc) ResolveNames(ctx context.Context, shortIds []string) ([]string, error) {
+func (ts *TaskSrvc) ResolveNames(ctx context.Context, shortIds []string) ([]string, *srvcerror.Error) {
 	names, err := ts.repo.ResolveNames(ctx, shortIds)
 	if err != nil {
-		return nil, fmt.Errorf("failed to resolve names: %w", err)
+		ts.logger(ctx).Error("resolve names", "error", err)
+		return nil, NewErrorInternalServerError()
 	}
 	if len(names) != len(shortIds) {
-		return nil, fmt.Errorf("expected %d names, got %d", len(shortIds), len(names))
+		return nil, NewErrorSomeTaskNotFound()
 	}
 	return names, nil
 }
