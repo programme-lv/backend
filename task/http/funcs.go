@@ -6,6 +6,7 @@ import (
 
 	cache "github.com/Code-Hex/go-generics-cache"
 	"github.com/go-chi/chi/v5"
+	"github.com/programme-lv/backend/common/jsonresp"
 	"github.com/programme-lv/backend/task/srvc"
 )
 
@@ -106,7 +107,7 @@ func (h *taskHttpHandler) DeleteTask(ctx context.Context) error {
 	taskId := chi.URLParamFromCtx(ctx, "taskId")
 
 	if taskId == "" {
-		return ErrBadRequest
+		return jsonresp.ErrHttpBadRequest.WithMsg("task ID is required")
 	}
 
 	err := h.taskSrvc.DeleteTask(ctx, taskId)
