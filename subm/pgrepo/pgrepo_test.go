@@ -18,7 +18,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-var migrateDir = "../../migrate"
+var migrateDir = "../../postgres/migrate"
 
 // NewDB returns a connection pool to a unique and isolated test database,
 // fully migrated and ready for testing
@@ -27,10 +27,10 @@ func NewDB(t *testing.T) *pgxpool.Pool {
 	ctx := context.Background()
 	conf := pgtestdb.Config{
 		DriverName: "pgx",
-		User:       "proglv", // local dev pg user
-		Password:   "proglv", // local dev pg password
+		User:       "postgres", // local dev pg user
+		Password:   "pw",       // local dev pg password
 		Host:       "localhost",
-		Port:       "5433",
+		Port:       "5432",
 		Options:    "sslmode=disable",
 	}
 	gm := golangmigrator.New(migrateDir)

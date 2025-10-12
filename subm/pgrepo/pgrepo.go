@@ -82,7 +82,7 @@ func (r *pgEvalRepo) StoreEval(ctx context.Context, eval domain.Eval) error {
 
 	// Delete existing related data first to avoid duplicates
 	deleteQueries := []string{
-		`DELETE FROM subtasks WHERE evaluation_uuid = $1`,
+		`DELETE FROM eval_subtasks WHERE evaluation_uuid = $1`,
 		`DELETE FROM eval_test_groups WHERE evaluation_uuid = $1`,
 		`DELETE FROM eval_test_results WHERE evaluation_uuid = $1`,
 	}
@@ -99,7 +99,7 @@ func (r *pgEvalRepo) StoreEval(ctx context.Context, eval domain.Eval) error {
 	log.Debug("inserting subtasks", "count", len(eval.Subtasks))
 	for _, subtask := range eval.Subtasks {
 		subtaskInsertQuery := `
-			INSERT INTO subtasks (
+			INSERT INTO eval_subtasks (
 				evaluation_uuid, points, description, st_tests
 			) VALUES ($1, $2, $3, $4)
 		`
@@ -227,7 +227,7 @@ func (r *pgEvalRepo) GetEval(ctx context.Context, evalUUID uuid.UUID) (domain.Ev
 	// Fetch Subtasks
 	subtasksQuery := `
 		SELECT points, description, st_tests
-		FROM subtasks
+		FROM eval_subtasks
 		WHERE evaluation_uuid = $1
 	`
 	log.Debug("executing subtasks query", "query", subtasksQuery)
