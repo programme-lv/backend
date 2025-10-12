@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
+	"github.com/programme-lv/backend/common/srvcerror"
 	submdomain "github.com/programme-lv/backend/subm/domain"
 	tasksrvc "github.com/programme-lv/backend/task/srvc"
 )
@@ -18,7 +19,7 @@ type ReEvalSubmHandler struct {
 	GetSubm func(ctx context.Context, submUuid uuid.UUID) (submdomain.Subm, error)
 
 	// get persisted task entity by short id
-	GetTask func(ctx context.Context, shortId string) (tasksrvc.Task, error)
+	GetTask func(ctx context.Context, shortId string) (tasksrvc.Task, *srvcerror.Error)
 
 	// persist evaluation entity
 	StoreEval func(ctx context.Context, eval submdomain.Eval) error
@@ -31,33 +32,33 @@ type ReEvalSubmHandler struct {
 }
 
 func (h ReEvalSubmHandler) Handle(ctx context.Context, submUuid uuid.UUID) error {
-	subm, err := h.GetSubm(ctx, submUuid)
-	if err != nil {
-		return err
+	subm, getSubmErr := h.GetSubm(ctx, submUuid)
+	if getSubmErr != nil {
+		return getSubmErr
 	}
 
-	t, err := h.GetTask(ctx, subm.TaskShortID)
-	if err != nil {
-		errMsg := fmt.Errorf("failed to get task: %w", err)
+	t, getTaskErr := h.GetTask(ctx, subm.TaskShortID)
+	if getTaskErr != nil {
+		errMsg := fmt.Errorf("failed to get task: %w", getTaskErr)
 		return errMsg
 	}
 
 	evalUuid := uuid.New()
 	eval := submdomain.NewEval(evalUuid, subm.UUID, t)
 
-	err = h.StoreEval(ctx, eval)
-	if err != nil {
-		return fmt.Errorf("failed to store evaluation: %w", err)
+	storeEvalErr := h.StoreEval(ctx, eval)
+	if storeEvalErr != nil {
+		return fmt.Errorf("failed to store evaluation: %w", storeEvalErr)
 	}
 
-	err = h.AssignEval(ctx, subm.UUID, evalUuid)
-	if err != nil {
-		return fmt.Errorf("failed to assign new eval to submission: %w", err)
+	assignEvalErr := h.AssignEval(ctx, subm.UUID, evalUuid)
+	if assignEvalErr != nil {
+		return fmt.Errorf("failed to assign new eval to submission: %w", assignEvalErr)
 	}
 
-	err = h.EnqueueExec(ctx, eval, subm.Content, subm.LangShortID)
-	if err != nil {
-		return fmt.Errorf("failed to enqueue evaluation: %w", err)
+	enqueueExecErr := h.EnqueueExec(ctx, eval, subm.Content, subm.LangShortID)
+	if enqueueExecErr != nil {
+		return fmt.Errorf("failed to enqueue evaluation: %w", enqueueExecErr)
 	}
 
 	return nil

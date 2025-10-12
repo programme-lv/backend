@@ -5,6 +5,8 @@ import (
 	_ "embed"
 	"fmt"
 	"time"
+
+	"github.com/programme-lv/backend/common/srvcerror"
 )
 
 func (ts *TaskSrvc) SearchTasksByName(ctx context.Context, name string) ([]string, error) {
@@ -30,10 +32,10 @@ func (ts *TaskSrvc) GetTaskPreview(ctx context.Context, id string) (res TaskPrev
 	return taskPreview, nil
 }
 
-func (ts *TaskSrvc) ListTaskPreviews(ctx context.Context) ([]TaskPreview, error) {
+func (ts *TaskSrvc) ListTaskPreviews(ctx context.Context) ([]TaskPreview, *srvcerror.Error) {
 	taskPreviews, err := ts.repo.ListTaskPreviews(ctx, 100, 0)
 	if err != nil {
-		ts.logger(ctx).Error("failed to list task previews", "error", err)
+		ts.logger(ctx).Error("list task previews", "error", err)
 		return nil, NewErrorInternalServerError()
 	}
 	return taskPreviews, nil
@@ -42,17 +44,19 @@ func (ts *TaskSrvc) ListTaskPreviews(ctx context.Context) ([]TaskPreview, error)
 //go:embed embedded/it-task-note.md
 var itTaskNote string
 
-func (ts *TaskSrvc) GetTask(ctx context.Context, id string) (res Task, err error) {
+func (ts *TaskSrvc) GetTask(ctx context.Context, id string) (Task, *srvcerror.Error) {
 	exists, err := ts.repo.Exists(ctx, id)
 	if err != nil {
-		return Task{}, err
+		ts.logger(ctx).Error("check if task exists", "error", err)
+		return Task{}, NewErrorInternalServerError()
 	}
 	if !exists {
 		return Task{}, NewErrorTaskNotFound(id)
 	}
 	task, err := ts.repo.GetTask(ctx, id)
 	if err != nil {
-		return Task{}, err
+		ts.logger(ctx).Error("get task", "error", err)
+		return Task{}, NewErrorInternalServerError()
 	}
 	if task.Interactor != "" {
 		for i := range task.MdStatements {
@@ -65,10 +69,11 @@ func (ts *TaskSrvc) GetTask(ctx context.Context, id string) (res Task, err error
 	return task, nil
 }
 
-func (ts *TaskSrvc) ListTasks(ctx context.Context) ([]Task, error) {
+func (ts *TaskSrvc) ListTasks(ctx context.Context) ([]Task, *srvcerror.Error) {
 	tasks, err := ts.repo.ListTasks(ctx, 100, 0)
 	if err != nil {
-		return nil, err
+		ts.logger(ctx).Error("list tasks", "error", err)
+		return nil, NewErrorInternalServerError()
 	}
 	return tasks, nil
 }

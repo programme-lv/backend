@@ -87,3 +87,12 @@ func NewErrorTaskAlreadyExists(taskId string) *srvcerror.Error {
 		fmt.Sprintf("uzdevums ar ID '%s' jau eksistē", taskId),
 	).SetHttpStatusCode(http.StatusConflict)
 }
+
+const ErrCodeImageNotFound = "image_not_found"
+
+func NewErrorImageNotFound(filename string) *srvcerror.Error {
+	return srvcerror.New(
+		ErrCodeImageNotFound,
+		fmt.Sprintf("attēls ar nosaukumu '%s' netika atrasts", filename),
+	).SetHttpStatusCode(http.StatusNotFound)
+}

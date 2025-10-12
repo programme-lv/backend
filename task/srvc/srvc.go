@@ -7,14 +7,15 @@ import (
 
 	"github.com/programme-lv/backend/common/ctxlog"
 	"github.com/programme-lv/backend/common/s3bucket"
+	"github.com/programme-lv/backend/common/srvcerror"
 	"golang.org/x/sync/singleflight"
 )
 
 type TaskSrvcClient interface {
-	GetTask(ctx context.Context, shortId string) (Task, error)
-	ListTasks(ctx context.Context) ([]Task, error)
+	GetTask(ctx context.Context, shortId string) (Task, *srvcerror.Error)
+	ListTasks(ctx context.Context) ([]Task, *srvcerror.Error)
 	CreateTask(ctx context.Context, task Task) error
-	DeleteTask(ctx context.Context, shortId string) error
+	DeleteTask(ctx context.Context, shortId string) *srvcerror.Error
 
 	// test files
 	UploadTestFile(ctx context.Context, body []byte) error
@@ -27,25 +28,25 @@ type TaskSrvcClient interface {
 
 	// illustration image
 	UploadIllustrationImg(ctx context.Context, mimeType string, body []byte) (string, error)
-	DeleteIllustrationImg(ctx context.Context, taskId string) error
+	DeleteIllustrationImg(ctx context.Context, taskId string) *srvcerror.Error
 	UpdateIllustrationImg(ctx context.Context, taskId string, img IllustrationImage) error
 	GetHttpUrlForIllustrImg(ctx context.Context, illstrImgS3Key string) (string, error)
 
 	// markdown statement
-	UpdateStatementMd(ctx context.Context, taskId string, statement MarkdownStatement) error
+	UpdateStatementMd(ctx context.Context, taskId string, statement MarkdownStatement) *srvcerror.Error
 
 	// markdown statement image
 	UploadStatementImage(ctx context.Context, taskId string, filename string, mimeType string, body []byte) (string, error)
-	DeleteStatementImage(ctx context.Context, taskId string, filename string) error
+	DeleteStatementImage(ctx context.Context, taskId string, filename string) *srvcerror.Error
 	GetHttpUrlForStatementImage(ctx context.Context, statementImageS3Key string) (string, error)
 
 	// website
 	GetTaskPreview(ctx context.Context, shortId string) (TaskPreview, error)
-	ListTaskPreviews(ctx context.Context) ([]TaskPreview, error)
+	ListTaskPreviews(ctx context.Context) ([]TaskPreview, *srvcerror.Error)
 
 	// taskzip archive format
 	ImportTaskFromZip(ctx context.Context, zipBytes []byte, overrideId string) (string, error)
-	ExportTaskAsZip(ctx context.Context, taskId string) ([]byte, error)
+	ExportTaskAsZip(ctx context.Context, taskId string) ([]byte, *srvcerror.Error)
 
 	// unorganized
 	GetTaskFullNames(ctx context.Context, shortIds []string) ([]string, error)

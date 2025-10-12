@@ -16,6 +16,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/klauspost/compress/zstd"
+	"github.com/programme-lv/backend/common/srvcerror"
 	"github.com/programme-lv/taskzip/common/etrace"
 	"github.com/programme-lv/taskzip/common/zips"
 	"github.com/programme-lv/taskzip/taskfs"
@@ -46,11 +47,11 @@ func validateTaskId(id string) error {
 	return nil
 }
 
-func (ts *TaskSrvc) UpdateStatementMd(ctx context.Context, taskId string, statement MarkdownStatement) error {
+func (ts *TaskSrvc) UpdateStatementMd(ctx context.Context, taskId string, statement MarkdownStatement) *srvcerror.Error {
 	err := ts.repo.UpdateStatement(ctx, taskId, statement)
 	if err != nil {
 		l := ts.logger(ctx)
-		l.Error("failed to update statement", "error", err)
+		l.Error("update statement", "error", err)
 		return NewErrorInternalServerError()
 	}
 
@@ -69,11 +70,11 @@ func (ts *TaskSrvc) CreateTask(ctx context.Context, task Task) error {
 
 // DeleteTask deletes a task and all its related data.
 // Note: This only deletes data from the database. S3 cleanup should be handled separately.
-func (ts *TaskSrvc) DeleteTask(ctx context.Context, shortId string) error {
+func (ts *TaskSrvc) DeleteTask(ctx context.Context, shortId string) *srvcerror.Error {
 	l := ts.logger(ctx)
 	err := ts.repo.DeleteTask(ctx, shortId)
 	if err != nil {
-		l.Error("failed to delete task", "task_id", shortId, "error", err)
+		l.Error("delete task", "task_id", shortId, "error", err)
 		return NewErrorInternalServerError()
 	}
 	l.Info("task deleted successfully", "task_id", shortId)
@@ -89,7 +90,7 @@ func (ts *TaskSrvc) UploadStatementPdf(ctx context.Context, body []byte) (s3Key 
 	s3Key = fmt.Sprintf("%s/%s.pdf", "task-pdf-statements", shaHex)
 	_, err = ts.s3PublicBucket.Upload(body, s3Key, "application/pdf")
 	if err != nil {
-		l.Error("failed to upload PDF to S3", "error", err)
+		l.Error("upload PDF to S3", "error", err)
 		return "", NewErrorInternalServerError()
 	}
 	return s3Key, nil
@@ -331,13 +332,13 @@ func Sha2Hex(body []byte) (sha2 string) {
 
 // DeleteStatementImage implements TaskSrvcClient.
 // It deletes an image from both S3 and the database.
-func (ts *TaskSrvc) DeleteStatementImage(ctx context.Context, taskId string, filename string) error {
+func (ts *TaskSrvc) DeleteStatementImage(ctx context.Context, taskId string, filename string) *srvcerror.Error {
 	l := ts.logger(ctx)
 
 	// First, get the task to find the image with the specified filename
 	t, err := ts.repo.GetTask(ctx, taskId)
 	if err != nil {
-		l.Error("failed to get task", "error", err)
+		l.Error("get task", "error", err)
 		return NewErrorFailedToGetTaskFromDb(taskId)
 	}
 
@@ -352,7 +353,7 @@ func (ts *TaskSrvc) DeleteStatementImage(ctx context.Context, taskId string, fil
 
 	if targetImage == nil {
 		l.Error("image with filename not found", "filename", filename)
-		return fmt.Errorf("image with filename %s does not exist for task %s", filename, taskId)
+		return NewErrorImageNotFound(filename)
 	}
 
 	// The S3 key is already stored directly in the database
@@ -361,7 +362,7 @@ func (ts *TaskSrvc) DeleteStatementImage(ctx context.Context, taskId string, fil
 	// Check if the image exists in S3
 	exists, err := ts.s3PublicBucket.Exists(s3Key)
 	if err != nil {
-		l.Error("failed to check if image exists in S3", "error", err)
+		l.Error("check if image exists in S3", "error", err)
 		return NewErrorInternalServerError()
 	}
 	if !exists {
@@ -372,14 +373,14 @@ func (ts *TaskSrvc) DeleteStatementImage(ctx context.Context, taskId string, fil
 	// Delete the image from the database first
 	err = ts.repo.DeleteStatementImg(ctx, taskId, filename)
 	if err != nil {
-		l.Error("failed to delete image from database", "error", err)
+		l.Error("delete image from database", "error", err)
 		return NewErrorInternalServerError()
 	}
 
 	// Delete the image from S3
 	err = ts.s3PublicBucket.Delete(s3Key)
 	if err != nil {
-		l.Error("failed to delete image from S3", "error", err)
+		l.Error("delete image from S3", "error", err)
 		return NewErrorInternalServerError()
 	}
 
@@ -388,20 +389,20 @@ func (ts *TaskSrvc) DeleteStatementImage(ctx context.Context, taskId string, fil
 
 // DeleteIllustrationImg implements TaskSrvcClient.
 // It deletes an illustration image from both S3 and the database.
-func (ts *TaskSrvc) DeleteIllustrationImg(ctx context.Context, taskId string) error {
+func (ts *TaskSrvc) DeleteIllustrationImg(ctx context.Context, taskId string) *srvcerror.Error {
 	l := ts.logger(ctx)
 
 	// First, get the task to find the illustration image S3 key
 	t, err := ts.repo.GetTask(ctx, taskId)
 	if err != nil {
-		l.Error("failed to get task", "error", err)
+		l.Error("get task", "error", err)
 		return NewErrorFailedToGetTaskFromDb(taskId)
 	}
 
 	// Check if there's an illustration image to delete
 	if t.IllustrImg.S3Key == "" {
 		l.Error("no illustration image found for task", "task_id", taskId)
-		return fmt.Errorf("no illustration image found for task %s", taskId)
+		return NewErrorImageNotFound(taskId)
 	}
 
 	s3Key := t.IllustrImg.S3Key
@@ -455,39 +456,38 @@ func (ts *TaskSrvc) UpdateIllustrationImg(ctx context.Context, taskId string, im
 }
 
 // ExportTaskAsZip exports a task as a ZIP file and returns the ZIP bytes.
-func (ts *TaskSrvc) ExportTaskAsZip(ctx context.Context, taskId string) ([]byte, error) {
-	logger := ts.logger(ctx).With("task_id", taskId)
-	logger.Info("starting task export")
+func (ts *TaskSrvc) ExportTaskAsZip(ctx context.Context, taskId string) ([]byte, *srvcerror.Error) {
+	l := ts.logger(ctx).With("task_id", taskId)
+	l.Info("starting task export")
 
 	// fetch full task via narrow interface
-	t, err := ts.GetTask(ctx, taskId)
-	if err != nil {
-		logger.Error("failed to fetch task data", "error", err)
-		return nil, err
+	t, getTaskErr := ts.GetTask(ctx, taskId)
+	if getTaskErr != nil {
+		l.Error("fetch task data", "error", getTaskErr)
+		return nil, NewErrorInternalServerError()
 	}
-	logger.Info("task data fetched successfully", "full_name", t.FullName)
+	l.Info("task data fetched successfully", "full_name", t.FullName)
 
-	logger.Info("mapping task to archive format")
-	task, err := ts.mapToTaskfs(ctx, t)
-	if err != nil {
-		logger.Error("failed to map task to archive format", "error", err)
-		return nil, fmt.Errorf("failed to map task: %w", err)
+	l.Info("mapping task to archive format")
+	task, mapToTaskfsErr := ts.mapToTaskfs(ctx, t)
+	if mapToTaskfsErr != nil {
+		l.Error("map task to archive format", "error", mapToTaskfsErr)
+		return nil, NewErrorInternalServerError()
 	}
-	logger.Info("task mapped to archive format successfully")
+	l.Info("task mapped to archive format successfully")
 
-	logger.Info("generating task ZIP")
-	zipBytes, err := ts.createTaskZipBytes(task)
-	if err != nil {
-		logger.Error("failed to generate task ZIP", "error", err)
-		return nil, fmt.Errorf("failed to generate ZIP: %w", err)
+	l.Info("generating task ZIP")
+	zipBytes, createTaskZipBytesErr := ts.createTaskZipBytes(task)
+	if createTaskZipBytesErr != nil {
+		l.Error("generate task ZIP", "error", createTaskZipBytesErr)
+		return nil, NewErrorInternalServerError()
 	}
 
-	logger.Info("task export completed successfully", "zip_size_bytes", len(zipBytes))
+	l.Info("task export completed successfully", "zip_size_bytes", len(zipBytes))
 	return zipBytes, nil
 }
 
 func (ts *TaskSrvc) mapToTaskfs(ctx context.Context, t Task) (taskfs.Task, error) {
-	logger := ts.logger(ctx)
 	stories := make(map[string]taskfs.StoryMd)
 	for _, story := range t.MdStatements {
 		key := story.LangIso639
@@ -529,8 +529,8 @@ func (ts *TaskSrvc) mapToTaskfs(ctx context.Context, t Task) (taskfs.Task, error
 	for _, image := range t.MdImages {
 		content, err := ts.s3PublicBucket.Download(image.S3Key)
 		if err != nil {
-			logger.Error("failed to download statement image from S3", "filename", image.Filename, "s3_key", image.S3Key, "error", err)
-			return taskfs.Task{}, err
+			prefix := "download statement image from S3"
+			return taskfs.Task{}, fmt.Errorf("%s: %w", prefix, err)
 		}
 		images = append(images, taskfs.Image{
 			Fname:   image.Filename,
@@ -589,8 +589,8 @@ func (ts *TaskSrvc) mapToTaskfs(ctx context.Context, t Task) (taskfs.Task, error
 		for i := 0; i < len(t.Tests); i++ {
 			result := <-resultCh
 			if result.err != nil {
-				logger.Error("failed to download test file", "test_index", result.index, "error", result.err)
-				return taskfs.Task{}, result.err
+				prefix := "download test file"
+				return taskfs.Task{}, fmt.Errorf("%s: %w", prefix, result.err)
 			}
 			testResults[result.index] = result
 		}
@@ -647,13 +647,13 @@ func (ts *TaskSrvc) mapToTaskfs(ctx context.Context, t Task) (taskfs.Task, error
 	if t.OgFilesZipS3Key != "" {
 		taskFsArchiveBytes, err := ts.DownloadOgFileArchive(ctx, t.OgFilesZipS3Key)
 		if err != nil {
-			logger.Error("failed to download og file archive", "s3_key", t.OgFilesZipS3Key, "error", err)
-			taskfsArchive = taskfs.Archive{}
+			prefix := "download og file archive"
+			return taskfs.Task{}, fmt.Errorf("%s: %w", prefix, err)
 		} else {
 			taskfsArchive, err = TaskfsArchiveFromZip(taskFsArchiveBytes)
 			if err != nil {
-				logger.Error("failed to parse og file archive", "s3_key", t.OgFilesZipS3Key, "error", err)
-				taskfsArchive = taskfs.Archive{}
+				prefix := "parse og file archive"
+				return taskfs.Task{}, fmt.Errorf("%s: %w", prefix, err)
 			}
 		}
 	} else {

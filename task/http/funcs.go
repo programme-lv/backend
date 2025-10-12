@@ -20,11 +20,11 @@ type PutStatementReq struct {
 	Example string `json:"example"`
 }
 
-func (h *taskHttpHandler) PutStatement(ctx context.Context, req PutStatementReq) error {
+func (h *taskHttpHandler) PutStatement(ctx context.Context, req PutStatementReq) jsonresp.HttpStatusCoder {
 	taskId := chi.URLParamFromCtx(ctx, "taskId")
 	lang := chi.URLParamFromCtx(ctx, "langIso639")
 
-	return h.taskSrvc.UpdateStatementMd(ctx, taskId, srvc.MarkdownStatement{
+	err := h.taskSrvc.UpdateStatementMd(ctx, taskId, srvc.MarkdownStatement{
 		LangIso639: lang,
 		Story:      req.Story,
 		Input:      req.Input,
@@ -34,13 +34,18 @@ func (h *taskHttpHandler) PutStatement(ctx context.Context, req PutStatementReq)
 		Talk:       req.Talk,
 		Example:    req.Example,
 	})
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
-func (h *taskHttpHandler) DeleteStatementImage(ctx context.Context) error {
+func (h *taskHttpHandler) DeleteStatementImage(ctx context.Context) jsonresp.HttpStatusCoder {
 	taskId := chi.URLParamFromCtx(ctx, "taskId")
 	filename := chi.URLParamFromCtx(ctx, "filename")
 
-	if err := h.taskSrvc.DeleteStatementImage(ctx, taskId, filename); err != nil {
+	err := h.taskSrvc.DeleteStatementImage(ctx, taskId, filename)
+	if err != nil {
 		return err
 	}
 
@@ -49,7 +54,7 @@ func (h *taskHttpHandler) DeleteStatementImage(ctx context.Context) error {
 	return nil
 }
 
-func (h *taskHttpHandler) GetTaskView(ctx context.Context) (Task, error) {
+func (h *taskHttpHandler) GetTaskView(ctx context.Context) (Task, jsonresp.HttpStatusCoder) {
 	taskId := chi.URLParamFromCtx(ctx, "taskId")
 
 	if h.getTaskViewCache.Contains(taskId) {
@@ -68,7 +73,7 @@ func (h *taskHttpHandler) GetTaskView(ctx context.Context) (Task, error) {
 	return response, nil
 }
 
-func (h *taskHttpHandler) GetTaskList(ctx context.Context) ([]TaskPreview, error) {
+func (h *taskHttpHandler) GetTaskList(ctx context.Context) ([]TaskPreview, jsonresp.HttpStatusCoder) {
 	if h.getTaskListCache.Contains("") {
 		previews, _ := h.getTaskListCache.Get("")
 		return previews, nil
@@ -87,7 +92,7 @@ func (h *taskHttpHandler) GetTaskList(ctx context.Context) ([]TaskPreview, error
 	return previews, nil
 }
 
-func (h *taskHttpHandler) DeleteIllustration(ctx context.Context) error {
+func (h *taskHttpHandler) DeleteIllustration(ctx context.Context) jsonresp.HttpStatusCoder {
 	taskId := chi.URLParamFromCtx(ctx, "taskId")
 
 	err := h.taskSrvc.DeleteIllustrationImg(ctx, taskId)
@@ -102,7 +107,7 @@ func (h *taskHttpHandler) DeleteIllustration(ctx context.Context) error {
 }
 
 // DeleteTaskOld deletes a task and all its related data (admin-only endpoint)
-func (h *taskHttpHandler) DeleteTask(ctx context.Context) error {
+func (h *taskHttpHandler) DeleteTask(ctx context.Context) jsonresp.HttpStatusCoder {
 	logger := h.logger(ctx)
 	taskId := chi.URLParamFromCtx(ctx, "taskId")
 
