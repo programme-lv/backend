@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/programme-lv/backend/common/ctxlog"
+	"github.com/programme-lv/backend/common/srvcerror"
 	"github.com/programme-lv/backend/plang"
 	subm "github.com/programme-lv/backend/subm/domain"
 	"github.com/programme-lv/backend/subm/submerror"
@@ -23,7 +24,7 @@ type SubmitSolParams struct {
 
 type SubmitSolCmdHandler struct {
 	DoesUserExist    func(ctx context.Context, uuid uuid.UUID) (bool, error)
-	GetTask          func(ctx context.Context, shortId string) (srvc.Task, error)
+	GetTask          func(ctx context.Context, shortId string) (srvc.Task, *srvcerror.Error)
 	StoreSubm        func(ctx context.Context, subm subm.Subm) error
 	StoreEval        func(ctx context.Context, eval subm.Eval) error
 	BcastSubmCreated func(subm subm.Subm)
@@ -54,8 +55,8 @@ func (h SubmitSolCmdHandler) Handle(ctx context.Context, p SubmitSolParams) erro
 		return fmt.Errorf("failed to get progr lang: %w", err)
 	}
 
-	t, err := h.GetTask(ctx, p.TaskShortID)
-	if err != nil {
+	t, getTaskErr := h.GetTask(ctx, p.TaskShortID)
+	if getTaskErr != nil {
 		log.Error("failed to get task", "task_id", p.TaskShortID, "error", err)
 		return fmt.Errorf("failed to get task: %w", err)
 	}

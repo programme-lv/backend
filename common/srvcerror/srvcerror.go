@@ -21,24 +21,24 @@ func Is(err error, code string) bool {
 	return false
 }
 
-func (e *Error) Error() string {
+func (e Error) Error() string {
 	return e.msgToUser
 }
 
-func (e *Error) ErrorCode() string {
+func (e Error) ErrorCode() string {
 	return e.errorCode
 }
 
-func (e *Error) DebugInfo() error {
+func (e Error) DebugInfo() error {
 	return e.dbgInfoErr
 }
 
-func (e *Error) SetDebug(err error) *Error {
+func (e Error) SetDebug(err error) Error {
 	e.dbgInfoErr = err
 	return e
 }
 
-func (e *Error) HttpStatusCode() int {
+func (e Error) HttpStatusCode() int {
 	if e.httpStatus == 0 {
 		return http.StatusInternalServerError
 	}

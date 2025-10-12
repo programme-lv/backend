@@ -28,9 +28,9 @@ func (h *taskHttpHandler) ExportTask(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Call service to get ZIP bytes
-	zipBytes, err := h.taskSrvc.ExportTaskAsZip(r.Context(), taskId)
-	if err != nil {
-		jsonresp.FromError(w, err)
+	zipBytes, exportTaskAsZipErr := h.taskSrvc.ExportTaskAsZip(r.Context(), taskId)
+	if exportTaskAsZipErr != nil {
+		jsonresp.FromError(w, exportTaskAsZipErr)
 		return
 	}
 
@@ -46,9 +46,9 @@ func (h *taskHttpHandler) ExportTask(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Length", fmt.Sprintf("%d", len(zipBytes)))
 
 	// Stream ZIP data directly to client
-	_, err = w.Write(zipBytes)
+	_, err := w.Write(zipBytes)
 	if err != nil {
-		l.Warn("failed to write ZIP to response", "error", err)
+		l.Warn("write ZIP to response", "error", err)
 		return
 	}
 }
