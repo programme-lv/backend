@@ -43,7 +43,7 @@ func (h *taskHttpHandler) RegisterRoutes(r *chi.Mux, jwtKey []byte) {
 
 		// routes are throttled because of response caching (prevents cache stampede)
 		r.Group(func(r chi.Router) {
-			r.Use(middleware.ThrottleBacklog(1, 10, 30*time.Second))
+			r.Use(middleware.ThrottleBacklog(1, 100, 30*time.Second))
 			r.Get("/tasks/{taskId}", hf.NoReqJsonResp(h.GetTaskView))
 			r.Get("/tasks", hf.NoReqJsonResp(h.GetTaskList))
 		})
