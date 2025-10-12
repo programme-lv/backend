@@ -56,6 +56,12 @@ if [[ -z "$PASSWORD" ]]; then
 	PASSWORD="pw"
 fi
 
+# url-encode the password for use in the Postgres URI
+ENCODED_PASSWORD="$PASSWORD"
+if [[ -n "$PASSWORD" ]]; then
+	ENCODED_PASSWORD="$(python3 -c "import urllib.parse,os; print(urllib.parse.quote('$PASSWORD'))")"
+fi
+
 if ! command -v migrate >/dev/null 2>&1; then
 	echo "Error: migrate CLI not found. Install: https://github.com/golang-migrate/migrate" >&2
 	exit 1
@@ -68,8 +74,13 @@ echo "PG_DB:   $DB"
 
 read -p "Press Enter to run migrations..." _
 
+SSLMODE="disable"
+if [[ "$PROD" == "true" ]]; then
+	SSLMODE="require"
+fi
+
 pushd "$SCRIPT_DIR" >/dev/null
-migrate -source file://./migrate -database "postgres://$USER:$PASSWORD@$HOST:$PORT/$DB?sslmode=disable" up
+migrate -source file://./migrate -database "postgres://$USER:$ENCODED_PASSWORD@$HOST:$PORT/$DB?sslmode=$SSLMODE" up
 popd >/dev/null
 
 echo "Migrations applied."
