@@ -8,9 +8,9 @@ import (
 	domain "github.com/programme-lv/backend/subm/domain"
 	mock "github.com/stretchr/testify/mock"
 
-	submcmd "github.com/programme-lv/backend/subm/submsrvc/submcmd"
+	submcmd "github.com/programme-lv/backend/subm/srvc/submcmd"
 
-	submquery "github.com/programme-lv/backend/subm/submsrvc/submquery"
+	submquery "github.com/programme-lv/backend/subm/srvc/submquery"
 
 	uuid "github.com/google/uuid"
 )
