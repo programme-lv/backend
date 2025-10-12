@@ -86,15 +86,7 @@ func (e *Eval) CalculateScore() ScoreInfo {
 		}
 	}
 
-	// Normalize percentages to sum up to 100
-	total := green + red + gray + yellow + purple
-	if total > 0 {
-		green = green * 100 / total
-		red = red * 100 / total
-		yellow = yellow * 100 / total
-		purple = purple * 100 / total
-		gray = 100 - green - red - yellow - purple
-	}
+	normalizeColors(&green, &red, &gray, &yellow, &purple)
 
 	maxCpuMs := 0
 	maxMemKiB := 0
@@ -140,4 +132,33 @@ func (e *Eval) CalculateScore() ScoreInfo {
 		ExceededCpu:   exceededCpu,
 		ExceededMem:   exceededMem,
 	}
+}
+
+func normalizeColors(green *int, red *int, gray *int, yellow *int, purple *int) {
+	total := *green + *red + *gray + *yellow + *purple
+	newGreen := *green * 100 / total
+	newRed := *red * 100 / total
+	newYellow := *yellow * 100 / total
+	newPurple := *purple * 100 / total
+	newGray := *gray * 100 / total
+	for newGreen+newRed+newYellow+newPurple+newGray < 100 {
+		if *yellow > 0 {
+			newYellow += 1
+		} else if *purple > 0 {
+			newPurple += 1
+		} else if *gray > 0 {
+			newGray += 1
+		} else if *red > 0 {
+			newRed += 1
+		} else if *green > 0 {
+			newGreen += 1
+		} else {
+			newGray += 1
+		}
+	}
+	*green = newGreen
+	*red = newRed
+	*yellow = newYellow
+	*purple = newPurple
+	*gray = newGray
 }
