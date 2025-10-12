@@ -12,7 +12,7 @@ import (
 	"github.com/programme-lv/backend/http"
 	submhttp "github.com/programme-lv/backend/subm/http"
 	submpgrepo "github.com/programme-lv/backend/subm/pgrepo"
-	"github.com/programme-lv/backend/subm/submsrvc"
+	"github.com/programme-lv/backend/subm/srvc"
 	taskhttp "github.com/programme-lv/backend/task/http"
 	"github.com/programme-lv/backend/task/repo"
 	tasksrvc "github.com/programme-lv/backend/task/srvc"
@@ -93,7 +93,7 @@ func newSubmHttpHandler(userSrvc usersrvc.UserSrvcClient, taskSrvc tasksrvc.Task
 
 	submPgRepo := submpgrepo.NewPgSubmRepo(pgPool)
 	evalPgRepo := submpgrepo.NewPgEvalRepo(pgPool)
-	submSrvc := submsrvc.NewSubmSrvc(userSrvc, taskSrvc, execSrvc, submPgRepo, evalPgRepo)
+	submSrvc := srvc.NewSubmSrvc(userSrvc, taskSrvc, execSrvc, submPgRepo, evalPgRepo)
 
 	return submhttp.NewSubmHttpHandler(submSrvc, taskSrvc, userSrvc)
 }

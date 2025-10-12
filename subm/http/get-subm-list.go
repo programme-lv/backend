@@ -9,7 +9,7 @@ import (
 	"github.com/programme-lv/backend/common/ctxlog"
 	"github.com/programme-lv/backend/common/jsonresp"
 	"github.com/programme-lv/backend/subm/domain"
-	"github.com/programme-lv/backend/subm/submsrvc/submquery"
+	"github.com/programme-lv/backend/subm/srvc/submquery"
 	"github.com/programme-lv/backend/user/auth"
 )
 

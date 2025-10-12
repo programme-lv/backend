@@ -1,4 +1,4 @@
-package submsrvc
+package srvc
 
 import (
 	"context"
@@ -14,8 +14,8 @@ import (
 	"github.com/programme-lv/backend/exec"
 	"github.com/programme-lv/backend/plang"
 	"github.com/programme-lv/backend/subm/domain"
-	"github.com/programme-lv/backend/subm/submsrvc/submcmd"
-	"github.com/programme-lv/backend/subm/submsrvc/submquery"
+	"github.com/programme-lv/backend/subm/srvc/submcmd"
+	"github.com/programme-lv/backend/subm/srvc/submquery"
 	tasksrvc "github.com/programme-lv/backend/task/srvc"
 	usersrvc "github.com/programme-lv/backend/user"
 	"github.com/programme-lv/backend/user/auth"

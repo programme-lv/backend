@@ -1,4 +1,4 @@
-package submsrvc_test
+package srvc_test
 
 import (
 	"context"
@@ -19,9 +19,9 @@ import (
 	mockuser "github.com/programme-lv/backend/gen/mocks/mockuser"
 	"github.com/programme-lv/backend/subm/domain"
 	"github.com/programme-lv/backend/subm/pgrepo"
-	"github.com/programme-lv/backend/subm/submsrvc"
-	"github.com/programme-lv/backend/subm/submsrvc/submcmd"
-	"github.com/programme-lv/backend/subm/submsrvc/submquery"
+	srvc1 "github.com/programme-lv/backend/subm/srvc"
+	"github.com/programme-lv/backend/subm/srvc/submcmd"
+	"github.com/programme-lv/backend/subm/srvc/submquery"
 	"github.com/programme-lv/backend/task/srvc"
 	usersrvc "github.com/programme-lv/backend/user"
 	"github.com/stretchr/testify/mock"
@@ -34,9 +34,9 @@ type testSetup struct {
 	userSrvc *mockuser.MockUserSrvcClient
 	taskSrvc *mocktasksrvc.MockTaskSrvcClient
 	execSrvc *mocksubmsrvc.MockExecSrvcFacade
-	submRepo submsrvc.SubmRepo
-	evalRepo submsrvc.EvalRepo
-	srvc     submsrvc.SubmSrvcClient
+	submRepo srvc1.SubmRepo
+	evalRepo srvc1.EvalRepo
+	srvc     srvc1.SubmSrvcClient
 }
 
 func setupSubmSrvc(t *testing.T) *testSetup {
@@ -55,7 +55,7 @@ func setupSubmSrvc(t *testing.T) *testSetup {
 		evalRepo: evalRepo,
 	}
 
-	setup.srvc = submsrvc.NewSubmSrvc(
+	setup.srvc = srvc1.NewSubmSrvc(
 		setup.userSrvc,
 		setup.taskSrvc,
 		setup.execSrvc,
@@ -126,7 +126,7 @@ func TestSubmitSolutionPersistence(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Log("Creating new service instance...")
-	newSrvc := submsrvc.NewSubmSrvc(
+	newSrvc := srvc1.NewSubmSrvc(
 		setup.userSrvc,
 		setup.taskSrvc,
 		setup.execSrvc,

@@ -12,7 +12,7 @@ import (
 	"github.com/programme-lv/backend/common/ctxlog"
 	"github.com/programme-lv/backend/plang"
 	"github.com/programme-lv/backend/subm/domain"
-	submsrvc "github.com/programme-lv/backend/subm/submsrvc"
+	submsrvc "github.com/programme-lv/backend/subm/srvc"
 	tasksrvc "github.com/programme-lv/backend/task/srvc"
 	usersrvc "github.com/programme-lv/backend/user"
 	"golang.org/x/sync/singleflight"
