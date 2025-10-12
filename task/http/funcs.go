@@ -4,7 +4,6 @@ import (
 	"context"
 	"time"
 
-	cache "github.com/Code-Hex/go-generics-cache"
 	"github.com/go-chi/chi/v5"
 	"github.com/programme-lv/backend/common/jsonresp"
 	"github.com/programme-lv/backend/task/srvc"
@@ -57,8 +56,7 @@ func (h *taskHttpHandler) DeleteStatementImage(ctx context.Context) jsonresp.Htt
 func (h *taskHttpHandler) GetTaskView(ctx context.Context) (Task, jsonresp.HttpStatusCoder) {
 	taskId := chi.URLParamFromCtx(ctx, "taskId")
 
-	if h.getTaskViewCache.Contains(taskId) {
-		task, _ := h.getTaskViewCache.Get(taskId)
+	if task, ok := h.getTaskViewCache.Get(taskId); ok {
 		return task, nil
 	}
 
@@ -67,15 +65,17 @@ func (h *taskHttpHandler) GetTaskView(ctx context.Context) (Task, jsonresp.HttpS
 		return Task{}, err
 	}
 
-	exp := cache.WithExpiration(5 * time.Second)
 	response := h.mapTaskResponse(t)
-	h.getTaskViewCache.Set(taskId, response, exp)
+	if response.TaskFullName == "" {
+		panic("task full name is empty")
+	}
+
+	h.getTaskViewCache.Set(taskId, response, 20*time.Second)
 	return response, nil
 }
 
 func (h *taskHttpHandler) GetTaskList(ctx context.Context) ([]TaskPreview, jsonresp.HttpStatusCoder) {
-	if h.getTaskListCache.Contains("") {
-		previews, _ := h.getTaskListCache.Get("")
+	if previews, ok := h.getTaskListCache.Get(""); ok {
 		return previews, nil
 	}
 
@@ -87,8 +87,8 @@ func (h *taskHttpHandler) GetTaskList(ctx context.Context) ([]TaskPreview, jsonr
 	for _, t := range tasks {
 		previews = append(previews, h.mapTaskPreview(t))
 	}
-	exp := cache.WithExpiration(5 * time.Second)
-	h.getTaskListCache.Set("", previews, exp)
+	
+	h.getTaskListCache.Set("", previews, 20*time.Second)
 	return previews, nil
 }
 

@@ -5,24 +5,22 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/Code-Hex/go-generics-cache/policy/lru"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	oldCache "github.com/patrickmn/go-cache"
+	"github.com/programme-lv/backend/common/cache"
 	"github.com/programme-lv/backend/common/ctxlog"
 	hf "github.com/programme-lv/backend/common/httpfunc"
 	"github.com/programme-lv/backend/task/srvc"
 	"github.com/programme-lv/backend/user/auth"
-
-	cache "github.com/Code-Hex/go-generics-cache"
 )
 
 type taskHttpHandler struct {
 	taskSrvc srvc.TaskSrvcClient
 	cache    *oldCache.Cache
 
-	getTaskViewCache *cache.Cache[string, Task]
-	getTaskListCache *cache.Cache[string, []TaskPreview]
+	getTaskViewCache *cache.LruCache[string, Task]
+	getTaskListCache *cache.LruCache[string, []TaskPreview]
 }
 
 func NewTaskHttpHandler(taskSrvc srvc.TaskSrvcClient) *taskHttpHandler {
@@ -32,8 +30,11 @@ func NewTaskHttpHandler(taskSrvc srvc.TaskSrvcClient) *taskHttpHandler {
 		taskSrvc: taskSrvc,
 		cache:    c,
 		// singleflight.Group doesn't need initialization
-		getTaskViewCache: cache.New(cache.AsLRU[string, Task](lru.WithCapacity(1000))),
-		getTaskListCache: cache.New(cache.AsLRU[string, []TaskPreview](lru.WithCapacity(1000))),
+
+		// getTaskViewCache: cache.New(cache.WithJanitorInterval[string, Task](10*time.Second), cache.AsLRU[string, Task](lru.WithCapacity(1000))),
+		// getTaskListCache: cache.New(cache.WithJanitorInterval[string, []TaskPreview](10*time.Second), cache.AsLRU[string, []TaskPreview](lru.WithCapacity(1000))),
+		getTaskViewCache: cache.NewLruCache[string, Task](1000),
+		getTaskListCache: cache.NewLruCache[string, []TaskPreview](1000),
 	}
 }
 
