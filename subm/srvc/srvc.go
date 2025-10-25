@@ -55,6 +55,7 @@ type SubmRepo interface {
 	AssignEval(ctx context.Context, submUuid uuid.UUID, evalUuid uuid.UUID) error
 	GetSubm(ctx context.Context, id uuid.UUID) (domain.Subm, error)
 	ListSubms(ctx context.Context, limit int, offset int, search string, authorUuid *uuid.UUID, authorIds []string, taskIds []string, langIds []string) ([]domain.Subm, error)
+	// ListSubmsJoinEval(ctx context.Context, authorUuid *uuid.UUID) ([]domain.SubmJoinEval, error)
 	StoreSubm(ctx context.Context, subm domain.Subm) error
 	CountSubms(ctx context.Context, authorUuid *uuid.UUID, authorIds []string, taskIds []string, langIds []string) (int, error)
 }
@@ -67,63 +68,6 @@ type EvalRepo interface {
 type ExecSrvcFacade interface {
 	Enqueue(ctx context.Context, execUuid uuid.UUID, srcCode string, prLangId string, tests []exec.TestFile, params exec.TestingParams) error
 	Listen(ctx context.Context, execUuid uuid.UUID) (<-chan exec.Event, error)
-}
-
-// GetMaxScorePerTask implements SubmSrvcClient.
-func (s *submSrvc) GetMaxScorePerTask(ctx context.Context, userUUID uuid.UUID) (map[string]domain.MaxScore, error) {
-	// Get all submissions
-	// TODO: wtf is this?
-	subms, err := s.submRepo.ListSubms(ctx, 10000, 0, "", nil, []string{}, []string{}, []string{})
-	if err != nil {
-		return nil, fmt.Errorf("failed to list submissions: %w", err)
-	}
-
-	if len(subms) == 10000 {
-		slog.Error("too many submissions", "user_uuid", userUUID)
-	}
-
-	taskExistsCache := make(map[string]bool)
-
-	// Filter submissions by user and collect evaluations
-	userSubmsWithEval := make([]domain.SubmJoinEval, 0)
-	for _, subm := range subms {
-		if subm.AuthorUUID != userUUID {
-			continue
-		}
-
-		// Skip tasks that don't exist anymore
-		if _, ok := taskExistsCache[subm.TaskShortID]; !ok {
-			_, err := s.taskSrvc.GetTaskFullNames(ctx, []string{subm.TaskShortID})
-			if srvcerror.Is(err, tasksrvc.ErrSomeTaskNotFound) {
-				taskExistsCache[subm.TaskShortID] = false
-				continue
-			}
-			if err != nil {
-				return nil, fmt.Errorf("could not resolve task full name: %w", err)
-			}
-			taskExistsCache[subm.TaskShortID] = true
-		}
-
-		// Skip submissions without evaluations
-		if subm.CurrEvalUUID == uuid.Nil {
-			continue
-		}
-
-		// Get the evaluation
-		eval, err := s.GetEval(ctx, subm.CurrEvalUUID)
-		if err != nil {
-			slog.Error("failed to get evaluation", "error", err, "eval_uuid", subm.CurrEvalUUID)
-			continue
-		}
-
-		userSubmsWithEval = append(userSubmsWithEval, domain.SubmJoinEval{
-			Subm: subm,
-			Eval: eval,
-		})
-	}
-
-	// Calculate max scores using the domain logic
-	return domain.CalcMaxScores(userSubmsWithEval), nil
 }
 
 func NewSubmSrvc(
