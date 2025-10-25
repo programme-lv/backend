@@ -23,7 +23,7 @@ import (
 
 type SubmSrvcClient interface {
 	SubmitSol(ctx context.Context, p SubmitSolParams) error
-	ReEvalSubm(ctx context.Context, submUuid uuid.UUID) error
+	ReEvalSubm(ctx context.Context, submUuid uuid.UUID) *srvcerror.Error
 	ViewSubm(ctx context.Context, uuid uuid.UUID) (domain.Subm, error)
 	ListSubms(ctx context.Context, filter submquery.ListSubmsParams) ([]domain.Subm, error)
 	GetEval(ctx context.Context, uuid uuid.UUID) (domain.Eval, error)
@@ -168,7 +168,6 @@ func (s *submSrvc) enqueueEvalExecAndListen(ctx context.Context, eval domain.Eva
 
 	return nil
 }
-
 
 func (s *submSrvc) ViewSubm(ctx context.Context, submUuid uuid.UUID) (domain.Subm, error) {
 	log := ctxlog.FromContext(ctx)
