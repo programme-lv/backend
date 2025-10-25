@@ -13,7 +13,6 @@ import (
 	"github.com/programme-lv/backend/exec"
 	"github.com/programme-lv/backend/plang"
 	"github.com/programme-lv/backend/subm/domain"
-	"github.com/programme-lv/backend/subm/srvc/submcmd"
 	"github.com/programme-lv/backend/subm/srvc/submquery"
 	tasksrvc "github.com/programme-lv/backend/task/srvc"
 	usersrvc "github.com/programme-lv/backend/user"
@@ -90,8 +89,8 @@ func NewSubmSrvc(
 	}
 }
 
-func (s *submSrvc) procExecEv(ctx context.Context, p submcmd.ProcExecEvParams) error {
-	procExecEvCmd := submcmd.ProcExecEvCmdHandler{
+func (s *submSrvc) procExecEv(ctx context.Context, p ProcExecEvParams) error {
+	procExecEvCmd := ProcExecEvCmdHandler{
 		StoreEval:     s.evalRepo.StoreEval,
 		BcastEvalUpd:  s.broadcastEvalUpdate,
 		GetEvalByUuid: s.evalRepo.GetEval,
