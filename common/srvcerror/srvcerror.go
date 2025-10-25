@@ -5,6 +5,8 @@ import (
 	"net/http"
 )
 
+// TODO: error code should be its own type
+
 type Error struct {
 	errorCode  string
 	msgToUser  string // public

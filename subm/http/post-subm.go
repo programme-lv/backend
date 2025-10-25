@@ -2,16 +2,42 @@ package http
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/programme-lv/backend/common/ctxlog"
 	"github.com/programme-lv/backend/common/jsonresp"
+	"github.com/programme-lv/backend/common/srvcerror"
 	"github.com/programme-lv/backend/subm/srvc"
-	"github.com/programme-lv/backend/subm/submerror"
 	"github.com/programme-lv/backend/user/auth"
 )
+
+const ErrCodeSubmissionTooFrequent = "submission_too_frequent"
+
+func ErrSubmissionTooFrequent(delaySeconds int) *srvcerror.Error {
+	return srvcerror.New(
+		ErrCodeSubmissionTooFrequent,
+		fmt.Sprintf("Uzgaidiet %d sekundes pirms nākamā iesūtījuma!", delaySeconds),
+	).SetHttpStatusCode(http.StatusTooManyRequests)
+}
+
+const ErrCodeUnauthorized = "unauthorized_access"
+
+func ErrUnauthorizedUsernameMismatch() *srvcerror.Error {
+	return srvcerror.New(
+		ErrCodeUnauthorized,
+		"JWT norādītais lietotājvārds nesakrīt ar pieprasīto lietotājvārdu",
+	).SetHttpStatusCode(http.StatusUnauthorized)
+}
+
+func ErrJwtTokenMissing() *srvcerror.Error {
+	return srvcerror.New(
+		ErrCodeUnauthorized,
+		"JWT netika atrasts",
+	).SetHttpStatusCode(http.StatusUnauthorized)
+}
 
 func (h *SubmHttpHandler) PostSubm(w http.ResponseWriter, r *http.Request) {
 	log := ctxlog.FromContext(r.Context())
@@ -27,7 +53,7 @@ func (h *SubmHttpHandler) PostSubm(w http.ResponseWriter, r *http.Request) {
 	claims := r.Context().Value(auth.CtxJwtClaimsKey).(*auth.JwtClaims)
 	if claims == nil {
 		log.Warn("JWT token missing")
-		jsonresp.HandleErrorWithContext(r.Context(), w, submerror.ErrJwtTokenMissing())
+		jsonresp.HandleErrorWithContext(r.Context(), w, ErrJwtTokenMissing())
 		return
 	}
 
@@ -40,7 +66,7 @@ func (h *SubmHttpHandler) PostSubm(w http.ResponseWriter, r *http.Request) {
 
 	if claims.Username != request.Username {
 		log.Warn("unauthorized username mismatch", "jwt_username", claims.Username, "request_username", request.Username)
-		jsonresp.HandleErrorWithContext(r.Context(), w, submerror.ErrUnauthorizedUsernameMismatch())
+		jsonresp.HandleErrorWithContext(r.Context(), w, ErrUnauthorizedUsernameMismatch())
 		return
 	}
 
@@ -51,7 +77,7 @@ func (h *SubmHttpHandler) PostSubm(w http.ResponseWriter, r *http.Request) {
 	if exists && now.Sub(lastTime) < 10*time.Second {
 		h.rateLock.Unlock()
 		log.Warn("submission too frequent", "username", request.Username, "last_time", lastTime)
-		jsonresp.HandleErrorWithContext(r.Context(), w, submerror.ErrSubmissionTooFrequent(10))
+		jsonresp.HandleErrorWithContext(r.Context(), w, ErrSubmissionTooFrequent(10))
 		return
 	}
 	h.lastSubmTime[request.Username] = now

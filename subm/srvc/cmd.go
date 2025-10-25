@@ -2,7 +2,6 @@ package srvc
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -11,9 +10,16 @@ import (
 	"github.com/programme-lv/backend/plang"
 	subm "github.com/programme-lv/backend/subm/domain"
 	"github.com/programme-lv/backend/subm/srvc/submcmd"
-	"github.com/programme-lv/backend/subm/submerror"
 	"github.com/programme-lv/backend/task/srvc"
 )
+
+type SubmitSolParams struct {
+	UUID        uuid.UUID
+	Submission  string
+	ProgrLangID string
+	TaskShortID string
+	AuthorUUID  uuid.UUID
+}
 
 func (s *submSrvc) SubmitSol(ctx context.Context, p SubmitSolParams) error {
 	submitSolCmd := SubmitSolCmdHandler{
@@ -34,14 +40,6 @@ func (s *submSrvc) SubmitSol(ctx context.Context, p SubmitSolParams) error {
 	return submitSolCmd.Handle(ctx, p)
 }
 
-type SubmitSolParams struct {
-	UUID        uuid.UUID
-	Submission  string
-	ProgrLangID string
-	TaskShortID string
-	AuthorUUID  uuid.UUID
-}
-
 type SubmitSolCmdHandler struct {
 	DoesUserExist    func(ctx context.Context, uuid uuid.UUID) (bool, error)
 	GetTask          func(ctx context.Context, shortId string) (srvc.Task, *srvcerror.Error)
@@ -51,34 +49,39 @@ type SubmitSolCmdHandler struct {
 	EnqueueExec      func(ctx context.Context, eval subm.Eval, srcCode string, prLangId string) error
 }
 
-func (h SubmitSolCmdHandler) Handle(ctx context.Context, p SubmitSolParams) error {
-	log := ctxlog.FromContext(ctx)
+func (h SubmitSolCmdHandler) Handle(ctx context.Context, p SubmitSolParams) *srvcerror.Error {
+	log := ctxlog.FromContext(ctx).With("handler", "submit solution")
 
 	if len(p.Submission) > 64*1024 { // 64 KB
-		log.Warn("submission too long", "size", len(p.Submission))
-		return submerror.ErrSubmissionTooLong(64)
+		reason := "submission too long"
+		log.Warn(reason, "size", len(p.Submission))
+		return ErrSubmissionTooLong(64)
 	}
 
 	exists, err := h.DoesUserExist(ctx, p.AuthorUUID)
 	if err != nil {
-		log.Error("failed to check if user exists", "author_uuid", p.AuthorUUID, "error", err)
-		return fmt.Errorf("failed to check if user exists: %w", err)
+		action := "check if user exists"
+		log.Error(action, "author_uuid", p.AuthorUUID, "error", err)
+		return srvcerror.InternalServerError()
 	}
+
 	if !exists {
 		log.Warn("user not found", "author_uuid", p.AuthorUUID)
-		return submerror.ErrUserNotFound()
+		return ErrUserNotFound()
 	}
 
 	l, err := plang.GetProgrLangById(p.ProgrLangID)
 	if err != nil {
-		log.Error("failed to get programming language", "prog_lang_id", p.ProgrLangID, "error", err)
-		return fmt.Errorf("failed to get progr lang: %w", err)
+		action := "get progr lang"
+		log.Error(action, "prog_lang_id", p.ProgrLangID, "error", err)
+		return ErrInvalidProgLang(p.ProgrLangID)
 	}
 
 	t, getTaskErr := h.GetTask(ctx, p.TaskShortID)
 	if getTaskErr != nil {
-		log.Error("failed to get task", "task_id", p.TaskShortID, "error", err)
-		return fmt.Errorf("failed to get task: %w", err)
+		action := "get task"
+		log.Error(action, "task_id", p.TaskShortID, "error", getTaskErr)
+		return getTaskErr
 	}
 
 	evalUuid := uuid.New()
@@ -98,13 +101,13 @@ func (h SubmitSolCmdHandler) Handle(ctx context.Context, p SubmitSolParams) erro
 	err = h.StoreEval(ctx, eval)
 	if err != nil {
 		log.Error("failed to store evaluation", "eval_uuid", evalUuid, "error", err)
-		return fmt.Errorf("failed to store evaluation: %w", err)
+		return srvcerror.InternalServerError()
 	}
 
 	err = h.StoreSubm(ctx, entity)
 	if err != nil {
 		log.Error("failed to store submission", "subm_uuid", p.UUID, "error", err)
-		return fmt.Errorf("failed to store submission: %w", err)
+		return srvcerror.InternalServerError()
 	}
 
 	log.Debug("broadcasting submission created", "subm_uuid", p.UUID)
@@ -113,7 +116,7 @@ func (h SubmitSolCmdHandler) Handle(ctx context.Context, p SubmitSolParams) erro
 	err = h.EnqueueExec(ctx, eval, entity.Content, l.ID)
 	if err != nil {
 		log.Error("failed to enqueue execution", "eval_uuid", evalUuid, "error", err)
-		return fmt.Errorf("failed to enqueue execution of submission: %w", err)
+		return srvcerror.InternalServerError()
 	}
 
 	log.Debug("submission solution handled successfully", "subm_uuid", p.UUID, "eval_uuid", evalUuid)

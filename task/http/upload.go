@@ -50,9 +50,9 @@ func (h *taskHttpHandler) UploadTask(w http.ResponseWriter, r *http.Request) {
 	// check for optional ID override
 	overrideId := r.URL.Query().Get("override_id")
 
-	createdId, err := h.taskSrvc.ImportTaskFromZip(r.Context(), zipBytes, overrideId)
-	if err != nil {
-		jsonresp.FromError(w, err)
+	createdId, importTaskErr := h.taskSrvc.ImportTaskFromZip(r.Context(), zipBytes, overrideId)
+	if importTaskErr != nil {
+		jsonresp.FromError(w, importTaskErr)
 		return
 	}
 
@@ -112,9 +112,9 @@ func (h *taskHttpHandler) UploadStatementImage(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	uri, err := h.taskSrvc.UploadStatementImage(r.Context(), taskId, uploadedFilename, imageMimeType, imageBytes)
-	if err != nil {
-		jsonresp.FromError(w, err)
+	uri, uploadImageErr := h.taskSrvc.UploadStatementImage(r.Context(), taskId, uploadedFilename, imageMimeType, imageBytes)
+	if uploadImageErr != nil {
+		jsonresp.FromError(w, uploadImageErr)
 		return
 	}
 
@@ -191,8 +191,8 @@ func (h *taskHttpHandler) UploadIllustration(w http.ResponseWriter, r *http.Requ
 	}
 
 	// Upload the illustration image to S3
-	s3Key, err := h.taskSrvc.UploadIllustrationImg(r.Context(), imageMimeType, imageBytes)
-	if err != nil {
+	s3Key, uploadIllustrationErr := h.taskSrvc.UploadIllustrationImg(r.Context(), imageMimeType, imageBytes)
+	if uploadIllustrationErr != nil {
 		jsonresp.HandleSrvcError(slog.Default(), w, err)
 		return
 	}
@@ -206,8 +206,8 @@ func (h *taskHttpHandler) UploadIllustration(w http.ResponseWriter, r *http.Requ
 		SzInBytes: sizeInBytes,
 	}
 
-	err = h.taskSrvc.UpdateIllustrationImg(r.Context(), taskId, illustrationImg)
-	if err != nil {
+	updateIllustrationErr := h.taskSrvc.UpdateIllustrationImg(r.Context(), taskId, illustrationImg)
+	if updateIllustrationErr != nil {
 		jsonresp.HandleSrvcError(slog.Default(), w, err)
 		return
 	}
