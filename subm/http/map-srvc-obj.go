@@ -253,7 +253,7 @@ func (h *SubmHttpHandler) mapMaxScore(ctx context.Context, taskShortID string, m
 		SubmUuid:     m.SubmUuid.String(),
 		Received:     m.Received,
 		Possible:     m.Possible,
-		CreatedAt:    m.CreatedAt.Format(time.RFC3339),
+		CreatedAt:    m.FirstTime.Format(time.RFC3339),
 		TaskFullName: taskFullName,
 	}, nil
 }

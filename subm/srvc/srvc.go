@@ -21,7 +21,7 @@ type SubmSrvcClient interface {
 	GetEval(ctx context.Context, uuid uuid.UUID) (domain.Eval, error)
 	SubscribeNewSubms(ctx context.Context) (<-chan domain.Subm, error)
 	SubscribeEvalUpds(ctx context.Context) (<-chan domain.Eval, error)
-	GetMaxScorePerTask(ctx context.Context, userUUID uuid.UUID) (map[string]domain.MaxScore, error)
+	GetMaxScorePerTask(ctx context.Context, userUUID uuid.UUID) (map[string]domain.MaxScore, *srvcerror.Error)
 	CountSubms(ctx context.Context, search string, author *uuid.UUID) (int, error)
 }
 
@@ -49,6 +49,9 @@ type SubmRepo interface {
 	// ListSubmsJoinEval(ctx context.Context, authorUuid *uuid.UUID) ([]domain.SubmJoinEval, error)
 	StoreSubm(ctx context.Context, subm domain.Subm) error
 	CountSubms(ctx context.Context, authorUuid *uuid.UUID, authorIds []string, taskIds []string, langIds []string) (int, error)
+
+	// ListShallowSubmsJoinEval does not return submissions without a corresponding evaluation
+	ListShallowSubmsJoinEval(ctx context.Context, authorUuid *uuid.UUID) ([]ShallowSubmJoinEvalDto, error)
 }
 
 type EvalRepo interface {

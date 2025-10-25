@@ -16,9 +16,9 @@ func (h *SubmHttpHandler) GetMaxScorePerTask(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	scores, err := h.submSrvc.GetMaxScorePerTask(r.Context(), user.UUID)
-	if err != nil {
-		jsonresp.HandleSrvcError(slog.Default(), w, err)
+	scores, getScoresErr := h.submSrvc.GetMaxScorePerTask(r.Context(), user.UUID)
+	if getScoresErr != nil {
+		jsonresp.HandleSrvcError(slog.Default(), w, getScoresErr)
 		return
 	}
 
