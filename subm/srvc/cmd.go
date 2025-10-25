@@ -8,9 +8,8 @@ import (
 	"github.com/programme-lv/backend/common/ctxlog"
 	"github.com/programme-lv/backend/common/srvcerror"
 	"github.com/programme-lv/backend/plang"
-	subm "github.com/programme-lv/backend/subm/domain"
-	"github.com/programme-lv/backend/subm/srvc/submcmd"
-	"github.com/programme-lv/backend/task/srvc"
+	"github.com/programme-lv/backend/subm/domain"
+	tasksrvc "github.com/programme-lv/backend/task/srvc"
 )
 
 type SubmitSolParams struct {
@@ -42,11 +41,11 @@ func (s *submSrvc) SubmitSol(ctx context.Context, p SubmitSolParams) error {
 
 type SubmitSolCmdHandler struct {
 	DoesUserExist    func(ctx context.Context, uuid uuid.UUID) (bool, error)
-	GetTask          func(ctx context.Context, shortId string) (srvc.Task, *srvcerror.Error)
-	StoreSubm        func(ctx context.Context, subm subm.Subm) error
-	StoreEval        func(ctx context.Context, eval subm.Eval) error
-	BcastSubmCreated func(subm subm.Subm)
-	EnqueueExec      func(ctx context.Context, eval subm.Eval, srcCode string, prLangId string) error
+	GetTask          func(ctx context.Context, shortId string) (tasksrvc.Task, *srvcerror.Error)
+	StoreSubm        func(ctx context.Context, subm domain.Subm) error
+	StoreEval        func(ctx context.Context, eval domain.Eval) error
+	BcastSubmCreated func(subm domain.Subm)
+	EnqueueExec      func(ctx context.Context, eval domain.Eval, srcCode string, prLangId string) error
 }
 
 const MaxSubmLengthKB = 64
@@ -87,7 +86,7 @@ func (h SubmitSolCmdHandler) Handle(ctx context.Context, p SubmitSolParams) *srv
 	}
 
 	evalUuid := uuid.New()
-	submEntity := subm.Subm{
+	submEntity := domain.Subm{
 		UUID:         p.UUID,
 		Content:      p.Submission,
 		AuthorUUID:   p.AuthorUUID,
@@ -96,7 +95,7 @@ func (h SubmitSolCmdHandler) Handle(ctx context.Context, p SubmitSolParams) *srv
 		CurrEvalUUID: evalUuid,
 		CreatedAt:    time.Now(),
 	}
-	eval := subm.NewEval(evalUuid, submEntity.UUID, t)
+	eval := domain.NewEval(evalUuid, submEntity.UUID, t)
 
 	err = h.StoreEval(ctx, eval)
 	if err != nil {
@@ -124,8 +123,8 @@ func (h SubmitSolCmdHandler) Handle(ctx context.Context, p SubmitSolParams) *srv
 	return nil
 }
 
-func (s *submSrvc) ReEvalSubm(ctx context.Context, submUuid uuid.UUID) error {
-	reevalSubmCmd := submcmd.ReEvalSubmHandler{
+func (s *submSrvc) ReEvalSubm(ctx context.Context, submUuid uuid.UUID) *srvcerror.Error {
+	reevalSubmCmd := ReEvalSubmHandler{
 		GetSubm:     s.submRepo.GetSubm,
 		GetTask:     s.taskSrvc.GetTask,
 		StoreEval:   s.evalRepo.StoreEval,
@@ -133,4 +132,65 @@ func (s *submSrvc) ReEvalSubm(ctx context.Context, submUuid uuid.UUID) error {
 		EnqueueExec: s.enqueueEvalExecAndListen,
 	}
 	return reevalSubmCmd.Handle(ctx, submUuid)
+}
+
+type ReEvalSubmHandler struct {
+	// get persisted submission entity by uuid
+	GetSubm func(ctx context.Context, submUuid uuid.UUID) (domain.Subm, error)
+
+	// get persisted task entity by short id
+	GetTask func(ctx context.Context, shortId string) (tasksrvc.Task, *srvcerror.Error)
+
+	// persist evaluation entity
+	StoreEval func(ctx context.Context, eval domain.Eval) error
+
+	// assign evaluation to submission
+	AssignEval func(ctx context.Context, submUuid uuid.UUID, evalUuid uuid.UUID) error
+
+	// enqueue evaluation for corresponding submission execution by tester
+	EnqueueExec func(ctx context.Context, eval domain.Eval, srcCode string, prLangId string) error
+}
+
+func (h ReEvalSubmHandler) Handle(ctx context.Context, submUuid uuid.UUID) *srvcerror.Error {
+	log := ctxlog.FromContext(ctx).With("handler", "re eval subm")
+
+	subm, getSubmErr := h.GetSubm(ctx, submUuid)
+	if getSubmErr != nil {
+		action := "get subm"
+		log.Error(action, "subm_uuid", submUuid, "error", getSubmErr)
+		return srvcerror.InternalServerError()
+	}
+
+	t, getTaskErr := h.GetTask(ctx, subm.TaskShortID)
+	if getTaskErr != nil {
+		action := "get task"
+		log.Error(action, "task_short_id", subm.TaskShortID, "error", getTaskErr)
+		return srvcerror.InternalServerError()
+	}
+
+	evalUuid := uuid.New()
+	eval := domain.NewEval(evalUuid, subm.UUID, t)
+
+	storeEvalErr := h.StoreEval(ctx, eval)
+	if storeEvalErr != nil {
+		action := "store eval"
+		log.Error(action, "eval_uuid", evalUuid, "error", storeEvalErr)
+		return srvcerror.InternalServerError()
+	}
+
+	assignEvalErr := h.AssignEval(ctx, subm.UUID, evalUuid)
+	if assignEvalErr != nil {
+		action := "assign eval to subm"
+		log.Error(action, "subm_uuid", subm.UUID, "eval_uuid", evalUuid, "error", assignEvalErr)
+		return srvcerror.InternalServerError()
+	}
+
+	enqueueExecErr := h.EnqueueExec(ctx, eval, subm.Content, subm.LangShortID)
+	if enqueueExecErr != nil {
+		action := "enqueue execution"
+		log.Error(action, "eval_uuid", evalUuid, "error", enqueueExecErr)
+		return srvcerror.InternalServerError()
+	}
+
+	return nil
 }
