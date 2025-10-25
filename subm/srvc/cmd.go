@@ -2,6 +2,8 @@ package srvc
 
 import (
 	"context"
+	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/google/uuid"
@@ -10,7 +12,6 @@ import (
 	"github.com/programme-lv/backend/exec"
 	"github.com/programme-lv/backend/plang"
 	"github.com/programme-lv/backend/subm/domain"
-	"github.com/programme-lv/backend/subm/srvc/submcmd"
 	tasksrvc "github.com/programme-lv/backend/task/srvc"
 )
 
@@ -236,7 +237,7 @@ func (s *submSrvc) enqueueExecAndListen(ctx context.Context, eval domain.Eval, s
 	processCtx := context.Background()
 	go func(execEvCh <-chan exec.Event) {
 		for ev := range execEvCh {
-			err := s.procExecEv(processCtx, submcmd.ProcExecEvParams{
+			err := s.procExecEv(processCtx, ProcExecEvParams{
 				Eval:  eval,
 				Event: ev,
 			})
@@ -278,4 +279,56 @@ func evalReqTests(
 		}
 	}
 	return evalReqTests
+}
+
+type ProcExecEvParams struct {
+	Eval  domain.Eval
+	Event exec.Event
+}
+
+type ProcExecEvCmdHandler struct {
+	StoreEval     func(ctx context.Context, eval domain.Eval) error
+	BcastEvalUpd  func(eval domain.Eval)
+	GetEvalByUuid func(ctx context.Context, uuid uuid.UUID) (domain.Eval, error)
+	InProgrEval   map[uuid.UUID]domain.Eval
+}
+
+func (h *ProcExecEvCmdHandler) Handle(ctx context.Context, p ProcExecEvParams) error {
+	log := ctxlog.FromContext(ctx)
+
+	latestEval, ok := h.InProgrEval[p.Eval.UUID]
+	if !ok {
+		action := "eval not found in in-memory cache"
+		log.Error(action, "eval_uuid", p.Eval.UUID)
+		return srvcerror.InternalServerError()
+	}
+	slog.Info("received event", "event", fmt.Sprintf("%+v", p.Event.Type()))
+
+	eval := applyExecEventToEval(latestEval, p.Event)
+
+	final := false
+	final = final || p.Event.Type() == exec.InternalServerErrorType
+	final = final || p.Event.Type() == exec.CompilationErrorType
+	final = final || p.Event.Type() == exec.FinishedTestingType
+
+	if final {
+		err := h.StoreEval(ctx, eval)
+		if err != nil {
+			slog.Error("failed to store evaluation", "error", err)
+			return err
+		}
+		delete(h.InProgrEval, p.Eval.UUID)
+	} else {
+		finishedTests := 0
+		for _, test := range eval.Tests {
+			if test.Finished {
+				finishedTests++
+			}
+		}
+		slog.Info("test progress", "finished", finishedTests, "total", len(eval.Tests))
+		h.InProgrEval[p.Eval.UUID] = eval
+	}
+
+	h.BcastEvalUpd(eval)
+	return nil
 }
