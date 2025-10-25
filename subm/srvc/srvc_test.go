@@ -20,7 +20,6 @@ import (
 	"github.com/programme-lv/backend/subm/domain"
 	"github.com/programme-lv/backend/subm/pgrepo"
 	srvc1 "github.com/programme-lv/backend/subm/srvc"
-	"github.com/programme-lv/backend/subm/srvc/submcmd"
 	"github.com/programme-lv/backend/subm/srvc/submquery"
 	"github.com/programme-lv/backend/task/srvc"
 	usersrvc "github.com/programme-lv/backend/user"
@@ -74,7 +73,7 @@ func (s *testSetup) submitSolution(t *testing.T, ctx context.Context) uuid.UUID 
 	s.userSrvc.EXPECT().GetUserByUUID(mock.Anything, mockUserUuid).Return(usersrvc.User{UUID: mockUserUuid}, nil)
 	s.taskSrvc.EXPECT().GetTask(mock.Anything, "aplusb").Return(srvc.Task{ShortId: "aplusb"}, nil)
 	submUUID := uuid.New()
-	err := s.srvc.SubmitSol(ctx, submcmd.SubmitSolParams{
+	err := s.srvc.SubmitSol(ctx, srvc1.SubmitSolParams{
 		UUID:        submUUID,
 		Submission:  "print(sum([int(x) for x in input().split()]))",
 		ProgrLangID: "python3.12",
@@ -207,7 +206,7 @@ func TestUserMaxScores(t *testing.T) {
 	setup.taskSrvc.EXPECT().GetTestDownlUrl(mock.Anything, mock.Anything).Return("", nil)
 
 	submUUID := uuid.New()
-	err = setup.srvc.SubmitSol(bg, submcmd.SubmitSolParams{
+	err = setup.srvc.SubmitSol(bg, srvc1.SubmitSolParams{
 		UUID:        submUUID,
 		Submission:  "print(sum([int(x) for x in input().split()]))",
 		ProgrLangID: "python3.12",
@@ -267,7 +266,7 @@ func TestUserMaxScores(t *testing.T) {
 	setup.taskSrvc.EXPECT().GetTestDownlUrl(mock.Anything, mock.Anything).Return("", nil)
 
 	submUUID2 := uuid.New()
-	err = setup.srvc.SubmitSol(bg, submcmd.SubmitSolParams{
+	err = setup.srvc.SubmitSol(bg, srvc1.SubmitSolParams{
 		UUID:        submUUID2,
 		Submission:  "print(sum([int(x) for x in input().split()]))", // Same code but this time both tests pass
 		ProgrLangID: "python3.12",

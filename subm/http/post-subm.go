@@ -8,7 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/programme-lv/backend/common/ctxlog"
 	"github.com/programme-lv/backend/common/jsonresp"
-	"github.com/programme-lv/backend/subm/srvc/submcmd"
+	"github.com/programme-lv/backend/subm/srvc"
 	"github.com/programme-lv/backend/subm/submerror"
 	"github.com/programme-lv/backend/user/auth"
 )
@@ -74,7 +74,7 @@ func (h *SubmHttpHandler) PostSubm(w http.ResponseWriter, r *http.Request) {
 	submUUID := uuid.New()
 	log.Info("generated submission UUID", "subm_uuid", submUUID)
 
-	err = h.submSrvc.SubmitSol(r.Context(), submcmd.SubmitSolParams{
+	err = h.submSrvc.SubmitSol(r.Context(), srvc.SubmitSolParams{
 		UUID:        submUUID,
 		Submission:  request.Submission,
 		AuthorUUID:  author.UUID,
