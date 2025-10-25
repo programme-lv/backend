@@ -529,3 +529,184 @@ func TestEvalRepo_StoreWithExecData_Success(t *testing.T) {
 }
 
 // TestSubmRepo_Store_MissingFields tests storing SubmissionEntities with missing required fields.
+
+// TestSubmRepo_ListShallowSubmsJoinEval_WithCompleteScoreInfo tests listing submissions with complete score information.
+func TestSubmRepo_ListShallowSubmsJoinEval_WithCompleteScoreInfo(t *testing.T) {
+	t.Parallel()
+	db := NewSampleDB(t)
+	evalRepo := NewPgEvalRepo(db)
+	submRepo := NewPgSubmRepo(db)
+
+	ctx := context.Background()
+
+	// Create a submission
+	subm := getSampleSubmEntityWithoutEval()
+	subm.AuthorUUID = existingAuthorUuid
+	err := submRepo.StoreSubm(ctx, subm)
+	require.Nil(t, err)
+
+	// Create an evaluation with complete score info
+	eval := getSampleEvalEntity()
+	eval.SubmUUID = subm.UUID
+	err = evalRepo.StoreEval(ctx, eval)
+	require.Nil(t, err)
+
+	// Update the evaluation with score info
+	updateQuery := `
+		UPDATE evaluations
+		SET received_score = $1, possible_score = $2, scorebar_green = $3, scorebar_red = $4,
+		    scorebar_gray = $5, scorebar_yellow = $6, scorebar_purple = $7,
+		    cpu_max_ms = $8, mem_max_kib = $9, exceeded_cpu = $10, exceeded_mem = $11
+		WHERE uuid = $12
+	`
+	_, err = db.Exec(ctx, updateQuery,
+		50, 100, 50, 30, 15, 5, 0, 1500, 65536, false, false, eval.UUID,
+	)
+	require.Nil(t, err)
+
+	// Assign evaluation to submission
+	err = submRepo.AssignEval(ctx, subm.UUID, eval.UUID)
+	require.Nil(t, err)
+
+	// List shallow submissions with evaluations
+	result, err := submRepo.ListShallowSubmsJoinEval(ctx, &existingAuthorUuid)
+	require.Nil(t, err)
+	require.Len(t, result, 1)
+
+	// Verify submission data
+	require.Equal(t, subm.UUID, result[0].Subm.UUID)
+	require.Equal(t, existingAuthorUuid, result[0].Subm.AuthorUUID)
+	require.Equal(t, subm.TaskShortID, result[0].Subm.TaskShortID)
+
+	// Verify evaluation data
+	require.Equal(t, eval.UUID, result[0].Eval.UUID)
+	require.Equal(t, eval.Stage, result[0].Eval.Stage)
+
+	// Verify ScoreInfo is populated
+	require.NotNil(t, result[0].Eval.ScoreInfo)
+	require.Equal(t, 50, result[0].Eval.ScoreInfo.ReceivedScore)
+	require.Equal(t, 100, result[0].Eval.ScoreInfo.PossibleScore)
+	require.Equal(t, 50, result[0].Eval.ScoreInfo.ScoreBar.Green)
+	require.Equal(t, 30, result[0].Eval.ScoreInfo.ScoreBar.Red)
+	require.Equal(t, 15, result[0].Eval.ScoreInfo.ScoreBar.Gray)
+	require.Equal(t, 5, result[0].Eval.ScoreInfo.ScoreBar.Yellow)
+	require.Equal(t, 0, result[0].Eval.ScoreInfo.ScoreBar.Purple)
+	require.Equal(t, 1500, result[0].Eval.ScoreInfo.MaxCpuMs)
+	require.Equal(t, 65536, result[0].Eval.ScoreInfo.MaxMemKiB)
+	require.Equal(t, false, result[0].Eval.ScoreInfo.ExceededCpu)
+	require.Equal(t, false, result[0].Eval.ScoreInfo.ExceededMem)
+}
+
+// TestSubmRepo_ListShallowSubmsJoinEval_WithPartialScoreInfo tests that ScoreInfo is nil when any field is null.
+func TestSubmRepo_ListShallowSubmsJoinEval_WithPartialScoreInfo(t *testing.T) {
+	t.Parallel()
+	db := NewSampleDB(t)
+	evalRepo := NewPgEvalRepo(db)
+	submRepo := NewPgSubmRepo(db)
+
+	ctx := context.Background()
+
+	// Create a submission
+	subm := getSampleSubmEntityWithoutEval()
+	subm.AuthorUUID = existingAuthorUuid
+	err := submRepo.StoreSubm(ctx, subm)
+	require.Nil(t, err)
+
+	// Create an evaluation
+	eval := getSampleEvalEntity()
+	eval.SubmUUID = subm.UUID
+	err = evalRepo.StoreEval(ctx, eval)
+	require.Nil(t, err)
+
+	// Update evaluation with only partial score info (missing some fields)
+	updateQuery := `
+		UPDATE evaluations
+		SET received_score = $1, possible_score = $2
+		WHERE uuid = $3
+	`
+	_, err = db.Exec(ctx, updateQuery, 50, 100, eval.UUID)
+	require.Nil(t, err)
+
+	// Assign evaluation to submission
+	err = submRepo.AssignEval(ctx, subm.UUID, eval.UUID)
+	require.Nil(t, err)
+
+	// List shallow submissions
+	result, err := submRepo.ListShallowSubmsJoinEval(ctx, &existingAuthorUuid)
+	require.Nil(t, err)
+	require.Len(t, result, 1)
+
+	// Verify ScoreInfo is nil because not all fields are populated
+	require.Nil(t, result[0].Eval.ScoreInfo)
+}
+
+// TestSubmRepo_ListShallowSubmsJoinEval_MultipleSubmissions tests listing multiple submissions.
+func TestSubmRepo_ListShallowSubmsJoinEval_MultipleSubmissions(t *testing.T) {
+	t.Parallel()
+	db := NewSampleDB(t)
+	evalRepo := NewPgEvalRepo(db)
+	submRepo := NewPgSubmRepo(db)
+
+	ctx := context.Background()
+
+	// Create multiple submissions with evaluations
+	numSubmissions := 3
+	submissionUUIDs := make([]uuid.UUID, numSubmissions)
+	for i := 0; i < numSubmissions; i++ {
+		subm := getSampleSubmEntityWithoutEval()
+		subm.AuthorUUID = existingAuthorUuid
+		err := submRepo.StoreSubm(ctx, subm)
+		require.Nil(t, err)
+		submissionUUIDs[i] = subm.UUID
+
+		// Create evaluation for each submission
+		eval := getSampleEvalEntity()
+		eval.SubmUUID = subm.UUID
+		err = evalRepo.StoreEval(ctx, eval)
+		require.Nil(t, err)
+
+		// Assign evaluation to submission
+		err = submRepo.AssignEval(ctx, subm.UUID, eval.UUID)
+		require.Nil(t, err)
+	}
+
+	// List shallow submissions
+	result, err := submRepo.ListShallowSubmsJoinEval(ctx, &existingAuthorUuid)
+	require.Nil(t, err)
+	require.Len(t, result, numSubmissions)
+
+	// Verify all submissions are present
+	resultUUIDs := make(map[uuid.UUID]bool)
+	for _, dto := range result {
+		resultUUIDs[dto.Subm.UUID] = true
+	}
+
+	for _, uuid := range submissionUUIDs {
+		require.True(t, resultUUIDs[uuid], "submission uuid should be in results")
+	}
+}
+
+// TestSubmRepo_ListShallowSubmsJoinEval_NoSubmissions tests listing when no submissions exist.
+func TestSubmRepo_ListShallowSubmsJoinEval_NoSubmissions(t *testing.T) {
+	t.Parallel()
+	db := NewSampleDB(t)
+	submRepo := NewPgSubmRepo(db)
+
+	ctx := context.Background()
+
+	// Create a new user without submissions
+	newAuthorUUID := uuid.New()
+	_, err := db.Exec(ctx, `
+		INSERT INTO users (
+			uuid, firstname, lastname, username, email, bcrypt_pwd
+		) VALUES (
+			$1, 'New', 'User', 'newuser', 'new@example.com', '$2a$10$XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
+		)
+	`, newAuthorUUID)
+	require.Nil(t, err)
+
+	// List shallow submissions for user with no submissions
+	result, err := submRepo.ListShallowSubmsJoinEval(ctx, &newAuthorUUID)
+	require.Nil(t, err)
+	require.Len(t, result, 0)
+}

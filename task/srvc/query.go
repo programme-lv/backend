@@ -88,7 +88,7 @@ func (ts *TaskSrvc) GetTaskFullNames(ctx context.Context, shortIDs []string) ([]
 		return nil, NewErrorInternalServerError()
 	}
 	if len(fullNames) != len(shortIDs) {
-		return nil, NewErrorSomeTaskNotFound()
+		return nil, ErrSomeTaskNotFound
 	}
 	return fullNames, nil
 }
@@ -153,7 +153,7 @@ func (ts *TaskSrvc) ResolveNames(ctx context.Context, shortIds []string) ([]stri
 		return nil, NewErrorInternalServerError()
 	}
 	if len(names) != len(shortIds) {
-		return nil, NewErrorSomeTaskNotFound()
+		return nil, ErrSomeTaskNotFound
 	}
 	return names, nil
 }

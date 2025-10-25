@@ -16,14 +16,10 @@ func NewErrorTaskNotFound(taskId string) *srvcerror.Error {
 	).SetHttpStatusCode(http.StatusNotFound)
 }
 
-const ErrSomeTaskNotFound = "some_task_not_found"
-
-func NewErrorSomeTaskNotFound() *srvcerror.Error {
-	return srvcerror.New(
-		ErrSomeTaskNotFound,
-		"daži uzdevumi netika atrasti",
-	).SetHttpStatusCode(http.StatusNotFound)
-}
+var ErrSomeTaskNotFound = srvcerror.New(
+	"some_task_not_found",
+	"kāds no uzdevumiem netika atrasts",
+).SetHttpStatusCode(http.StatusNotFound)
 
 const ErrCodeImageAlreadyExists = "image_already_exists"
 

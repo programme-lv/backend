@@ -1,4 +1,18 @@
--- Schema dump of 'proglv' generated Thu Sep 25 10:10:20 AM UTC 2025
+-- Schema dump of 'proglv' generated Sat Oct 25 18:17:49 UTC 2025
+                               Table "public.eval_subtasks"
+     Column      |   Type    | Collation | Nullable |               Default                
+-----------------+-----------+-----------+----------+--------------------------------------
+ id              | integer   |           | not null | nextval('subtasks_id_seq'::regclass)
+ evaluation_uuid | uuid      |           | not null | 
+ points          | integer   |           | not null | 
+ description     | text      |           | not null | 
+ st_tests        | integer[] |           | not null | 
+Indexes:
+    "subtasks_pkey" PRIMARY KEY, btree (id)
+    "idx_subtasks_evaluation_uuid" btree (evaluation_uuid)
+Foreign-key constraints:
+    "fk_evaluation_subtasks" FOREIGN KEY (evaluation_uuid) REFERENCES evaluations(uuid) ON DELETE CASCADE
+
                                Table "public.eval_test_groups"
      Column      |   Type    | Collation | Nullable |                 Default                 
 -----------------+-----------+-----------+----------+-----------------------------------------
@@ -37,20 +51,31 @@ Indexes:
 Foreign-key constraints:
     "fk_evaluation_tests" FOREIGN KEY (evaluation_uuid) REFERENCES evaluations(uuid) ON DELETE CASCADE
 
-                              Table "public.evaluations"
-    Column     |           Type           | Collation | Nullable |      Default       
----------------+--------------------------+-----------+----------+--------------------
- uuid          | uuid                     |           | not null | uuid_generate_v4()
- stage         | character varying(20)    |           | not null | 
- score_unit    | character varying(20)    |           | not null | 
- checker       | text                     |           |          | 
- interactor    | text                     |           |          | 
- cpu_lim_ms    | integer                  |           | not null | 
- mem_lim_kib   | integer                  |           | not null | 
- error_type    | character varying(20)    |           |          | 
- error_message | text                     |           |          | 
- created_at    | timestamp with time zone |           | not null | now()
- subm_uuid     | uuid                     |           |          | 
+                               Table "public.evaluations"
+     Column      |           Type           | Collation | Nullable |      Default       
+-----------------+--------------------------+-----------+----------+--------------------
+ uuid            | uuid                     |           | not null | uuid_generate_v4()
+ stage           | character varying(20)    |           | not null | 
+ score_unit      | character varying(20)    |           | not null | 
+ checker         | text                     |           |          | 
+ interactor      | text                     |           |          | 
+ cpu_lim_ms      | integer                  |           | not null | 
+ mem_lim_kib     | integer                  |           | not null | 
+ error_type      | character varying(20)    |           |          | 
+ error_message   | text                     |           |          | 
+ created_at      | timestamp with time zone |           | not null | now()
+ subm_uuid       | uuid                     |           |          | 
+ received_score  | integer                  |           |          | 
+ possible_score  | integer                  |           |          | 
+ scorebar_green  | integer                  |           |          | 
+ scorebar_red    | integer                  |           |          | 
+ scorebar_gray   | integer                  |           |          | 
+ scorebar_yellow | integer                  |           |          | 
+ scorebar_purple | integer                  |           |          | 
+ cpu_max_ms      | integer                  |           |          | 
+ mem_max_kib     | integer                  |           |          | 
+ exceeded_cpu    | boolean                  |           |          | 
+ exceeded_mem    | boolean                  |           |          | 
 Indexes:
     "evaluations_pkey" PRIMARY KEY, btree (uuid)
 Check constraints:
@@ -58,7 +83,7 @@ Check constraints:
     "stage_check" CHECK (stage::text = ANY (ARRAY['waiting'::character varying::text, 'compiling'::character varying::text, 'testing'::character varying::text, 'finished'::character varying::text]))
 Referenced by:
     TABLE "submissions" CONSTRAINT "fk_curr_eval" FOREIGN KEY (curr_eval_uuid) REFERENCES evaluations(uuid) ON DELETE SET NULL
-    TABLE "subtasks" CONSTRAINT "fk_evaluation_subtasks" FOREIGN KEY (evaluation_uuid) REFERENCES evaluations(uuid) ON DELETE CASCADE
+    TABLE "eval_subtasks" CONSTRAINT "fk_evaluation_subtasks" FOREIGN KEY (evaluation_uuid) REFERENCES evaluations(uuid) ON DELETE CASCADE
     TABLE "eval_test_groups" CONSTRAINT "fk_evaluation_test_groups" FOREIGN KEY (evaluation_uuid) REFERENCES evaluations(uuid) ON DELETE CASCADE
     TABLE "eval_test_results" CONSTRAINT "fk_evaluation_tests" FOREIGN KEY (evaluation_uuid) REFERENCES evaluations(uuid) ON DELETE CASCADE
 
@@ -87,20 +112,6 @@ Indexes:
 Foreign-key constraints:
     "fk_author" FOREIGN KEY (author_uuid) REFERENCES users(uuid) ON DELETE CASCADE
     "fk_curr_eval" FOREIGN KEY (curr_eval_uuid) REFERENCES evaluations(uuid) ON DELETE SET NULL
-
-                                  Table "public.subtasks"
-     Column      |   Type    | Collation | Nullable |               Default                
------------------+-----------+-----------+----------+--------------------------------------
- id              | integer   |           | not null | nextval('subtasks_id_seq'::regclass)
- evaluation_uuid | uuid      |           | not null | 
- points          | integer   |           | not null | 
- description     | text      |           | not null | 
- st_tests        | integer[] |           | not null | 
-Indexes:
-    "subtasks_pkey" PRIMARY KEY, btree (id)
-    "idx_subtasks_evaluation_uuid" btree (evaluation_uuid)
-Foreign-key constraints:
-    "fk_evaluation_subtasks" FOREIGN KEY (evaluation_uuid) REFERENCES evaluations(uuid) ON DELETE CASCADE
 
                                 Table "public.task_examples"
     Column     |  Type   | Collation | Nullable |                  Default                  
@@ -334,12 +345,12 @@ Referenced by:
                         List of relations
  Schema |               Name                |   Type   |  Owner   
 --------+-----------------------------------+----------+----------
+ public | eval_subtasks                     | table    | postgres
  public | eval_test_groups                  | table    | postgres
  public | eval_test_results                 | table    | postgres
  public | evaluations                       | table    | postgres
  public | schema_migrations                 | table    | postgres
  public | submissions                       | table    | postgres
- public | subtasks                          | table    | postgres
  public | subtasks_id_seq                   | sequence | postgres
  public | task_examples                     | table    | postgres
  public | task_examples_id_seq              | sequence | postgres

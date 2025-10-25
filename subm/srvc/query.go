@@ -2,8 +2,8 @@ package srvc
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"log/slog"
 
 	"github.com/google/uuid"
 	"github.com/programme-lv/backend/common/ctxlog"
@@ -16,60 +16,87 @@ import (
 )
 
 // GetMaxScorePerTask implements SubmSrvcClient.
-func (s *submSrvc) GetMaxScorePerTask(ctx context.Context, userUUID uuid.UUID) (map[string]domain.MaxScore, error) {
-	// Get all submissions
-	// TODO: wtf is this?
-	subms, err := s.submRepo.ListSubms(ctx, 10000, 0, "", nil, []string{}, []string{}, []string{})
-	if err != nil {
-		return nil, fmt.Errorf("failed to list submissions: %w", err)
-	}
-
-	if len(subms) == 10000 {
-		slog.Error("too many submissions", "user_uuid", userUUID)
-	}
-
+func (s *submSrvc) GetMaxScorePerTask(ctx context.Context, userUUID uuid.UUID) (map[string]domain.MaxScore, *srvcerror.Error) {
 	taskExistsCache := make(map[string]bool)
-
-	// Filter submissions by user and collect evaluations
-	userSubmsWithEval := make([]domain.SubmJoinEval, 0)
-	for _, subm := range subms {
-		if subm.AuthorUUID != userUUID {
-			continue
-		}
-
-		// Skip tasks that don't exist anymore
-		if _, ok := taskExistsCache[subm.TaskShortID]; !ok {
-			_, err := s.taskSrvc.GetTaskFullNames(ctx, []string{subm.TaskShortID})
-			if srvcerror.Is(err, tasksrvc.ErrSomeTaskNotFound) {
-				taskExistsCache[subm.TaskShortID] = false
-				continue
+	h := getMaxScorePerTaskHandler{
+		listSubmJoinEval: s.submRepo.ListShallowSubmsJoinEval,
+		doesTaskExist: func(ctx context.Context, taskShortID string) (bool, *srvcerror.Error) {
+			if exists, ok := taskExistsCache[taskShortID]; ok {
+				return exists, nil
 			}
+			_, err := s.taskSrvc.GetTaskFullNames(ctx, []string{taskShortID})
 			if err != nil {
-				return nil, fmt.Errorf("could not resolve task full name: %w", err)
+				if errors.Is(err, tasksrvc.ErrSomeTaskNotFound) {
+					taskExistsCache[taskShortID] = false
+					return false, nil
+				}
+				return false, err
 			}
-			taskExistsCache[subm.TaskShortID] = true
-		}
+			taskExistsCache[taskShortID] = true
+			return true, nil
+		},
+		getFullEval: s.GetEval,
+	}
+	return h.Handle(ctx, userUUID)
+}
 
-		// Skip submissions without evaluations
-		if subm.CurrEvalUUID == uuid.Nil {
-			continue
-		}
+type getMaxScorePerTaskHandler struct {
+	listSubmJoinEval func(ctx context.Context, authorUuid *uuid.UUID) ([]ShallowSubmJoinEvalDto, error)
+	doesTaskExist    func(ctx context.Context, taskShortID string) (bool, *srvcerror.Error)
+	getFullEval      func(ctx context.Context, evalUUID uuid.UUID) (domain.Eval, error)
+}
 
-		// Get the evaluation
-		eval, err := s.GetEval(ctx, subm.CurrEvalUUID)
-		if err != nil {
-			slog.Error("failed to get evaluation", "error", err, "eval_uuid", subm.CurrEvalUUID)
-			continue
-		}
+func (h getMaxScorePerTaskHandler) Handle(ctx context.Context, userUUID uuid.UUID) (map[string]domain.MaxScore, *srvcerror.Error) {
+	log := ctxlog.FromContext(ctx).With("handler", "get max score per task")
 
-		userSubmsWithEval = append(userSubmsWithEval, domain.SubmJoinEval{
-			Subm: subm,
-			Eval: eval,
-		})
+	submJoinEvalList, err := h.listSubmJoinEval(ctx, &userUUID)
+	if err != nil {
+		action := "list shallow subms joined with evals"
+		log.Error(action, "user uuid", userUUID, "error", err)
+		return nil, srvcerror.InternalServerError()
 	}
 
-	// Calculate max scores using the domain logic
-	return domain.CalcMaxScores(userSubmsWithEval), nil
+	userSubmsWithScoreInfo := make([]domain.SubmJoinScoreInfo, 0)
+	for _, submJoinEval := range submJoinEvalList {
+		doesTaskExist, err := h.doesTaskExist(ctx, submJoinEval.Subm.TaskShortID)
+		if err != nil {
+			action := "check if task exists"
+			log.Error(action, "user uuid", userUUID, "error", err)
+			return nil, srvcerror.InternalServerError()
+		}
+		if !doesTaskExist {
+			continue
+		}
+
+		if submJoinEval.Eval.ScoreInfo == nil {
+			log.Info("NO SCORE INFO")
+			fullEval, err := h.getFullEval(ctx, submJoinEval.Eval.UUID)
+			if err != nil {
+				action := "get full eval"
+				log.Error(action, "user uuid", userUUID, "error", err)
+				return nil, srvcerror.InternalServerError()
+			}
+
+			userSubmsWithScoreInfo = append(userSubmsWithScoreInfo, domain.SubmJoinScoreInfo{
+				SubmUuid:    submJoinEval.Subm.UUID,
+				TaskShortID: submJoinEval.Subm.TaskShortID,
+				CreatedAt:   submJoinEval.Subm.CreatedAt,
+				ScoreInfo:   fullEval.CalculateScore(),
+			})
+		} else {
+			log.Info("YAY")
+			userSubmsWithScoreInfo = append(userSubmsWithScoreInfo, domain.SubmJoinScoreInfo{
+				SubmUuid:    submJoinEval.Subm.UUID,
+				TaskShortID: submJoinEval.Subm.TaskShortID,
+				CreatedAt:   submJoinEval.Subm.CreatedAt,
+				ScoreInfo:   *submJoinEval.Eval.ScoreInfo,
+			})
+		}
+
+	}
+
+	return domain.CalcMaxScores(userSubmsWithScoreInfo), nil
+
 }
 
 // CountSubms returns the total number of submissions

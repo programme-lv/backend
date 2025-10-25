@@ -11,34 +11,40 @@ type MaxScore struct {
 	SubmUuid  uuid.UUID
 	Received  int
 	Possible  int
-	CreatedAt time.Time
+	FirstTime time.Time // first time the user got a score this high
 }
 
-type SubmJoinEval struct {
+type SubmJoinEvalOld struct {
 	Subm Subm
 	Eval Eval
 }
 
+type SubmJoinScoreInfo struct {
+	SubmUuid    uuid.UUID
+	TaskShortID string
+	CreatedAt   time.Time
+	ScoreInfo   ScoreInfo
+}
+
 // returns a map of task short ids to the max received score the user has received on a subm for that task
-func CalcMaxScores(userSubms []SubmJoinEval) map[string]MaxScore {
+func CalcMaxScores(userSubms []SubmJoinScoreInfo) map[string]MaxScore {
 	maxScores := make(map[string]MaxScore)
 
 	for _, subm := range userSubms {
-		taskId := subm.Subm.TaskShortID
-		scoreInfo := subm.Eval.CalculateScore()
-		currentScore := MaxScore{
-			SubmUuid:  subm.Subm.UUID,
-			Received:  scoreInfo.ReceivedScore,
-			Possible:  scoreInfo.PossibleScore,
-			CreatedAt: subm.Subm.CreatedAt,
+		taskId := subm.TaskShortID
+		thisScore := MaxScore{
+			SubmUuid:  subm.SubmUuid,
+			Received:  subm.ScoreInfo.ReceivedScore,
+			Possible:  subm.ScoreInfo.PossibleScore,
+			FirstTime: subm.CreatedAt,
 		}
 
 		if existingScore, exists := maxScores[taskId]; !exists {
-			maxScores[taskId] = currentScore
-		} else if currentScore.Received > existingScore.Received {
-			maxScores[taskId] = currentScore
-		} else if currentScore.Received == existingScore.Received && currentScore.CreatedAt.Before(existingScore.CreatedAt) {
-			maxScores[taskId] = currentScore
+			maxScores[taskId] = thisScore
+		} else if thisScore.Received > existingScore.Received {
+			maxScores[taskId] = thisScore
+		} else if thisScore.Received == existingScore.Received && thisScore.FirstTime.Before(existingScore.FirstTime) {
+			maxScores[taskId] = thisScore
 		}
 	}
 

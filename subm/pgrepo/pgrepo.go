@@ -13,6 +13,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/programme-lv/backend/common/ctxlog"
 	"github.com/programme-lv/backend/subm/domain"
+	"github.com/programme-lv/backend/subm/srvc"
 )
 
 type pgEvalRepo struct {
@@ -603,4 +604,133 @@ func (r *pgSubmRepo) CountSubms(ctx context.Context, authorUuid *uuid.UUID, auth
 
 	log.Debug("counted submissions", "count", count)
 	return count, nil
+}
+
+func (r *pgSubmRepo) ListShallowSubmsJoinEval(ctx context.Context, authorUuid *uuid.UUID) ([]srvc.ShallowSubmJoinEvalDto, error) {
+	log := ctxlog.FromContext(ctx)
+	log.Debug("getting shallow submissions joined with evaluations", "author_uuid", authorUuid)
+
+	query := `
+		SELECT 
+			s.uuid, s.author_uuid, s.task_shortid, s.lang_shortid, s.curr_eval_uuid, s.created_at,
+			e.uuid, e.subm_uuid, e.stage, e.score_unit, e.error_type, e.error_message, 
+			e.checker, e.interactor, e.cpu_lim_ms, e.mem_lim_kib, e.created_at,
+			e.received_score, e.possible_score, e.scorebar_green, e.scorebar_red, e.scorebar_gray, 
+			e.scorebar_yellow, e.scorebar_purple, e.cpu_max_ms, e.mem_max_kib, e.exceeded_cpu, e.exceeded_mem
+		FROM submissions s
+		INNER JOIN evaluations e ON s.curr_eval_uuid = e.uuid
+		WHERE s.author_uuid = $1
+		ORDER BY s.created_at DESC
+	`
+
+	log.Debug("executing query", "query", query)
+	rows, err := r.pool.Query(ctx, query, authorUuid)
+	if err != nil {
+		log.Debug("failed to query submissions with evaluations", "error", err)
+		return nil, fmt.Errorf("failed to query submissions with evaluations: %w", err)
+	}
+	defer rows.Close()
+
+	var result []srvc.ShallowSubmJoinEvalDto
+	for rows.Next() {
+		var dto srvc.ShallowSubmJoinEvalDto
+		var errorType *string
+		var errorMessage *string
+		var checker *string
+		var interactor *string
+
+		// Score-related fields that may be NULL
+		var receivedScore *int
+		var possibleScore *int
+		var scorebarGreen *int
+		var scorebarRed *int
+		var scorebarGray *int
+		var scorebarYellow *int
+		var scorebarPurple *int
+		var cpuMaxMs *int
+		var memMaxKiB *int
+		var exceededCpu *bool
+		var exceededMem *bool
+
+		err := rows.Scan(
+			// Submission fields
+			&dto.Subm.UUID,
+			&dto.Subm.AuthorUUID,
+			&dto.Subm.TaskShortID,
+			&dto.Subm.LangShortID,
+			&dto.Subm.CurrEvalUUID,
+			&dto.Subm.CreatedAt,
+			// Evaluation fields - non-NULL with INNER JOIN
+			&dto.Eval.UUID,
+			&dto.Eval.SubmUUID,
+			&dto.Eval.Stage,
+			&dto.Eval.ScoreUnit,
+			&errorType,
+			&errorMessage,
+			&checker,
+			&interactor,
+			&dto.Eval.CpuLimMs,
+			&dto.Eval.MemLimKiB,
+			&dto.Eval.CreatedAt,
+			// Score-related fields
+			&receivedScore,
+			&possibleScore,
+			&scorebarGreen,
+			&scorebarRed,
+			&scorebarGray,
+			&scorebarYellow,
+			&scorebarPurple,
+			&cpuMaxMs,
+			&memMaxKiB,
+			&exceededCpu,
+			&exceededMem,
+		)
+		if err != nil {
+			log.Debug("failed to scan submission and evaluation", "error", err)
+			return nil, fmt.Errorf("failed to scan submission and evaluation: %w", err)
+		}
+
+		// Handle EvaluationError
+		if errorType != nil {
+			et := domain.EvalErrorType(*errorType)
+			dto.Eval.Error = &domain.EvalError{
+				Type:    et,
+				Message: errorMessage,
+			}
+		}
+
+		dto.Eval.Checker = checker
+		dto.Eval.Interactor = interactor
+
+		// Set ScoreInfo only if all score-related columns are non-NULL
+		if receivedScore != nil && possibleScore != nil && scorebarGreen != nil && scorebarRed != nil &&
+			scorebarGray != nil && scorebarYellow != nil && scorebarPurple != nil &&
+			cpuMaxMs != nil && memMaxKiB != nil && exceededCpu != nil && exceededMem != nil {
+			dto.Eval.ScoreInfo = &domain.ScoreInfo{
+				ScoreBar: domain.ScoreBarInfo{
+					Green:  *scorebarGreen,
+					Red:    *scorebarRed,
+					Gray:   *scorebarGray,
+					Yellow: *scorebarYellow,
+					Purple: *scorebarPurple,
+				},
+				ReceivedScore: *receivedScore,
+				PossibleScore: *possibleScore,
+				MaxCpuMs:      *cpuMaxMs,
+				MaxMemKiB:     *memMaxKiB,
+				ExceededCpu:   *exceededCpu,
+				ExceededMem:   *exceededMem,
+			}
+		}
+
+		result = append(result, dto)
+	}
+
+	if err := rows.Err(); err != nil {
+		log.Debug("error iterating submissions and evaluations", "error", err)
+		return nil, fmt.Errorf("error iterating submissions and evaluations: %w", err)
+	}
+
+	log.Debug("retrieved shallow submissions with evaluations", "count", len(result))
+	return result, nil
 }
