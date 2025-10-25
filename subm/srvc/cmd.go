@@ -1,4 +1,4 @@
-package submcmd
+package srvc
 
 import (
 	"context"
@@ -10,9 +10,29 @@ import (
 	"github.com/programme-lv/backend/common/srvcerror"
 	"github.com/programme-lv/backend/plang"
 	subm "github.com/programme-lv/backend/subm/domain"
+	"github.com/programme-lv/backend/subm/srvc/submcmd"
 	"github.com/programme-lv/backend/subm/submerror"
 	"github.com/programme-lv/backend/task/srvc"
 )
+
+func (s *submSrvc) SubmitSol(ctx context.Context, p SubmitSolParams) error {
+	submitSolCmd := SubmitSolCmdHandler{
+		DoesUserExist: func(ctx context.Context, uuid uuid.UUID) (bool, error) {
+			user, err := s.userSrvc.GetUserByUUID(ctx, uuid)
+			if err != nil {
+				return false, err
+			}
+			return user.UUID == uuid, nil
+		},
+		GetTask:          s.taskSrvc.GetTask,
+		StoreSubm:        s.submRepo.StoreSubm,
+		StoreEval:        s.evalRepo.StoreEval,
+		BcastSubmCreated: s.broadcastSubmCreated,
+		EnqueueExec:      s.enqueueEvalExecAndListen,
+	}
+
+	return submitSolCmd.Handle(ctx, p)
+}
 
 type SubmitSolParams struct {
 	UUID        uuid.UUID
@@ -98,4 +118,15 @@ func (h SubmitSolCmdHandler) Handle(ctx context.Context, p SubmitSolParams) erro
 
 	log.Debug("submission solution handled successfully", "subm_uuid", p.UUID, "eval_uuid", evalUuid)
 	return nil
+}
+
+func (s *submSrvc) ReEvalSubm(ctx context.Context, submUuid uuid.UUID) error {
+	reevalSubmCmd := submcmd.ReEvalSubmHandler{
+		GetSubm:     s.submRepo.GetSubm,
+		GetTask:     s.taskSrvc.GetTask,
+		StoreEval:   s.evalRepo.StoreEval,
+		AssignEval:  s.submRepo.AssignEval,
+		EnqueueExec: s.enqueueEvalExecAndListen,
+	}
+	return reevalSubmCmd.Handle(ctx, submUuid)
 }

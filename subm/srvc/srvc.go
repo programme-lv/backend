@@ -22,7 +22,7 @@ import (
 )
 
 type SubmSrvcClient interface {
-	SubmitSol(ctx context.Context, p submcmd.SubmitSolParams) error
+	SubmitSol(ctx context.Context, p SubmitSolParams) error
 	ReEvalSubm(ctx context.Context, submUuid uuid.UUID) error
 	ViewSubm(ctx context.Context, uuid uuid.UUID) (domain.Subm, error)
 	ListSubms(ctx context.Context, filter submquery.ListSubmsParams) ([]domain.Subm, error)
@@ -169,35 +169,6 @@ func (s *submSrvc) enqueueEvalExecAndListen(ctx context.Context, eval domain.Eva
 	return nil
 }
 
-func (s *submSrvc) SubmitSol(ctx context.Context, p submcmd.SubmitSolParams) error {
-	submitSolCmd := submcmd.SubmitSolCmdHandler{
-		DoesUserExist: func(ctx context.Context, uuid uuid.UUID) (bool, error) {
-			user, err := s.userSrvc.GetUserByUUID(ctx, uuid)
-			if err != nil {
-				return false, err
-			}
-			return user.UUID == uuid, nil
-		},
-		GetTask:          s.taskSrvc.GetTask,
-		StoreSubm:        s.submRepo.StoreSubm,
-		StoreEval:        s.evalRepo.StoreEval,
-		BcastSubmCreated: s.broadcastSubmCreated,
-		EnqueueExec:      s.enqueueEvalExecAndListen,
-	}
-
-	return submitSolCmd.Handle(ctx, p)
-}
-
-func (s *submSrvc) ReEvalSubm(ctx context.Context, submUuid uuid.UUID) error {
-	reevalSubmCmd := submcmd.ReEvalSubmHandler{
-		GetSubm:     s.submRepo.GetSubm,
-		GetTask:     s.taskSrvc.GetTask,
-		StoreEval:   s.evalRepo.StoreEval,
-		AssignEval:  s.submRepo.AssignEval,
-		EnqueueExec: s.enqueueEvalExecAndListen,
-	}
-	return reevalSubmCmd.Handle(ctx, submUuid)
-}
 
 func (s *submSrvc) ViewSubm(ctx context.Context, submUuid uuid.UUID) (domain.Subm, error) {
 	log := ctxlog.FromContext(ctx)
