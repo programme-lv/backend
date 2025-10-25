@@ -6,11 +6,7 @@ import (
 	"github.com/programme-lv/backend/common/srvcerror"
 )
 
-const ErrCodeInvalidProgLang = "invalid_programming_language"
-
-func ErrInvalidProgLang() *srvcerror.Error {
-	return srvcerror.New(
-		ErrCodeInvalidProgLang,
-		"Nederīga programmēšanas valoda",
-	).SetHttpStatusCode(http.StatusBadRequest)
-}
+var ErrInvalidProgLang = srvcerror.New(
+	"invalid_programming_language",
+	"Norādīta programmēšanas valoda nav pieejama.",
+).SetHttpStatusCode(http.StatusBadRequest)

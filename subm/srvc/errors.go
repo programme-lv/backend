@@ -7,38 +7,22 @@ import (
 	"github.com/programme-lv/backend/common/srvcerror"
 )
 
-const ErrCodeSubmissionTooLong = "submission_too_long"
+var ErrSubmTooLong = srvcerror.New(
+	"subm_too_long",
+	fmt.Sprintf("Maksimālais koda garums ir %d KB.", MaxSubmLengthKB),
+).SetHttpStatusCode(http.StatusBadRequest)
 
-func ErrSubmissionTooLong(maxSubmLengthKB int) *srvcerror.Error {
-	return srvcerror.New(
-		ErrCodeSubmissionTooLong,
-		fmt.Sprintf("Maksimālais koda garums ir %d KB.", maxSubmLengthKB),
-	).SetHttpStatusCode(http.StatusBadRequest)
-}
+var ErrUserNotFound = srvcerror.New(
+	"user_not_found",
+	"Norādītais lietotājs netika atrasts.",
+).SetHttpStatusCode(http.StatusNotFound)
 
-const ErrCodeUserNotFound = "user_not_found"
+var ErrInvalidProgLang = srvcerror.New(
+	"invalid_programming_language",
+	"Norādīta programmēšanas valoda nav iespējota.",
+).SetHttpStatusCode(http.StatusBadRequest)
 
-func ErrUserNotFound() *srvcerror.Error {
-	return srvcerror.New(
-		ErrCodeUserNotFound,
-		"Norādītais lietotājs netika atrasts.",
-	).SetHttpStatusCode(http.StatusNotFound)
-}
-
-const ErrCodeInvalidProgLang = "invalid_programming_language"
-
-func ErrInvalidProgLang(langId string) *srvcerror.Error {
-	return srvcerror.New(
-		ErrCodeInvalidProgLang,
-		fmt.Sprintf("Programmēšanas valoda: %s", langId),
-	).SetHttpStatusCode(http.StatusBadRequest)
-}
-
-const ErrCodeSubmissionNotFound = "submission_not_found"
-
-func ErrSubmissionNotFound() *srvcerror.Error {
-	return srvcerror.New(
-		ErrCodeSubmissionNotFound,
-		"Atbilstošais iesūtījums netika atrasts",
-	).SetHttpStatusCode(http.StatusNotFound)
-}
+var ErrSubmissionNotFound = srvcerror.New(
+	"submission_not_found",
+	"Atbilstošais iesūtījums netika atrasts",
+).SetHttpStatusCode(http.StatusNotFound)
