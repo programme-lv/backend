@@ -16,8 +16,14 @@ type Error struct {
 }
 
 func Is(err error, code string) bool {
+	if err == nil {
+		return false
+	}
 	var svcErr *Error
 	if errors.As(err, &svcErr) {
+		if svcErr == nil {
+			return false
+		}
 		return svcErr.errorCode == code
 	}
 	return false
