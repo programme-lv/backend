@@ -24,7 +24,7 @@ type SubmitSolParams struct {
 }
 
 func (s *submSrvc) SubmitSol(ctx context.Context, p SubmitSolParams) error {
-	submitSolCmd := SubmitSolCmdHandler{
+	submitSolCmd := submitSolCmdHandler{
 		DoesUserExist: func(ctx context.Context, uuid uuid.UUID) (bool, error) {
 			user, err := s.userSrvc.GetUserByUUID(ctx, uuid)
 			if err != nil {
@@ -42,7 +42,7 @@ func (s *submSrvc) SubmitSol(ctx context.Context, p SubmitSolParams) error {
 	return submitSolCmd.Handle(ctx, p)
 }
 
-type SubmitSolCmdHandler struct {
+type submitSolCmdHandler struct {
 	DoesUserExist    func(ctx context.Context, uuid uuid.UUID) (bool, error)
 	GetTask          func(ctx context.Context, shortId string) (tasksrvc.Task, *srvcerror.Error)
 	StoreSubm        func(ctx context.Context, subm domain.Subm) error
@@ -53,7 +53,7 @@ type SubmitSolCmdHandler struct {
 
 const MaxSubmLengthKB = 64
 
-func (h SubmitSolCmdHandler) Handle(ctx context.Context, p SubmitSolParams) *srvcerror.Error {
+func (h submitSolCmdHandler) Handle(ctx context.Context, p SubmitSolParams) *srvcerror.Error {
 	log := ctxlog.FromContext(ctx).With("handler", "submit solution")
 
 	if len(p.Submission) > MaxSubmLengthKB*1024 {
@@ -127,7 +127,7 @@ func (h SubmitSolCmdHandler) Handle(ctx context.Context, p SubmitSolParams) *srv
 }
 
 func (s *submSrvc) ReEvalSubm(ctx context.Context, submUuid uuid.UUID) *srvcerror.Error {
-	reevalSubmCmd := ReEvalSubmHandler{
+	reevalSubmCmd := reEvalSubmHandler{
 		GetSubm:     s.submRepo.GetSubm,
 		GetTask:     s.taskSrvc.GetTask,
 		StoreEval:   s.evalRepo.StoreEval,
@@ -137,7 +137,7 @@ func (s *submSrvc) ReEvalSubm(ctx context.Context, submUuid uuid.UUID) *srvcerro
 	return reevalSubmCmd.Handle(ctx, submUuid)
 }
 
-type ReEvalSubmHandler struct {
+type reEvalSubmHandler struct {
 	// get persisted submission entity by uuid
 	GetSubm func(ctx context.Context, submUuid uuid.UUID) (domain.Subm, error)
 
@@ -154,7 +154,7 @@ type ReEvalSubmHandler struct {
 	EnqueueExec func(ctx context.Context, eval domain.Eval, srcCode string, prLangId string) error
 }
 
-func (h ReEvalSubmHandler) Handle(ctx context.Context, submUuid uuid.UUID) *srvcerror.Error {
+func (h reEvalSubmHandler) Handle(ctx context.Context, submUuid uuid.UUID) *srvcerror.Error {
 	log := ctxlog.FromContext(ctx).With("handler", "re eval subm")
 	ctx = ctxlog.WithLogger(ctx, log)
 
@@ -219,16 +219,18 @@ func (s *submSrvc) enqueueExecAndListen(ctx context.Context, eval domain.Eval, s
 		},
 	)
 	if err != nil {
-		action := "enqueue execution"
 		delete(s.inProgrEval, eval.UUID) // remove from map if enqueue fails
+
+		action := "enqueue execution"
 		log.Error(action, "eval_uuid", eval.UUID, "error", err)
 		return srvcerror.InternalServerError()
 	}
 
 	ch, err := s.execSrvc.Listen(ctx, eval.UUID)
 	if err != nil {
-		action := "subscribe to execution"
 		delete(s.inProgrEval, eval.UUID) // remove from map if listen fails
+
+		action := "subscribe to execution"
 		log.Error(action, "eval_uuid", eval.UUID, "error", err)
 		return srvcerror.InternalServerError()
 	}
@@ -237,7 +239,12 @@ func (s *submSrvc) enqueueExecAndListen(ctx context.Context, eval domain.Eval, s
 	processCtx := context.Background()
 	go func(execEvCh <-chan exec.Event) {
 		for ev := range execEvCh {
-			err := s.procExecEv(processCtx, ProcExecEvParams{
+			err := procExecEvCmdHandler{
+				StoreEval:     s.evalRepo.StoreEval,
+				BcastEvalUpd:  s.broadcastEvalUpdate,
+				GetEvalByUuid: s.evalRepo.GetEval,
+				InProgrEval:   s.inProgrEval,
+			}.Handle(processCtx, procExecEvParams{
 				Eval:  eval,
 				Event: ev,
 			})
@@ -281,19 +288,19 @@ func constructExecEnqueueTests(
 	return evalReqTests
 }
 
-type ProcExecEvParams struct {
+type procExecEvParams struct {
 	Eval  domain.Eval
 	Event exec.Event
 }
 
-type ProcExecEvCmdHandler struct {
+type procExecEvCmdHandler struct {
 	StoreEval     func(ctx context.Context, eval domain.Eval) error
 	BcastEvalUpd  func(eval domain.Eval)
 	GetEvalByUuid func(ctx context.Context, uuid uuid.UUID) (domain.Eval, error)
 	InProgrEval   map[uuid.UUID]domain.Eval
 }
 
-func (h *ProcExecEvCmdHandler) Handle(ctx context.Context, p ProcExecEvParams) error {
+func (h procExecEvCmdHandler) Handle(ctx context.Context, p procExecEvParams) error {
 	log := ctxlog.FromContext(ctx)
 
 	latestEval, ok := h.InProgrEval[p.Eval.UUID]
