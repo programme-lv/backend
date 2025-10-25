@@ -49,13 +49,15 @@ type SubmitSolCmdHandler struct {
 	EnqueueExec      func(ctx context.Context, eval subm.Eval, srcCode string, prLangId string) error
 }
 
+const MaxSubmLengthKB = 64
+
 func (h SubmitSolCmdHandler) Handle(ctx context.Context, p SubmitSolParams) *srvcerror.Error {
 	log := ctxlog.FromContext(ctx).With("handler", "submit solution")
 
-	if len(p.Submission) > 64*1024 { // 64 KB
+	if len(p.Submission) > MaxSubmLengthKB*1024 {
 		reason := "submission too long"
 		log.Warn(reason, "size", len(p.Submission))
-		return ErrSubmissionTooLong(64)
+		return ErrSubmTooLong
 	}
 
 	exists, err := h.DoesUserExist(ctx, p.AuthorUUID)
@@ -67,14 +69,14 @@ func (h SubmitSolCmdHandler) Handle(ctx context.Context, p SubmitSolParams) *srv
 
 	if !exists {
 		log.Warn("user not found", "author_uuid", p.AuthorUUID)
-		return ErrUserNotFound()
+		return ErrUserNotFound
 	}
 
-	l, err := plang.GetProgrLangById(p.ProgrLangID)
-	if err != nil {
+	l, getProgrLangErr := plang.GetProgrLangById(p.ProgrLangID)
+	if getProgrLangErr != nil {
 		action := "get progr lang"
-		log.Error(action, "prog_lang_id", p.ProgrLangID, "error", err)
-		return ErrInvalidProgLang(p.ProgrLangID)
+		log.Error(action, "prog_lang_id", p.ProgrLangID, "error", getProgrLangErr)
+		return getProgrLangErr
 	}
 
 	t, getTaskErr := h.GetTask(ctx, p.TaskShortID)
@@ -85,9 +87,7 @@ func (h SubmitSolCmdHandler) Handle(ctx context.Context, p SubmitSolParams) *srv
 	}
 
 	evalUuid := uuid.New()
-	log.Debug("generated evaluation UUID", "eval_uuid", evalUuid)
-
-	entity := subm.Subm{
+	submEntity := subm.Subm{
 		UUID:         p.UUID,
 		Content:      p.Submission,
 		AuthorUUID:   p.AuthorUUID,
@@ -96,30 +96,31 @@ func (h SubmitSolCmdHandler) Handle(ctx context.Context, p SubmitSolParams) *srv
 		CurrEvalUUID: evalUuid,
 		CreatedAt:    time.Now(),
 	}
-	eval := subm.NewEval(evalUuid, entity.UUID, t)
+	eval := subm.NewEval(evalUuid, submEntity.UUID, t)
 
 	err = h.StoreEval(ctx, eval)
 	if err != nil {
-		log.Error("failed to store evaluation", "eval_uuid", evalUuid, "error", err)
+		action := "store evaluation"
+		log.Error(action, "eval_uuid", evalUuid, "error", err)
 		return srvcerror.InternalServerError()
 	}
 
-	err = h.StoreSubm(ctx, entity)
+	err = h.StoreSubm(ctx, submEntity)
 	if err != nil {
-		log.Error("failed to store submission", "subm_uuid", p.UUID, "error", err)
+		action := "store submission"
+		log.Error(action, "subm_uuid", p.UUID, "error", err)
 		return srvcerror.InternalServerError()
 	}
 
-	log.Debug("broadcasting submission created", "subm_uuid", p.UUID)
-	h.BcastSubmCreated(entity)
+	h.BcastSubmCreated(submEntity)
 
-	err = h.EnqueueExec(ctx, eval, entity.Content, l.ID)
+	err = h.EnqueueExec(ctx, eval, submEntity.Content, l.ID)
 	if err != nil {
-		log.Error("failed to enqueue execution", "eval_uuid", evalUuid, "error", err)
+		action := "enqueue execution"
+		log.Error(action, "eval_uuid", evalUuid, "error", err)
 		return srvcerror.InternalServerError()
 	}
 
-	log.Debug("submission solution handled successfully", "subm_uuid", p.UUID, "eval_uuid", evalUuid)
 	return nil
 }
 

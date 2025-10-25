@@ -52,6 +52,14 @@ func (e *Error) SetHttpStatusCode(code int) *Error {
 	return e
 }
 
+func (e *Error) Is(err error) bool {
+	var svcErr *Error
+	if errors.As(err, &svcErr) {
+		return svcErr.errorCode == e.errorCode
+	}
+	return false
+}
+
 func New(errorCode string, msgToUser string) *Error {
 	return &Error{
 		errorCode: errorCode,

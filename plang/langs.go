@@ -1,6 +1,10 @@
 package plang
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/programme-lv/backend/common/srvcerror"
+)
 
 // ListProgrammingLanguages implements submissions.Service.
 func ListProgrammingLanguages() (res []ProgrammingLang, err error) {
@@ -23,14 +27,14 @@ func ListProgrammingLanguages() (res []ProgrammingLang, err error) {
 	return res, nil
 }
 
-func GetProgrLangById(langId string) (*ProgrammingLang, error) {
+func GetProgrLangById(langId string) (*ProgrammingLang, *srvcerror.Error) {
 	langs := getHardcodedLanguageList()
 	for _, lang := range langs {
 		if lang.ID == langId {
 			return &lang, nil
 		}
 	}
-	return nil, ErrInvalidProgLang()
+	return nil, ErrInvalidProgLang
 }
 
 func SearchProgrLangByName(name string) ([]string, error) {
