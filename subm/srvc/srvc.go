@@ -3,7 +3,6 @@ package srvc
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"sync"
 	"time"
 
@@ -125,48 +124,6 @@ func (s *submSrvc) broadcastSubmCreated(subm domain.Subm) {
 			ch <- subm
 		}
 	}
-}
-
-func (s *submSrvc) enqueueEvalExecAndListen(ctx context.Context, eval domain.Eval, srcCode string, prLangId string) error {
-	enqueueEvalCmd := submcmd.EnqueueEvalCmdHandler{
-		EnqueueExec:     s.execSrvc.Enqueue,
-		GetTestDownlUrl: s.taskSrvc.GetTestDownlUrl,
-	}
-
-	// Add eval to in-progress map before enqueueing
-	s.inProgrEval[eval.UUID] = eval
-
-	err := enqueueEvalCmd.Handle(ctx, submcmd.EnqueueEvalParams{
-		Eval:     eval,
-		SrcCode:  srcCode,
-		PrLangId: prLangId,
-	})
-	if err != nil {
-		delete(s.inProgrEval, eval.UUID) // Remove from map if enqueue fails
-		return fmt.Errorf("failed to enqueue evaluation: %w", err)
-	}
-
-	ch, err := s.execSrvc.Listen(ctx, eval.UUID)
-	if err != nil {
-		delete(s.inProgrEval, eval.UUID) // Remove from map if listen fails
-		return fmt.Errorf("failed to subscribe to evaluation: %w", err)
-	}
-
-	// Create a new background context for the event processing goroutine
-	processCtx := context.Background()
-	go func(execEvCh <-chan exec.Event) {
-		for ev := range execEvCh {
-			err := s.procExecEv(processCtx, submcmd.ProcExecEvParams{
-				Eval:  eval,
-				Event: ev,
-			})
-			if err != nil {
-				slog.Error("failed to process execution event", "error", err)
-			}
-		}
-	}(ch)
-
-	return nil
 }
 
 func (s *submSrvc) ViewSubm(ctx context.Context, submUuid uuid.UUID) (domain.Subm, error) {

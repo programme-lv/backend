@@ -7,8 +7,10 @@ import (
 	"github.com/google/uuid"
 	"github.com/programme-lv/backend/common/ctxlog"
 	"github.com/programme-lv/backend/common/srvcerror"
+	"github.com/programme-lv/backend/exec"
 	"github.com/programme-lv/backend/plang"
 	"github.com/programme-lv/backend/subm/domain"
+	"github.com/programme-lv/backend/subm/srvc/submcmd"
 	tasksrvc "github.com/programme-lv/backend/task/srvc"
 )
 
@@ -33,7 +35,7 @@ func (s *submSrvc) SubmitSol(ctx context.Context, p SubmitSolParams) error {
 		StoreSubm:        s.submRepo.StoreSubm,
 		StoreEval:        s.evalRepo.StoreEval,
 		BcastSubmCreated: s.broadcastSubmCreated,
-		EnqueueExec:      s.enqueueEvalExecAndListen,
+		EnqueueExec:      s.enqueueExecAndListen,
 	}
 
 	return submitSolCmd.Handle(ctx, p)
@@ -129,7 +131,7 @@ func (s *submSrvc) ReEvalSubm(ctx context.Context, submUuid uuid.UUID) *srvcerro
 		GetTask:     s.taskSrvc.GetTask,
 		StoreEval:   s.evalRepo.StoreEval,
 		AssignEval:  s.submRepo.AssignEval,
-		EnqueueExec: s.enqueueEvalExecAndListen,
+		EnqueueExec: s.enqueueExecAndListen,
 	}
 	return reevalSubmCmd.Handle(ctx, submUuid)
 }
@@ -153,6 +155,7 @@ type ReEvalSubmHandler struct {
 
 func (h ReEvalSubmHandler) Handle(ctx context.Context, submUuid uuid.UUID) *srvcerror.Error {
 	log := ctxlog.FromContext(ctx).With("handler", "re eval subm")
+	ctx = ctxlog.WithLogger(ctx, log)
 
 	subm, getSubmErr := h.GetSubm(ctx, submUuid)
 	if getSubmErr != nil {
@@ -193,4 +196,86 @@ func (h ReEvalSubmHandler) Handle(ctx context.Context, submUuid uuid.UUID) *srvc
 	}
 
 	return nil
+}
+
+func (s *submSrvc) enqueueExecAndListen(ctx context.Context, eval domain.Eval, srcCode string, prLangId string) error {
+	log := ctxlog.FromContext(ctx)
+
+	// Add eval to in-progress map before enqueueing
+	s.inProgrEval[eval.UUID] = eval
+
+	err := s.execSrvc.Enqueue(
+		ctx,
+		eval.UUID,
+		srcCode,
+		prLangId,
+		evalReqTests(ctx, eval, s.taskSrvc.GetTestDownlUrl),
+		exec.TestingParams{
+			CpuMs:      eval.CpuLimMs,
+			MemKiB:     eval.MemLimKiB,
+			Checker:    eval.Checker,
+			Interactor: eval.Interactor,
+		},
+	)
+	if err != nil {
+		action := "enqueue execution"
+		delete(s.inProgrEval, eval.UUID) // remove from map if enqueue fails
+		log.Error(action, "eval_uuid", eval.UUID, "error", err)
+		return srvcerror.InternalServerError()
+	}
+
+	ch, err := s.execSrvc.Listen(ctx, eval.UUID)
+	if err != nil {
+		action := "subscribe to execution"
+		delete(s.inProgrEval, eval.UUID) // remove from map if listen fails
+		log.Error(action, "eval_uuid", eval.UUID, "error", err)
+		return srvcerror.InternalServerError()
+	}
+
+	// create a new background context for the event processing goroutine
+	processCtx := context.Background()
+	go func(execEvCh <-chan exec.Event) {
+		for ev := range execEvCh {
+			err := s.procExecEv(processCtx, submcmd.ProcExecEvParams{
+				Eval:  eval,
+				Event: ev,
+			})
+			if err != nil {
+				action := "process execution event"
+				log.Error(action, "eval_uuid", eval.UUID, "error", err)
+				continue
+			}
+		}
+	}(ch)
+
+	return nil
+}
+
+func evalReqTests(
+	ctx context.Context,
+	eval domain.Eval,
+	getTestDownlUrl func(ctx context.Context, testFileSha256 string) (string, *srvcerror.Error),
+) []exec.TestFile {
+	log := ctxlog.FromContext(ctx)
+
+	evalReqTests := make([]exec.TestFile, len(eval.Tests))
+	for i, test := range eval.Tests {
+		inputS3Url, err := getTestDownlUrl(ctx, test.InpSha256)
+		if err != nil {
+			action := "get download URL for input"
+			log.Error(action, "sha256", test.InpSha256, "error", err)
+		}
+		answerS3Url, err := getTestDownlUrl(ctx, test.AnsSha256)
+		if err != nil {
+			action := "get download URL for answer"
+			log.Error(action, "sha256", test.AnsSha256, "error", err)
+		}
+		evalReqTests[i] = exec.TestFile{
+			InSha256:    &test.InpSha256,
+			AnsSha256:   &test.AnsSha256,
+			InDownlUrl:  &inputS3Url,
+			AnsDownlUrl: &answerS3Url,
+		}
+	}
+	return evalReqTests
 }
