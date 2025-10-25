@@ -9,7 +9,7 @@ import (
 	"github.com/programme-lv/backend/common/ctxlog"
 	"github.com/programme-lv/backend/common/jsonresp"
 	"github.com/programme-lv/backend/subm/domain"
-	"github.com/programme-lv/backend/subm/srvc/submquery"
+	"github.com/programme-lv/backend/subm/srvc"
 	"github.com/programme-lv/backend/user/auth"
 )
 
@@ -112,7 +112,7 @@ func (h *SubmHttpHandler) GetSubmList(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Get paginated submissions
-		subms, err := h.submSrvc.ListSubms(r.Context(), submquery.ListSubmsParams{
+		subms, err := h.submSrvc.ListSubms(r.Context(), srvc.ListSubmsParams{
 			Limit:  limit,
 			Offset: offset,
 			Search: search,

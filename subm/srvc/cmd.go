@@ -210,7 +210,7 @@ func (s *submSrvc) enqueueExecAndListen(ctx context.Context, eval domain.Eval, s
 		eval.UUID,
 		srcCode,
 		prLangId,
-		evalReqTests(ctx, eval, s.taskSrvc.GetTestDownlUrl),
+		constructExecEnqueueTests(ctx, eval, s.taskSrvc.GetTestDownlUrl),
 		exec.TestingParams{
 			CpuMs:      eval.CpuLimMs,
 			MemKiB:     eval.MemLimKiB,
@@ -252,7 +252,7 @@ func (s *submSrvc) enqueueExecAndListen(ctx context.Context, eval domain.Eval, s
 	return nil
 }
 
-func evalReqTests(
+func constructExecEnqueueTests(
 	ctx context.Context,
 	eval domain.Eval,
 	getTestDownlUrl func(ctx context.Context, testFileSha256 string) (string, *srvcerror.Error),

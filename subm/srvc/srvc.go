@@ -13,7 +13,6 @@ import (
 	"github.com/programme-lv/backend/exec"
 	"github.com/programme-lv/backend/plang"
 	"github.com/programme-lv/backend/subm/domain"
-	"github.com/programme-lv/backend/subm/srvc/submquery"
 	tasksrvc "github.com/programme-lv/backend/task/srvc"
 	usersrvc "github.com/programme-lv/backend/user"
 	"github.com/programme-lv/backend/user/auth"
@@ -23,7 +22,7 @@ type SubmSrvcClient interface {
 	SubmitSol(ctx context.Context, p SubmitSolParams) error
 	ReEvalSubm(ctx context.Context, submUuid uuid.UUID) *srvcerror.Error
 	ViewSubm(ctx context.Context, uuid uuid.UUID) (domain.Subm, error)
-	ListSubms(ctx context.Context, filter submquery.ListSubmsParams) ([]domain.Subm, error)
+	ListSubms(ctx context.Context, filter ListSubmsParams) ([]domain.Subm, error)
 	GetEval(ctx context.Context, uuid uuid.UUID) (domain.Eval, error)
 	SubscribeNewSubms(ctx context.Context) (<-chan domain.Subm, error)
 	SubscribeEvalUpds(ctx context.Context) (<-chan domain.Eval, error)
@@ -155,7 +154,15 @@ func (s *submSrvc) ViewSubm(ctx context.Context, submUuid uuid.UUID) (domain.Sub
 	return subm, nil
 }
 
-func (s *submSrvc) ListSubms(ctx context.Context, filter submquery.ListSubmsParams) ([]domain.Subm, error) {
+
+type ListSubmsParams struct {
+	Limit  int
+	Offset int
+	Search string
+	Author *uuid.UUID // Optional author UUID to filter by
+}
+
+func (s *submSrvc) ListSubms(ctx context.Context, filter ListSubmsParams) ([]domain.Subm, error) {
 	log := ctxlog.FromContext(ctx)
 	log.Debug("listing submissions", "limit", filter.Limit, "offset", filter.Offset)
 
