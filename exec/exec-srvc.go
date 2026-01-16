@@ -23,6 +23,18 @@ type ExecRepo interface {
 	) (*Execution, error)
 }
 
+type ExecSrvcClient interface {
+	Enqueue(ctx context.Context, execUuid uuid.UUID, srcCode string, prLangId string, tests []TestFile, params TestingParams) error
+	Listen(ctx context.Context, execUuid uuid.UUID) (<-chan Event, error)
+	Get(ctx context.Context, execUuid uuid.UUID) (Execution, error)
+}
+
+type ExecSrvcFacade interface {
+	ExecSrvcClient
+	ListenToResultSQS() error
+	Close()
+}
+
 // ExecSrvc handles communication with testers
 // for code execution and result streaming
 type ExecSrvc struct {
@@ -89,7 +101,7 @@ func (e *ExecSrvc) ListenToResultSQS() error {
 // NewExecSrvc creates an execution service
 // with default configuration using environment
 // variables for AWS services setup
-func NewExecSrvc() *ExecSrvc {
+func NewExecSrvc() ExecSrvcFacade {
 	logger := slog.Default().With(
 		"module",
 		"exec",
