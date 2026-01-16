@@ -84,7 +84,7 @@ func setupLogger() {
 	))
 }
 
-func newSubmHttpHandler(userSrvc usersrvc.UserSrvcClient, taskSrvc tasksrvc.TaskSrvcClient, execSrvc *exec.ExecSrvc) *submhttp.SubmHttpHandler {
+func newSubmHttpHandler(userSrvc usersrvc.UserSrvcClient, taskSrvc tasksrvc.TaskSrvcClient, execSrvc exec.ExecSrvcClient) *submhttp.SubmHttpHandler {
 	pgPool, err := conf.GetPgxPoolFromEnv()
 	if err != nil {
 		slog.Error("failed to create pg pool", "error", err)
