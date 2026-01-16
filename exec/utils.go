@@ -79,14 +79,6 @@ func getExtPartnerPwFromEnv() string {
 	return extEvalKey
 }
 
-func getExecS3BucketFromEnv() string {
-	s3Bucket := os.Getenv("S3_EXEC_BUCKET")
-	if s3Bucket == "" {
-		panic("S3_EXEC_BUCKET not set in .env file")
-	}
-	return s3Bucket
-}
-
 func getS3ClientFromEnv() *s3.Client {
 	cfg, err := config.LoadDefaultConfig(context.TODO(),
 		config.WithRegion("eu-central-1"),

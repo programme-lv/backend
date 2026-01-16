@@ -1,12 +1,14 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"log/slog"
 	"os"
 	"time"
 
 	"github.com/lmittmann/tint"
+	"github.com/programme-lv/backend/common/ctxlog"
 	"github.com/programme-lv/backend/conf"
 	"github.com/programme-lv/backend/exec"
 	"github.com/programme-lv/backend/http"
@@ -39,9 +41,17 @@ func main() {
 	cdnS3 := conf.MustGetPublicS3Bucket()
 	testS3 := conf.MustGetTestfileS3Bucket()
 
-	execSrvc := exec.NewExecSrvc()
+	ctx := context.Background()
+	ctx = ctxlog.WithLogger(ctx, slog.Default().With("module", "exec"))
+	s3Client := conf.MustGetS3ClientFromEnv(ctx)
+	s3Bucket := os.Getenv("S3_EXEC_BUCKET")
+	if s3Bucket == "" {
+		panic("S3_EXEC_BUCKET not set in .env file")
+	}
+	s3Repo := exec.NewS3ExecRepo(ctx, s3Client, s3Bucket)
+	execSrvc := exec.NewExecSrvc(ctx, s3Repo)
 	if *listenSQS {
-		err := execSrvc.ListenToResultSQS()
+		err := execSrvc.StartPollingResultQueue()
 		if err != nil {
 			slog.Error("failed to listen to result SQS", "error", err)
 			os.Exit(1)

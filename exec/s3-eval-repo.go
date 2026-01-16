@@ -12,6 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/google/uuid"
+	"github.com/programme-lv/backend/common/ctxlog"
 )
 
 type S3EvalRepo struct {
@@ -20,9 +21,9 @@ type S3EvalRepo struct {
 	bucketName string
 }
 
-func NewS3ExecRepo(logger *slog.Logger, client *s3.Client, bucketName string) *S3EvalRepo {
+func NewS3ExecRepo(ctx context.Context, client *s3.Client, bucketName string) *S3EvalRepo {
 	return &S3EvalRepo{
-		logger:     logger,
+		logger:     ctxlog.FromContext(ctx),
 		client:     client,
 		bucketName: bucketName,
 	}

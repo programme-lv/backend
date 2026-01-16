@@ -9,6 +9,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/google/uuid"
+	"github.com/programme-lv/backend/common/ctxlog"
 )
 
 // ExecRepo interface for execution storage
@@ -25,26 +26,24 @@ type ExecSrvcClient interface {
 
 type ExecSrvcFacade interface {
 	ExecSrvcClient
-	ListenToResultSQS() error
+	StartPollingResultQueue() error
 	Close()
 }
 
-// ExecSrvc handles communication with testers
+// ExecSrvcImpl handles communication with testers
 // for code execution and result streaming
-type ExecSrvc struct {
+type ExecSrvcImpl struct {
 	logger *slog.Logger
 
-	sqsClient *sqs.Client
 	// either in-mem or s3
 	execRepo ExecRepo
+
+	sqsClient *sqs.Client
 
 	// submission sqs queue url
 	submQ string
 	// response sqs queue url
 	respQ string
-
-	// external partner api key
-	extPartnerPw string
 
 	mu sync.Mutex
 	// maps exec IDs to client result channels
@@ -60,9 +59,9 @@ type ExecSrvc struct {
 	executions map[uuid.UUID]*Execution
 }
 
-// ListenToResultSQS begins listening for SQS messages in a separate goroutine.
+// StartPollingResultQueue begins listening for SQS messages in a separate goroutine.
 // Returns an error if called more than once.
-func (e *ExecSrvc) ListenToResultSQS() error {
+func (e *ExecSrvcImpl) StartPollingResultQueue() error {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
@@ -92,68 +91,19 @@ func (e *ExecSrvc) ListenToResultSQS() error {
 	return nil
 }
 
-// NewExecSrvc creates an execution service
-// with default configuration using environment
-// variables for AWS services setup
-func NewExecSrvc() ExecSrvcFacade {
-	logger := slog.Default().With(
-		"module",
-		"exec",
-	)
-	s3Repo := NewS3ExecRepo(
-		logger,
-		getS3ClientFromEnv(),
-		getExecS3BucketFromEnv(),
-	)
-
-	esrvc := &ExecSrvc{
-		logger:       logger,
-		sqsClient:    getSqsClientFromEnv(),
-		submQ:        getSubmSqsUrlFromEnv(),
-		execRepo:     s3Repo,
-		respQ:        getResponseSqsUrlFromEnv(),
-		extPartnerPw: getExtPartnerPwFromEnv(),
-		notifiers: make(
-			map[uuid.UUID]chan Event,
-		),
-		organizers: make(
-			map[uuid.UUID]*ExecResStreamOrganizer,
-		),
-		executions: make(
-			map[uuid.UUID]*Execution,
-		),
+func NewExecSrvc(ctx context.Context, repo ExecRepo) ExecSrvcFacade {
+	esrvc := &ExecSrvcImpl{
+		logger:     ctxlog.FromContext(ctx),
+		sqsClient:  getSqsClientFromEnv(),
+		submQ:      getSubmSqsUrlFromEnv(),
+		respQ:      getResponseSqsUrlFromEnv(),
+		execRepo:   repo,
+		notifiers:  make(map[uuid.UUID]chan Event),
+		organizers: make(map[uuid.UUID]*ExecResStreamOrganizer),
+		executions: make(map[uuid.UUID]*Execution),
 	}
 
 	return esrvc
-}
-
-// NewCustomExecSrvc creates a customized execution
-// service with provided dependencies
-func NewCustomExecSrvc(
-	logger *slog.Logger,
-	sqsClient *sqs.Client,
-	submQ string,
-	execRepo ExecRepo,
-	respQ string,
-	extPartnerPw string,
-) *ExecSrvc {
-	return &ExecSrvc{
-		logger:       logger,
-		sqsClient:    sqsClient,
-		submQ:        submQ,
-		execRepo:     execRepo,
-		respQ:        respQ,
-		extPartnerPw: extPartnerPw,
-		notifiers: make(
-			map[uuid.UUID]chan Event,
-		),
-		organizers: make(
-			map[uuid.UUID]*ExecResStreamOrganizer,
-		),
-		executions: make(
-			map[uuid.UUID]*Execution,
-		),
-	}
 }
 
 // Enqueue processes a code execution request by:
@@ -165,7 +115,7 @@ func NewCustomExecSrvc(
 //     processing queue
 //
 // Returns the execution UUID for tracking
-func (e *ExecSrvc) Enqueue(
+func (e *ExecSrvcImpl) Enqueue(
 	ctx context.Context,
 	execUuid uuid.UUID,
 	srcCode string,
@@ -238,7 +188,7 @@ func (e *ExecSrvc) Enqueue(
 // Listen returns a channel that streams execution
 // events to clients. The channel is automatically
 // closed once the execution is complete
-func (e *ExecSrvc) Listen(
+func (e *ExecSrvcImpl) Listen(
 	ctx context.Context,
 	execId uuid.UUID,
 ) (<-chan Event, error) {
@@ -257,7 +207,7 @@ func (e *ExecSrvc) Listen(
 // Get retrieves the execution results for a given
 // execution ID. It waits for completion if the
 // execution is still in progress
-func (e *ExecSrvc) Get(
+func (e *ExecSrvcImpl) Get(
 	ctx context.Context,
 	execId uuid.UUID,
 ) (Execution, error) {
@@ -306,7 +256,7 @@ func (e *ExecSrvc) Get(
 
 // handleSqsMsg processes incoming SQS messages
 // and routes them to appropriate handlers
-func (e *ExecSrvc) handleSqsMsg(
+func (e *ExecSrvcImpl) handleSqsMsg(
 	msg SqsResponseMsg,
 ) error {
 	e.mu.Lock()
@@ -398,7 +348,7 @@ func (e *ExecSrvc) handleSqsMsg(
 // pipeline for an execution including result
 // organization and client notification channels
 // we are in a locked mutex state in this function
-func (e *ExecSrvc) prepareForResults(
+func (e *ExecSrvcImpl) prepareForResults(
 	execId uuid.UUID,
 	lang PrLang,
 	params TestingParams,
@@ -483,7 +433,7 @@ func applyEventToExec(
 	return nil
 }
 
-func (e *ExecSrvc) Close() {
+func (e *ExecSrvcImpl) Close() {
 	e.logger.Info("closing execsrvc")
 	e.listenCancel()
 	e.listenWait.Wait()
