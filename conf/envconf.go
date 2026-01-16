@@ -10,10 +10,15 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/aws/retry"
 	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
+	"github.com/aws/aws-sdk-go-v2/service/sqs"
+	"github.com/aws/smithy-go/logging"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
+	"github.com/programme-lv/backend/common/ctxlog"
 	"github.com/programme-lv/backend/common/s3bucket"
 )
 
@@ -70,6 +75,56 @@ func MustGetTestingS3Bucket() *s3bucket.S3Bucket {
 		os.Exit(1)
 	}
 	return s3
+}
+
+type slogLogger struct {
+	logger *slog.Logger
+}
+
+func newSlogLogger(logger *slog.Logger) *slogLogger {
+	return &slogLogger{
+		logger: logger,
+	}
+}
+
+func (l slogLogger) Logf(classification logging.Classification, format string, v ...interface{}) {
+	switch classification {
+	case logging.Warn: // up the severity beause warning should not happen
+		l.logger.Error(format, v...)
+	case logging.Debug: // same goes for debug messages
+		l.logger.Info(format, v...)
+	default:
+		// should never happen
+		panic(fmt.Sprintf("unknown classification: %s", classification))
+	}
+}
+
+func MustGetSqsClientFromEnv(logger *slog.Logger) *sqs.Client {
+	cfg, err := config.LoadDefaultConfig(context.TODO(),
+		config.WithRegion(awsRegion),
+		config.WithRetryer(func() aws.Retryer {
+			return retry.AddWithMaxAttempts(retry.NewStandard(), 10)
+		}),
+		config.WithLogger(newSlogLogger(logger)),
+	)
+	if err != nil {
+		panic(fmt.Errorf("unable to load SDK config, %v", err))
+	}
+	return sqs.NewFromConfig(cfg)
+}
+
+func MustGetS3ClientFromEnv(ctx context.Context) *s3.Client {
+	cfg, err := config.LoadDefaultConfig(ctx,
+		config.WithRegion(awsRegion),
+		config.WithRetryer(func() aws.Retryer {
+			return retry.AddWithMaxAttempts(retry.NewStandard(), 10)
+		}),
+		config.WithLogger(newSlogLogger(ctxlog.FromContext(ctx))),
+	)
+	if err != nil {
+		panic(fmt.Errorf("unable to load SDK config, %v", err))
+	}
+	return s3.NewFromConfig(cfg)
 }
 
 func MustGetTestfileS3Bucket() *s3bucket.S3Bucket {
