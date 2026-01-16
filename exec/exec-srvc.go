@@ -13,19 +13,13 @@ import (
 
 // ExecRepo interface for execution storage
 type ExecRepo interface {
-	Save(
-		ctx context.Context,
-		exec *Execution,
-	) error
-	Get(
-		ctx context.Context,
-		id uuid.UUID,
-	) (*Execution, error)
+	Save(ctx context.Context, exec *Execution) error
+	Get(ctx context.Context, id uuid.UUID) (*Execution, error)
 }
 
 type ExecSrvcClient interface {
-	Enqueue(ctx context.Context, execUuid uuid.UUID, srcCode string, prLangId string, tests []TestFile, params TestingParams) error
-	Listen(ctx context.Context, execUuid uuid.UUID) (<-chan Event, error)
+	Enqueue(ctx context.Context, uuid uuid.UUID, srcCode string, prLangId string, tests []TestFile, params TestingParams) error
+	Listen(ctx context.Context, uuid uuid.UUID) (<-chan Event, error)
 	Get(ctx context.Context, execUuid uuid.UUID) (Execution, error)
 }
 
