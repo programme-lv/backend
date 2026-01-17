@@ -39,7 +39,11 @@ func (s *submSrvc) SubmitSol(ctx context.Context, p SubmitSolParams) error {
 		EnqueueExec:      s.enqueueExecAndListen,
 	}
 
-	return submitSolCmd.Handle(ctx, p)
+	err := submitSolCmd.Handle(ctx, p)
+	if err == nil {
+		return nil // Return untyped nil to avoid non-nil interface wrapping nil pointer
+	}
+	return err
 }
 
 type submitSolCmdHandler struct {
