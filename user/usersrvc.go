@@ -7,6 +7,8 @@ import (
 	// assuming custom Latvian translations
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/programme-lv/backend/common/ctxlog"
+	"github.com/programme-lv/backend/common/srvcerror"
 )
 
 type UserSrvc struct {
@@ -14,7 +16,7 @@ type UserSrvc struct {
 }
 
 type UserSrvcClient interface {
-	GetUserByUsername(ctx context.Context, username string) (User, error)
+	GetUserByUsername(ctx context.Context, username string) (User, *srvcerror.Error)
 	GetUserByUUID(ctx context.Context, uuid uuid.UUID) (User, error)
 	GetUsernames(ctx context.Context, uuids []uuid.UUID) ([]string, error)
 	Login(ctx context.Context, username string, password string) (*User, error)
@@ -27,11 +29,15 @@ func NewUserService(pg *pgxpool.Pool) UserSrvcClient {
 	}
 }
 
-func (s *UserSrvc) GetUserByUsername(ctx context.Context, username string) (res User, err error) {
-	allUsers, err := selectAllUsers(s.postgres)
+func (s *UserSrvc) GetUserByUsername(ctx context.Context, username string) (res User, err *srvcerror.Error) {
+	l := ctxlog.FromContext(ctx)
+	var selectAllUsersErr error
+	var allUsers []dbUser
+	allUsers, selectAllUsersErr = selectAllUsers(s.postgres)
 	if err != nil {
-		errMsg := fmt.Errorf("error listing users: %w", err)
-		return User{}, newErrInternalSE().SetDebug(errMsg)
+		// errMsg := fmt.Errorf("error listing users: %w", err)
+		l.Error("failed to list users", "error", selectAllUsersErr)
+		return User{}, srvcerror.InternalServerError()
 	}
 
 	var resSlice []User = make([]User, 0)
@@ -40,7 +46,8 @@ func (s *UserSrvc) GetUserByUsername(ctx context.Context, username string) (res 
 			if len(resSlice) == 1 {
 				format := "multiple users with the same username: %s"
 				errMsg := fmt.Errorf(format, username)
-				return User{}, newErrInternalSE().SetDebug(errMsg)
+				l.Error("multiple users with the same username", "username", username, "error", errMsg)
+				return User{}, srvcerror.InternalServerError()
 			}
 
 			genUser := User{
@@ -56,8 +63,8 @@ func (s *UserSrvc) GetUserByUsername(ctx context.Context, username string) (res 
 	if len(resSlice) == 0 {
 		format := "user with username %s not found"
 		errMsg := fmt.Errorf(format, username)
-		errRes := newErrUserNotFound().SetDebug(errMsg)
-		return User{}, errRes
+		l.Error("user with username not found", "username", username, "error", errMsg)
+		return User{}, srvcerror.InternalServerError()
 	}
 
 	return resSlice[0], nil
