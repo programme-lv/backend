@@ -18,6 +18,7 @@ import (
 	"github.com/aws/smithy-go/logging"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
+	"github.com/nats-io/nats.go"
 	"github.com/programme-lv/backend/common/ctxlog"
 	"github.com/programme-lv/backend/common/s3bucket"
 )
@@ -125,6 +126,14 @@ func MustGetS3ClientFromEnv(ctx context.Context) *s3.Client {
 		panic(fmt.Errorf("unable to load SDK config, %v", err))
 	}
 	return s3.NewFromConfig(cfg)
+}
+
+func MustGetNatsConnFromEnv(ctx context.Context) *nats.Conn {
+	conn, err := nats.Connect(os.Getenv("NATS_URL"))
+	if err != nil {
+		panic(fmt.Errorf("unable to connect to nats: %v", err))
+	}
+	return conn
 }
 
 func MustGetTestfileS3Bucket() *s3bucket.S3Bucket {

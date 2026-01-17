@@ -45,14 +45,14 @@ type ExecResStreamOrganizer struct {
 	mu sync.Mutex
 }
 
-// NewExecResStreamOrganizer initializes a stream
+// newResultStreamOrganizer initializes a stream
 // organizer for testing events.
 // Parameters:
 //   - hasCompilation: requires compilation
 //   - numTests: number of test cases
 //
 // Returns error if numTests is invalid.
-func NewExecResStreamOrganizer(
+func newResultStreamOrganizer(
 	hasCompilation bool,
 	numTests int,
 ) (*ExecResStreamOrganizer, error) {

@@ -51,6 +51,15 @@ func ErrInteractorTooLarge() *srvcerror.Error {
 	).SetHttpStatusCode(http.StatusBadRequest)
 }
 
+const ErrCodeTooManyTests = "too_many_tests"
+
+func ErrTooManyTests() *srvcerror.Error {
+	return srvcerror.New(
+		ErrCodeTooManyTests,
+		"Too many tests",
+	).SetHttpStatusCode(http.StatusBadRequest)
+}
+
 const ErrCodeEvalNotFound = "eval_not_found"
 
 func ErrEvalNotFound() *srvcerror.Error {

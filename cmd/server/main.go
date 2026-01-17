@@ -49,7 +49,8 @@ func main() {
 		panic("S3_EXEC_BUCKET not set in .env file")
 	}
 	s3Repo := exec.NewS3ExecRepo(execCtx, s3Client, s3Bucket)
-	execSrvc := exec.NewExecSrvc(execCtx, s3Repo)
+	natsConn := conf.MustGetNatsConnFromEnv(execCtx)
+	execSrvc := exec.NewExecSrvc(execCtx, s3Repo, natsConn)
 	if *listenSQS {
 		err := execSrvc.StartPollingResultQueue(execCtx)
 		if err != nil {

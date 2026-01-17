@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	testerapi "github.com/programme-lv/tester/api"
 )
 
 // user submitted solution
@@ -322,3 +323,89 @@ message:Exited with error status 2
 // 	FullSz  int64  // full text size in bytes
 // 	Sha256  string // SHA256 hash of full text
 // }
+
+type ExecRequest struct {
+	UUID  uuid.UUID
+	Code  string
+	Lang  PrLang
+	Tests []TestFile
+
+	CpuMs  int `json:"cpu_ms"`  // max user-mode CPU time in milliseconds
+	MemKiB int `json:"mem_kib"` // max resident set size in kibibytes
+
+	// optional testlib.h checker program. If not provided,
+	// only output of the user's solution is returned from tester
+	// and is not viable for grading. "run program" use case.
+	Checker *string `json:"checker"`
+
+	// optional testlib.h interactor program.
+	Interactor *string `json:"interactor"`
+}
+
+func (e ExecRequest) IsValid() error {
+	if e.CpuMs <= 0 {
+		return ErrInvalidTesterParams()
+	}
+	if e.MemKiB <= 0 {
+		return ErrInvalidTesterParams()
+	}
+	if e.CpuMs > 10*1000 { // 10 seconds
+		return ErrCpuConstraintTooLose()
+	}
+	if e.MemKiB > 1024*1024 { // 1 GiB
+		return ErrMemConstraintTooLose()
+	}
+	if e.Checker != nil && len(*e.Checker) > 1024*1024 { // 1 MiB
+		return ErrCheckerTooLarge()
+	}
+	if e.Interactor != nil && len(*e.Interactor) > 1024*1024 { // 1 MiB
+		return ErrInteractorTooLarge()
+	}
+	if len(e.Tests) > 300 {
+		return ErrTooManyTests()
+	}
+	for _, test := range e.Tests {
+		if err := test.IsValid(); err != nil {
+			return err
+		}
+	}
+	return nil
+
+}
+
+func (e ExecRequest) MapToTesterApiType() *testerapi.ExecReq {
+	testsTester := make([]testerapi.Test, len(e.Tests))
+	for i, test := range e.Tests {
+		testsTester[i] = testerapi.Test{
+			In: testerapi.File{
+				Sha256:  test.InSha256,
+				Url:     test.InDownlUrl,
+				Content: test.InContent,
+			},
+			Ans: testerapi.File{
+				Sha256:  test.AnsSha256,
+				Url:     test.AnsDownlUrl,
+				Content: test.AnsContent,
+			},
+		}
+	}
+
+	testerReq := testerapi.ExecReq{
+		Uuid: e.UUID.String(),
+		Code: e.Code,
+		Lang: testerapi.PrLang{
+			LangName:      e.Lang.Display,
+			CodeFname:     e.Lang.CodeFname,
+			CompileCmd:    e.Lang.CompCmd,
+			CompiledFname: e.Lang.CompFname,
+			ExecCmd:       e.Lang.ExecCmd,
+		},
+		Tests:      testsTester,
+		Checker:    e.Checker,
+		Interactor: e.Interactor,
+		CpuMs:      int32(e.CpuMs),
+		RamKiB:     int32(e.MemKiB),
+	}
+
+	return &testerReq
+}
