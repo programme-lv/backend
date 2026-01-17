@@ -41,17 +41,17 @@ func main() {
 	cdnS3 := conf.MustGetPublicS3Bucket()
 	testS3 := conf.MustGetTestfileS3Bucket()
 
-	ctx := context.Background()
-	ctx = ctxlog.WithLogger(ctx, slog.Default().With("module", "exec"))
-	s3Client := conf.MustGetS3ClientFromEnv(ctx)
+	execCtx := context.Background()
+	execCtx = ctxlog.WithLogger(execCtx, slog.Default().With("module", "exec"))
+	s3Client := conf.MustGetS3ClientFromEnv(execCtx)
 	s3Bucket := os.Getenv("S3_EXEC_BUCKET")
 	if s3Bucket == "" {
 		panic("S3_EXEC_BUCKET not set in .env file")
 	}
-	s3Repo := exec.NewS3ExecRepo(ctx, s3Client, s3Bucket)
-	execSrvc := exec.NewExecSrvc(ctx, s3Repo)
+	s3Repo := exec.NewS3ExecRepo(execCtx, s3Client, s3Bucket)
+	execSrvc := exec.NewExecSrvc(execCtx, s3Repo)
 	if *listenSQS {
-		err := execSrvc.StartPollingResultQueue()
+		err := execSrvc.StartPollingResultQueue(execCtx)
 		if err != nil {
 			slog.Error("failed to listen to result SQS", "error", err)
 			os.Exit(1)

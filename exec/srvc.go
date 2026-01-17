@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
@@ -26,8 +27,7 @@ type ExecSrvcClient interface {
 
 type ExecSrvcFacade interface {
 	ExecSrvcClient
-	StartPollingResultQueue() error
-	Close()
+	StartPollingResultQueue(ctx context.Context) error
 }
 
 // ExecSrvcImpl handles communication with testers
@@ -51,30 +51,26 @@ type ExecSrvcImpl struct {
 	// tracks completion status of executions
 	execWg sync.Map // notifies get listener when execution is finished
 
-	listenCancel     context.CancelFunc
-	listenWait       sync.WaitGroup // on close, waits for sqs jobs to finish
-	listeningStarted bool           // tracks if StartListening has been called
+	isPolling atomic.Bool
 
 	organizers map[uuid.UUID]*ExecResStreamOrganizer
 	executions map[uuid.UUID]*Execution
 }
 
+var _ ExecSrvcFacade = &ExecSrvcImpl{}
+
 // StartPollingResultQueue begins listening for SQS messages in a separate goroutine.
 // Returns an error if called more than once.
-func (e *ExecSrvcImpl) StartPollingResultQueue() error {
+func (e *ExecSrvcImpl) StartPollingResultQueue(ctx context.Context) error {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
-	if e.listeningStarted {
-		return fmt.Errorf("listening already started")
+	wasSwapped := e.isPolling.CompareAndSwap(false, true)
+	if !wasSwapped {
+		return fmt.Errorf("already polling result queue")
 	}
 
-	e.listeningStarted = true
-	e.listenWait.Add(1)
 	go func() {
-		ctx, cancel := context.WithCancel(context.Background())
-		e.listenCancel = cancel
-		defer cancel()
 		err := StartReceivingResultsFromSqs(
 			ctx,
 			e.respQ,
@@ -83,9 +79,8 @@ func (e *ExecSrvcImpl) StartPollingResultQueue() error {
 			e.logger,
 		)
 		if err != nil {
-			slog.Error("failed to listen for sqs messages", "error", err)
+			e.logger.Error("listen to sqs messages", "error", err)
 		}
-		e.listenWait.Done()
 	}()
 
 	return nil
@@ -431,11 +426,4 @@ func applyEventToExec(
 		exec.ErrorMsg = e.ErrorMsg
 	}
 	return nil
-}
-
-func (e *ExecSrvcImpl) Close() {
-	e.logger.Info("closing execsrvc")
-	e.listenCancel()
-	e.listenWait.Wait()
-	e.logger.Info("execsrvc closed")
 }
