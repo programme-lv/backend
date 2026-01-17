@@ -14,6 +14,7 @@ import (
 	"github.com/klauspost/compress/zstd"
 	"github.com/nats-io/nats.go"
 	"github.com/programme-lv/backend/common/ctxlog"
+	testerapi "github.com/programme-lv/tester/api"
 )
 
 // ExecRepo interface for execution storage
@@ -33,7 +34,7 @@ type ExecSrvcFacade interface {
 	StartPollingResultQueue(ctx context.Context) error
 }
 
-const NatsSubject = "jobs.exec"
+const NatsSubject = "tester.jobs"
 
 // ExecSrvcImpl handles communication with testers
 // for code execution and result streaming
@@ -69,20 +70,199 @@ func (e *ExecSrvcImpl) StartPollingResultQueue(ctx context.Context) error {
 		return fmt.Errorf("already polling result queue")
 	}
 
-	// go func() {
-	// 	err := StartReceivingResultsFromSqs(
-	// 		ctx,
-	// 		e.respQ,
-	// 		e.sqsClient,
-	// 		e.handleSqsMsg,
-	// 		e.logger,
-	// 	)
-	// 	if err != nil {
-	// 		e.logger.Error("listen to sqs messages", "error", err)
-	// 	}
-	// }()
+	sub, err := e.natsConn.Subscribe(e.natsInbox, func(msg *nats.Msg) {
+		e.mu.Lock()
+		defer e.mu.Unlock()
+
+		var header testerapi.Header
+		err := json.Unmarshal(msg.Data, &header)
+		if err != nil {
+			e.logger.Error("unsmarshall NATS msg header", "error", err)
+			return
+		}
+
+		execUuid, err := uuid.Parse(header.EvalUuid)
+		if err != nil {
+			e.logger.Error("parse eval uuid", "error", err)
+			return
+		}
+
+		org, exists := e.organizers[execUuid]
+		if !exists {
+			e.logger.Error("stream organizer not found", "exec_uuid", execUuid)
+			return
+		}
+		if org == nil {
+			panic("stream organizer is nil")
+		}
+
+		if org.HasFinished() {
+			e.logger.Error("stream organizer has finished", "exec_uuid", execUuid)
+			return
+		}
+
+		ev, err := mapTesterMsgJsonToEvent(msg.Data, header.MsgType)
+		if err != nil {
+			e.logger.Error("map tester msg json to event", "error", err)
+			return
+		}
+
+		events, err := org.Add(ev)
+		if err != nil {
+			e.logger.Error("add event to stream organizer", "error", err)
+			return
+		}
+
+		for _, event := range events {
+			e.notifiers[execUuid] <- event
+		}
+
+		exec, ok := e.executions[execUuid]
+		if !ok {
+			e.logger.Error("execution not found", "exec_uuid", execUuid)
+			return
+		}
+		if exec == nil {
+			panic("execution is nil")
+		}
+		for _, event := range events {
+			err := applyEventToExec(exec, event)
+			if err != nil {
+				e.logger.Error("apply ev to exec", "error", err)
+			}
+		}
+		if org.HasFinished() {
+			close(e.notifiers[execUuid])
+			delete(e.notifiers, execUuid) // deleting closes the channel
+			delete(e.organizers, execUuid)
+			delete(e.executions, execUuid)
+
+			err = e.execRepo.Save(ctx, exec)
+			if err != nil {
+				e.logger.Error("save exec", "error", err)
+				return
+			}
+
+			wgVal, exists := e.execWg.Load(execUuid)
+			if !exists {
+				e.logger.Error("wait group not found", "exec_uuid", execUuid)
+				return
+			}
+			wg := wgVal.(*sync.WaitGroup)
+			wg.Done()
+		}
+	})
+	if err != nil {
+		return fmt.Errorf("subscribe to nats inbox: %w", err)
+	}
+	go func() {
+		<-ctx.Done()
+		sub.Unsubscribe()
+	}()
 
 	return nil
+}
+
+func mapTesterMsgJsonToEvent(msgJson []byte, msgType testerapi.MsgType) (Event, error) {
+	switch msgType {
+	case testerapi.StartJobMsg:
+		var msg testerapi.StartJob
+		if err := json.Unmarshal(msgJson, &msg); err != nil {
+			return nil, fmt.Errorf("unmarshal StartJob: %w", err)
+		}
+		startedAt, err := time.Parse(time.RFC3339, msg.StartedTime)
+		if err != nil {
+			return nil, fmt.Errorf("parse started_time: %w", err)
+		}
+		return ReceivedSubmission{
+			SysInfo:   msg.SystemInfo,
+			StartedAt: startedAt,
+		}, nil
+
+	case testerapi.StartCompileMsg:
+		return StartedCompiling{}, nil
+
+	case testerapi.FinishCompileMsg:
+		var msg testerapi.FinishCompile
+		if err := json.Unmarshal(msgJson, &msg); err != nil {
+			return nil, fmt.Errorf("unmarshal FinishCompile: %w", err)
+		}
+		return FinishedCompiling{
+			RuntimeData: mapTesterRuntimeData(msg.RuntimeData),
+		}, nil
+
+	case testerapi.ReachTestMsg:
+		var msg testerapi.ReachTest
+		if err := json.Unmarshal(msgJson, &msg); err != nil {
+			return nil, fmt.Errorf("unmarshal ReachTest: %w", err)
+		}
+		return ReachedTest{
+			TestId: int(msg.TestId),
+			In:     msg.Input,
+			Ans:    msg.Answer,
+		}, nil
+
+	case testerapi.IgnoreTestMsg:
+		var msg testerapi.IgnoreTest
+		if err := json.Unmarshal(msgJson, &msg); err != nil {
+			return nil, fmt.Errorf("unmarshal IgnoreTest: %w", err)
+		}
+		return IgnoredTest{
+			TestId: int(msg.TestId),
+		}, nil
+
+	case testerapi.FinishTestMsg:
+		var msg testerapi.FinishTest
+		if err := json.Unmarshal(msgJson, &msg); err != nil {
+			return nil, fmt.Errorf("unmarshal FinishTest: %w", err)
+		}
+		return FinishedTest{
+			TestID:  int(msg.TestId),
+			Subm:    mapTesterRuntimeData(msg.Submission),
+			Checker: mapTesterRuntimeData(msg.Checker),
+		}, nil
+
+	case testerapi.FinishJobMsg:
+		var msg testerapi.FinishJob
+		if err := json.Unmarshal(msgJson, &msg); err != nil {
+			return nil, fmt.Errorf("unmarshal FinishJob: %w", err)
+		}
+		if msg.CompileError {
+			return CompilationError{
+				ErrorMsg: msg.ErrorMessage,
+			}, nil
+		}
+		if msg.InternalError {
+			return InternalServerError{
+				ErrorMsg: msg.ErrorMessage,
+			}, nil
+		}
+		return FinishedTesting{}, nil
+
+	default:
+		return nil, fmt.Errorf("unknown msg type: %s", msgType)
+	}
+}
+
+func mapTesterRuntimeData(rd *testerapi.RuntimeData) *RunData {
+	if rd == nil {
+		return nil
+	}
+	return &RunData{
+		StdIn:       rd.Stdin,
+		StdOut:      rd.Stdout,
+		StdErr:      rd.Stderr,
+		ExitCode:    rd.ExitCode,
+		CpuMs:       rd.CpuMillis,
+		WallMs:      rd.WallMillis,
+		MemKiB:      rd.RamKiBytes,
+		CtxSwV:      rd.CtxSwV,
+		CtxSwF:      rd.CtxSwF,
+		Signal:      rd.ExitSignal,
+		IsOomKilled: rd.CgOomKilled,
+		IsolStatus:  rd.IsolateStatus,
+		IsolMsg:     rd.IsolateMsg,
+	}
 }
 
 func NewExecSrvc(ctx context.Context, repo ExecRepo, natsConn *nats.Conn) ExecSrvcFacade {
