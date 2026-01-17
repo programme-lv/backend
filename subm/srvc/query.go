@@ -131,9 +131,10 @@ func (s *submSrvc) CountSubms(ctx context.Context, search string, author *uuid.U
 		}
 
 		// get all programming languages
-		langIds, err = plang.SearchProgrLangByName(search)
-		if err != nil {
-			return 0, fmt.Errorf("failed to get programming language by id: %w", err)
+		var searchProgrLangByNameErr error
+		langIds, searchProgrLangByNameErr = plang.SearchProgrLangByName(search)
+		if searchProgrLangByNameErr != nil {
+			return 0, fmt.Errorf("failed to search programming languages by name: %w", searchProgrLangByNameErr)
 		}
 		langIds = append(langIds, search)
 	}
@@ -214,9 +215,10 @@ func (s *submSrvc) ListSubms(ctx context.Context, filter ListSubmsParams) ([]dom
 		}
 
 		// get all programming languages
-		langIds, err = plang.SearchProgrLangByName(filter.Search)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get programming language by id: %w", err)
+		var searchProgrLangByNameErr error
+		langIds, searchProgrLangByNameErr = plang.SearchProgrLangByName(filter.Search)
+		if searchProgrLangByNameErr != nil {
+			return nil, fmt.Errorf("failed to search programming languages by name: %w", searchProgrLangByNameErr)
 		}
 		langIds = append(langIds, filter.Search)
 	}

@@ -23,7 +23,7 @@ type SubmitSolParams struct {
 	AuthorUUID  uuid.UUID
 }
 
-func (s *submSrvc) SubmitSol(ctx context.Context, p SubmitSolParams) error {
+func (s *submSrvc) SubmitSol(ctx context.Context, p SubmitSolParams) *srvcerror.Error {
 	submitSolCmd := submitSolCmdHandler{
 		DoesUserExist: func(ctx context.Context, uuid uuid.UUID) (bool, error) {
 			user, err := s.userSrvc.GetUserByUUID(ctx, uuid)
@@ -39,11 +39,7 @@ func (s *submSrvc) SubmitSol(ctx context.Context, p SubmitSolParams) error {
 		EnqueueExec:      s.enqueueExecAndListen,
 	}
 
-	err := submitSolCmd.Handle(ctx, p)
-	if err == nil {
-		return nil // Return untyped nil to avoid non-nil interface wrapping nil pointer
-	}
-	return err
+	return submitSolCmd.Handle(ctx, p)
 }
 
 type submitSolCmdHandler struct {

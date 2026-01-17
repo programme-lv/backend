@@ -115,17 +115,17 @@ func (h *SubmHttpHandler) PostSubm(w http.ResponseWriter, r *http.Request) {
 
 	h.submCache.Flush()
 
-	subm, err := h.submSrvc.ViewSubm(r.Context(), submUUID)
-	if err != nil {
-		log.Error("failed to get submission after creation", "subm_uuid", submUUID, "error", err)
-		jsonresp.HandleErrorWithContext(r.Context(), w, err)
+	subm, viewSubmErr := h.submSrvc.ViewSubm(r.Context(), submUUID)
+	if viewSubmErr != nil {
+		log.Error("failed to get submission after creation", "subm_uuid", submUUID, "error", viewSubmErr)
+		jsonresp.HandleErrorWithContext(r.Context(), w, viewSubmErr)
 		return
 	}
 
-	response, err := h.mapSubm(r.Context(), subm)
-	if err != nil {
-		log.Error("failed to map submission", "subm_uuid", submUUID, "error", err)
-		jsonresp.HandleErrorWithContext(r.Context(), w, err)
+	response, mapSubmErr := h.mapSubm(r.Context(), subm)
+	if mapSubmErr != nil {
+		log.Error("failed to map submission", "subm_uuid", submUUID, "error", mapSubmErr)
+		jsonresp.HandleErrorWithContext(r.Context(), w, mapSubmErr)
 		return
 	}
 

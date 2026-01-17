@@ -14,7 +14,7 @@ import (
 )
 
 type SubmSrvcClient interface {
-	SubmitSol(ctx context.Context, p SubmitSolParams) error
+	SubmitSol(ctx context.Context, p SubmitSolParams) *srvcerror.Error
 	ReEvalSubm(ctx context.Context, submUuid uuid.UUID) *srvcerror.Error
 	ViewSubm(ctx context.Context, uuid uuid.UUID) (domain.Subm, error)
 	ListSubms(ctx context.Context, filter ListSubmsParams) ([]domain.Subm, error)
