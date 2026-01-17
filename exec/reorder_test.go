@@ -147,7 +147,7 @@ func shuffleAndCmp(
 				shuffled[i]
 		})
 
-		organizer, err := NewExecResStreamOrganizer(
+		organizer, err := newResultStreamOrganizer(
 			hasCompilation,
 			numTests,
 		)

@@ -2,14 +2,17 @@ package exec
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"sync"
 	"sync/atomic"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/google/uuid"
+	"github.com/klauspost/compress/zstd"
+	"github.com/nats-io/nats.go"
 	"github.com/programme-lv/backend/common/ctxlog"
 )
 
@@ -30,6 +33,8 @@ type ExecSrvcFacade interface {
 	StartPollingResultQueue(ctx context.Context) error
 }
 
+const NatsSubject = "jobs.exec"
+
 // ExecSrvcImpl handles communication with testers
 // for code execution and result streaming
 type ExecSrvcImpl struct {
@@ -38,12 +43,8 @@ type ExecSrvcImpl struct {
 	// either in-mem or s3
 	execRepo ExecRepo
 
-	sqsClient *sqs.Client
-
-	// submission sqs queue url
-	submQ string
-	// response sqs queue url
-	respQ string
+	natsConn  *nats.Conn
+	natsInbox string
 
 	mu sync.Mutex
 	// maps exec IDs to client result channels
@@ -59,39 +60,36 @@ type ExecSrvcImpl struct {
 
 var _ ExecSrvcFacade = &ExecSrvcImpl{}
 
-// StartPollingResultQueue begins listening for SQS messages in a separate goroutine.
-// Returns an error if called more than once.
 func (e *ExecSrvcImpl) StartPollingResultQueue(ctx context.Context) error {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
-	wasSwapped := e.isPolling.CompareAndSwap(false, true)
-	if !wasSwapped {
+	notAlreadyPolling := e.isPolling.CompareAndSwap(false, true)
+	if !notAlreadyPolling {
 		return fmt.Errorf("already polling result queue")
 	}
 
-	go func() {
-		err := StartReceivingResultsFromSqs(
-			ctx,
-			e.respQ,
-			e.sqsClient,
-			e.handleSqsMsg,
-			e.logger,
-		)
-		if err != nil {
-			e.logger.Error("listen to sqs messages", "error", err)
-		}
-	}()
+	// go func() {
+	// 	err := StartReceivingResultsFromSqs(
+	// 		ctx,
+	// 		e.respQ,
+	// 		e.sqsClient,
+	// 		e.handleSqsMsg,
+	// 		e.logger,
+	// 	)
+	// 	if err != nil {
+	// 		e.logger.Error("listen to sqs messages", "error", err)
+	// 	}
+	// }()
 
 	return nil
 }
 
-func NewExecSrvc(ctx context.Context, repo ExecRepo) ExecSrvcFacade {
+func NewExecSrvc(ctx context.Context, repo ExecRepo, natsConn *nats.Conn) ExecSrvcFacade {
 	esrvc := &ExecSrvcImpl{
 		logger:     ctxlog.FromContext(ctx),
-		sqsClient:  getSqsClientFromEnv(),
-		submQ:      getSubmSqsUrlFromEnv(),
-		respQ:      getResponseSqsUrlFromEnv(),
+		natsConn:   natsConn,
+		natsInbox:  nats.NewInbox(),
 		execRepo:   repo,
 		notifiers:  make(map[uuid.UUID]chan Event),
 		organizers: make(map[uuid.UUID]*ExecResStreamOrganizer),
@@ -121,60 +119,82 @@ func (e *ExecSrvcImpl) Enqueue(
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
-	// 1. validate programming language
+	// 1. construct execution request
+	execReq := ExecRequest{
+		UUID:       execUuid,
+		Code:       srcCode,
+		Lang:       PrLang{},
+		Tests:      tests,
+		CpuMs:      params.CpuMs,
+		MemKiB:     params.MemKiB,
+		Checker:    params.Checker,
+		Interactor: params.Interactor,
+	}
 	lang, err := getPrLangById(langId)
 	if err != nil {
 		return err
 	}
+	execReq.Lang = lang
 
-	// 2. validate tester execution constraints,
-	// checker
-	err = params.IsValid()
+	// 2. validate sanity of request
+	err = execReq.IsValid()
 	if err != nil {
-		return err
+		return fmt.Errorf("validate exec request: %w", err)
 	}
 
-	// 3. validate test files
-	if len(tests) > 200 {
-		return fmt.Errorf(
-			"too many tests",
-		)
-	}
-	for _, test := range tests {
-		if err := test.IsValid(); err != nil {
-			return err
-		}
-	}
-
-	// Add WaitGroup before preparing results
+	// 3. create WaitGroup for awaiting results
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
 	e.execWg.Store(execUuid, wg)
 
-	// 5. initialize organizer, processor and
-	// notifier
-	err = e.prepareForResults(
-		execUuid,
-		lang,
-		params,
-		len(tests),
-	)
-	if err != nil {
-		return err
-	}
+	// 4. setup notification channel
+	e.notifiers[execUuid] = make(chan Event, 1000)
 
-	// 6. enqueue execution request to sqs
-	err = enqueue(
-		execUuid,
-		srcCode,
-		lang,
-		tests,
-		params,
-		e.sqsClient,
-		e.submQ,
-	)
+	// 5. setup stream organizer
+	hasCompile := lang.CompCmd != nil
+	noOfTests := len(tests)
+	org, err := newResultStreamOrganizer(hasCompile, noOfTests)
 	if err != nil {
-		return err
+		return fmt.Errorf("setup result stream organizer: %w", err)
+	}
+	e.organizers[execUuid] = org
+
+	// 6. initialize empty execution
+	exec := Execution{
+		UUID:      execUuid,
+		Stage:     StageWaiting,
+		TestRes:   []TestRes{},
+		PrLang:    lang,
+		Params:    params,
+		ErrorMsg:  nil,
+		SysInfo:   nil,
+		CreatedAt: time.Now(),
+		SubmComp:  nil,
+	}
+	for i := 0; i < noOfTests; i++ {
+		exec.TestRes = append(exec.TestRes, TestRes{ID: i + 1})
+	}
+	e.executions[execUuid] = &exec
+
+	// 7. encode the execution request
+	testerReq := execReq.MapToTesterApiType()
+	reqJson, err := json.Marshal(testerReq)
+	if err != nil {
+		return fmt.Errorf("marshal eval request in tester format: %w", err)
+	}
+	zstdEncoder, err := zstd.NewWriter(nil)
+	if err != nil {
+		return fmt.Errorf("failed to create zstd encoder: %w", err)
+	}
+	defer zstdEncoder.Close()
+	compressed := zstdEncoder.EncodeAll(reqJson, make([]byte, 0, len(reqJson)))
+	encoded := base64.StdEncoding.EncodeToString(compressed)
+	encodedBytes := []byte(encoded)
+
+	// 8. send encoded message to job queue
+	err = e.natsConn.PublishRequest(NatsSubject, e.natsInbox, encodedBytes)
+	if err != nil {
+		return fmt.Errorf("publish eval req to nats: %w", err)
 	}
 
 	return nil
@@ -336,58 +356,6 @@ func (e *ExecSrvcImpl) handleSqsMsg(
 		wg := wgVal.(*sync.WaitGroup)
 		wg.Done()
 	}
-	return nil
-}
-
-// prepareForResults sets up the event processing
-// pipeline for an execution including result
-// organization and client notification channels
-// we are in a locked mutex state in this function
-func (e *ExecSrvcImpl) prepareForResults(
-	execId uuid.UUID,
-	lang PrLang,
-	params TestingParams,
-	numTests int,
-) error {
-	// initialize some kind of mysthical organizer
-	// that reorders events the organizer has to
-	// know the number of tests and whether the
-	// submission has a compilation step
-	e.notifiers[execId] = make(
-		chan Event,
-		1000,
-	)
-
-	org, err := NewExecResStreamOrganizer(
-		lang.CompCmd != nil,
-		numTests,
-	)
-	if err != nil {
-		return err
-	}
-	// we need to get a sync map of organizers
-	e.organizers[execId] = org
-
-	exec := Execution{
-		UUID:      execId,
-		Stage:     StageWaiting,
-		TestRes:   []TestRes{},
-		PrLang:    lang,
-		Params:    params,
-		ErrorMsg:  nil,
-		SysInfo:   nil,
-		CreatedAt: time.Now(),
-		SubmComp:  nil,
-	}
-	// insert empty tests
-	for i := 0; i < numTests; i++ {
-		exec.TestRes = append(
-			exec.TestRes,
-			TestRes{ID: i + 1},
-		)
-	}
-	e.executions[execId] = &exec
-
 	return nil
 }
 

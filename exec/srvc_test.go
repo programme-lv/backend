@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/joho/godotenv"
+	"github.com/programme-lv/backend/conf"
 	"github.com/programme-lv/backend/exec"
 	"github.com/stretchr/testify/require"
 )
@@ -23,7 +24,8 @@ func init() {
 func TestExecResult(t *testing.T) {
 	ctx := t.Context()
 	repo := exec.NewInMemExecRepo()
-	srvc := exec.NewExecSrvc(ctx, repo)
+	natsConn := conf.MustGetNatsConnFromEnv(ctx)
+	srvc := exec.NewExecSrvc(ctx, repo, natsConn)
 
 	pollingErr := srvc.StartPollingResultQueue(ctx)
 	require.NoError(t, pollingErr)
@@ -112,7 +114,8 @@ func TestExecResult(t *testing.T) {
 func TestEventStream(t *testing.T) {
 	ctx := t.Context()
 	repo := exec.NewInMemExecRepo()
-	srvc := exec.NewExecSrvc(ctx, repo)
+	natsConn := conf.MustGetNatsConnFromEnv(ctx)
+	srvc := exec.NewExecSrvc(ctx, repo, natsConn)
 
 	pollingErr := srvc.StartPollingResultQueue(ctx)
 	require.NoError(t, pollingErr)
@@ -182,7 +185,8 @@ func TestEventStream(t *testing.T) {
 func BenchmarkExecResult(b *testing.B) {
 	ctx := b.Context()
 	repo := exec.NewInMemExecRepo()
-	srvc := exec.NewExecSrvc(ctx, repo)
+	natsConn := conf.MustGetNatsConnFromEnv(ctx)
+	srvc := exec.NewExecSrvc(ctx, repo, natsConn)
 
 	pollingErr := srvc.StartPollingResultQueue(ctx)
 	require.NoError(b, pollingErr)
