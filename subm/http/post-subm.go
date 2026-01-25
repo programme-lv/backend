@@ -100,16 +100,16 @@ func (h *SubmHttpHandler) PostSubm(w http.ResponseWriter, r *http.Request) {
 	submUUID := uuid.New()
 	log.Info("generated submission UUID", "subm_uuid", submUUID)
 
-	err = h.submSrvc.SubmitSol(r.Context(), srvc.SubmitSolParams{
+	submitErr := h.submSrvc.SubmitSol(r.Context(), srvc.SubmitSolParams{
 		UUID:        submUUID,
 		Submission:  request.Submission,
 		AuthorUUID:  author.UUID,
 		ProgrLangID: request.ProgrammingLangID,
 		TaskShortID: request.TaskCodeID,
 	})
-	if err != nil {
-		log.Error("failed to submit solution", "subm_uuid", submUUID, "error", err)
-		jsonresp.HandleErrorWithContext(r.Context(), w, err)
+	if submitErr != nil {
+		log.Error("failed to submit solution", "subm_uuid", submUUID, "error", submitErr)
+		jsonresp.HandleErrorWithContext(r.Context(), w, submitErr)
 		return
 	}
 

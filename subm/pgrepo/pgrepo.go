@@ -36,12 +36,18 @@ func (r *pgEvalRepo) StoreEval(ctx context.Context, eval domain.Eval) error {
 	}
 	defer tx.Rollback(ctx)
 
+	// Calculate score info from evaluation
+	scoreInfo := eval.CalculateScore()
+
 	// Upsert Evaluation
 	evaluationUpsertQuery := `
 		INSERT INTO evaluations (
 			uuid, subm_uuid, stage, score_unit, checker, interactor,
-			cpu_lim_ms, mem_lim_kib, error_type, error_message, created_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+			cpu_lim_ms, mem_lim_kib, error_type, error_message, created_at,
+			received_score, possible_score, scorebar_green, scorebar_red,
+			scorebar_gray, scorebar_yellow, scorebar_purple,
+			cpu_max_ms, mem_max_kib, exceeded_cpu, exceeded_mem
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)
 		ON CONFLICT (uuid) DO UPDATE SET
 			subm_uuid = EXCLUDED.subm_uuid,
 			stage = EXCLUDED.stage,
@@ -52,7 +58,18 @@ func (r *pgEvalRepo) StoreEval(ctx context.Context, eval domain.Eval) error {
 			mem_lim_kib = EXCLUDED.mem_lim_kib,
 			error_type = EXCLUDED.error_type,
 			error_message = EXCLUDED.error_message,
-			created_at = EXCLUDED.created_at
+			created_at = EXCLUDED.created_at,
+			received_score = EXCLUDED.received_score,
+			possible_score = EXCLUDED.possible_score,
+			scorebar_green = EXCLUDED.scorebar_green,
+			scorebar_red = EXCLUDED.scorebar_red,
+			scorebar_gray = EXCLUDED.scorebar_gray,
+			scorebar_yellow = EXCLUDED.scorebar_yellow,
+			scorebar_purple = EXCLUDED.scorebar_purple,
+			cpu_max_ms = EXCLUDED.cpu_max_ms,
+			mem_max_kib = EXCLUDED.mem_max_kib,
+			exceeded_cpu = EXCLUDED.exceeded_cpu,
+			exceeded_mem = EXCLUDED.exceeded_mem
 	`
 	var errorType *string
 	var errorMessage *string
@@ -75,6 +92,17 @@ func (r *pgEvalRepo) StoreEval(ctx context.Context, eval domain.Eval) error {
 		errorType,
 		errorMessage,
 		eval.CreatedAt,
+		scoreInfo.ReceivedScore,
+		scoreInfo.PossibleScore,
+		scoreInfo.ScoreBar.Green,
+		scoreInfo.ScoreBar.Red,
+		scoreInfo.ScoreBar.Gray,
+		scoreInfo.ScoreBar.Yellow,
+		scoreInfo.ScoreBar.Purple,
+		scoreInfo.MaxCpuMs,
+		scoreInfo.MaxMemKiB,
+		scoreInfo.ExceededCpu,
+		scoreInfo.ExceededMem,
 	)
 	if err != nil {
 		log.Debug("failed to upsert evaluation", "error", err)
