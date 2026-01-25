@@ -69,7 +69,7 @@ func (h getMaxScorePerTaskHandler) Handle(ctx context.Context, userUUID uuid.UUI
 		}
 
 		if submJoinEval.Eval.ScoreInfo == nil {
-			log.Info("NO SCORE INFO")
+			log.Error("no score info", "eval_uuid", submJoinEval.Eval.UUID)
 			fullEval, err := h.getFullEval(ctx, submJoinEval.Eval.UUID)
 			if err != nil {
 				action := "get full eval"
@@ -84,7 +84,6 @@ func (h getMaxScorePerTaskHandler) Handle(ctx context.Context, userUUID uuid.UUI
 				ScoreInfo:   fullEval.CalculateScore(),
 			})
 		} else {
-			log.Info("YAY")
 			userSubmsWithScoreInfo = append(userSubmsWithScoreInfo, domain.SubmJoinScoreInfo{
 				SubmUuid:    submJoinEval.Subm.UUID,
 				TaskShortID: submJoinEval.Subm.TaskShortID,
