@@ -73,3 +73,11 @@ func GetUserUuidFromCtx(ctx context.Context) (uuid.UUID, error) {
 	}
 	return u, nil
 }
+
+func IsAdmin(ctx context.Context) bool {
+	claims, ok := ctx.Value(CtxJwtClaimsKey).(*JwtClaims)
+	if !ok || claims == nil {
+		return false
+	}
+	return claims.Username == "admin"
+}

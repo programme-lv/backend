@@ -99,7 +99,7 @@ func (h getMaxScorePerTaskHandler) Handle(ctx context.Context, userUUID uuid.UUI
 }
 
 // CountSubms returns the total number of submissions
-func (s *submSrvc) CountSubms(ctx context.Context, search string, author *uuid.UUID) (int, error) {
+func (s *submSrvc) CountSubms(ctx context.Context, search string, author *uuid.UUID, includeAdmin bool) (int, error) {
 	log := ctxlog.FromContext(ctx)
 	log.Debug("counting submissions")
 
@@ -137,7 +137,7 @@ func (s *submSrvc) CountSubms(ctx context.Context, search string, author *uuid.U
 		}
 		langIds = append(langIds, search)
 	}
-	count, err := s.submRepo.CountSubms(ctx, author, authorIds, taskIds, langIds)
+	count, err := s.submRepo.CountSubms(ctx, author, authorIds, taskIds, langIds, includeAdmin)
 	if err != nil {
 		log.Error("failed to count submissions", "error", err)
 		return 0, err
@@ -181,6 +181,8 @@ type ListSubmsParams struct {
 	Offset int
 	Search string
 	Author *uuid.UUID // Optional author UUID to filter by
+
+	IncludeAdmin bool // whether to include admin submissions
 }
 
 func (s *submSrvc) ListSubms(ctx context.Context, filter ListSubmsParams) ([]domain.Subm, error) {
@@ -221,7 +223,7 @@ func (s *submSrvc) ListSubms(ctx context.Context, filter ListSubmsParams) ([]dom
 		}
 		langIds = append(langIds, filter.Search)
 	}
-	return s.submRepo.ListSubms(ctx, filter.Limit, filter.Offset, filter.Search, filter.Author, authorIds, taskIds, langIds)
+	return s.submRepo.ListSubms(ctx, filter.Limit, filter.Offset, filter.Search, filter.Author, authorIds, taskIds, langIds, filter.IncludeAdmin)
 }
 
 func (s *submSrvc) GetEval(ctx context.Context, uuid uuid.UUID) (domain.Eval, error) {
