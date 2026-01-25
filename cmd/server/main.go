@@ -3,15 +3,19 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"log/slog"
 	"os"
 	"time"
 
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/lmittmann/tint"
 	"github.com/programme-lv/backend/common/ctxlog"
 	"github.com/programme-lv/backend/conf"
 	"github.com/programme-lv/backend/exec"
 	"github.com/programme-lv/backend/http"
+	"github.com/programme-lv/backend/subm/domain"
 	submhttp "github.com/programme-lv/backend/subm/http"
 	submpgrepo "github.com/programme-lv/backend/subm/pgrepo"
 	"github.com/programme-lv/backend/subm/srvc"
@@ -20,6 +24,7 @@ import (
 	tasksrvc "github.com/programme-lv/backend/task/srvc"
 	usersrvc "github.com/programme-lv/backend/user"
 	userhttp "github.com/programme-lv/backend/user/http"
+	"github.com/schollz/progressbar/v3"
 )
 
 const (
@@ -106,5 +111,96 @@ func newSubmHttpHandler(userSrvc usersrvc.UserSrvcClient, taskSrvc tasksrvc.Task
 	evalPgRepo := submpgrepo.NewPgEvalRepo(pgPool)
 	submSrvc := srvc.NewSubmSrvc(userSrvc, taskSrvc, execSrvc, submPgRepo, evalPgRepo)
 
+	// Check if migration is needed and run it
+	runScoreMigrationIfNeeded(pgPool, submSrvc, evalPgRepo)
+
 	return submhttp.NewSubmHttpHandler(submSrvc, taskSrvc, userSrvc)
+}
+
+// runScoreMigrationIfNeeded checks if there are evaluations without score info
+// and recalculates/stores them. This is a one-time migration.
+func runScoreMigrationIfNeeded(pgPool *pgxpool.Pool, submSrvc srvc.SubmSrvcClient, evalPgRepo interface {
+	StoreEval(ctx context.Context, eval domain.Eval) error
+}) {
+	ctx := context.Background()
+
+	// Check if there are evaluations missing score info
+	var count int
+	err := pgPool.QueryRow(ctx, `
+		SELECT COUNT(*) FROM submissions s 
+		LEFT OUTER JOIN evaluations e ON s.curr_eval_uuid = e.uuid 
+		WHERE e.received_score IS NULL
+	`).Scan(&count)
+	if err != nil {
+		slog.Error("failed to check for missing scores", "error", err)
+		return
+	}
+
+	if count == 0 {
+		slog.Info("no evaluations missing score info, skipping migration")
+		return
+	}
+
+	slog.Warn("found evaluations missing score info, running migration", "count", count)
+
+	subms, err := submSrvc.ListSubms(ctx, srvc.ListSubmsParams{
+		Limit:  10000000,
+		Offset: 0,
+		Search: "",
+		Author: nil,
+	})
+	if err != nil {
+		slog.Error("failed to list submissions", "error", err)
+		return
+	}
+
+	slog.Info("processing submissions", "total", len(subms))
+	bar := progressbar.Default(int64(len(subms)), "recalculating scores")
+
+	for _, subm := range subms {
+		bar.Add(1)
+
+		if subm.CurrEvalUUID == uuid.Nil {
+			reEvalErr := submSrvc.ReEvalSubm(ctx, subm.UUID)
+			slog.Info("re-evaluating submission", "subm_uuid", subm.UUID)
+			if reEvalErr != nil {
+				slog.Error("failed to re-evaluate submission", "error", reEvalErr)
+				panic(reEvalErr)
+			}
+
+			subm, err = submSrvc.ViewSubm(ctx, subm.UUID)
+			if err != nil {
+				slog.Error("failed to get subm", "error", err)
+				panic(err)
+			}
+
+			for {
+				eval, err := submSrvc.GetEval(ctx, subm.CurrEvalUUID)
+				if err != nil {
+					slog.Error("failed to get eval", "error", err)
+					panic(err)
+				}
+				if eval.Stage == domain.EvalStageFinished {
+					break
+				}
+				time.Sleep(1 * time.Second)
+			}
+			slog.Info("eval finished", "eval_uuid", subm.CurrEvalUUID)
+		}
+
+		eval, err := submSrvc.GetEval(ctx, subm.CurrEvalUUID)
+		if err != nil {
+			slog.Error("failed to get eval", "error", err)
+			fmt.Printf("%+v\n", subm)
+			panic(err)
+		}
+
+		storeEvalErr := evalPgRepo.StoreEval(ctx, eval)
+		if storeEvalErr != nil {
+			slog.Error("failed to store eval", "error", storeEvalErr)
+			panic(storeEvalErr)
+		}
+	}
+
+	slog.Info("score migration completed")
 }
