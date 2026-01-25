@@ -78,17 +78,22 @@ func (h *SubmHttpHandler) GetSubmList(w http.ResponseWriter, r *http.Request) {
 		authorUuid = &userUuid
 	}
 
+	includeAdmin := false
+	if auth.IsAdmin(r.Context()) {
+		includeAdmin = true
+	}
+
 	// Create a cache key based on pagination parameters
 	authorUuidStr := ""
 	if authorUuid != nil {
 		authorUuidStr = authorUuid.String()
 	}
-	cacheKey := fmt.Sprintf("subm_list:%d:%d:%s:%s", limit, offset, search, authorUuidStr)
+	cacheKey := fmt.Sprintf("subm_list:%d:%d:%s:%s:%t", limit, offset, search, authorUuidStr, includeAdmin)
 
 	// Try to get from cache first
 	if cachedResponse, found := h.submCache.Get(cacheKey); found {
 		if response, ok := cachedResponse.(PaginatedResponse); ok {
-			log.Info("returning cached submission list", "limit", limit, "offset", offset, "search", search)
+			log.Info("returning cached submission list", "limit", limit, "offset", offset, "search", search, "includeAdmin", includeAdmin)
 			jsonresp.Success(w, response)
 			return
 		}
@@ -105,7 +110,7 @@ func (h *SubmHttpHandler) GetSubmList(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Get total count of submissions
-		totalCount, err := h.submSrvc.CountSubms(r.Context(), search, authorUuid)
+		totalCount, err := h.submSrvc.CountSubms(r.Context(), search, authorUuid, includeAdmin)
 		if err != nil {
 			log.Error("failed to count submissions", "error", err)
 			return nil, err
@@ -113,10 +118,11 @@ func (h *SubmHttpHandler) GetSubmList(w http.ResponseWriter, r *http.Request) {
 
 		// Get paginated submissions
 		subms, err := h.submSrvc.ListSubms(r.Context(), srvc.ListSubmsParams{
-			Limit:  limit,
-			Offset: offset,
-			Search: search,
-			Author: authorUuid,
+			Limit:        limit,
+			Offset:       offset,
+			Search:       search,
+			Author:       authorUuid,
+			IncludeAdmin: includeAdmin,
 		})
 		if err != nil {
 			log.Error("failed to list submissions", "error", err)
