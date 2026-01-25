@@ -103,10 +103,23 @@ func (httpserver *HttpServer) testerListen(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	// Set CORS headers explicitly for SSE
+	origin := r.Header.Get("Origin")
+	allowedOrigins := map[string]bool{
+		"http://localhost:3000":    true,
+		"http://localhost:8080":    true,
+		"https://programme.lv":     true,
+		"https://www.programme.lv": true,
+		"https://api.programme.lv": true,
+	}
+	if allowedOrigins[origin] {
+		w.Header().Set("Access-Control-Allow-Origin", origin)
+		w.Header().Set("Access-Control-Allow-Credentials", "true")
+	}
+
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
 
 	encoder := json.NewEncoder(w)
 
