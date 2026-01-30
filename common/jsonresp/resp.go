@@ -27,7 +27,7 @@ func Success(w http.ResponseWriter, data any) error {
 	return json.NewEncoder(w).Encode(resp)
 }
 
-func Error(w http.ResponseWriter, errMsg string, statusCode int, errCode string) error {
+func WriteCustom(w http.ResponseWriter, errMsg string, statusCode int, errCode string) error {
 	resp := JsonResponse{
 		Status:  "error",
 		ErrMsg:  errMsg,
@@ -45,7 +45,7 @@ type HttpStatusCoder interface {
 }
 
 // assume error implements httpStatusCoder interface
-func FromError(w http.ResponseWriter, err error) {
+func WriteError(w http.ResponseWriter, err error) {
 	e, ok := err.(HttpStatusCoder)
 	if !ok {
 		debugMsg := "error does not implement httpStatusCoder interface"
@@ -53,7 +53,7 @@ func FromError(w http.ResponseWriter, err error) {
 
 		InternalError(w)
 	} else {
-		Error(w,
+		WriteCustom(w,
 			e.Error(),
 			e.HttpStatusCode(),
 			e.ErrorCode(),
@@ -63,22 +63,22 @@ func FromError(w http.ResponseWriter, err error) {
 
 // shorthand for jsonresp.FromError(w, ErrInternalServerError)
 func InternalError(w http.ResponseWriter) {
-	FromError(w, ErrInternalServerError)
+	WriteError(w, ErrInternalServerError)
 }
 
 // shorthand for jsonresp.FromError(w, ErrHttpBadRequest.WithMsg(errMsg))
 func BadRequest(w http.ResponseWriter, errMsg string) {
-	FromError(w, ErrHttpBadRequest.WithMsg(errMsg))
+	WriteError(w, ErrHttpBadRequest.WithMsg(errMsg))
 }
 
 // shorthand for jsonresp.FromError(w, ErrHttpForbidden.WithMsg(errMsg))
 func Forbidden(w http.ResponseWriter, errMsg string) {
-	FromError(w, ErrHttpForbidden.WithMsg(errMsg))
+	WriteError(w, ErrHttpForbidden.WithMsg(errMsg))
 }
 
 // shorthand for jsonresp.FromError(w, ErrHttpUnauthorized.WithMsg(errMsg))
 func Unauthorized(w http.ResponseWriter, errMsg string) {
-	FromError(w, ErrHttpUnauthorized.WithMsg(errMsg))
+	WriteError(w, ErrHttpUnauthorized.WithMsg(errMsg))
 }
 
 // HandleSrvcError handles service errors and writes appropriate HTTP responses
@@ -86,10 +86,10 @@ func HandleSrvcError(logger *slog.Logger, w http.ResponseWriter, err error) {
 	srvcErr, ok := err.(srvcerror.E)
 	if ok {
 		logger.Warn("service error", "error", err)
-		if srvcErr.HttpStatusCode() == http.StatusInternalServerError {
-			logger.Error("internal server error", "error", err)
-		}
-		Error(w, srvcErr.Error(), srvcErr.HttpStatusCode(), srvcErr.ErrorCode())
+		// if srvcErr.HttpStatusCode() == http.StatusInternalServerError {
+		// 	logger.Error("internal server error", "error", err)
+		// }
+		WriteCustom(w, srvcErr.Error(), srvcErr.HttpStatusCode(), srvcErr.ErrorCode())
 		return
 	} else {
 		logger.Error("internal server error", "error", err)

@@ -24,7 +24,7 @@ func Json[Q any, R any](handler HandlerFuncImpl[Q, R]) http.HandlerFunc {
 		}
 		result, err := handler(ctx, req)
 		if err != nil {
-			jsonresp.FromError(w, err)
+			jsonresp.WriteError(w, err)
 			return
 		}
 		jsonresp.Success(w, result)
@@ -38,7 +38,7 @@ func NoReqJsonResp[R any](handler HandlerNoReq[R]) http.HandlerFunc {
 		ctx := r.Context()
 		result, err := handler(ctx)
 		if err != nil {
-			jsonresp.FromError(w, err)
+			jsonresp.WriteError(w, err)
 			return
 		}
 		jsonresp.Success(w, result)
@@ -59,7 +59,7 @@ func JsonReqNoResp[Q any](handler HandlerNoResp[Q]) http.HandlerFunc {
 			}
 		}
 		if err := handler(ctx, req); err != nil {
-			jsonresp.FromError(w, err)
+			jsonresp.WriteError(w, err)
 			return
 		}
 		jsonresp.Success(w, struct{}{})
@@ -72,7 +72,7 @@ func NoReqNoResp(handler HandlerNoReqNoResp) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		if err := handler(ctx); err != nil {
-			jsonresp.FromError(w, err)
+			jsonresp.WriteError(w, err)
 			return
 		}
 		jsonresp.Success(w, struct{}{})

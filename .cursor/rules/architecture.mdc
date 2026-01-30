@@ -33,3 +33,4 @@ Interestingly, I've decided that the HTTP layer of each module may aggregate dat
 
 Each module has a srvc.go file somewhere that defines through an interface the service contract for it's bounded context.
 
+When logging and error let's avoid the prefix "failed to".
