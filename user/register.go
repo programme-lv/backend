@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/programme-lv/backend/common/ctxlog"
+	"github.com/programme-lv/backend/common/srvcerror"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -19,33 +20,33 @@ type CreateUserParams struct {
 	Password  string
 }
 
-func (s *userSrvc) CreateUser(ctx context.Context, p CreateUserParams) (res *User, err error) {
+func (s *userSrvc) CreateUser(ctx context.Context, p CreateUserParams) (res *User, err srvcerror.E) {
 	l := ctxlog.FromContext(ctx).With("cmd", "create user")
 
 	// Validate all fields
-	if err := validateUsername(p.Username); err != nil {
-		return nil, err
+	if validateErr := validateUsername(p.Username); validateErr != nil {
+		return nil, validateErr
 	}
-	if err := validateEmail(p.Email); err != nil {
-		return nil, err
+	if validateErr := validateEmail(p.Email); validateErr != nil {
+		return nil, validateErr
 	}
-	if err := validatePassword(p.Password); err != nil {
-		return nil, err
+	if validateErr := validatePassword(p.Password); validateErr != nil {
+		return nil, validateErr
 	}
 	if p.Firstname != nil {
-		if err := validateFirstname(*p.Firstname); err != nil {
-			return nil, err
+		if validateErr := validateFirstname(*p.Firstname); validateErr != nil {
+			return nil, validateErr
 		}
 	}
 	if p.Lastname != nil {
-		if err := validateLastname(*p.Lastname); err != nil {
-			return nil, err
+		if validateErr := validateLastname(*p.Lastname); validateErr != nil {
+			return nil, validateErr
 		}
 	}
 
 	all, selectErr := selectAllUsers(s.postgres)
 	if selectErr != nil {
-		l.Error("failed to list users", "error", selectErr)
+		l.Error("list users", "error", selectErr)
 		return nil, newErrInternalSE()
 	}
 
@@ -63,7 +64,7 @@ func (s *userSrvc) CreateUser(ctx context.Context, p CreateUserParams) (res *Use
 	bcryptPwd, bcryptErr := bcrypt.GenerateFromPassword(
 		[]byte(p.Password), bcrypt.DefaultCost)
 	if bcryptErr != nil {
-		l.Error("failed to generate bcrypt password", "error", bcryptErr)
+		l.Error("generate bcrypt password", "error", bcryptErr)
 		return nil, newErrInternalSE()
 	}
 
@@ -89,7 +90,7 @@ func (s *userSrvc) CreateUser(ctx context.Context, p CreateUserParams) (res *Use
 
 	insertErr := insertUser(s.postgres, row)
 	if insertErr != nil {
-		l.Error("failed to insert user", "error", insertErr)
+		l.Error("insert user", "error", insertErr)
 		return nil, newErrInternalSE()
 	}
 
@@ -166,7 +167,7 @@ func insertUser(pg *pgxpool.Pool, user *dbUser) error {
 }
 
 // Validation functions
-func validateUsername(username string) error {
+func validateUsername(username string) srvcerror.E {
 	const minUsernameLength = 2
 	const maxUsernameLength = 32
 	if len(username) < minUsernameLength {
@@ -178,7 +179,7 @@ func validateUsername(username string) error {
 	return nil
 }
 
-func validateEmail(email string) error {
+func validateEmail(email string) srvcerror.E {
 	const maxEmailLength = 320
 	if len(email) > maxEmailLength {
 		return newErrEmailTooLong()
@@ -196,7 +197,7 @@ func validateEmail(email string) error {
 	return nil
 }
 
-func validatePassword(password string) error {
+func validatePassword(password string) srvcerror.E {
 	const minPasswordLength = 8
 	if len(password) < minPasswordLength {
 		return newErrPasswordTooShort(minPasswordLength)
@@ -207,7 +208,7 @@ func validatePassword(password string) error {
 	return nil
 }
 
-func validateFirstname(firstname string) error {
+func validateFirstname(firstname string) srvcerror.E {
 	const maxFirstnameLength = 35
 	if len(firstname) > maxFirstnameLength {
 		return newErrFirstnameTooLong(maxFirstnameLength)
@@ -215,7 +216,7 @@ func validateFirstname(firstname string) error {
 	return nil
 }
 
-func validateLastname(lastname string) error {
+func validateLastname(lastname string) srvcerror.E {
 	const maxLastnameLength = 35
 	if len(lastname) > maxLastnameLength {
 		return newErrLastnameTooLong(maxLastnameLength)

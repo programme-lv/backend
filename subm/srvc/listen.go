@@ -3,10 +3,11 @@ package srvc
 import (
 	"context"
 
+	"github.com/programme-lv/backend/common/srvcerror"
 	"github.com/programme-lv/backend/subm/domain"
 )
 
-func (s *submSrvc) SubscribeNewSubms(ctx context.Context) (<-chan domain.Subm, error) {
+func (s *submSrvc) SubscribeNewSubms(ctx context.Context) (<-chan domain.Subm, srvcerror.E) {
 	ch := make(chan domain.Subm, 10)
 	s.newSubmChListenerLock.Lock()
 	s.newSubmListeners[ch] = struct{}{}
@@ -21,7 +22,7 @@ func (s *submSrvc) SubscribeNewSubms(ctx context.Context) (<-chan domain.Subm, e
 	return ch, nil
 }
 
-func (s *submSrvc) SubscribeEvalUpds(ctx context.Context) (<-chan domain.Eval, error) {
+func (s *submSrvc) SubscribeEvalUpds(ctx context.Context) (<-chan domain.Eval, srvcerror.E) {
 	ch := make(chan domain.Eval, 10)
 	s.newEvalUpdListenerLock.Lock()
 	s.newEvalUpdListeners[ch] = struct{}{}

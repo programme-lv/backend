@@ -17,11 +17,11 @@ import (
 type SubmissionService interface {
 	SubmitSol(ctx context.Context, p SubmitSolParams) srvcerror.E
 	ReEvalSubm(ctx context.Context, submUuid uuid.UUID) srvcerror.E
-	ViewSubm(ctx context.Context, uuid uuid.UUID) (domain.Subm, error)
-	ListSubms(ctx context.Context, filter ListSubmsParams) ([]domain.Subm, error)
-	GetEval(ctx context.Context, uuid uuid.UUID) (domain.Eval, error)
-	SubscribeNewSubms(ctx context.Context) (<-chan domain.Subm, error)
-	SubscribeEvalUpds(ctx context.Context) (<-chan domain.Eval, error)
+	ViewSubm(ctx context.Context, uuid uuid.UUID) (domain.Subm, srvcerror.E)
+	ListSubms(ctx context.Context, filter ListSubmsParams) ([]domain.Subm, srvcerror.E)
+	GetEval(ctx context.Context, uuid uuid.UUID) (domain.Eval, srvcerror.E)
+	SubscribeNewSubms(ctx context.Context) (<-chan domain.Subm, srvcerror.E)
+	SubscribeEvalUpds(ctx context.Context) (<-chan domain.Eval, srvcerror.E)
 	GetMaxScorePerTask(ctx context.Context, userUUID uuid.UUID) (map[string]domain.MaxScore, srvcerror.E)
 	CountSubms(ctx context.Context, search string, author *uuid.UUID, includeAdmin bool) (int, srvcerror.E)
 }
@@ -63,8 +63,8 @@ type EvalRepo interface {
 }
 
 type ExecSrvcFacade interface {
-	Enqueue(ctx context.Context, execUuid uuid.UUID, srcCode string, prLangId string, tests []exec.TestFile, params exec.TestingParams) error
-	Listen(ctx context.Context, execUuid uuid.UUID) (<-chan exec.Event, error)
+	Enqueue(ctx context.Context, execUuid uuid.UUID, srcCode string, prLangId string, tests []exec.TestFile, params exec.TestingParams) srvcerror.E
+	Listen(ctx context.Context, execUuid uuid.UUID) (<-chan exec.Event, srvcerror.E)
 }
 
 func NewSubmSrvc(

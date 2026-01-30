@@ -17,10 +17,10 @@ type userSrvc struct {
 
 type UserService interface {
 	GetUserByUsername(ctx context.Context, username string) (User, srvcerror.E)
-	GetUserByUUID(ctx context.Context, uuid uuid.UUID) (User, error)
-	GetUsernames(ctx context.Context, uuids []uuid.UUID) ([]string, error)
-	Login(ctx context.Context, username string, password string) (*User, error)
-	CreateUser(ctx context.Context, user CreateUserParams) (*User, error)
+	GetUserByUUID(ctx context.Context, uuid uuid.UUID) (User, srvcerror.E)
+	GetUsernames(ctx context.Context, uuids []uuid.UUID) ([]string, srvcerror.E)
+	Login(ctx context.Context, username string, password string) (*User, srvcerror.E)
+	CreateUser(ctx context.Context, user CreateUserParams) (*User, srvcerror.E)
 }
 
 func NewUserService(pg *pgxpool.Pool) *userSrvc {
@@ -34,7 +34,7 @@ func (s *userSrvc) GetUserByUsername(ctx context.Context, username string) (res 
 
 	allUsers, selectAllUsersErr := selectAllUsers(s.postgres)
 	if selectAllUsersErr != nil {
-		l.Error("failed to list users", "error", selectAllUsersErr)
+		l.Error("list users", "error", selectAllUsersErr)
 		return User{}, srvcerror.InternalServerError()
 	}
 
@@ -65,12 +65,12 @@ func (s *userSrvc) GetUserByUsername(ctx context.Context, username string) (res 
 	return resSlice[0], nil
 }
 
-func (s *userSrvc) GetUserByUUID(ctx context.Context, uuid uuid.UUID) (res User, err error) {
+func (s *userSrvc) GetUserByUUID(ctx context.Context, uuid uuid.UUID) (res User, err srvcerror.E) {
 	l := ctxlog.FromContext(ctx).With("query", "get user by uuid")
 
 	allUsers, selectErr := selectAllUsers(s.postgres)
 	if selectErr != nil {
-		l.Error("failed to list users", "error", selectErr)
+		l.Error("list users", "error", selectErr)
 		return User{}, srvcerror.InternalServerError()
 	}
 
@@ -93,7 +93,7 @@ func (s *userSrvc) GetUserByUUID(ctx context.Context, uuid uuid.UUID) (res User,
 		}
 	}
 	if len(resSlice) == 0 {
-		l.Error("user with UUID not found", "uuid", uuid)
+		l.Warn("user with UUID not found", "uuid", uuid)
 		return User{}, ErrUserNotFound
 	}
 
@@ -101,12 +101,12 @@ func (s *userSrvc) GetUserByUUID(ctx context.Context, uuid uuid.UUID) (res User,
 }
 
 func (s *userSrvc) GetUsernames(ctx context.Context,
-	uuids []uuid.UUID) ([]string, error) {
+	uuids []uuid.UUID) ([]string, srvcerror.E) {
 	l := ctxlog.FromContext(ctx).With("query", "get usernames")
 
 	allUsers, err := selectAllUsers(s.postgres)
 	if err != nil {
-		l.Error("failed to list users", "error", err)
+		l.Error("list users", "error", err)
 		return nil, srvcerror.InternalServerError()
 	}
 

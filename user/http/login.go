@@ -2,12 +2,12 @@ package http
 
 import (
 	"encoding/json"
-	"fmt"
 	"log/slog"
 	"net/http"
 	"time"
 
 	"github.com/programme-lv/backend/common/jsonresp"
+	"github.com/programme-lv/backend/common/srvcerror"
 	"github.com/programme-lv/backend/user/auth"
 )
 
@@ -23,21 +23,21 @@ func (httpserver *UserHttpHandler) Login(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	user, err := httpserver.userSrvc.Login(r.Context(), request.Username, request.Password)
-	if err != nil {
-		jsonresp.HandleSrvcError(slog.Default(), w, err)
+	user, loginErr := httpserver.userSrvc.Login(r.Context(), request.Username, request.Password)
+	if loginErr != nil {
+		jsonresp.HandleSrvcError(slog.Default(), w, loginErr)
 		return
 	}
 
 	validFor := 24 * time.Hour
 
-	token, err := auth.GenerateJWT(
+	token, jwtErr := auth.GenerateJWT(
 		user.Username,
 		user.Email, user.UUID,
 		httpserver.jwtKey, validFor)
-	if err != nil {
-		err = fmt.Errorf("failed to generate JWT: %w", err)
-		jsonresp.HandleSrvcError(slog.Default(), w, err)
+	if jwtErr != nil {
+		slog.Error("generate JWT", "error", jwtErr)
+		jsonresp.HandleSrvcError(slog.Default(), w, srvcerror.InternalServerError())
 		return
 	}
 
