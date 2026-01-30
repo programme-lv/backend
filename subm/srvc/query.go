@@ -3,7 +3,6 @@ package srvc
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"github.com/google/uuid"
 	"github.com/programme-lv/backend/common/ctxlog"
@@ -43,7 +42,7 @@ func (s *submSrvc) GetMaxScorePerTask(ctx context.Context, userUUID uuid.UUID) (
 type getMaxScorePerTaskHandler struct {
 	listSubmJoinEval func(ctx context.Context, authorUuid *uuid.UUID) ([]ShallowSubmJoinEvalDto, error)
 	doesTaskExist    func(ctx context.Context, taskShortID string) (bool, srvcerror.E)
-	getFullEval      func(ctx context.Context, evalUUID uuid.UUID) (domain.Eval, error)
+	getFullEval      func(ctx context.Context, evalUUID uuid.UUID) (domain.Eval, srvcerror.E)
 }
 
 func (h getMaxScorePerTaskHandler) Handle(ctx context.Context, userUUID uuid.UUID) (map[string]domain.MaxScore, srvcerror.E) {
@@ -144,29 +143,29 @@ func (s *submSrvc) CountSubms(ctx context.Context, search string, author *uuid.U
 	}
 	count, countErr := s.submRepo.CountSubms(ctx, author, authorIds, taskIds, langIds, includeAdmin)
 	if countErr != nil {
-		log.Error("failed to count submissions", "error", countErr)
+		log.Error("count submissions", "error", countErr)
 		return 0, ErrInternal
 	}
 
 	return count, nil
 }
 
-func (s *submSrvc) ViewSubm(ctx context.Context, submUuid uuid.UUID) (domain.Subm, error) {
-	log := ctxlog.FromContext(ctx)
+func (s *submSrvc) ViewSubm(ctx context.Context, submUuid uuid.UUID) (domain.Subm, srvcerror.E) {
+	log := ctxlog.FromContext(ctx).With("query", "view submission")
 
 	subm, err := s.submRepo.GetSubm(ctx, submUuid)
 	if err != nil {
-		log.Error("failed to get submission", "error", err)
-		return domain.Subm{}, fmt.Errorf("failed to get submission: %w", err)
+		log.Error("get submission", "error", err)
+		return domain.Subm{}, srvcerror.InternalServerError()
 	}
 
 	userHasSolvedTheTask := false
-	userUUID, err := auth.GetUserUuidFromCtx(ctx)
-	if err == nil && userUUID != subm.AuthorUUID {
-		userMaxScores, err := s.GetMaxScorePerTask(ctx, userUUID)
-		if err != nil {
-			log.Error("failed to get user scores", "error", err)
-			return domain.Subm{}, fmt.Errorf("failed to get user scores: %w", err)
+	userUUID, authErr := auth.GetUserUuidFromCtx(ctx)
+	if authErr == nil && userUUID != subm.AuthorUUID {
+		userMaxScores, maxScoreErr := s.GetMaxScorePerTask(ctx, userUUID)
+		if maxScoreErr != nil {
+			log.Error("get user scores", "error", maxScoreErr)
+			return domain.Subm{}, srvcerror.InternalServerError()
 		}
 		userScore, ok := userMaxScores[subm.TaskShortID]
 		if ok {
@@ -190,8 +189,8 @@ type ListSubmsParams struct {
 	IncludeAdmin bool // whether to include admin submissions
 }
 
-func (s *submSrvc) ListSubms(ctx context.Context, filter ListSubmsParams) ([]domain.Subm, error) {
-	log := ctxlog.FromContext(ctx)
+func (s *submSrvc) ListSubms(ctx context.Context, filter ListSubmsParams) ([]domain.Subm, srvcerror.E) {
+	log := ctxlog.FromContext(ctx).With("query", "list submissions")
 	log.Debug("listing submissions", "limit", filter.Limit, "offset", filter.Offset)
 
 	authorIds := make([]string, 0)
@@ -203,14 +202,16 @@ func (s *submSrvc) ListSubms(ctx context.Context, filter ListSubmsParams) ([]dom
 		var searchTasksByNameErr srvcerror.E
 		taskIds, searchTasksByNameErr = s.taskSrvc.SearchTasksByName(ctx, filter.Search)
 		if searchTasksByNameErr != nil {
-			return nil, fmt.Errorf("failed to search tasks by name: %w", searchTasksByNameErr)
+			log.Error("search tasks by name", "error", searchTasksByNameErr)
+			return nil, srvcerror.InternalServerError()
 		}
 		taskIds = append(taskIds, filter.Search)
 
 		// get all possible user matches
 		authorId, err := s.userSrvc.GetUserByUsername(ctx, filter.Search)
 		if err != nil && !srvcerror.Is(err, usersrvc.ErrCodeUserNotFound) {
-			return nil, fmt.Errorf("failed to get user by username: %w", err)
+			log.Error("get user by username", "error", err)
+			return nil, srvcerror.InternalServerError()
 		}
 		if authorId.UUID != uuid.Nil {
 			authorIdStr := authorId.UUID.String()
@@ -224,16 +225,29 @@ func (s *submSrvc) ListSubms(ctx context.Context, filter ListSubmsParams) ([]dom
 		var searchProgrLangByNameErr error
 		langIds, searchProgrLangByNameErr = plang.SearchProgrLangByName(filter.Search)
 		if searchProgrLangByNameErr != nil {
-			return nil, fmt.Errorf("failed to search programming languages by name: %w", searchProgrLangByNameErr)
+			log.Error("search programming languages by name", "error", searchProgrLangByNameErr)
+			return nil, srvcerror.InternalServerError()
 		}
 		langIds = append(langIds, filter.Search)
 	}
-	return s.submRepo.ListSubms(ctx, filter.Limit, filter.Offset, filter.Search, filter.Author, authorIds, taskIds, langIds, filter.IncludeAdmin)
+
+	subms, listErr := s.submRepo.ListSubms(ctx, filter.Limit, filter.Offset, filter.Search, filter.Author, authorIds, taskIds, langIds, filter.IncludeAdmin)
+	if listErr != nil {
+		log.Error("list submissions from repo", "error", listErr)
+		return nil, srvcerror.InternalServerError()
+	}
+	return subms, nil
 }
 
-func (s *submSrvc) GetEval(ctx context.Context, uuid uuid.UUID) (domain.Eval, error) {
+func (s *submSrvc) GetEval(ctx context.Context, uuid uuid.UUID) (domain.Eval, srvcerror.E) {
 	if eval, ok := s.inProgrEval[uuid]; ok {
 		return eval, nil
 	}
-	return s.evalRepo.GetEval(ctx, uuid)
+	eval, err := s.evalRepo.GetEval(ctx, uuid)
+	if err != nil {
+		log := ctxlog.FromContext(ctx).With("query", "get evaluation")
+		log.Error("get evaluation from repo", "error", err)
+		return domain.Eval{}, srvcerror.InternalServerError()
+	}
+	return eval, nil
 }

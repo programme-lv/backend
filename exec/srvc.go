@@ -14,13 +14,14 @@ import (
 	"github.com/klauspost/compress/zstd"
 	"github.com/nats-io/nats.go"
 	"github.com/programme-lv/backend/common/ctxlog"
+	"github.com/programme-lv/backend/common/srvcerror"
 	testerapi "github.com/programme-lv/tester/api"
 )
 
 type CodeExecutionService interface {
-	Enqueue(ctx context.Context, uuid uuid.UUID, srcCode string, prLangId string, tests []TestFile, params TestingParams) error
-	Listen(ctx context.Context, uuid uuid.UUID) (<-chan Event, error)
-	Get(ctx context.Context, execUuid uuid.UUID) (Execution, error)
+	Enqueue(ctx context.Context, uuid uuid.UUID, srcCode string, prLangId string, tests []TestFile, params TestingParams) srvcerror.E
+	Listen(ctx context.Context, uuid uuid.UUID) (<-chan Event, srvcerror.E)
+	Get(ctx context.Context, execUuid uuid.UUID) (Execution, srvcerror.E)
 }
 
 var _ CodeExecutionService = &execSrvc{}
@@ -290,7 +291,9 @@ func (e *execSrvc) Enqueue(
 	langId string,
 	tests []TestFile,
 	params TestingParams,
-) error {
+) srvcerror.E {
+	l := ctxlog.FromContext(ctx).With("cmd", "enqueue execution")
+
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
@@ -307,14 +310,20 @@ func (e *execSrvc) Enqueue(
 	}
 	lang, err := getPrLangById(langId)
 	if err != nil {
-		return err
+		l.Error("get programming language", "lang_id", langId, "error", err)
+		return srvcerror.InternalServerError()
 	}
 	execReq.Lang = lang
 
 	// 2. validate sanity of request
-	err = execReq.IsValid()
-	if err != nil {
-		return fmt.Errorf("validate exec request: %w", err)
+	validationErr := execReq.IsValid()
+	if validationErr != nil {
+		// IsValid returns srvcerror.E for validation errors
+		if se, ok := validationErr.(srvcerror.E); ok {
+			return se
+		}
+		l.Error("validate exec request", "error", validationErr)
+		return srvcerror.InternalServerError()
 	}
 
 	// 3. create WaitGroup for awaiting results
@@ -328,9 +337,10 @@ func (e *execSrvc) Enqueue(
 	// 5. setup stream organizer
 	hasCompile := lang.CompCmd != nil
 	noOfTests := len(tests)
-	org, err := newResultStreamOrganizer(hasCompile, noOfTests)
-	if err != nil {
-		return fmt.Errorf("setup result stream organizer: %w", err)
+	org, orgErr := newResultStreamOrganizer(hasCompile, noOfTests)
+	if orgErr != nil {
+		l.Error("setup result stream organizer", "error", orgErr)
+		return srvcerror.InternalServerError()
 	}
 	e.organizers[execUuid] = org
 
@@ -353,13 +363,15 @@ func (e *execSrvc) Enqueue(
 
 	// 7. encode the execution request
 	testerReq := execReq.MapToTesterApiType()
-	reqJson, err := json.Marshal(testerReq)
-	if err != nil {
-		return fmt.Errorf("marshal eval request in tester format: %w", err)
+	reqJson, marshalErr := json.Marshal(testerReq)
+	if marshalErr != nil {
+		l.Error("marshal eval request in tester format", "error", marshalErr)
+		return srvcerror.InternalServerError()
 	}
-	zstdEncoder, err := zstd.NewWriter(nil)
-	if err != nil {
-		return fmt.Errorf("failed to create zstd encoder: %w", err)
+	zstdEncoder, zstdErr := zstd.NewWriter(nil)
+	if zstdErr != nil {
+		l.Error("create zstd encoder", "error", zstdErr)
+		return srvcerror.InternalServerError()
 	}
 	defer zstdEncoder.Close()
 	compressed := zstdEncoder.EncodeAll(reqJson, make([]byte, 0, len(reqJson)))
@@ -367,9 +379,10 @@ func (e *execSrvc) Enqueue(
 	encodedBytes := []byte(encoded)
 
 	// 8. send encoded message to job queue
-	err = e.natsConn.PublishRequest(NatsSubject, e.natsInbox, encodedBytes)
-	if err != nil {
-		return fmt.Errorf("publish eval req to nats: %w", err)
+	pubErr := e.natsConn.PublishRequest(NatsSubject, e.natsInbox, encodedBytes)
+	if pubErr != nil {
+		l.Error("publish eval req to nats", "error", pubErr)
+		return srvcerror.InternalServerError()
 	}
 
 	return nil
@@ -381,15 +394,16 @@ func (e *execSrvc) Enqueue(
 func (e *execSrvc) Listen(
 	ctx context.Context,
 	execId uuid.UUID,
-) (<-chan Event, error) {
+) (<-chan Event, srvcerror.E) {
+	l := ctxlog.FromContext(ctx).With("query", "listen to execution")
+
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
 	ch, ok := e.notifiers[execId]
 	if !ok {
-		format := "no listener for exec %s"
-		errMsg := fmt.Errorf(format, execId)
-		return nil, errMsg
+		l.Error("no listener for exec", "exec_id", execId)
+		return nil, srvcerror.InternalServerError()
 	}
 	return ch, nil
 }
@@ -400,19 +414,16 @@ func (e *execSrvc) Listen(
 func (e *execSrvc) Get(
 	ctx context.Context,
 	execId uuid.UUID,
-) (Execution, error) {
+) (Execution, srvcerror.E) {
+	l := ctxlog.FromContext(ctx).With("query", "get execution")
+
 	// Get the WaitGroup for this execution
 	wgVal, exists := e.execWg.Load(execId)
 	if !exists {
-		exec, err := e.execRepo.Get(
-			ctx,
-			execId,
-		)
+		exec, err := e.execRepo.Get(ctx, execId)
 		if err != nil {
-			return Execution{}, fmt.Errorf(
-				"no execution found for id %s",
-				execId,
-			)
+			l.Error("get execution from repo", "exec_id", execId, "error", err)
+			return Execution{}, ErrEvalNotFound
 		}
 		return *exec, nil
 	}
@@ -431,16 +442,15 @@ func (e *execSrvc) Get(
 	case <-done:
 		// Clean up the WaitGroup
 		e.execWg.Delete(execId)
-		exec, err := e.execRepo.Get(
-			ctx,
-			execId,
-		)
+		exec, err := e.execRepo.Get(ctx, execId)
 		if err != nil {
-			return Execution{}, err
+			l.Error("get execution from repo after wait", "exec_id", execId, "error", err)
+			return Execution{}, srvcerror.InternalServerError()
 		}
 		return *exec, nil
 	case <-ctx.Done():
-		return Execution{}, ctx.Err()
+		l.Error("context cancelled while waiting for execution", "exec_id", execId)
+		return Execution{}, srvcerror.InternalServerError()
 	}
 }
 

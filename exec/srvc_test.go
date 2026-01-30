@@ -102,8 +102,8 @@ func TestExecResult(t *testing.T) {
 		SubmComp:  nil,
 		CreatedAt: time.Now(),
 	}
-	err = expected.SimilarTo(res)
-	require.NoError(t, err)
+	similarErr := expected.SimilarTo(res)
+	require.NoError(t, similarErr)
 
 	require.Equal(t, expected.UUID, res.UUID)
 	require.InDelta(t, expected.CreatedAt.UnixMilli(), res.CreatedAt.UnixMilli(), 2000)

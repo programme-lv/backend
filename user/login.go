@@ -4,22 +4,23 @@ import (
 	"context"
 
 	"github.com/programme-lv/backend/common/ctxlog"
+	"github.com/programme-lv/backend/common/srvcerror"
 	"golang.org/x/crypto/bcrypt"
 )
 
-func (s *userSrvc) Login(ctx context.Context, username string, password string) (res *User, err error) {
+func (s *userSrvc) Login(ctx context.Context, username string, password string) (res *User, err srvcerror.E) {
 	l := ctxlog.FromContext(ctx).With("cmd", "login")
 
 	allUsers, selectErr := selectAllUsers(s.postgres)
 	if selectErr != nil {
-		l.Error("failed to list users", "error", selectErr)
+		l.Error("list users", "error", selectErr)
 		return nil, newErrInternalSE()
 	}
 
 	for _, user := range allUsers {
 		if user.Username == username {
-			err = bcrypt.CompareHashAndPassword([]byte(user.BcryptPwd), []byte(password))
-			if err == nil {
+			bcryptErr := bcrypt.CompareHashAndPassword([]byte(user.BcryptPwd), []byte(password))
+			if bcryptErr == nil {
 				return &User{
 					UUID:      user.UUID,
 					Username:  user.Username,

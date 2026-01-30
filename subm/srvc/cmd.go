@@ -25,7 +25,7 @@ type SubmitSolParams struct {
 
 func (s *submSrvc) SubmitSol(ctx context.Context, p SubmitSolParams) srvcerror.E {
 	submitSolCmd := submitSolCmdHandler{
-		DoesUserExist: func(ctx context.Context, uuid uuid.UUID) (bool, error) {
+		DoesUserExist: func(ctx context.Context, uuid uuid.UUID) (bool, srvcerror.E) {
 			user, err := s.userSrvc.GetUserByUUID(ctx, uuid)
 			if err != nil {
 				return false, err
@@ -43,12 +43,12 @@ func (s *submSrvc) SubmitSol(ctx context.Context, p SubmitSolParams) srvcerror.E
 }
 
 type submitSolCmdHandler struct {
-	DoesUserExist    func(ctx context.Context, uuid uuid.UUID) (bool, error)
+	DoesUserExist    func(ctx context.Context, uuid uuid.UUID) (bool, srvcerror.E)
 	GetTask          func(ctx context.Context, shortId string) (tasksrvc.Task, srvcerror.E)
 	StoreSubm        func(ctx context.Context, subm domain.Subm) error
 	StoreEval        func(ctx context.Context, eval domain.Eval) error
 	BcastSubmCreated func(subm domain.Subm)
-	EnqueueExec      func(ctx context.Context, eval domain.Eval, srcCode string, prLangId string) error
+	EnqueueExec      func(ctx context.Context, eval domain.Eval, srcCode string, prLangId string) srvcerror.E
 }
 
 const MaxSubmLengthKB = 64
@@ -100,26 +100,26 @@ func (h submitSolCmdHandler) Handle(ctx context.Context, p SubmitSolParams) srvc
 	}
 	eval := domain.NewEval(evalUuid, submEntity.UUID, t)
 
-	err = h.StoreEval(ctx, eval)
-	if err != nil {
+	storeEvalErr := h.StoreEval(ctx, eval)
+	if storeEvalErr != nil {
 		action := "store evaluation"
-		log.Error(action, "eval_uuid", evalUuid, "error", err)
+		log.Error(action, "eval_uuid", evalUuid, "error", storeEvalErr)
 		return srvcerror.InternalServerError()
 	}
 
-	err = h.StoreSubm(ctx, submEntity)
-	if err != nil {
+	storeSubmErr := h.StoreSubm(ctx, submEntity)
+	if storeSubmErr != nil {
 		action := "store submission"
-		log.Error(action, "subm_uuid", p.UUID, "error", err)
+		log.Error(action, "subm_uuid", p.UUID, "error", storeSubmErr)
 		return srvcerror.InternalServerError()
 	}
 
 	h.BcastSubmCreated(submEntity)
 
-	err = h.EnqueueExec(ctx, eval, submEntity.Content, l.ID)
-	if err != nil {
+	enqueueErr := h.EnqueueExec(ctx, eval, submEntity.Content, l.ID)
+	if enqueueErr != nil {
 		action := "enqueue execution"
-		log.Error(action, "eval_uuid", evalUuid, "error", err)
+		log.Error(action, "eval_uuid", evalUuid, "error", enqueueErr)
 		return srvcerror.InternalServerError()
 	}
 
@@ -151,7 +151,7 @@ type reEvalSubmHandler struct {
 	AssignEval func(ctx context.Context, submUuid uuid.UUID, evalUuid uuid.UUID) error
 
 	// enqueue evaluation for corresponding submission execution by tester
-	EnqueueExec func(ctx context.Context, eval domain.Eval, srcCode string, prLangId string) error
+	EnqueueExec func(ctx context.Context, eval domain.Eval, srcCode string, prLangId string) srvcerror.E
 }
 
 func (h reEvalSubmHandler) Handle(ctx context.Context, submUuid uuid.UUID) srvcerror.E {
@@ -199,7 +199,7 @@ func (h reEvalSubmHandler) Handle(ctx context.Context, submUuid uuid.UUID) srvce
 	return nil
 }
 
-func (s *submSrvc) enqueueExecAndListen(ctx context.Context, eval domain.Eval, srcCode string, prLangId string) error {
+func (s *submSrvc) enqueueExecAndListen(ctx context.Context, eval domain.Eval, srcCode string, prLangId string) srvcerror.E {
 	log := ctxlog.FromContext(ctx)
 
 	// Add eval to in-progress map before enqueueing
@@ -226,12 +226,12 @@ func (s *submSrvc) enqueueExecAndListen(ctx context.Context, eval domain.Eval, s
 		return srvcerror.InternalServerError()
 	}
 
-	ch, err := s.execSrvc.Listen(ctx, eval.UUID)
-	if err != nil {
+	ch, listenErr := s.execSrvc.Listen(ctx, eval.UUID)
+	if listenErr != nil {
 		delete(s.inProgrEval, eval.UUID) // remove from map if listen fails
 
 		action := "subscribe to execution"
-		log.Error(action, "eval_uuid", eval.UUID, "error", err)
+		log.Error(action, "eval_uuid", eval.UUID, "error", listenErr)
 		return srvcerror.InternalServerError()
 	}
 
