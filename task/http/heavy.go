@@ -53,7 +53,7 @@ func (h *taskHttpHandler) UploadTask(w http.ResponseWriter, r *http.Request) {
 
 	createdId, importTaskErr := h.taskSrvc.ImportTaskFromZip(r.Context(), zipBytes, overrideId)
 	if importTaskErr != nil {
-		jsonresp.FromError(w, importTaskErr)
+		jsonresp.WriteError(w, importTaskErr)
 		return
 	}
 
@@ -86,7 +86,7 @@ func (h *taskHttpHandler) UploadStatementImage(w http.ResponseWriter, r *http.Re
 		if ve, ok := vErr.(*fname.FilenameValidationError); ok {
 			code = ve.Code
 		}
-		jsonresp.Error(w, vErr.Error(), http.StatusBadRequest, code)
+		jsonresp.WriteCustom(w, vErr.Error(), http.StatusBadRequest, code)
 		return
 	}
 
@@ -95,7 +95,7 @@ func (h *taskHttpHandler) UploadStatementImage(w http.ResponseWriter, r *http.Re
 	if err != nil {
 		errMsg := fmt.Sprintf("failed to get MIME types: %v", err)
 		errCode := "failed_to_get_mimes"
-		jsonresp.Error(w, errMsg, http.StatusBadRequest, errCode)
+		jsonresp.WriteCustom(w, errMsg, http.StatusBadRequest, errCode)
 		return
 	}
 
@@ -115,7 +115,7 @@ func (h *taskHttpHandler) UploadStatementImage(w http.ResponseWriter, r *http.Re
 
 	uri, uploadImageErr := h.taskSrvc.UploadStatementImage(r.Context(), taskId, uploadedFilename, imageMimeType, imageBytes)
 	if uploadImageErr != nil {
-		jsonresp.FromError(w, uploadImageErr)
+		jsonresp.WriteError(w, uploadImageErr)
 		return
 	}
 
@@ -135,7 +135,7 @@ func (h *taskHttpHandler) UploadIllustration(w http.ResponseWriter, r *http.Requ
 	if err != nil {
 		errMsg := fmt.Sprintf("failed to parse multipart form (maybe the image is too large?): %v", err)
 		errCode := "failed_to_parse_multipart_form"
-		jsonresp.Error(w, errMsg, http.StatusBadRequest, errCode)
+		jsonresp.WriteCustom(w, errMsg, http.StatusBadRequest, errCode)
 		return
 	}
 
@@ -144,7 +144,7 @@ func (h *taskHttpHandler) UploadIllustration(w http.ResponseWriter, r *http.Requ
 	if err != nil {
 		errMsg := fmt.Sprintf("failed to get image: %v", err)
 		errCode := "failed_to_get_image"
-		jsonresp.Error(w, errMsg, http.StatusBadRequest, errCode)
+		jsonresp.WriteCustom(w, errMsg, http.StatusBadRequest, errCode)
 		return
 	}
 	defer image.Close()
@@ -154,7 +154,7 @@ func (h *taskHttpHandler) UploadIllustration(w http.ResponseWriter, r *http.Requ
 	if err != nil {
 		errMsg := fmt.Sprintf("failed to get MIME types: %v", err)
 		errCode := "failed_to_get_mimes"
-		jsonresp.Error(w, errMsg, http.StatusBadRequest, errCode)
+		jsonresp.WriteCustom(w, errMsg, http.StatusBadRequest, errCode)
 		return
 	}
 
@@ -162,7 +162,7 @@ func (h *taskHttpHandler) UploadIllustration(w http.ResponseWriter, r *http.Requ
 	if !strings.HasPrefix(imageMimeType, "image/") {
 		errMsg := fmt.Sprintf("uploaded file is not an image (detected MIME type: %s)", imageMimeType)
 		errCode := "invalid_mime_type"
-		jsonresp.Error(w, errMsg, http.StatusBadRequest, errCode)
+		jsonresp.WriteCustom(w, errMsg, http.StatusBadRequest, errCode)
 		return
 	}
 
@@ -170,7 +170,7 @@ func (h *taskHttpHandler) UploadIllustration(w http.ResponseWriter, r *http.Requ
 	if err != nil {
 		errMsg := fmt.Sprintf("failed to read image: %v", err)
 		errCode := "failed_to_read_image"
-		jsonresp.Error(w, errMsg, http.StatusBadRequest, errCode)
+		jsonresp.WriteCustom(w, errMsg, http.StatusBadRequest, errCode)
 		return
 	}
 
@@ -179,7 +179,7 @@ func (h *taskHttpHandler) UploadIllustration(w http.ResponseWriter, r *http.Requ
 	if err != nil {
 		errMsg := fmt.Sprintf("failed to get image dimensions: %v", err)
 		errCode := "failed_to_get_image_dimensions"
-		jsonresp.Error(w, errMsg, http.StatusBadRequest, errCode)
+		jsonresp.WriteCustom(w, errMsg, http.StatusBadRequest, errCode)
 		return
 	}
 
@@ -187,7 +187,7 @@ func (h *taskHttpHandler) UploadIllustration(w http.ResponseWriter, r *http.Requ
 	if width > 2000 || height > 2000 || width == 0 || height == 0 {
 		errMsg := "image dimensions are inadequate (must be between 1x1 and 2000x2000 pixels)"
 		errCode := "inadequate_image_dimensions"
-		jsonresp.Error(w, errMsg, http.StatusBadRequest, errCode)
+		jsonresp.WriteCustom(w, errMsg, http.StatusBadRequest, errCode)
 		return
 	}
 
@@ -243,7 +243,7 @@ func (h *taskHttpHandler) ExportTask(w http.ResponseWriter, r *http.Request) {
 	// Call service to get ZIP bytes
 	zipBytes, exportTaskAsZipErr := h.taskSrvc.ExportTaskAsZip(r.Context(), taskId)
 	if exportTaskAsZipErr != nil {
-		jsonresp.FromError(w, exportTaskAsZipErr)
+		jsonresp.WriteError(w, exportTaskAsZipErr)
 		return
 	}
 
