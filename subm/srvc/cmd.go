@@ -23,7 +23,7 @@ type SubmitSolParams struct {
 	AuthorUUID  uuid.UUID
 }
 
-func (s *submSrvc) SubmitSol(ctx context.Context, p SubmitSolParams) *srvcerror.Error {
+func (s *submSrvc) SubmitSol(ctx context.Context, p SubmitSolParams) srvcerror.E {
 	submitSolCmd := submitSolCmdHandler{
 		DoesUserExist: func(ctx context.Context, uuid uuid.UUID) (bool, error) {
 			user, err := s.userSrvc.GetUserByUUID(ctx, uuid)
@@ -44,7 +44,7 @@ func (s *submSrvc) SubmitSol(ctx context.Context, p SubmitSolParams) *srvcerror.
 
 type submitSolCmdHandler struct {
 	DoesUserExist    func(ctx context.Context, uuid uuid.UUID) (bool, error)
-	GetTask          func(ctx context.Context, shortId string) (tasksrvc.Task, *srvcerror.Error)
+	GetTask          func(ctx context.Context, shortId string) (tasksrvc.Task, srvcerror.E)
 	StoreSubm        func(ctx context.Context, subm domain.Subm) error
 	StoreEval        func(ctx context.Context, eval domain.Eval) error
 	BcastSubmCreated func(subm domain.Subm)
@@ -53,7 +53,7 @@ type submitSolCmdHandler struct {
 
 const MaxSubmLengthKB = 64
 
-func (h submitSolCmdHandler) Handle(ctx context.Context, p SubmitSolParams) *srvcerror.Error {
+func (h submitSolCmdHandler) Handle(ctx context.Context, p SubmitSolParams) srvcerror.E {
 	log := ctxlog.FromContext(ctx).With("handler", "submit solution")
 
 	if len(p.Submission) > MaxSubmLengthKB*1024 {
@@ -126,7 +126,7 @@ func (h submitSolCmdHandler) Handle(ctx context.Context, p SubmitSolParams) *srv
 	return nil
 }
 
-func (s *submSrvc) ReEvalSubm(ctx context.Context, submUuid uuid.UUID) *srvcerror.Error {
+func (s *submSrvc) ReEvalSubm(ctx context.Context, submUuid uuid.UUID) srvcerror.E {
 	reevalSubmCmd := reEvalSubmHandler{
 		GetSubm:     s.submRepo.GetSubm,
 		GetTask:     s.taskSrvc.GetTask,
@@ -142,7 +142,7 @@ type reEvalSubmHandler struct {
 	GetSubm func(ctx context.Context, submUuid uuid.UUID) (domain.Subm, error)
 
 	// get persisted task entity by short id
-	GetTask func(ctx context.Context, shortId string) (tasksrvc.Task, *srvcerror.Error)
+	GetTask func(ctx context.Context, shortId string) (tasksrvc.Task, srvcerror.E)
 
 	// persist evaluation entity
 	StoreEval func(ctx context.Context, eval domain.Eval) error
@@ -154,7 +154,7 @@ type reEvalSubmHandler struct {
 	EnqueueExec func(ctx context.Context, eval domain.Eval, srcCode string, prLangId string) error
 }
 
-func (h reEvalSubmHandler) Handle(ctx context.Context, submUuid uuid.UUID) *srvcerror.Error {
+func (h reEvalSubmHandler) Handle(ctx context.Context, submUuid uuid.UUID) srvcerror.E {
 	log := ctxlog.FromContext(ctx).With("handler", "re eval subm")
 	ctx = ctxlog.WithLogger(ctx, log)
 
@@ -262,7 +262,7 @@ func (s *submSrvc) enqueueExecAndListen(ctx context.Context, eval domain.Eval, s
 func constructExecEnqueueTests(
 	ctx context.Context,
 	eval domain.Eval,
-	getTestDownlUrl func(ctx context.Context, testFileSha256 string) (string, *srvcerror.Error),
+	getTestDownlUrl func(ctx context.Context, testFileSha256 string) (string, srvcerror.E),
 ) []exec.TestFile {
 	log := ctxlog.FromContext(ctx)
 

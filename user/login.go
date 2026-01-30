@@ -2,16 +2,18 @@ package user
 
 import (
 	"context"
-	"fmt"
 
+	"github.com/programme-lv/backend/common/ctxlog"
 	"golang.org/x/crypto/bcrypt"
 )
 
 func (s *UserSrvc) Login(ctx context.Context, username string, password string) (res *User, err error) {
-	allUsers, err := selectAllUsers(s.postgres)
-	if err != nil {
-		errMsg := fmt.Errorf("error listing users: %w", err)
-		return nil, newErrInternalSE().SetDebug(errMsg)
+	l := ctxlog.FromContext(ctx).With("cmd", "login")
+
+	allUsers, selectErr := selectAllUsers(s.postgres)
+	if selectErr != nil {
+		l.Error("failed to list users", "error", selectErr)
+		return nil, newErrInternalSE()
 	}
 
 	for _, user := range allUsers {

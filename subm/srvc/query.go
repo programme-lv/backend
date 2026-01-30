@@ -16,11 +16,11 @@ import (
 )
 
 // GetMaxScorePerTask implements SubmSrvcClient.
-func (s *submSrvc) GetMaxScorePerTask(ctx context.Context, userUUID uuid.UUID) (map[string]domain.MaxScore, *srvcerror.Error) {
+func (s *submSrvc) GetMaxScorePerTask(ctx context.Context, userUUID uuid.UUID) (map[string]domain.MaxScore, srvcerror.E) {
 	taskExistsCache := make(map[string]bool)
 	h := getMaxScorePerTaskHandler{
 		listSubmJoinEval: s.submRepo.ListShallowSubmsJoinEval,
-		doesTaskExist: func(ctx context.Context, taskShortID string) (bool, *srvcerror.Error) {
+		doesTaskExist: func(ctx context.Context, taskShortID string) (bool, srvcerror.E) {
 			if exists, ok := taskExistsCache[taskShortID]; ok {
 				return exists, nil
 			}
@@ -42,11 +42,11 @@ func (s *submSrvc) GetMaxScorePerTask(ctx context.Context, userUUID uuid.UUID) (
 
 type getMaxScorePerTaskHandler struct {
 	listSubmJoinEval func(ctx context.Context, authorUuid *uuid.UUID) ([]ShallowSubmJoinEvalDto, error)
-	doesTaskExist    func(ctx context.Context, taskShortID string) (bool, *srvcerror.Error)
+	doesTaskExist    func(ctx context.Context, taskShortID string) (bool, srvcerror.E)
 	getFullEval      func(ctx context.Context, evalUUID uuid.UUID) (domain.Eval, error)
 }
 
-func (h getMaxScorePerTaskHandler) Handle(ctx context.Context, userUUID uuid.UUID) (map[string]domain.MaxScore, *srvcerror.Error) {
+func (h getMaxScorePerTaskHandler) Handle(ctx context.Context, userUUID uuid.UUID) (map[string]domain.MaxScore, srvcerror.E) {
 	log := ctxlog.FromContext(ctx).With("handler", "get max score per task")
 
 	submJoinEvalList, err := h.listSubmJoinEval(ctx, &userUUID)
@@ -99,28 +99,32 @@ func (h getMaxScorePerTaskHandler) Handle(ctx context.Context, userUUID uuid.UUI
 }
 
 // CountSubms returns the total number of submissions
-func (s *submSrvc) CountSubms(ctx context.Context, search string, author *uuid.UUID, includeAdmin bool) (int, error) {
-	log := ctxlog.FromContext(ctx)
-	log.Debug("counting submissions")
+func (s *submSrvc) CountSubms(ctx context.Context, search string, author *uuid.UUID, includeAdmin bool) (int, srvcerror.E) {
+	log := ctxlog.FromContext(ctx).With("query", "count submissions")
 
 	authorIds := make([]string, 0)
 	taskIds := make([]string, 0)
 	langIds := make([]string, 0)
 
 	if search != "" {
+		var err srvcerror.E
+
 		// get all possible task matches
-		var searchTasksByNameErr *srvcerror.Error
-		taskIds, searchTasksByNameErr = s.taskSrvc.SearchTasksByName(ctx, search)
-		if searchTasksByNameErr != nil {
-			return 0, fmt.Errorf("failed to search tasks by name: %w", searchTasksByNameErr)
+		taskIds, err = s.taskSrvc.SearchTasksByName(ctx, search)
+		if err != nil {
+			log.Error("search tasks by name", "error", err)
+			return 0, ErrInternal
 		}
 		taskIds = append(taskIds, search)
 
 		// get all possible user matches
-		authorId, err := s.userSrvc.GetUserByUsername(ctx, search)
-		if err != nil && !srvcerror.Is(err, usersrvc.ErrCodeUserNotFound) {
-			return 0, fmt.Errorf("failed to get user by username: %w", err)
+		var authorId usersrvc.User
+		authorId, err = s.userSrvc.GetUserByUsername(ctx, search)
+		if err != nil && !errors.Is(err, usersrvc.ErrUserNotFound) {
+			log.Error("get user by username", "error", err)
+			return 0, ErrInternal
 		}
+
 		if authorId.UUID != uuid.Nil {
 			authorIdStr := authorId.UUID.String()
 			authorIds = append(authorIds, authorIdStr)
@@ -130,17 +134,18 @@ func (s *submSrvc) CountSubms(ctx context.Context, search string, author *uuid.U
 		}
 
 		// get all programming languages
-		var searchProgrLangByNameErr error
-		langIds, searchProgrLangByNameErr = plang.SearchProgrLangByName(search)
-		if searchProgrLangByNameErr != nil {
-			return 0, fmt.Errorf("failed to search programming languages by name: %w", searchProgrLangByNameErr)
+		var pLangSearchErr error
+		langIds, pLangSearchErr = plang.SearchProgrLangByName(search)
+		if pLangSearchErr != nil {
+			log.Error("search progr langs by name", "error", pLangSearchErr)
+			return 0, ErrInternal
 		}
 		langIds = append(langIds, search)
 	}
-	count, err := s.submRepo.CountSubms(ctx, author, authorIds, taskIds, langIds, includeAdmin)
-	if err != nil {
-		log.Error("failed to count submissions", "error", err)
-		return 0, err
+	count, countErr := s.submRepo.CountSubms(ctx, author, authorIds, taskIds, langIds, includeAdmin)
+	if countErr != nil {
+		log.Error("failed to count submissions", "error", countErr)
+		return 0, ErrInternal
 	}
 
 	return count, nil
@@ -195,7 +200,7 @@ func (s *submSrvc) ListSubms(ctx context.Context, filter ListSubmsParams) ([]dom
 
 	if filter.Search != "" {
 		// get all possible task matches
-		var searchTasksByNameErr *srvcerror.Error
+		var searchTasksByNameErr srvcerror.E
 		taskIds, searchTasksByNameErr = s.taskSrvc.SearchTasksByName(ctx, filter.Search)
 		if searchTasksByNameErr != nil {
 			return nil, fmt.Errorf("failed to search tasks by name: %w", searchTasksByNameErr)

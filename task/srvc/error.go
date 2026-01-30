@@ -9,7 +9,7 @@ import (
 
 const ErrCodeTaskNotFound = "task_not_found"
 
-func NewErrorTaskNotFound(taskId string) *srvcerror.Error {
+func NewErrorTaskNotFound(taskId string) srvcerror.E {
 	return srvcerror.New(
 		ErrCodeTaskNotFound,
 		fmt.Sprintf("uzdevums '%s' netika atrasts", taskId),
@@ -23,7 +23,7 @@ var ErrSomeTaskNotFound = srvcerror.New(
 
 const ErrCodeImageAlreadyExists = "image_already_exists"
 
-func NewErrorImageAlreadyExists(filename string) *srvcerror.Error {
+func NewErrorImageAlreadyExists(filename string) srvcerror.E {
 	return srvcerror.New(
 		ErrCodeImageAlreadyExists,
 		fmt.Sprintf("attēls ar nosaukumu '%s' jau eksistē", filename),
@@ -32,7 +32,7 @@ func NewErrorImageAlreadyExists(filename string) *srvcerror.Error {
 
 const ErrCodeImageFileExtFromMimeType = "image_file_ext_from_mime_type"
 
-func NewErrorImageFileExtFromMimeType(mime string) *srvcerror.Error {
+func NewErrorImageFileExtFromMimeType(mime string) srvcerror.E {
 	return srvcerror.New(
 		ErrCodeImageFileExtFromMimeType,
 		fmt.Sprintf("neizdevās iegūt attēla faila paplašinājumu [.png, .jpg, .jpeg, ...] no MIME tipa '%s'", mime),
@@ -41,7 +41,7 @@ func NewErrorImageFileExtFromMimeType(mime string) *srvcerror.Error {
 
 const ErrCodeGetImageWidthAndHeight = "image_width_and_height"
 
-func NewErrorGetImageWidthAndHeight() *srvcerror.Error {
+func NewErrorGetImageWidthAndHeight() srvcerror.E {
 	return srvcerror.New(
 		ErrCodeGetImageWidthAndHeight,
 		"neizdevās iegūt attēla platumu un augstumu [px]",
@@ -50,7 +50,7 @@ func NewErrorGetImageWidthAndHeight() *srvcerror.Error {
 
 const ErrCodeImageInadequateDimensions = "image_inadequate_dimensions"
 
-func NewErrorImageInadequateDimensions() *srvcerror.Error {
+func NewErrorImageInadequateDimensions() srvcerror.E {
 	return srvcerror.New(
 		ErrCodeImageInadequateDimensions,
 		"attēls ir pārāk mazs vai pārāk liels",
@@ -59,7 +59,7 @@ func NewErrorImageInadequateDimensions() *srvcerror.Error {
 
 const ErrCodeFailedToGetTaskFromDb = "failed_to_get_task_from_db"
 
-func NewErrorFailedToGetTaskFromDb(taskId string) *srvcerror.Error {
+func NewErrorFailedToGetTaskFromDb(taskId string) srvcerror.E {
 	return srvcerror.New(
 		ErrCodeFailedToGetTaskFromDb,
 		fmt.Sprintf("neizdevās iegūt uzdevumu '%s' no datubāzes", taskId),
@@ -68,7 +68,7 @@ func NewErrorFailedToGetTaskFromDb(taskId string) *srvcerror.Error {
 
 const ErrCodeInternalServerError = "internal_server_error"
 
-func NewErrorInternalServerError() *srvcerror.Error {
+func NewErrorInternalServerError() srvcerror.E {
 	return srvcerror.New(
 		ErrCodeInternalServerError,
 		"iekšēja servera kļūda",
@@ -77,7 +77,7 @@ func NewErrorInternalServerError() *srvcerror.Error {
 
 const ErrCodeTaskAlreadyExists = "task_already_exists"
 
-func NewErrorTaskAlreadyExists(taskId string) *srvcerror.Error {
+func NewErrorTaskAlreadyExists(taskId string) srvcerror.E {
 	return srvcerror.New(
 		ErrCodeTaskAlreadyExists,
 		fmt.Sprintf("uzdevums ar ID '%s' jau eksistē", taskId),
@@ -86,7 +86,7 @@ func NewErrorTaskAlreadyExists(taskId string) *srvcerror.Error {
 
 const ErrCodeImageNotFound = "image_not_found"
 
-func NewErrorImageNotFound(filename string) *srvcerror.Error {
+func NewErrorImageNotFound(filename string) srvcerror.E {
 	return srvcerror.New(
 		ErrCodeImageNotFound,
 		fmt.Sprintf("attēls ar nosaukumu '%s' netika atrasts", filename),

@@ -9,7 +9,7 @@ import (
 
 const ErrCodeUsernameTooShort = "username_too_short"
 
-func newErrUsernameTooShort(minLength int) *srvcerror.Error {
+func newErrUsernameTooShort(minLength int) srvcerror.E {
 	return srvcerror.New(
 		ErrCodeUsernameTooShort,
 		fmt.Sprintf("lietotājvārdam jābūt vismaz %d simbolus garam", minLength),
@@ -18,7 +18,7 @@ func newErrUsernameTooShort(minLength int) *srvcerror.Error {
 
 const ErrCodeUsernameTooLong = "username_too_long"
 
-func newErrUsernameTooLong() *srvcerror.Error {
+func newErrUsernameTooLong() srvcerror.E {
 	return srvcerror.New(
 		ErrCodeUsernameTooLong,
 		"lietotājvārds ir pārāk garš",
@@ -27,7 +27,7 @@ func newErrUsernameTooLong() *srvcerror.Error {
 
 const ErrCodeUsernameAlreadyExists = "username_exists"
 
-func newErrUsernameExists() *srvcerror.Error {
+func newErrUsernameExists() srvcerror.E {
 	return srvcerror.New(
 		ErrCodeUsernameAlreadyExists,
 		"lietotājvārds jau eksistē",
@@ -36,20 +36,25 @@ func newErrUsernameExists() *srvcerror.Error {
 
 const ErrCodeEmailAlreadyExists = "email_exists"
 
-func newErrEmailExists() *srvcerror.Error {
+var ErrEmailAlreadyExists = srvcerror.New(
+	ErrCodeEmailAlreadyExists,
+	"epasts jau eksistē",
+).SetHttpStatusCode(http.StatusConflict)
+
+func newErrEmailExists() srvcerror.E {
 	return srvcerror.New(
 		ErrCodeEmailAlreadyExists,
 		"epasts jau eksistē",
 	).SetHttpStatusCode(http.StatusConflict)
 }
 
-func newErrInternalSE() *srvcerror.Error {
+func newErrInternalSE() srvcerror.E {
 	return srvcerror.InternalServerError()
 }
 
 const ErrCodeEmailTooLong = "email_too_long"
 
-func newErrEmailTooLong() *srvcerror.Error {
+func newErrEmailTooLong() srvcerror.E {
 	return srvcerror.New(
 		ErrCodeEmailTooLong,
 		"epasts ir pārāk garš",
@@ -58,7 +63,7 @@ func newErrEmailTooLong() *srvcerror.Error {
 
 const ErrCodeEmailEmpty = "email_empty"
 
-func newErrEmailEmpty() *srvcerror.Error {
+func newErrEmailEmpty() srvcerror.E {
 	return srvcerror.New(
 		ErrCodeEmailEmpty,
 		"epasts nedrīkst būt tukšs",
@@ -67,7 +72,7 @@ func newErrEmailEmpty() *srvcerror.Error {
 
 const ErrCodePasswordEmpty = "password_empty"
 
-func newErrEmailInvalid() *srvcerror.Error {
+func newErrEmailInvalid() srvcerror.E {
 	return srvcerror.New(
 		ErrCodePasswordEmpty,
 		"epasts ir nederīgs",
@@ -76,7 +81,7 @@ func newErrEmailInvalid() *srvcerror.Error {
 
 const ErrCodePasswordTooShort = "password_too_short"
 
-func newErrPasswordTooShort(minLength int) *srvcerror.Error {
+func newErrPasswordTooShort(minLength int) srvcerror.E {
 	return srvcerror.New(
 		ErrCodePasswordTooShort,
 		fmt.Sprintf("parolei jābūt vismaz %d simbolus garai", minLength),
@@ -85,7 +90,7 @@ func newErrPasswordTooShort(minLength int) *srvcerror.Error {
 
 const ErrCodePasswordTooLong = "password_too_long"
 
-func newErrPasswordTooLong() *srvcerror.Error {
+func newErrPasswordTooLong() srvcerror.E {
 	return srvcerror.New(
 		ErrCodePasswordTooLong,
 		"parole ir pārāk gara",
@@ -94,7 +99,7 @@ func newErrPasswordTooLong() *srvcerror.Error {
 
 const ErrCodeFirstnameTooLong = "firstname_too_long"
 
-func newErrFirstnameTooLong(maxLength int) *srvcerror.Error {
+func newErrFirstnameTooLong(maxLength int) srvcerror.E {
 	return srvcerror.New(
 		ErrCodeFirstnameTooLong,
 		fmt.Sprintf("vārds nedrīkst būt garāks par %d simboliem", maxLength),
@@ -103,7 +108,7 @@ func newErrFirstnameTooLong(maxLength int) *srvcerror.Error {
 
 const ErrCodeLastnameTooLong = "lastname_too_long"
 
-func newErrLastnameTooLong(maxLength int) *srvcerror.Error {
+func newErrLastnameTooLong(maxLength int) srvcerror.E {
 	return srvcerror.New(
 		ErrCodeLastnameTooLong,
 		fmt.Sprintf("uzvārds nedrīkst būt garāks par %d simboliem", maxLength),
@@ -112,16 +117,14 @@ func newErrLastnameTooLong(maxLength int) *srvcerror.Error {
 
 const ErrCodeUserNotFound = "user_not_found"
 
-func newErrUserNotFound() *srvcerror.Error {
-	return srvcerror.New(
-		ErrCodeUserNotFound,
-		"lietotājs netika atrasts",
-	).SetHttpStatusCode(http.StatusNotFound)
-}
+var ErrUserNotFound = srvcerror.New(
+	ErrCodeUserNotFound,
+	"lietotājs netika atrasts",
+).SetHttpStatusCode(http.StatusNotFound)
 
 const ErrCodeUsernameOrPasswordIncorrect = "username_or_password_incorrect"
 
-func newErrUsernameOrPasswordIncorrect() *srvcerror.Error {
+func newErrUsernameOrPasswordIncorrect() srvcerror.E {
 	return srvcerror.New(
 		ErrCodeUsernameOrPasswordIncorrect,
 		"lietotājvārds vai parole nav pareiza",
