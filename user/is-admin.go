@@ -8,7 +8,7 @@ import (
 	"github.com/programme-lv/backend/common/srvcerror"
 )
 
-func (s *UserSrvc) IsAdmin(ctx context.Context, userUuid uuid.UUID) (bool, error) {
+func (s *userSrvc) IsAdmin(ctx context.Context, userUuid uuid.UUID) (bool, error) {
 	l := ctxlog.FromContext(ctx)
 	user, err := s.GetUserByUUID(ctx, userUuid)
 	if err != nil {

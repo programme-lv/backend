@@ -17,28 +17,25 @@ import (
 	testerapi "github.com/programme-lv/tester/api"
 )
 
+type CodeExecutionService interface {
+	Enqueue(ctx context.Context, uuid uuid.UUID, srcCode string, prLangId string, tests []TestFile, params TestingParams) error
+	Listen(ctx context.Context, uuid uuid.UUID) (<-chan Event, error)
+	Get(ctx context.Context, execUuid uuid.UUID) (Execution, error)
+}
+
+var _ CodeExecutionService = &execSrvc{}
+
 // ExecRepo interface for execution storage
 type ExecRepo interface {
 	Save(ctx context.Context, exec *Execution) error
 	Get(ctx context.Context, id uuid.UUID) (*Execution, error)
 }
 
-type ExecSrvcClient interface {
-	Enqueue(ctx context.Context, uuid uuid.UUID, srcCode string, prLangId string, tests []TestFile, params TestingParams) error
-	Listen(ctx context.Context, uuid uuid.UUID) (<-chan Event, error)
-	Get(ctx context.Context, execUuid uuid.UUID) (Execution, error)
-}
-
-type ExecSrvcFacade interface {
-	ExecSrvcClient
-	StartPollingResultQueue(ctx context.Context) error
-}
-
 const NatsSubject = "tester.jobs"
 
-// ExecSrvcImpl handles communication with testers
+// execSrvc handles communication with testers
 // for code execution and result streaming
-type ExecSrvcImpl struct {
+type execSrvc struct {
 	logger *slog.Logger
 
 	// either in-mem or s3
@@ -59,9 +56,7 @@ type ExecSrvcImpl struct {
 	executions map[uuid.UUID]*Execution
 }
 
-var _ ExecSrvcFacade = &ExecSrvcImpl{}
-
-func (e *ExecSrvcImpl) StartPollingResultQueue(ctx context.Context) error {
+func (e *execSrvc) StartPollingResultQueue(ctx context.Context) error {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
@@ -265,8 +260,8 @@ func mapTesterRuntimeData(rd *testerapi.RuntimeData) *RunData {
 	}
 }
 
-func NewExecSrvc(ctx context.Context, repo ExecRepo, natsConn *nats.Conn) ExecSrvcFacade {
-	esrvc := &ExecSrvcImpl{
+func NewExecSrvc(ctx context.Context, repo ExecRepo, natsConn *nats.Conn) *execSrvc {
+	esrvc := &execSrvc{
 		logger:     ctxlog.FromContext(ctx),
 		natsConn:   natsConn,
 		natsInbox:  nats.NewInbox(),
@@ -288,7 +283,7 @@ func NewExecSrvc(ctx context.Context, repo ExecRepo, natsConn *nats.Conn) ExecSr
 //     processing queue
 //
 // Returns the execution UUID for tracking
-func (e *ExecSrvcImpl) Enqueue(
+func (e *execSrvc) Enqueue(
 	ctx context.Context,
 	execUuid uuid.UUID,
 	srcCode string,
@@ -383,7 +378,7 @@ func (e *ExecSrvcImpl) Enqueue(
 // Listen returns a channel that streams execution
 // events to clients. The channel is automatically
 // closed once the execution is complete
-func (e *ExecSrvcImpl) Listen(
+func (e *execSrvc) Listen(
 	ctx context.Context,
 	execId uuid.UUID,
 ) (<-chan Event, error) {
@@ -402,7 +397,7 @@ func (e *ExecSrvcImpl) Listen(
 // Get retrieves the execution results for a given
 // execution ID. It waits for completion if the
 // execution is still in progress
-func (e *ExecSrvcImpl) Get(
+func (e *execSrvc) Get(
 	ctx context.Context,
 	execId uuid.UUID,
 ) (Execution, error) {

@@ -30,8 +30,7 @@ func TestImportExportTask(t *testing.T) {
 	mockRepo := mocktasksrvc.NewMockTaskPgRepo(t)
 	mockCdnS3 := mocktasksrvc.NewMockS3BucketFacade(t)
 	mockTestS3 := mocktasksrvc.NewMockS3BucketFacade(t)
-	taskSrvc, err := srvc.NewTaskSrvc(mockRepo, mockCdnS3, mockTestS3)
-	require.NoError(t, err)
+	taskSrvc := srvc.NewTaskSrvc(mockRepo, mockCdnS3, mockTestS3)
 
 	// 1. read the task using task archive format reader
 	zipPath := "testdata/kvadrputekl.zip"

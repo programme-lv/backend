@@ -47,7 +47,7 @@ func validateTaskId(id string) error {
 	return nil
 }
 
-func (ts *TaskSrvc) UpdateStatementMd(ctx context.Context, taskId string, statement MarkdownStatement) srvcerror.E {
+func (ts *taskSrvc) UpdateStatementMd(ctx context.Context, taskId string, statement MarkdownStatement) srvcerror.E {
 	err := ts.repo.UpdateStatement(ctx, taskId, statement)
 	if err != nil {
 		l := ts.logger(ctx)
@@ -58,7 +58,7 @@ func (ts *TaskSrvc) UpdateStatementMd(ctx context.Context, taskId string, statem
 	return nil
 }
 
-func (ts *TaskSrvc) CreateTask(ctx context.Context, task Task) srvcerror.E {
+func (ts *taskSrvc) CreateTask(ctx context.Context, task Task) srvcerror.E {
 	err := ts.repo.CreateTask(ctx, task)
 	if err != nil {
 		l := ts.logger(ctx)
@@ -70,7 +70,7 @@ func (ts *TaskSrvc) CreateTask(ctx context.Context, task Task) srvcerror.E {
 
 // DeleteTask deletes a task and all its related data.
 // Note: This only deletes data from the database. S3 cleanup should be handled separately.
-func (ts *TaskSrvc) DeleteTask(ctx context.Context, shortId string) srvcerror.E {
+func (ts *taskSrvc) DeleteTask(ctx context.Context, shortId string) srvcerror.E {
 	l := ts.logger(ctx)
 	err := ts.repo.DeleteTask(ctx, shortId)
 	if err != nil {
@@ -84,7 +84,7 @@ func (ts *TaskSrvc) DeleteTask(ctx context.Context, shortId string) srvcerror.E 
 // S3 bucket: "proglv-public" (as of 2024-09-29)
 // S3 key format: "task-pdf-statements/<sha2>.pdf"
 // returns s3 key for the uploaded pdf statement
-func (ts *TaskSrvc) UploadStatementPdf(ctx context.Context, body []byte) (string, srvcerror.E) {
+func (ts *taskSrvc) UploadStatementPdf(ctx context.Context, body []byte) (string, srvcerror.E) {
 	l := ts.logger(ctx)
 	shaHex := Sha2Hex(body)
 	s3Key := fmt.Sprintf("%s/%s.pdf", "task-pdf-statements", shaHex)
@@ -99,7 +99,7 @@ func (ts *TaskSrvc) UploadStatementPdf(ctx context.Context, body []byte) (string
 // S3 bucket: "proglv-public" (as of 2024-09-29)
 // S3 key format: "task-illustrations/<sha2>.<ext>"
 // returns s3 key for the uploaded illustration image
-func (ts *TaskSrvc) UploadIllustrationImg(ctx context.Context, mimeType string, body []byte) (string, srvcerror.E) {
+func (ts *taskSrvc) UploadIllustrationImg(ctx context.Context, mimeType string, body []byte) (string, srvcerror.E) {
 	l := ts.logger(ctx)
 	sha2 := Sha2Hex(body)
 	exts, err := mime.ExtensionsByType(mimeType)
@@ -122,7 +122,7 @@ func (ts *TaskSrvc) UploadIllustrationImg(ctx context.Context, mimeType string, 
 }
 
 // upload and return s3 key. use a new uuid in the filename instead of a sha256 hash
-func (ts *TaskSrvc) UploadOgFileArchive(ctx context.Context, zipBytes []byte) (string, srvcerror.E) {
+func (ts *taskSrvc) UploadOgFileArchive(ctx context.Context, zipBytes []byte) (string, srvcerror.E) {
 	archiveUuid := uuid.New().String()
 	s3Key := fmt.Sprintf("og-file-archives/%s.zip", archiveUuid)
 	_, err := ts.s3PublicBucket.Upload(zipBytes, s3Key, "application/zip")
@@ -133,7 +133,7 @@ func (ts *TaskSrvc) UploadOgFileArchive(ctx context.Context, zipBytes []byte) (s
 	return s3Key, nil
 }
 
-func (ts *TaskSrvc) DownloadOgFileArchive(ctx context.Context, s3Key string) ([]byte, srvcerror.E) {
+func (ts *taskSrvc) DownloadOgFileArchive(ctx context.Context, s3Key string) ([]byte, srvcerror.E) {
 	body, err := ts.s3PublicBucket.Download(s3Key)
 	if err != nil {
 		ts.logger(ctx).Error("failed to download og file archive from S3", "error", err)
@@ -144,7 +144,7 @@ func (ts *TaskSrvc) DownloadOgFileArchive(ctx context.Context, s3Key string) ([]
 
 // S3 key format: "task-md-images/<uuid>.<extension>"
 // returns s3 uri, e.g. s3://proglv-public/task/<taskId>/md-images/<uuid>.png
-func (ts *TaskSrvc) UploadStatementImage(ctx context.Context, taskId string, imgFilename string, imageMimeType string, body []byte) (string, srvcerror.E) {
+func (ts *taskSrvc) UploadStatementImage(ctx context.Context, taskId string, imgFilename string, imageMimeType string, body []byte) (string, srvcerror.E) {
 	l := ts.logger(ctx)
 
 	// get the file extension from the mime type, e.g. "image/png" -> ".png"
@@ -257,7 +257,7 @@ func GetTestfileS3Key(body []byte) string {
 // If The test already exists, it returns no error and does nothing.
 //
 // The S3 key is the SHA256 hash of the uncompressed body with a .zst extension.
-func (ts *TaskSrvc) UploadTestFile(ctx context.Context, body []byte) srvcerror.E {
+func (ts *taskSrvc) UploadTestFile(ctx context.Context, body []byte) srvcerror.E {
 	l := ts.logger(ctx)
 	s3Key := GetTestfileS3Key(body)
 	mediaType := "application/zstd"
@@ -332,7 +332,7 @@ func Sha2Hex(body []byte) (sha2 string) {
 
 // DeleteStatementImage implements TaskSrvcClient.
 // It deletes an image from both S3 and the database.
-func (ts *TaskSrvc) DeleteStatementImage(ctx context.Context, taskId string, filename string) srvcerror.E {
+func (ts *taskSrvc) DeleteStatementImage(ctx context.Context, taskId string, filename string) srvcerror.E {
 	l := ts.logger(ctx)
 
 	// First, get the task to find the image with the specified filename
@@ -389,7 +389,7 @@ func (ts *TaskSrvc) DeleteStatementImage(ctx context.Context, taskId string, fil
 
 // DeleteIllustrationImg implements TaskSrvcClient.
 // It deletes an illustration image from both S3 and the database.
-func (ts *TaskSrvc) DeleteIllustrationImg(ctx context.Context, taskId string) srvcerror.E {
+func (ts *taskSrvc) DeleteIllustrationImg(ctx context.Context, taskId string) srvcerror.E {
 	l := ts.logger(ctx)
 
 	// First, get the task to find the illustration image S3 key
@@ -443,7 +443,7 @@ func (ts *TaskSrvc) DeleteIllustrationImg(ctx context.Context, taskId string) sr
 
 // UpdateIllustrationImg implements TaskSrvcClient.
 // It updates the illustration image information in the database.
-func (ts *TaskSrvc) UpdateIllustrationImg(ctx context.Context, taskId string, img IllustrationImage) srvcerror.E {
+func (ts *taskSrvc) UpdateIllustrationImg(ctx context.Context, taskId string, img IllustrationImage) srvcerror.E {
 	l := ts.logger(ctx)
 
 	err := ts.repo.UpdateIllustrationImg(ctx, taskId, img)
@@ -456,7 +456,7 @@ func (ts *TaskSrvc) UpdateIllustrationImg(ctx context.Context, taskId string, im
 }
 
 // ExportTaskAsZip exports a task as a ZIP file and returns the ZIP bytes.
-func (ts *TaskSrvc) ExportTaskAsZip(ctx context.Context, taskId string) ([]byte, srvcerror.E) {
+func (ts *taskSrvc) ExportTaskAsZip(ctx context.Context, taskId string) ([]byte, srvcerror.E) {
 	l := ts.logger(ctx).With("task_id", taskId)
 	l.Info("starting task export")
 
@@ -487,7 +487,7 @@ func (ts *TaskSrvc) ExportTaskAsZip(ctx context.Context, taskId string) ([]byte,
 	return zipBytes, nil
 }
 
-func (ts *TaskSrvc) mapToTaskfs(ctx context.Context, t Task) (taskfs.Task, error) {
+func (ts *taskSrvc) mapToTaskfs(ctx context.Context, t Task) (taskfs.Task, error) {
 	stories := make(map[string]taskfs.StoryMd)
 	for _, story := range t.MdStatements {
 		key := story.LangIso639
@@ -717,7 +717,7 @@ func (ts *TaskSrvc) mapToTaskfs(ctx context.Context, t Task) (taskfs.Task, error
 }
 
 // createTaskZipBytes creates a ZIP archive for a task and returns the bytes
-func (ts *TaskSrvc) createTaskZipBytes(task taskfs.Task) ([]byte, error) {
+func (ts *taskSrvc) createTaskZipBytes(task taskfs.Task) ([]byte, error) {
 	// Create temporary directory
 	tempDir, err := createProgLVTempDir("task-export-")
 	if err != nil {
@@ -746,7 +746,7 @@ func (ts *TaskSrvc) createTaskZipBytes(task taskfs.Task) ([]byte, error) {
 // ImportTaskFromZip imports a task from a taskfs ZIP archive with optional ID override.
 // If overrideId is empty, uses the original task ID from the ZIP.
 // If overrideId is provided, validates and uses it instead of the original ID.
-func (ts *TaskSrvc) ImportTaskFromZip(ctx context.Context, zipBytes []byte, overrideId string) (string, srvcerror.E) {
+func (ts *taskSrvc) ImportTaskFromZip(ctx context.Context, zipBytes []byte, overrideId string) (string, srvcerror.E) {
 	l := ts.logger(ctx)
 	l.Info("starting task import")
 
@@ -823,7 +823,7 @@ func (ts *TaskSrvc) ImportTaskFromZip(ctx context.Context, zipBytes []byte, over
 }
 
 // mapFromTaskfs maps the basic task structure without uploading heavy assets
-func (ts *TaskSrvc) mapFromTaskfs(t taskfs.Task, overrideId string) (Task, error) {
+func (ts *taskSrvc) mapFromTaskfs(t taskfs.Task, overrideId string) (Task, error) {
 	res := Task{}
 	// Use override ID if provided, otherwise use original from ZIP
 	if overrideId != "" {
@@ -948,7 +948,7 @@ func (ts *TaskSrvc) mapFromTaskfs(t taskfs.Task, overrideId string) (Task, error
 }
 
 // uploadTaskArchiveAssets handles heavy uploads (images, PDFs, test files) for task import
-func (ts *TaskSrvc) uploadTaskArchiveAssets(ctx context.Context, t taskfs.Task, res *Task) error {
+func (ts *taskSrvc) uploadTaskArchiveAssets(ctx context.Context, t taskfs.Task, res *Task) error {
 	// Upload statement images to S3 and record metadata
 	for i, img := range t.Statement.Images {
 		// Detect mime type by extension
@@ -1097,7 +1097,7 @@ func TaskfsArchiveFromZip(zipBytes []byte) (taskfs.Archive, error) {
 	return taskfs.Archive{Files: files}, nil
 }
 
-func (ts *TaskSrvc) DownloadTestFile(ctx context.Context, testFileSha256 string) ([]byte, srvcerror.E) {
+func (ts *taskSrvc) DownloadTestFile(ctx context.Context, testFileSha256 string) ([]byte, srvcerror.E) {
 	logger := ts.logger(ctx)
 
 	// Try cache first

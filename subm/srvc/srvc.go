@@ -13,7 +13,8 @@ import (
 	usersrvc "github.com/programme-lv/backend/user"
 )
 
-type SubmSrvcClient interface {
+// SubmissionService is the port (service contract) for it's bounded context
+type SubmissionService interface {
 	SubmitSol(ctx context.Context, p SubmitSolParams) srvcerror.E
 	ReEvalSubm(ctx context.Context, submUuid uuid.UUID) srvcerror.E
 	ViewSubm(ctx context.Context, uuid uuid.UUID) (domain.Subm, error)
@@ -25,12 +26,14 @@ type SubmSrvcClient interface {
 	CountSubms(ctx context.Context, search string, author *uuid.UUID, includeAdmin bool) (int, srvcerror.E)
 }
 
+var _ SubmissionService = &submSrvc{}
+
 type submSrvc struct {
 	submRepo SubmRepo
 	evalRepo EvalRepo
 
-	userSrvc usersrvc.UserSrvcClient
-	taskSrvc tasksrvc.TaskSrvcClient
+	userSrvc usersrvc.UserService
+	taskSrvc tasksrvc.TaskService
 	execSrvc ExecSrvcFacade
 
 	newSubmChListenerLock sync.Mutex
@@ -65,12 +68,12 @@ type ExecSrvcFacade interface {
 }
 
 func NewSubmSrvc(
-	userSrvc usersrvc.UserSrvcClient,
-	taskSrvc tasksrvc.TaskSrvcClient,
+	userSrvc usersrvc.UserService,
+	taskSrvc tasksrvc.TaskService,
 	execSrvc ExecSrvcFacade,
 	submRepo SubmRepo,
 	evalRepo EvalRepo,
-) SubmSrvcClient {
+) *submSrvc {
 	return &submSrvc{
 		userSrvc: userSrvc,
 		taskSrvc: taskSrvc,

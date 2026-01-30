@@ -30,3 +30,6 @@ Unit tests are kept alongside code in `_test.go` files but integration tests may
 Unit tests have mocked or minimal dependencies whereas integration tests may call external systems. Testing the persistence layer is an integration test, imo.
 
 Interestingly, I've decided that the HTTP layer of each module may aggregate data from multiple services to present frontend with necessary information.
+
+Each module has a srvc.go file somewhere that defines through an interface the service contract for it's bounded context.
+

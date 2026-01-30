@@ -19,9 +19,9 @@ import (
 )
 
 type SubmHttpHandler struct {
-	submSrvc submsrvc.SubmSrvcClient
-	taskSrvc tasksrvc.TaskSrvcClient
-	userSrvc usersrvc.UserSrvcClient
+	submSrvc submsrvc.SubmissionService
+	taskSrvc tasksrvc.TaskService
+	userSrvc usersrvc.UserService
 
 	// solution submission rate limit
 	lastSubmTime map[string]time.Time // username -> last submission time
@@ -33,9 +33,9 @@ type SubmHttpHandler struct {
 }
 
 func NewSubmHttpHandler(
-	submSrvc submsrvc.SubmSrvcClient,
-	taskSrvc tasksrvc.TaskSrvcClient,
-	userSrvc usersrvc.UserSrvcClient,
+	submSrvc submsrvc.SubmissionService,
+	taskSrvc tasksrvc.TaskService,
+	userSrvc usersrvc.UserService,
 ) *SubmHttpHandler {
 	return &SubmHttpHandler{
 		submSrvc:     submSrvc,
