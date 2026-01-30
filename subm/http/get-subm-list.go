@@ -110,10 +110,10 @@ func (h *SubmHttpHandler) GetSubmList(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Get total count of submissions
-		totalCount, err := h.submSrvc.CountSubms(r.Context(), search, authorUuid, includeAdmin)
-		if err != nil {
-			log.Error("failed to count submissions", "error", err)
-			return nil, err
+		totalCount, countSubmsErr := h.submSrvc.CountSubms(r.Context(), search, authorUuid, includeAdmin)
+		if countSubmsErr != nil {
+			log.Error("failed to count submissions", "error", countSubmsErr)
+			return nil, countSubmsErr
 		}
 
 		// Get paginated submissions

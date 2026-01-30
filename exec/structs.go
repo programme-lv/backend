@@ -27,10 +27,10 @@ type TestFile struct {
 
 func (t *TestFile) IsValid() error {
 	if t.InContent == nil && (t.InSha256 == nil || t.InDownlUrl == nil) {
-		return ErrInvalidTestFile()
+		return ErrInvalidTestFile
 	}
 	if t.AnsContent == nil && (t.AnsSha256 == nil || t.AnsDownlUrl == nil) {
-		return ErrInvalidTestFile()
+		return ErrInvalidTestFile
 	}
 	return nil
 }
@@ -112,22 +112,22 @@ type TestingParams struct {
 
 func (p *TestingParams) IsValid() error {
 	if p.CpuMs <= 0 {
-		return ErrInvalidTesterParams()
+		return ErrInvalidTesterParams
 	}
 	if p.MemKiB <= 0 {
-		return ErrInvalidTesterParams()
+		return ErrInvalidTesterParams
 	}
 	if p.CpuMs > 10*1000 { // 10 seconds
-		return ErrCpuConstraintTooLose()
+		return ErrCpuConstraintTooLose
 	}
 	if p.MemKiB > 1024*1024 { // 1 GiB
-		return ErrMemConstraintTooLose()
+		return ErrMemConstraintTooLose
 	}
 	if p.Checker != nil && len(*p.Checker) > 1024*1024 { // 1 MiB
-		return ErrCheckerTooLarge()
+		return ErrCheckerTooLarge
 	}
 	if p.Interactor != nil && len(*p.Interactor) > 1024*1024 { // 1 MiB
-		return ErrInteractorTooLarge()
+		return ErrInteractorTooLarge
 	}
 	return nil
 }
@@ -344,25 +344,25 @@ type ExecRequest struct {
 
 func (e ExecRequest) IsValid() error {
 	if e.CpuMs <= 0 {
-		return ErrInvalidTesterParams()
+		return ErrInvalidTesterParams
 	}
 	if e.MemKiB <= 0 {
-		return ErrInvalidTesterParams()
+		return ErrInvalidTesterParams
 	}
 	if e.CpuMs > 10*1000 { // 10 seconds
-		return ErrCpuConstraintTooLose()
+		return ErrCpuConstraintTooLose
 	}
 	if e.MemKiB > 1024*1024 { // 1 GiB
-		return ErrMemConstraintTooLose()
+		return ErrMemConstraintTooLose
 	}
 	if e.Checker != nil && len(*e.Checker) > 1024*1024 { // 1 MiB
-		return ErrCheckerTooLarge()
+		return ErrCheckerTooLarge
 	}
 	if e.Interactor != nil && len(*e.Interactor) > 1024*1024 { // 1 MiB
-		return ErrInteractorTooLarge()
+		return ErrInteractorTooLarge
 	}
 	if len(e.Tests) > 300 {
-		return ErrTooManyTests()
+		return ErrTooManyTests
 	}
 	for _, test := range e.Tests {
 		if err := test.IsValid(); err != nil {

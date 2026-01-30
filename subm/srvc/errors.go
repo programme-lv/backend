@@ -26,3 +26,5 @@ var ErrSubmissionNotFound = srvcerror.New(
 	"submission_not_found",
 	"Atbilstošais iesūtījums netika atrasts",
 ).SetHttpStatusCode(http.StatusNotFound)
+
+var ErrInternal = srvcerror.ErrInternal

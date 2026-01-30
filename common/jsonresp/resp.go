@@ -3,7 +3,6 @@ package jsonresp
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"log/slog"
 	"net/http"
 
@@ -82,15 +81,11 @@ func Unauthorized(w http.ResponseWriter, errMsg string) {
 	FromError(w, ErrHttpUnauthorized.WithMsg(errMsg))
 }
 
-// deprecated
+// HandleSrvcError handles service errors and writes appropriate HTTP responses
 func HandleSrvcError(logger *slog.Logger, w http.ResponseWriter, err error) {
-	srvcErr := &srvcerror.Error{}
-	if errors.As(err, &srvcErr) {
-		if srvcErr.DebugInfo() != nil {
-			logger.Warn("service error", "error", err, "debug", srvcErr.DebugInfo())
-		} else {
-			logger.Warn("service error", "error", err)
-		}
+	srvcErr, ok := err.(srvcerror.E)
+	if ok {
+		logger.Warn("service error", "error", err)
 		if srvcErr.HttpStatusCode() == http.StatusInternalServerError {
 			logger.Error("internal server error", "error", err)
 		}

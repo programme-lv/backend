@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/programme-lv/backend/common/ctxlog"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -19,6 +20,8 @@ type CreateUserParams struct {
 }
 
 func (s *UserSrvc) CreateUser(ctx context.Context, p CreateUserParams) (res *User, err error) {
+	l := ctxlog.FromContext(ctx).With("cmd", "create user")
+
 	// Validate all fields
 	if err := validateUsername(p.Username); err != nil {
 		return nil, err
@@ -40,9 +43,10 @@ func (s *UserSrvc) CreateUser(ctx context.Context, p CreateUserParams) (res *Use
 		}
 	}
 
-	all, err := selectAllUsers(s.postgres)
-	if err != nil {
-		return nil, err
+	all, selectErr := selectAllUsers(s.postgres)
+	if selectErr != nil {
+		l.Error("failed to list users", "error", selectErr)
+		return nil, newErrInternalSE()
 	}
 
 	for _, user := range all {
@@ -56,10 +60,11 @@ func (s *UserSrvc) CreateUser(ctx context.Context, p CreateUserParams) (res *Use
 		}
 	}
 
-	bcryptPwd, err := bcrypt.GenerateFromPassword(
+	bcryptPwd, bcryptErr := bcrypt.GenerateFromPassword(
 		[]byte(p.Password), bcrypt.DefaultCost)
-	if err != nil {
-		return nil, newErrInternalSE().SetDebug(err)
+	if bcryptErr != nil {
+		l.Error("failed to generate bcrypt password", "error", bcryptErr)
+		return nil, newErrInternalSE()
 	}
 
 	firstname := ""
@@ -82,9 +87,10 @@ func (s *UserSrvc) CreateUser(ctx context.Context, p CreateUserParams) (res *Use
 		CreatedAt: time.Now(),
 	}
 
-	err = insertUser(s.postgres, row)
-	if err != nil {
-		return nil, newErrInternalSE().SetDebug(err)
+	insertErr := insertUser(s.postgres, row)
+	if insertErr != nil {
+		l.Error("failed to insert user", "error", insertErr)
+		return nil, newErrInternalSE()
 	}
 
 	res = &User{

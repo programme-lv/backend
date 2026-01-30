@@ -16,7 +16,7 @@ import (
 
 const ErrCodeSubmissionTooFrequent = "submission_too_frequent"
 
-func ErrSubmissionTooFrequent(delaySeconds int) *srvcerror.Error {
+func ErrSubmissionTooFrequent(delaySeconds int) srvcerror.E {
 	return srvcerror.New(
 		ErrCodeSubmissionTooFrequent,
 		fmt.Sprintf("Uzgaidiet %d sekundes pirms nākamā iesūtījuma!", delaySeconds),
@@ -25,14 +25,14 @@ func ErrSubmissionTooFrequent(delaySeconds int) *srvcerror.Error {
 
 const ErrCodeUnauthorized = "unauthorized_access"
 
-func ErrUnauthorizedUsernameMismatch() *srvcerror.Error {
+func ErrUnauthorizedUsernameMismatch() srvcerror.E {
 	return srvcerror.New(
 		ErrCodeUnauthorized,
 		"JWT norādītais lietotājvārds nesakrīt ar pieprasīto lietotājvārdu",
 	).SetHttpStatusCode(http.StatusUnauthorized)
 }
 
-func ErrJwtTokenMissing() *srvcerror.Error {
+func ErrJwtTokenMissing() srvcerror.E {
 	return srvcerror.New(
 		ErrCodeUnauthorized,
 		"JWT netika atrasts",

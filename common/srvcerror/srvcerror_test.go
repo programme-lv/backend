@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/programme-lv/backend/common/srvcerror"
+	"github.com/programme-lv/backend/user"
 	"github.com/stretchr/testify/require"
 )
 
@@ -29,4 +30,16 @@ func TestIs(t *testing.T) {
 	require.False(t, err3.Is(err1))
 	require.False(t, err3.Is(err2))
 
+	err4 := user.ErrUserNotFound
+	require.ErrorIs(t, err4, user.ErrUserNotFound)
+
+	err6 := user.ErrEmailAlreadyExists
+	require.NotErrorIs(t, err6, err4)
+
+	// Verify that nil srvcerror.E interface can be returned safely
+	// and compared to nil error interface
+	var emptyError srvcerror.E = nil
+	var asStdError error = emptyError
+	require.Nil(t, asStdError)
+	require.Nil(t, emptyError)
 }

@@ -12,50 +12,50 @@ import (
 )
 
 type TaskSrvcClient interface {
-	GetTask(ctx context.Context, shortId string) (Task, *srvcerror.Error)
-	ListTasks(ctx context.Context) ([]Task, *srvcerror.Error)
-	CreateTask(ctx context.Context, task Task) *srvcerror.Error
-	DeleteTask(ctx context.Context, shortId string) *srvcerror.Error
+	GetTask(ctx context.Context, shortId string) (Task, srvcerror.E)
+	ListTasks(ctx context.Context) ([]Task, srvcerror.E)
+	CreateTask(ctx context.Context, task Task) srvcerror.E
+	DeleteTask(ctx context.Context, shortId string) srvcerror.E
 
 	// test files
-	UploadTestFile(ctx context.Context, body []byte) *srvcerror.Error
-	GetTestDownlUrl(ctx context.Context, testFileSha256 string) (string, *srvcerror.Error)
-	DownloadTestFile(ctx context.Context, testFileSha256 string) ([]byte, *srvcerror.Error)
+	UploadTestFile(ctx context.Context, body []byte) srvcerror.E
+	GetTestDownlUrl(ctx context.Context, testFileSha256 string) (string, srvcerror.E)
+	DownloadTestFile(ctx context.Context, testFileSha256 string) ([]byte, srvcerror.E)
 
 	// original pdf statement
-	UploadStatementPdf(ctx context.Context, body []byte) (string, *srvcerror.Error)
-	GetHttpUrlForPdfStatement(ctx context.Context, pdfStatementS3Key string) (string, *srvcerror.Error)
+	UploadStatementPdf(ctx context.Context, body []byte) (string, srvcerror.E)
+	GetHttpUrlForPdfStatement(ctx context.Context, pdfStatementS3Key string) (string, srvcerror.E)
 
 	// illustration image
-	UploadIllustrationImg(ctx context.Context, mimeType string, body []byte) (string, *srvcerror.Error)
-	DeleteIllustrationImg(ctx context.Context, taskId string) *srvcerror.Error
-	UpdateIllustrationImg(ctx context.Context, taskId string, img IllustrationImage) *srvcerror.Error
-	GetHttpUrlForIllustrImg(ctx context.Context, illstrImgS3Key string) (string, *srvcerror.Error)
+	UploadIllustrationImg(ctx context.Context, mimeType string, body []byte) (string, srvcerror.E)
+	DeleteIllustrationImg(ctx context.Context, taskId string) srvcerror.E
+	UpdateIllustrationImg(ctx context.Context, taskId string, img IllustrationImage) srvcerror.E
+	GetHttpUrlForIllustrImg(ctx context.Context, illstrImgS3Key string) (string, srvcerror.E)
 
 	// markdown statement
-	UpdateStatementMd(ctx context.Context, taskId string, statement MarkdownStatement) *srvcerror.Error
+	UpdateStatementMd(ctx context.Context, taskId string, statement MarkdownStatement) srvcerror.E
 
 	// markdown statement image
-	UploadStatementImage(ctx context.Context, taskId string, filename string, mimeType string, body []byte) (string, *srvcerror.Error)
-	DeleteStatementImage(ctx context.Context, taskId string, filename string) *srvcerror.Error
-	GetHttpUrlForStatementImage(ctx context.Context, statementImageS3Key string) (string, *srvcerror.Error)
+	UploadStatementImage(ctx context.Context, taskId string, filename string, mimeType string, body []byte) (string, srvcerror.E)
+	DeleteStatementImage(ctx context.Context, taskId string, filename string) srvcerror.E
+	GetHttpUrlForStatementImage(ctx context.Context, statementImageS3Key string) (string, srvcerror.E)
 
 	// website
-	GetTaskPreview(ctx context.Context, shortId string) (TaskPreview, *srvcerror.Error)
-	ListTaskPreviews(ctx context.Context) ([]TaskPreview, *srvcerror.Error)
+	GetTaskPreview(ctx context.Context, shortId string) (TaskPreview, srvcerror.E)
+	ListTaskPreviews(ctx context.Context) ([]TaskPreview, srvcerror.E)
 
 	// taskzip archive format
-	ImportTaskFromZip(ctx context.Context, zipBytes []byte, overrideId string) (string, *srvcerror.Error)
-	ExportTaskAsZip(ctx context.Context, taskId string) ([]byte, *srvcerror.Error)
+	ImportTaskFromZip(ctx context.Context, zipBytes []byte, overrideId string) (string, srvcerror.E)
+	ExportTaskAsZip(ctx context.Context, taskId string) ([]byte, srvcerror.E)
 
 	// unorganized
-	GetTaskFullNames(ctx context.Context, shortIds []string) ([]string, *srvcerror.Error)
-	ResolveNames(ctx context.Context, shortIds []string) ([]string, *srvcerror.Error)
-	SearchTasksByName(ctx context.Context, name string) ([]string, *srvcerror.Error)
+	GetTaskFullNames(ctx context.Context, shortIds []string) ([]string, srvcerror.E)
+	ResolveNames(ctx context.Context, shortIds []string) ([]string, srvcerror.E)
+	SearchTasksByName(ctx context.Context, name string) ([]string, srvcerror.E)
 
 	// original file archive
-	UploadOgFileArchive(ctx context.Context, zipBytes []byte) (string, *srvcerror.Error)
-	DownloadOgFileArchive(ctx context.Context, s3Key string) ([]byte, *srvcerror.Error)
+	UploadOgFileArchive(ctx context.Context, zipBytes []byte) (string, srvcerror.E)
+	DownloadOgFileArchive(ctx context.Context, s3Key string) ([]byte, srvcerror.E)
 }
 
 type S3BucketFacade interface {

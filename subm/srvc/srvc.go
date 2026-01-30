@@ -14,15 +14,15 @@ import (
 )
 
 type SubmSrvcClient interface {
-	SubmitSol(ctx context.Context, p SubmitSolParams) *srvcerror.Error
-	ReEvalSubm(ctx context.Context, submUuid uuid.UUID) *srvcerror.Error
+	SubmitSol(ctx context.Context, p SubmitSolParams) srvcerror.E
+	ReEvalSubm(ctx context.Context, submUuid uuid.UUID) srvcerror.E
 	ViewSubm(ctx context.Context, uuid uuid.UUID) (domain.Subm, error)
 	ListSubms(ctx context.Context, filter ListSubmsParams) ([]domain.Subm, error)
 	GetEval(ctx context.Context, uuid uuid.UUID) (domain.Eval, error)
 	SubscribeNewSubms(ctx context.Context) (<-chan domain.Subm, error)
 	SubscribeEvalUpds(ctx context.Context) (<-chan domain.Eval, error)
-	GetMaxScorePerTask(ctx context.Context, userUUID uuid.UUID) (map[string]domain.MaxScore, *srvcerror.Error)
-	CountSubms(ctx context.Context, search string, author *uuid.UUID, includeAdmin bool) (int, error)
+	GetMaxScorePerTask(ctx context.Context, userUUID uuid.UUID) (map[string]domain.MaxScore, srvcerror.E)
+	CountSubms(ctx context.Context, search string, author *uuid.UUID, includeAdmin bool) (int, srvcerror.E)
 }
 
 type submSrvc struct {
