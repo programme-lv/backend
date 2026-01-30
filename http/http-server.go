@@ -154,7 +154,7 @@ type HttpServer struct {
 	submHttpHandler *http1.SubmHttpHandler
 	taskHttpHandler HttpRouteRegistrar
 	userHttpHandler *userhttp.UserHttpHandler
-	execSrvc        exec.ExecSrvcClient
+	execSrvc        exec.CodeExecutionService
 	router          *chi.Mux
 	JwtKey          []byte
 }
@@ -163,7 +163,7 @@ func NewHttpServer(
 	submHttpHandler *http1.SubmHttpHandler,
 	taskHttpHandler HttpRouteRegistrar,
 	userHttpHandler *userhttp.UserHttpHandler,
-	execSrvc exec.ExecSrvcClient,
+	execSrvc exec.CodeExecutionService,
 	jwtKey []byte,
 ) *HttpServer {
 	router := chi.NewRouter()

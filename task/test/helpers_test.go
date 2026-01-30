@@ -11,20 +11,18 @@ import (
 	taskhttp "github.com/programme-lv/backend/task/http"
 	"github.com/programme-lv/backend/task/repo"
 	"github.com/programme-lv/backend/task/srvc"
-	"github.com/stretchr/testify/require"
 )
 
-func newTaskSrvc(t *testing.T) srvc.TaskSrvcClient {
+func newTaskSrvc(t *testing.T) srvc.TaskService {
 	t.Helper()
 	pool := testutil.MustGetMigratedTestPostgresDb(t)
 	repo := repo.NewTaskPgRepo(pool)
 	publicS3 := conf.MustGetTestingS3Bucket()
-	ts, err := srvc.NewTaskSrvc(repo, publicS3, nil)
-	require.NoError(t, err)
+	ts := srvc.NewTaskSrvc(repo, publicS3, nil)
 	return ts
 }
 
-func newTaskHttpHandler(ts srvc.TaskSrvcClient) http.Handler {
+func newTaskHttpHandler(ts srvc.TaskService) http.Handler {
 	handler := taskhttp.NewTaskHttpHandler(ts)
 	router := chi.NewRouter()
 	handler.RegisterRoutes(router, []byte("test"))

@@ -11,11 +11,11 @@ import (
 	"github.com/programme-lv/backend/common/srvcerror"
 )
 
-type UserSrvc struct {
+type userSrvc struct {
 	postgres *pgxpool.Pool
 }
 
-type UserSrvcClient interface {
+type UserService interface {
 	GetUserByUsername(ctx context.Context, username string) (User, srvcerror.E)
 	GetUserByUUID(ctx context.Context, uuid uuid.UUID) (User, error)
 	GetUsernames(ctx context.Context, uuids []uuid.UUID) ([]string, error)
@@ -23,13 +23,13 @@ type UserSrvcClient interface {
 	CreateUser(ctx context.Context, user CreateUserParams) (*User, error)
 }
 
-func NewUserService(pg *pgxpool.Pool) UserSrvcClient {
-	return &UserSrvc{
+func NewUserService(pg *pgxpool.Pool) *userSrvc {
+	return &userSrvc{
 		postgres: pg,
 	}
 }
 
-func (s *UserSrvc) GetUserByUsername(ctx context.Context, username string) (res User, err srvcerror.E) {
+func (s *userSrvc) GetUserByUsername(ctx context.Context, username string) (res User, err srvcerror.E) {
 	l := ctxlog.FromContext(ctx).With("query", "get user by username")
 
 	allUsers, selectAllUsersErr := selectAllUsers(s.postgres)
@@ -65,7 +65,7 @@ func (s *UserSrvc) GetUserByUsername(ctx context.Context, username string) (res 
 	return resSlice[0], nil
 }
 
-func (s *UserSrvc) GetUserByUUID(ctx context.Context, uuid uuid.UUID) (res User, err error) {
+func (s *userSrvc) GetUserByUUID(ctx context.Context, uuid uuid.UUID) (res User, err error) {
 	l := ctxlog.FromContext(ctx).With("query", "get user by uuid")
 
 	allUsers, selectErr := selectAllUsers(s.postgres)
@@ -100,7 +100,7 @@ func (s *UserSrvc) GetUserByUUID(ctx context.Context, uuid uuid.UUID) (res User,
 	return resSlice[0], nil
 }
 
-func (s *UserSrvc) GetUsernames(ctx context.Context,
+func (s *userSrvc) GetUsernames(ctx context.Context,
 	uuids []uuid.UUID) ([]string, error) {
 	l := ctxlog.FromContext(ctx).With("query", "get usernames")
 

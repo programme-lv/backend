@@ -7,7 +7,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func (s *UserSrvc) Login(ctx context.Context, username string, password string) (res *User, err error) {
+func (s *userSrvc) Login(ctx context.Context, username string, password string) (res *User, err error) {
 	l := ctxlog.FromContext(ctx).With("cmd", "login")
 
 	allUsers, selectErr := selectAllUsers(s.postgres)

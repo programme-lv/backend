@@ -11,7 +11,7 @@ import (
 	"golang.org/x/sync/singleflight"
 )
 
-type TaskSrvcClient interface {
+type TaskService interface {
 	GetTask(ctx context.Context, shortId string) (Task, srvcerror.E)
 	ListTasks(ctx context.Context) ([]Task, srvcerror.E)
 	CreateTask(ctx context.Context, task Task) srvcerror.E
@@ -84,7 +84,7 @@ type TaskPgRepo interface {
 	UpdateIllustrationImg(ctx context.Context, taskId string, img IllustrationImage) error
 }
 
-type TaskSrvc struct {
+type taskSrvc struct {
 	s3PublicBucket   S3BucketFacade
 	s3TestfileBucket S3BucketFacade
 
@@ -99,15 +99,15 @@ type TaskSrvc struct {
 func NewTaskSrvc(
 	repo TaskPgRepo,
 	cdnS3, testS3 S3BucketFacade,
-) (TaskSrvcClient, error) {
-	return &TaskSrvc{
+) *taskSrvc {
+	return &taskSrvc{
 		s3PublicBucket:   cdnS3,
 		s3TestfileBucket: testS3,
 		repo:             repo,
 		testCache:        NewTestFileCache(),
-	}, nil
+	}
 }
 
-func (ts *TaskSrvc) logger(ctx context.Context) *slog.Logger {
+func (ts *taskSrvc) logger(ctx context.Context) *slog.Logger {
 	return ctxlog.FromContext(ctx).With("module", "task", "layer", "srvc")
 }

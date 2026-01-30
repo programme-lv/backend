@@ -19,7 +19,7 @@ type CreateUserParams struct {
 	Password  string
 }
 
-func (s *UserSrvc) CreateUser(ctx context.Context, p CreateUserParams) (res *User, err error) {
+func (s *userSrvc) CreateUser(ctx context.Context, p CreateUserParams) (res *User, err error) {
 	l := ctxlog.FromContext(ctx).With("cmd", "create user")
 
 	// Validate all fields

@@ -16,14 +16,14 @@ import (
 )
 
 type taskHttpHandler struct {
-	taskSrvc srvc.TaskSrvcClient
+	taskSrvc srvc.TaskService
 	cache    *oldCache.Cache
 
 	getTaskViewCache *cache.LruCache[string, Task]
 	getTaskListCache *cache.LruCache[string, []TaskPreview]
 }
 
-func NewTaskHttpHandler(taskSrvc srvc.TaskSrvcClient) *taskHttpHandler {
+func NewTaskHttpHandler(taskSrvc srvc.TaskService) *taskHttpHandler {
 	// Create a cache with 3 second default expiration and 10 second cleanup interval
 	c := oldCache.New(5*time.Second, 10*time.Second)
 	return &taskHttpHandler{

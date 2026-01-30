@@ -71,11 +71,7 @@ func main() {
 
 	// Initialize task service
 	taskRepo := repo.NewTaskPgRepo(pgPool)
-	taskSrvc, err := tasksrvc.NewTaskSrvc(taskRepo, cdnS3, testS3)
-	if err != nil {
-		slog.Error("error creating task service", "error", err)
-		os.Exit(1)
-	}
+	taskSrvc := tasksrvc.NewTaskSrvc(taskRepo, cdnS3, testS3)
 
 	// Initialize HTTP handlers
 	submHttpHandler := newSubmHttpHandler(userSrvc, taskSrvc, execSrvc)
@@ -86,7 +82,7 @@ func main() {
 	httpServer := http.NewHttpServer(submHttpHandler, taskHttpHandler, userHttpHandler, execSrvc, jwtKey)
 
 	slog.Info("starting server", "address", address)
-	err = httpServer.Start(address)
+	err := httpServer.Start(address)
 	slog.Info("server stopped", "error", err)
 }
 
@@ -100,7 +96,7 @@ func setupLogger() {
 	))
 }
 
-func newSubmHttpHandler(userSrvc usersrvc.UserSrvcClient, taskSrvc tasksrvc.TaskSrvcClient, execSrvc exec.ExecSrvcClient) *submhttp.SubmHttpHandler {
+func newSubmHttpHandler(userSrvc usersrvc.UserService, taskSrvc tasksrvc.TaskService, execSrvc exec.CodeExecutionService) *submhttp.SubmHttpHandler {
 	pgPool, err := conf.GetPgxPoolFromEnv()
 	if err != nil {
 		slog.Error("failed to create pg pool", "error", err)
@@ -119,7 +115,7 @@ func newSubmHttpHandler(userSrvc usersrvc.UserSrvcClient, taskSrvc tasksrvc.Task
 
 // runScoreMigrationIfNeeded checks if there are evaluations without score info
 // and recalculates/stores them. This is a one-time migration.
-func runScoreMigrationIfNeeded(pgPool *pgxpool.Pool, submSrvc srvc.SubmSrvcClient, evalPgRepo interface {
+func runScoreMigrationIfNeeded(pgPool *pgxpool.Pool, submSrvc srvc.SubmissionService, evalPgRepo interface {
 	StoreEval(ctx context.Context, eval domain.Eval) error
 }) {
 	ctx := context.Background()
