@@ -16,6 +16,7 @@ type TaskPreview struct {
 	DifficultyRating int                `json:"difficulty_rating"`
 	OriginOlympiad   string             `json:"origin_olympiad"`
 	OriginNote       string             `json:"origin_note"`
+	OriginNoteShort  string             `json:"origin_note_short"`
 	MdStatementStory string             `json:"md_statement_story"`
 }
 
@@ -257,6 +258,7 @@ func (h *taskHttpHandler) mapTaskPreview(preview srvc.TaskPreview) TaskPreview {
 		DifficultyRating: preview.DifficultyRating,
 		OriginOlympiad:   preview.OriginOlympiad,
 		OriginNote:       preview.OriginNote,
+		OriginNoteShort:  preview.OriginNoteShort,
 		MdStatementStory: preview.MdStatementStory,
 	}
 }

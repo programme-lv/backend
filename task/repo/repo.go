@@ -86,6 +86,17 @@ func (r *taskPgRepo) ListTaskPreviews(ctx context.Context, limit int, offset int
 				WHERE ton.task_short_id = t.short_id 
 				LIMIT 1)
 		       ) as origin_note,
+		       COALESCE(
+			       (SELECT ton.info_short
+				FROM task_origin_notes ton
+				WHERE ton.task_short_id = t.short_id
+				AND ton.lang = 'lv'
+				LIMIT 1),
+			       (SELECT ton.info_short
+				FROM task_origin_notes ton
+				WHERE ton.task_short_id = t.short_id
+				LIMIT 1)
+		       ) as origin_note_short,
 		       ms.story
 		FROM tasks t
 		LEFT JOIN task_md_statements ms ON t.short_id = ms.task_short_id
@@ -104,7 +115,7 @@ func (r *taskPgRepo) ListTaskPreviews(ctx context.Context, limit int, offset int
 		var widthPx *int = nil
 		var heightPx *int = nil
 		var szInBytes *int = nil
-		var story, originNote *string // Use pointers to handle NULL values
+		var story, originNote, originNoteShort *string // Use pointers to handle NULL values
 		var fullNameBytes []byte
 		err := rows.Scan(
 			&p.ShortId,
@@ -120,6 +131,7 @@ func (r *taskPgRepo) ListTaskPreviews(ctx context.Context, limit int, offset int
 			&p.OlympStage,
 			&p.DifficultyRating,
 			&originNote,
+			&originNoteShort,
 			&story,
 		)
 		if err != nil {
@@ -136,6 +148,9 @@ func (r *taskPgRepo) ListTaskPreviews(ctx context.Context, limit int, offset int
 		// Handle NULL values
 		if originNote != nil {
 			p.OriginNote = *originNote
+		}
+		if originNoteShort != nil {
+			p.OriginNoteShort = *originNoteShort
 		}
 		if story != nil {
 			p.MdStatementStory = *story

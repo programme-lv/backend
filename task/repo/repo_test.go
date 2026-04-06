@@ -29,7 +29,7 @@ func NewDB(t *testing.T) *pgxpool.Pool {
 		Port:       "5433",
 		Options:    "sslmode=disable",
 	}
-	gm := golangmigrator.New("../../migrate")
+	gm := golangmigrator.New("../../postgres/migrate")
 	config := pgtestdb.Custom(t, conf, gm)
 
 	pool, err := pgxpool.New(ctx, config.URL())
@@ -69,6 +69,12 @@ func TestTaskPgRepo(t *testing.T) {
 	// Test task creation
 	err = repo.CreateTask(ctx, task)
 	require.NoError(t, err, "Failed to create task")
+	_, err = pool.Exec(ctx, `
+		UPDATE task_origin_notes
+		SET info_short = $2
+		WHERE task_short_id = $1 AND lang = 'lv'
+	`, task.ShortId, "LIO 38. atlases kārta")
+	require.NoError(t, err, "Failed to update task origin note short text")
 	// Test task existence
 	exists, err := repo.Exists(ctx, task.ShortId)
 	require.NoError(t, err, "Failed to check if task exists")
@@ -181,6 +187,7 @@ func TestTaskPgRepo(t *testing.T) {
 
 		// Verify origin notes
 		assert.Contains(t, taskPreview.OriginNote, "Uzdevums no Latvijas 38.", "Preview OriginNote mismatch")
+		assert.Equal(t, "LIO 38. atlases kārta", taskPreview.OriginNoteShort, "Preview OriginNoteShort mismatch")
 
 		// Verify markdown statement story
 		assert.Contains(t, taskPreview.MdStatementStory, "Dotas $N$ kartītes", "Preview MdStatementStory mismatch")
@@ -189,6 +196,13 @@ func TestTaskPgRepo(t *testing.T) {
 		_, err = repo.GetTaskPreview(ctx, "non-existent-task")
 		assert.Error(t, err, "Getting preview for non-existent task should fail")
 		assert.Contains(t, err.Error(), "failed to load task preview", "Error message should indicate task preview loading failed")
+	})
+
+	t.Run("ListTaskPreviews", func(t *testing.T) {
+		taskPreviews, err := repo.ListTaskPreviews(ctx, 10, 0)
+		require.NoError(t, err, "Failed to list task previews")
+		require.Len(t, taskPreviews, 1, "Should have exactly one task preview")
+		assert.Equal(t, "LIO 38. atlases kārta", taskPreviews[0].OriginNoteShort, "Listed preview OriginNoteShort mismatch")
 	})
 
 	// Test DeleteTask
