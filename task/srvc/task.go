@@ -14,11 +14,12 @@ type TaskPreview struct {
 
 	DifficultyRating int
 
-	OriginOlympiad string
-	OriginNote     string
-	OriginOrg      string
-	OriginYear     string
-	OlympStage     string
+	OriginOlympiad  string
+	OriginNote      string
+	OriginNoteShort string
+	OriginOrg       string
+	OriginYear      string
+	OlympStage      string
 
 	MdStatementStory string
 }
