@@ -81,24 +81,22 @@ func (ts *taskSrvc) DeleteTask(ctx context.Context, shortId string) srvcerror.E 
 	return nil
 }
 
-// S3 bucket: "proglv-public" (as of 2024-09-29)
-// S3 key format: "task-pdf-statements/<sha2>.pdf"
-// returns s3 key for the uploaded pdf statement
+// Object key format: "task-pdf-statements/<sha2>.pdf"
+// returns the object key for the uploaded pdf statement.
 func (ts *taskSrvc) UploadStatementPdf(ctx context.Context, body []byte) (string, srvcerror.E) {
 	l := ts.logger(ctx)
 	shaHex := Sha2Hex(body)
 	s3Key := fmt.Sprintf("%s/%s.pdf", "task-pdf-statements", shaHex)
-	_, err := ts.s3PublicBucket.Upload(body, s3Key, "application/pdf")
+	_, err := ts.publicStore.Upload(body, s3Key, "application/pdf")
 	if err != nil {
-		l.Error("upload PDF to S3", "error", err)
+		l.Error("upload PDF statement", "error", err)
 		return "", NewErrorInternalServerError()
 	}
 	return s3Key, nil
 }
 
-// S3 bucket: "proglv-public" (as of 2024-09-29)
-// S3 key format: "task-illustrations/<sha2>.<ext>"
-// returns s3 key for the uploaded illustration image
+// Object key format: "task-illustrations/<sha2>.<ext>"
+// returns the object key for the uploaded illustration image.
 func (ts *taskSrvc) UploadIllustrationImg(ctx context.Context, mimeType string, body []byte) (string, srvcerror.E) {
 	l := ts.logger(ctx)
 	sha2 := Sha2Hex(body)
@@ -113,37 +111,36 @@ func (ts *taskSrvc) UploadIllustrationImg(ctx context.Context, mimeType string, 
 	}
 	ext := exts[0]
 	s3Key := fmt.Sprintf("%s/%s%s", "task-illustrations", sha2, ext)
-	_, err = ts.s3PublicBucket.Upload(body, s3Key, mimeType)
+	_, err = ts.publicStore.Upload(body, s3Key, mimeType)
 	if err != nil {
-		l.Error("failed to upload illustration to S3", "error", err)
+		l.Error("upload illustration", "error", err)
 		return "", NewErrorInternalServerError()
 	}
 	return s3Key, nil
 }
 
-// upload and return s3 key. use a new uuid in the filename instead of a sha256 hash
+// upload and return an object key. use a new uuid in the filename instead of a sha256 hash.
 func (ts *taskSrvc) UploadOgFileArchive(ctx context.Context, zipBytes []byte) (string, srvcerror.E) {
 	archiveUuid := uuid.New().String()
 	s3Key := fmt.Sprintf("og-file-archives/%s.zip", archiveUuid)
-	_, err := ts.s3PublicBucket.Upload(zipBytes, s3Key, "application/zip")
+	_, err := ts.publicStore.Upload(zipBytes, s3Key, "application/zip")
 	if err != nil {
-		ts.logger(ctx).Error("failed to upload og file archive to S3", "error", err)
+		ts.logger(ctx).Error("upload og file archive", "error", err)
 		return "", NewErrorInternalServerError()
 	}
 	return s3Key, nil
 }
 
 func (ts *taskSrvc) DownloadOgFileArchive(ctx context.Context, s3Key string) ([]byte, srvcerror.E) {
-	body, err := ts.s3PublicBucket.Download(s3Key)
+	body, err := ts.publicStore.Download(s3Key)
 	if err != nil {
-		ts.logger(ctx).Error("failed to download og file archive from S3", "error", err)
+		ts.logger(ctx).Error("download og file archive", "error", err)
 		return nil, NewErrorInternalServerError()
 	}
 	return body, nil
 }
 
-// S3 key format: "task-md-images/<uuid>.<extension>"
-// returns s3 uri, e.g. s3://proglv-public/task/<taskId>/md-images/<uuid>.png
+// Object key format: "task/<taskId>/md-images/<uuid>.<extension>"
 func (ts *taskSrvc) UploadStatementImage(ctx context.Context, taskId string, imgFilename string, imageMimeType string, body []byte) (string, srvcerror.E) {
 	l := ts.logger(ctx)
 
@@ -181,7 +178,7 @@ func (ts *taskSrvc) UploadStatementImage(ctx context.Context, taskId string, img
 	// generate a new UUID for the image (to avoid collision and reduce complexity when renaming semantic filenames), and upload it to S3
 	newImgUuid := uuid.New().String()
 	s3Key := fmt.Sprintf("task/%s/md-images/%s%s", taskId, newImgUuid, ext)
-	s3Uri, err := ts.s3PublicBucket.Upload(body, s3Key, imageMimeType)
+	s3Uri, err := ts.publicStore.Upload(body, s3Key, imageMimeType)
 	if err != nil {
 		l.Error("failed to upload to S3", "error", err)
 		return "", NewErrorInternalServerError()
@@ -262,7 +259,7 @@ func (ts *taskSrvc) UploadTestFile(ctx context.Context, body []byte) srvcerror.E
 	s3Key := GetTestfileS3Key(body)
 	mediaType := "application/zstd"
 
-	exists, err := ts.s3TestfileBucket.Exists(s3Key)
+	exists, err := ts.testfileStore.Exists(s3Key)
 	if err != nil {
 		l.Error("failed to check if object exists in S3", "error", err)
 		return NewErrorInternalServerError()
@@ -278,7 +275,7 @@ func (ts *taskSrvc) UploadTestFile(ctx context.Context, body []byte) srvcerror.E
 		return NewErrorInternalServerError()
 	}
 
-	_, err = ts.s3TestfileBucket.Upload(zstdCompressed, s3Key, mediaType)
+	_, err = ts.testfileStore.Upload(zstdCompressed, s3Key, mediaType)
 	if err != nil {
 		l.Error("failed to upload to S3", "error", err)
 		return NewErrorInternalServerError()
@@ -360,7 +357,7 @@ func (ts *taskSrvc) DeleteStatementImage(ctx context.Context, taskId string, fil
 	s3Key := targetImage.S3Key
 
 	// Check if the image exists in S3
-	exists, err := ts.s3PublicBucket.Exists(s3Key)
+	exists, err := ts.publicStore.Exists(s3Key)
 	if err != nil {
 		l.Error("check if image exists in S3", "error", err)
 		return NewErrorInternalServerError()
@@ -378,7 +375,7 @@ func (ts *taskSrvc) DeleteStatementImage(ctx context.Context, taskId string, fil
 	}
 
 	// Delete the image from S3
-	err = ts.s3PublicBucket.Delete(s3Key)
+	err = ts.publicStore.Delete(s3Key)
 	if err != nil {
 		l.Error("delete image from S3", "error", err)
 		return NewErrorInternalServerError()
@@ -408,7 +405,7 @@ func (ts *taskSrvc) DeleteIllustrationImg(ctx context.Context, taskId string) sr
 	s3Key := t.IllustrImg.S3Key
 
 	// Check if the image exists in S3
-	exists, err := ts.s3PublicBucket.Exists(s3Key)
+	exists, err := ts.publicStore.Exists(s3Key)
 	if err != nil {
 		l.Error("failed to check if image exists in S3", "error", err)
 		return NewErrorInternalServerError()
@@ -432,7 +429,7 @@ func (ts *taskSrvc) DeleteIllustrationImg(ctx context.Context, taskId string) sr
 	}
 
 	// Delete the image from S3
-	err = ts.s3PublicBucket.Delete(s3Key)
+	err = ts.publicStore.Delete(s3Key)
 	if err != nil {
 		l.Error("failed to delete image from S3", "error", err)
 		return NewErrorInternalServerError()
@@ -527,7 +524,7 @@ func (ts *taskSrvc) mapToTaskfs(ctx context.Context, t Task) (taskfs.Task, error
 	}
 	images := []taskfs.Image{}
 	for _, image := range t.MdImages {
-		content, err := ts.s3PublicBucket.Download(image.S3Key)
+		content, err := ts.publicStore.Download(image.S3Key)
 		if err != nil {
 			prefix := "download statement image from S3"
 			return taskfs.Task{}, fmt.Errorf("%s: %w", prefix, err)
@@ -966,7 +963,7 @@ func (ts *taskSrvc) uploadTaskArchiveAssets(ctx context.Context, t taskfs.Task, 
 			return fmt.Errorf("get file ext for %s: %w", img.Fname, err)
 		}
 		s3Key := fmt.Sprintf("task/%s/md-images/%s%s", t.ShortID, newUuid, ext)
-		if _, err := ts.s3PublicBucket.Upload(img.Content, s3Key, mimeType); err != nil {
+		if _, err := ts.publicStore.Upload(img.Content, s3Key, mimeType); err != nil {
 			return fmt.Errorf("upload statement image %d: %w", i+1, err)
 		}
 		res.MdImages = append(res.MdImages, StatementImage{
@@ -996,7 +993,7 @@ func (ts *taskSrvc) uploadTaskArchiveAssets(ctx context.Context, t taskfs.Task, 
 			return fmt.Errorf("get file ext for %s: %w", ill.Fname, err)
 		}
 		s3Key := fmt.Sprintf("%s/%s%s", "task-illustrations", shaHex, ext)
-		if _, err := ts.s3PublicBucket.Upload(ill.Content, s3Key, illMime); err != nil {
+		if _, err := ts.publicStore.Upload(ill.Content, s3Key, illMime); err != nil {
 			return fmt.Errorf("upload illustration: %w", err)
 		}
 		res.IllustrImg = &IllustrationImage{S3Key: s3Key, WidthPx: width, HeightPx: height, SzInBytes: len(ill.Content)}
@@ -1115,7 +1112,7 @@ func (ts *taskSrvc) DownloadTestFile(ctx context.Context, testFileSha256 string)
 
 		// Download compressed from S3 by key <sha>.zst
 		s3Key := fmt.Sprintf("%s.zst", testFileSha256)
-		compressed, err := ts.s3TestfileBucket.Download(s3Key)
+		compressed, err := ts.testfileStore.Download(s3Key)
 		if err != nil {
 			logger.Error("failed to download test file from S3", "sha256", testFileSha256, "s3_key", s3Key, "error", err)
 			return nil, NewErrorInternalServerError()

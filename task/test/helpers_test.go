@@ -6,8 +6,8 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/programme-lv/backend/common/filestore"
 	"github.com/programme-lv/backend/common/testutil"
-	"github.com/programme-lv/backend/conf"
 	taskhttp "github.com/programme-lv/backend/task/http"
 	"github.com/programme-lv/backend/task/repo"
 	"github.com/programme-lv/backend/task/srvc"
@@ -17,8 +17,15 @@ func newTaskSrvc(t *testing.T) srvc.TaskService {
 	t.Helper()
 	pool := testutil.MustGetMigratedTestPostgresDb(t)
 	repo := repo.NewTaskPgRepo(pool)
-	publicS3 := conf.MustGetTestingS3Bucket()
-	ts := srvc.NewTaskSrvc(repo, publicS3, nil)
+	publicStore, err := filestore.NewStore(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	testfileStore, err := filestore.NewStore(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	ts := srvc.NewTaskSrvc(repo, publicStore, testfileStore)
 	return ts
 }
 

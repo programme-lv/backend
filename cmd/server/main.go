@@ -44,19 +44,18 @@ func main() {
 	pgPool := conf.MustGetPgxPoolFromEnv()
 	conf.MustRunPostgresMigrationsFromEnv()
 
-	cdnS3 := conf.MustGetPublicS3Bucket()
-	testS3 := conf.MustGetTestfileS3Bucket()
+	storageRoot := conf.MustGetFileStorageRootFromEnv()
+	apiPublicBaseURL := conf.MustGetPublicAPIBaseURLFromEnv()
+	testfileSigningKey := conf.MustGetTestfileDownloadSigningKeyFromEnv()
+	publicStore := conf.MustGetFileStore(storageRoot, "public")
+	testfileStore := conf.MustGetFileStore(storageRoot, "testfiles")
+	execStore := conf.MustGetFileStore(storageRoot, "exec")
 
 	execCtx := context.Background()
 	execCtx = ctxlog.WithLogger(execCtx, slog.Default().With("module", "exec"))
-	s3Client := conf.MustGetS3ClientFromEnv(execCtx)
-	s3Bucket := os.Getenv("S3_EXEC_BUCKET")
-	if s3Bucket == "" {
-		panic("S3_EXEC_BUCKET env var is not set")
-	}
-	s3Repo := exec.NewS3ExecRepo(execCtx, s3Client, s3Bucket)
+	execRepo := exec.NewFileExecRepo(execCtx, execStore)
 	natsConn := conf.MustGetNatsConnFromEnv(execCtx)
-	execSrvc := exec.NewExecSrvc(execCtx, s3Repo, natsConn)
+	execSrvc := exec.NewExecSrvc(execCtx, execRepo, natsConn)
 	if *listenSQS {
 		err := execSrvc.StartPollingResultQueue(execCtx)
 		if err != nil {
@@ -72,11 +71,20 @@ func main() {
 
 	// Initialize task service
 	taskRepo := repo.NewTaskPgRepo(pgPool)
-	taskSrvc := tasksrvc.NewTaskSrvc(taskRepo, cdnS3, testS3)
+	taskSrvc := tasksrvc.NewTaskSrvc(
+		taskRepo,
+		publicStore,
+		testfileStore,
+		tasksrvc.WithPublicAPIBaseURL(apiPublicBaseURL),
+		tasksrvc.WithTestfileDownloadSigningKey(testfileSigningKey),
+	)
 
 	// Initialize HTTP handlers
 	submHttpHandler := newSubmHttpHandler(userSrvc, taskSrvc, execSrvc)
-	taskHttpHandler := taskhttp.NewTaskHttpHandler(taskSrvc)
+	taskHttpHandler := taskhttp.NewTaskHttpHandler(
+		taskSrvc,
+		taskhttp.WithFileStores(publicStore, testfileStore, testfileSigningKey),
+	)
 	userHttpHandler := userhttp.NewUserHttpHandler(userSrvc, jwtKey, userhttp.WithCookieDomain(cookieDomain))
 
 	// Start HTTP server

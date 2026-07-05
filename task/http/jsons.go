@@ -87,8 +87,6 @@ type SubtaskOverview struct {
 	Descriptions map[string]string `json:"descriptions"`
 }
 
-const PublicCloudfrontEndpoint = "https://dvhk4hiwp1rmf.cloudfront.net/"
-
 func mapTaskMdStatement(md *srvc.MarkdownStatement) MdStatement {
 	if md == nil {
 		return MdStatement{}

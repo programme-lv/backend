@@ -3,10 +3,8 @@ package srvc
 import (
 	"context"
 	"log/slog"
-	"time"
 
 	"github.com/programme-lv/backend/common/ctxlog"
-	"github.com/programme-lv/backend/common/s3bucket"
 	"github.com/programme-lv/backend/common/srvcerror"
 	"golang.org/x/sync/singleflight"
 )
@@ -58,14 +56,11 @@ type TaskService interface {
 	DownloadOgFileArchive(ctx context.Context, s3Key string) ([]byte, srvcerror.E)
 }
 
-type S3BucketFacade interface {
+type ObjectStore interface {
 	Upload(content []byte, key string, mediaType string) (string, error)
 	Download(key string) ([]byte, error)
-	PresignedURL(key string, duration time.Duration) (string, error)
 	Exists(key string) (bool, error)
-	ListAndGetAllFiles(prefix string) ([]s3bucket.FileData, error)
 	Delete(key string) error
-	Bucket() string
 }
 
 type TaskPgRepo interface {
@@ -85,27 +80,51 @@ type TaskPgRepo interface {
 }
 
 type taskSrvc struct {
-	s3PublicBucket   S3BucketFacade
-	s3TestfileBucket S3BucketFacade
+	publicStore   ObjectStore
+	testfileStore ObjectStore
 
 	repo TaskPgRepo
 
 	testCache *TestFileCache
 
+	apiPublicBaseURL           string
+	testfileDownloadSigningKey []byte
+
 	// dlGroup deduplicates concurrent DownloadTestFile calls per key to prevent thundering herd
 	dlGroup singleflight.Group
 }
 
+type TaskSrvcOption func(*taskSrvc)
+
+func WithPublicAPIBaseURL(baseURL string) TaskSrvcOption {
+	return func(ts *taskSrvc) {
+		ts.apiPublicBaseURL = baseURL
+	}
+}
+
+func WithTestfileDownloadSigningKey(key []byte) TaskSrvcOption {
+	return func(ts *taskSrvc) {
+		ts.testfileDownloadSigningKey = key
+	}
+}
+
 func NewTaskSrvc(
 	repo TaskPgRepo,
-	cdnS3, testS3 S3BucketFacade,
+	publicStore, testfileStore ObjectStore,
+	opts ...TaskSrvcOption,
 ) *taskSrvc {
-	return &taskSrvc{
-		s3PublicBucket:   cdnS3,
-		s3TestfileBucket: testS3,
-		repo:             repo,
-		testCache:        NewTestFileCache(),
+	ts := &taskSrvc{
+		publicStore:                publicStore,
+		testfileStore:              testfileStore,
+		repo:                       repo,
+		testCache:                  NewTestFileCache(),
+		apiPublicBaseURL:           "http://localhost:8080",
+		testfileDownloadSigningKey: []byte("testfile-download-signing-key-for-tests"),
 	}
+	for _, opt := range opts {
+		opt(ts)
+	}
+	return ts
 }
 
 func (ts *taskSrvc) logger(ctx context.Context) *slog.Logger {

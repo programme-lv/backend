@@ -7,13 +7,13 @@ import (
 	"log/slog"
 	"net/url"
 	"os"
+	"path/filepath"
 	"regexp"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/aws/retry"
 	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/aws/smithy-go/logging"
@@ -23,8 +23,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 	"github.com/nats-io/nats.go"
-	"github.com/programme-lv/backend/common/ctxlog"
-	"github.com/programme-lv/backend/common/s3bucket"
+	"github.com/programme-lv/backend/common/filestore"
 )
 
 const (
@@ -48,37 +47,6 @@ func init() {
 			"cwd", rootPath,
 		)
 	}
-}
-
-func MustGetPublicS3Bucket() *s3bucket.S3Bucket {
-	publicBucket := os.Getenv("S3_PUBLIC_BUCKET")
-	if publicBucket == "" {
-		slog.Error("S3_PUBLIC_BUCKET env var is not set")
-		os.Exit(1)
-	}
-
-	s3, err := s3bucket.NewS3Bucket(awsRegion, publicBucket)
-	if err != nil {
-		slog.Error("failed to create public S3 bucket", "error", err)
-		os.Exit(1)
-	}
-	return s3
-}
-
-// utilized for testing purposes
-func MustGetTestingS3Bucket() *s3bucket.S3Bucket {
-	testingBucket := os.Getenv("S3_TESTING_BUCKET")
-	if testingBucket == "" {
-		slog.Error("S3_TESTING_BUCKET env var is not set")
-		os.Exit(1)
-	}
-
-	s3, err := s3bucket.NewS3Bucket(awsRegion, testingBucket)
-	if err != nil {
-		slog.Error("failed to create development S3 bucket", "error", err)
-		os.Exit(1)
-	}
-	return s3
 }
 
 type slogLogger struct {
@@ -117,20 +85,6 @@ func MustGetSqsClientFromEnv(logger *slog.Logger) *sqs.Client {
 	return sqs.NewFromConfig(cfg)
 }
 
-func MustGetS3ClientFromEnv(ctx context.Context) *s3.Client {
-	cfg, err := config.LoadDefaultConfig(ctx,
-		config.WithRegion(awsRegion),
-		config.WithRetryer(func() aws.Retryer {
-			return retry.AddWithMaxAttempts(retry.NewStandard(), 10)
-		}),
-		config.WithLogger(newSlogLogger(ctxlog.FromContext(ctx))),
-	)
-	if err != nil {
-		panic(fmt.Errorf("unable to load SDK config, %v", err))
-	}
-	return s3.NewFromConfig(cfg)
-}
-
 func MustGetNatsConnFromEnv(ctx context.Context) *nats.Conn {
 	conn, err := nats.Connect(os.Getenv("NATS_URL"))
 	if err != nil {
@@ -139,23 +93,50 @@ func MustGetNatsConnFromEnv(ctx context.Context) *nats.Conn {
 	return conn
 }
 
-func MustGetTestfileS3Bucket() *s3bucket.S3Bucket {
-	testfileBucket := os.Getenv("S3_TESTFILE_BUCKET")
-	if testfileBucket == "" {
-		slog.Error("S3_TESTFILE_BUCKET env var is not set")
-		os.Exit(1)
-	}
-
-	s3, err := s3bucket.NewS3Bucket(awsRegion, testfileBucket)
-	if err != nil {
-		slog.Error("failed to create test S3 bucket", "error", err)
-		os.Exit(1)
-	}
-	return s3
-}
-
 func MustGetJwtKeyFromEnv() []byte {
 	return []byte(getRequiredEnv("JWT_KEY"))
+}
+
+func MustGetFileStorageRootFromEnv() string {
+	root := getRequiredEnv("FILE_STORAGE_ROOT")
+	info, err := os.Stat(root)
+	if err != nil {
+		slog.Error("stat FILE_STORAGE_ROOT", "error", err, "path", root)
+		os.Exit(1)
+	}
+	if !info.IsDir() {
+		slog.Error("FILE_STORAGE_ROOT is not a directory", "path", root)
+		os.Exit(1)
+	}
+	absRoot, err := filepath.Abs(root)
+	if err != nil {
+		slog.Error("resolve FILE_STORAGE_ROOT", "error", err, "path", root)
+		os.Exit(1)
+	}
+	return absRoot
+}
+
+func MustGetPublicAPIBaseURLFromEnv() string {
+	baseURL := getRequiredEnv("API_PUBLIC_BASE_URL")
+	parsed, err := url.Parse(baseURL)
+	if err != nil || parsed.Scheme == "" || parsed.Host == "" {
+		slog.Error("API_PUBLIC_BASE_URL is invalid", "value", baseURL, "error", err)
+		os.Exit(1)
+	}
+	return filestore.NormalizeBaseURL(baseURL)
+}
+
+func MustGetTestfileDownloadSigningKeyFromEnv() []byte {
+	return []byte(getRequiredEnv("TESTFILE_DOWNLOAD_SIGNING_KEY"))
+}
+
+func MustGetFileStore(root string, subdir string) *filestore.Store {
+	store, err := filestore.NewStore(filepath.Join(root, subdir))
+	if err != nil {
+		slog.Error("create file store", "error", err, "subdir", subdir)
+		os.Exit(1)
+	}
+	return store
 }
 
 func MustGetCookieDomainFromEnv() string {

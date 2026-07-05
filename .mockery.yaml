@@ -3,13 +3,6 @@ issue-845-fix: True
 resolve-type-alias: False
 disable-version-string: True
 packages:
-  github.com/programme-lv/backend/common/s3bucket:
-    config:
-      all: true
-      filename: "mock_{{.InterfaceName}}.go"
-      dir: "gen/mocks/s3bucket"
-      mockname: "Mock{{.InterfaceName}}"
-      outpkg: "{{.PackageName}}"
   github.com/programme-lv/backend/user:
     config:
       all: true
