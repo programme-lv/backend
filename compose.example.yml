@@ -1,0 +1,76 @@
+# Example deployment stack for the backend and its direct runtime dependencies.
+# Replace placeholder values before deploying.
+services:
+  backend:
+    # image: ghcr.io/programme-lv/backend:latest
+    # To build this repo locally instead of pulling from GHCR, comment out
+    # image above and uncomment:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      JWT_KEY: "replace-with-a-long-random-secret"
+      COOKIE_DOMAIN: ".programme.lv"
+
+      POSTGRES_HOST: "postgres"
+      POSTGRES_PORT: "5432"
+      POSTGRES_USER: "programme"
+      POSTGRES_PW: "replace-postgres-password"
+      POSTGRES_DB: "programme"
+      POSTGRES_SSLMODE: "disable"
+      POSTGRES_MIGRATIONS_PATH: "/backend/postgres/migrate"
+
+      NATS_URL: "nats://nats:4222"
+
+      AWS_ACCESS_KEY_ID: "replace-aws-access-key-id"
+      AWS_SECRET_ACCESS_KEY: "replace-aws-secret-access-key"
+      S3_EXEC_BUCKET: "replace-exec-bucket"
+      S3_PUBLIC_BUCKET: "replace-public-bucket"
+      S3_TESTFILE_BUCKET: "replace-testfile-bucket"
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_started
+    # To let an external Nginx Proxy Manager container reach this service,
+    # uncomment this and the networks section at the bottom.
+    # networks:
+    #   - default
+    #   - nginx-proxy-www
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: "programme"
+      POSTGRES_PASSWORD: "replace-postgres-password"
+      POSTGRES_DB: "programme"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U programme -d programme"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  nats:
+    image: nats:2.11
+    command: ["-js", "--store_dir", "/data"]
+    volumes:
+      - nats-data:/data
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
+  nats-data:
+
+# Example for joining an existing external Docker network used by Nginx Proxy
+# Manager. Create the network outside this stack first if it does not exist:
+# docker network create nginx-proxy-www
+# networks:
+#   default:
+#   nginx-proxy-www:
+#     external: true

@@ -1,0 +1,10 @@
+.git
+.github
+.cursor
+.env
+.env.*
+docs
+postgres/*.dump
+postgres/pgdata
+tmp
+*.log
