@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"net/url"
 	"os"
 	"regexp"
 	"time"
@@ -16,6 +17,9 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/aws/smithy-go/logging"
+	"github.com/golang-migrate/migrate/v4"
+	_ "github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 	"github.com/nats-io/nats.go"
@@ -39,11 +43,10 @@ func init() {
 	rootPath := FindProjectRoot()
 	err := godotenv.Load(rootPath + `/.env`)
 	if err != nil {
-		slog.Error("error loading .env file",
+		slog.Info("no .env file loaded; using process environment",
 			"error", err,
 			"cwd", rootPath,
 		)
-		os.Exit(1)
 	}
 }
 
@@ -188,12 +191,68 @@ func GetPgxPoolFromEnv() (*pgxpool.Pool, error) {
 	return pool, nil
 }
 
+func MustRunPostgresMigrationsFromEnv() {
+	migrationsPath := os.Getenv("POSTGRES_MIGRATIONS_PATH")
+	if migrationsPath == "" {
+		migrationsPath = "postgres/migrate"
+	}
+
+	m, err := migrate.New("file://"+migrationsPath, getPgMigrationURLFromEnv())
+	if err != nil {
+		slog.Error("create postgres migrator", "error", err, "path", migrationsPath)
+		os.Exit(1)
+	}
+	defer m.Close()
+
+	err = m.Up()
+	switch err {
+	case nil:
+		slog.Info("postgres migrations applied")
+	case migrate.ErrNoChange:
+		slog.Info("postgres schema already up to date")
+	default:
+		slog.Error("run postgres migrations", "error", err)
+		os.Exit(1)
+	}
+}
+
 func getPgConnStrFromEnv() string {
 	host := os.Getenv("POSTGRES_HOST")
-	var pw string
-	if host == "localhost" {
-		pw = os.Getenv("POSTGRES_PW")
-	} else {
+	user := os.Getenv("POSTGRES_USER")
+	port := os.Getenv("POSTGRES_PORT")
+	db := os.Getenv("POSTGRES_DB")
+	ssl := os.Getenv("POSTGRES_SSLMODE")
+	pw := getPostgresPasswordFromEnv()
+
+	return fmt.Sprintf(
+		"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
+		host, port, user, pw, db, ssl)
+}
+
+func getPgMigrationURLFromEnv() string {
+	host := os.Getenv("POSTGRES_HOST")
+	user := os.Getenv("POSTGRES_USER")
+	port := os.Getenv("POSTGRES_PORT")
+	db := os.Getenv("POSTGRES_DB")
+	ssl := os.Getenv("POSTGRES_SSLMODE")
+	pw := getPostgresPasswordFromEnv()
+
+	u := url.URL{
+		Scheme: "postgres",
+		User:   url.UserPassword(user, pw),
+		Host:   fmt.Sprintf("%s:%s", host, port),
+		Path:   db,
+	}
+	query := u.Query()
+	query.Set("sslmode", ssl)
+	u.RawQuery = query.Encode()
+
+	return u.String()
+}
+
+func getPostgresPasswordFromEnv() string {
+	pw := os.Getenv("POSTGRES_PW")
+	if pw == "" {
 		secretName := getRequiredEnv("POSTGRES_PW_SECRET_NAME")
 		secretValue, err := getSecretFromAWS(secretName)
 		if err != nil {
@@ -211,14 +270,7 @@ func getPgConnStrFromEnv() string {
 		pw = secret.Password
 	}
 
-	user := os.Getenv("POSTGRES_USER")
-	port := os.Getenv("POSTGRES_PORT")
-	db := os.Getenv("POSTGRES_DB")
-	ssl := os.Getenv("POSTGRES_SSLMODE")
-
-	return fmt.Sprintf(
-		"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
-		host, port, user, pw, db, ssl)
+	return pw
 }
 
 func getSecretFromAWS(secretName string) (string, error) {

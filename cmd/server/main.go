@@ -42,6 +42,7 @@ func main() {
 	cookieDomain := conf.MustGetCookieDomainFromEnv()
 
 	pgPool := conf.MustGetPgxPoolFromEnv()
+	conf.MustRunPostgresMigrationsFromEnv()
 
 	cdnS3 := conf.MustGetPublicS3Bucket()
 	testS3 := conf.MustGetTestfileS3Bucket()
@@ -51,7 +52,7 @@ func main() {
 	s3Client := conf.MustGetS3ClientFromEnv(execCtx)
 	s3Bucket := os.Getenv("S3_EXEC_BUCKET")
 	if s3Bucket == "" {
-		panic("S3_EXEC_BUCKET not set in .env file")
+		panic("S3_EXEC_BUCKET env var is not set")
 	}
 	s3Repo := exec.NewS3ExecRepo(execCtx, s3Client, s3Bucket)
 	natsConn := conf.MustGetNatsConnFromEnv(execCtx)
