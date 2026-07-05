@@ -3,9 +3,9 @@ package srvc
 import (
 	"context"
 	_ "embed"
-	"fmt"
 	"time"
 
+	"github.com/programme-lv/backend/common/filestore"
 	"github.com/programme-lv/backend/common/srvcerror"
 )
 
@@ -94,55 +94,40 @@ func (ts *taskSrvc) GetTaskFullNames(ctx context.Context, shortIDs []string) ([]
 }
 
 func (ts *taskSrvc) GetHttpUrlForIllustrImg(ctx context.Context, s3Key string) (string, srvcerror.E) {
-	if ts.s3PublicBucket.Bucket() == "proglv-public" {
-		cloudfrontEndpoint := "https://dvhk4hiwp1rmf.cloudfront.net/"
-		return cloudfrontEndpoint + s3Key, nil
-	} else {
-		url, err := ts.s3PublicBucket.PresignedURL(s3Key, 24*time.Hour)
-		if err != nil {
-			ts.logger(ctx).Error("presign illustrate image", "error", err)
-			return "", NewErrorInternalServerError()
-		}
-		return url, nil
+	url, err := filestore.AssetURL(ts.apiPublicBaseURL, s3Key)
+	if err != nil {
+		ts.logger(ctx).Error("build illustration image URL", "error", err)
+		return "", NewErrorInternalServerError()
 	}
+	return url, nil
 }
 
 func (ts *taskSrvc) GetHttpUrlForStatementImage(ctx context.Context, s3Key string) (string, srvcerror.E) {
-	if ts.s3PublicBucket.Bucket() == "proglv-public" {
-		cloudfrontEndpoint := "https://dvhk4hiwp1rmf.cloudfront.net/"
-		return cloudfrontEndpoint + s3Key, nil
-	} else {
-		url, err := ts.s3PublicBucket.PresignedURL(s3Key, 24*time.Hour)
-		if err != nil {
-			ts.logger(ctx).Error("presign statement image", "error", err)
-			return "", NewErrorInternalServerError()
-		}
-		return url, nil
+	url, err := filestore.AssetURL(ts.apiPublicBaseURL, s3Key)
+	if err != nil {
+		ts.logger(ctx).Error("build statement image URL", "error", err)
+		return "", NewErrorInternalServerError()
 	}
+	return url, nil
 }
 
 func (ts *taskSrvc) GetHttpUrlForPdfStatement(ctx context.Context, s3Key string) (string, srvcerror.E) {
-	if ts.s3PublicBucket.Bucket() == "proglv-public" {
-		cloudfrontEndpoint := "https://dvhk4hiwp1rmf.cloudfront.net/"
-		return cloudfrontEndpoint + s3Key, nil
-	} else {
-		url, err := ts.s3PublicBucket.PresignedURL(s3Key, 24*time.Hour)
-		if err != nil {
-			ts.logger(ctx).Error("presign pdf statement", "error", err)
-			return "", NewErrorInternalServerError()
-		}
-		return url, nil
+	url, err := filestore.AssetURL(ts.apiPublicBaseURL, s3Key)
+	if err != nil {
+		ts.logger(ctx).Error("build pdf statement URL", "error", err)
+		return "", NewErrorInternalServerError()
 	}
+	return url, nil
 }
 
 // GetTestDownlUrl implements submadapter.TaskSrvcFacade.
 func (ts *taskSrvc) GetTestDownlUrl(ctx context.Context, testFileSha256 string) (string, srvcerror.E) {
-	presignedUrl, err := ts.s3TestfileBucket.PresignedURL(fmt.Sprintf("%s.zst", testFileSha256), time.Hour*24)
-	if err != nil {
-		ts.logger(ctx).Error("presign test file", "error", err)
-		return "", NewErrorInternalServerError()
-	}
-	return presignedUrl, nil
+	return filestore.SignedTestfileURL(
+		ts.apiPublicBaseURL,
+		testFileSha256,
+		ts.testfileDownloadSigningKey,
+		time.Now().Add(24*time.Hour),
+	), nil
 }
 
 // ResolveNames implements TaskSrvcClient.

@@ -22,11 +22,14 @@ services:
 
       NATS_URL: "nats://nats:4222"
 
+      FILE_STORAGE_ROOT: "/mnt/programme-lv-storage"
+      API_PUBLIC_BASE_URL: "https://api.programme.lv"
+      TESTFILE_DOWNLOAD_SIGNING_KEY: "replace-with-a-long-random-secret"
+
       AWS_ACCESS_KEY_ID: "replace-aws-access-key-id"
       AWS_SECRET_ACCESS_KEY: "replace-aws-secret-access-key"
-      S3_EXEC_BUCKET: "replace-exec-bucket"
-      S3_PUBLIC_BUCKET: "replace-public-bucket"
-      S3_TESTFILE_BUCKET: "replace-testfile-bucket"
+    volumes:
+      - /mnt/programme-lv-storage:/mnt/programme-lv-storage
     ports:
       - "8080:8080"
     depends_on:

@@ -10,6 +10,7 @@ import (
 	oldCache "github.com/patrickmn/go-cache"
 	"github.com/programme-lv/backend/common/cache"
 	"github.com/programme-lv/backend/common/ctxlog"
+	"github.com/programme-lv/backend/common/filestore"
 	hf "github.com/programme-lv/backend/common/httpfunc"
 	"github.com/programme-lv/backend/task/srvc"
 	"github.com/programme-lv/backend/user/auth"
@@ -21,12 +22,26 @@ type taskHttpHandler struct {
 
 	getTaskViewCache *cache.LruCache[string, Task]
 	getTaskListCache *cache.LruCache[string, []TaskPreview]
+
+	publicAssetStore           *filestore.Store
+	testfileStore              *filestore.Store
+	testfileDownloadSigningKey []byte
 }
 
-func NewTaskHttpHandler(taskSrvc srvc.TaskService) *taskHttpHandler {
+type HandlerOption func(*taskHttpHandler)
+
+func WithFileStores(publicAssetStore, testfileStore *filestore.Store, testfileDownloadSigningKey []byte) HandlerOption {
+	return func(h *taskHttpHandler) {
+		h.publicAssetStore = publicAssetStore
+		h.testfileStore = testfileStore
+		h.testfileDownloadSigningKey = testfileDownloadSigningKey
+	}
+}
+
+func NewTaskHttpHandler(taskSrvc srvc.TaskService, opts ...HandlerOption) *taskHttpHandler {
 	// Create a cache with 3 second default expiration and 10 second cleanup interval
 	c := oldCache.New(5*time.Second, 10*time.Second)
-	return &taskHttpHandler{
+	h := &taskHttpHandler{
 		taskSrvc: taskSrvc,
 		cache:    c,
 		// singleflight.Group doesn't need initialization
@@ -36,9 +51,20 @@ func NewTaskHttpHandler(taskSrvc srvc.TaskService) *taskHttpHandler {
 		getTaskViewCache: cache.NewLruCache[string, Task](1000),
 		getTaskListCache: cache.NewLruCache[string, []TaskPreview](1000),
 	}
+	for _, opt := range opts {
+		opt(h)
+	}
+	return h
 }
 
 func (h *taskHttpHandler) RegisterRoutes(r *chi.Mux, jwtKey []byte) {
+	if h.publicAssetStore != nil {
+		r.Get("/assets/*", h.ServePublicAsset)
+	}
+	if h.testfileStore != nil && len(h.testfileDownloadSigningKey) > 0 {
+		r.Get("/testfiles/{filename}", h.ServeTestfile)
+	}
+
 	r.Group(func(r chi.Router) {
 		r.Use(auth.HttpJwtAuthentication(jwtKey))
 
