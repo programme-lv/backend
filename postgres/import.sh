@@ -63,7 +63,7 @@ pg_restore --version
 
 echo "Importing '$DUMP_FILE' into ${DB} on ${HOST}:${PORT} as ${USER}..."
 
-read -p -r "Continue (y/n)? " choice
+read -r -p "Continue (y/n)? " choice
 case "$choice" in
 	y|Y ) echo "Proceeding...";;
 	n|N ) echo "Aborted."; exit 1;;

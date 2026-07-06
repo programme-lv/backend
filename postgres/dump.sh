@@ -38,15 +38,30 @@ if [[ "$HELP" == "true" ]]; then
 	exit 0
 fi
 
+ENV_FILE="$ROOT_DIR/.env.prod"
+
 # Defaults
-USER="${USER:-postgres}"
 PORT="${PORT:-5432}"
 PG_TAG="${PG_TAG:-17}"
+
+# Resolve user from .env.prod if --prod is set, otherwise use "postgres"
+if [[ -z "${USER}" ]]; then
+	if [[ "$PROD" == "true" ]]; then
+		if [[ -f "$ENV_FILE" ]]; then
+			USER="$(grep -E "^POSTGRES_USER=" "$ENV_FILE" | cut -d '=' -f2- | tr -d "'" || true)"
+		fi
+		if [[ -z "${USER}" ]]; then
+			echo "Error: --prod set but user not provided and POSTGRES_USER not found in .env.prod." >&2
+			exit 1
+		fi
+	else
+		USER="postgres"
+	fi
+fi
 
 # Resolve database from .env.prod if --prod is set, otherwise use "proglv"
 if [[ -z "${DB}" ]]; then
 	if [[ "$PROD" == "true" ]]; then
-		ENV_FILE="$ROOT_DIR/.env.prod"
 		if [[ -f "$ENV_FILE" ]]; then
 			DB="$(grep -E "^POSTGRES_DB=" "$ENV_FILE" | cut -d '=' -f2- | tr -d "'" || true)"
 		fi
@@ -65,7 +80,6 @@ OUTFILE="${OUTFILE:-./${DB}-${TIMESTAMP}.dump}"
 # Resolve password from .env.prod if --prod is set, otherwise use "password123"
 if [[ -z "${PASSWORD}" ]]; then
 	if [[ "$PROD" == "true" ]]; then
-		ENV_FILE="$ROOT_DIR/.env.prod"
 		if [[ -f "$ENV_FILE" ]]; then
 			PASSWORD="$(grep -E "^POSTGRES_PW=" "$ENV_FILE" | cut -d '=' -f2- | tr -d "'" || true)"
 		fi
@@ -81,7 +95,6 @@ fi
 # Resolve host from .env.prod if --prod is set, otherwise use "localhost"
 if [[ -z "${HOST}" ]]; then
 	if [[ "$PROD" == "true" ]]; then
-		ENV_FILE="$ROOT_DIR/.env.prod"
 		if [[ -f "$ENV_FILE" ]]; then
 			HOST="$(grep -E "^POSTGRES_HOST=" "$ENV_FILE" | cut -d '=' -f2- | tr -d "'" || true)"
 		fi
