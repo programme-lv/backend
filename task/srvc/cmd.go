@@ -95,8 +95,8 @@ func (ts *taskSrvc) UploadStatementPdf(ctx context.Context, body []byte) (string
 	return s3Key, nil
 }
 
-// Object key format: "task-illustrations/<sha2>.<ext>"
-// returns the object key for the uploaded illustration image.
+// Object key format: "illustrations/<sha2>.<ext>"
+// returns the stored key for the uploaded illustration image.
 func (ts *taskSrvc) UploadIllustrationImg(ctx context.Context, mimeType string, body []byte) (string, srvcerror.E) {
 	l := ts.logger(ctx)
 	sha2 := Sha2Hex(body)
@@ -110,13 +110,13 @@ func (ts *taskSrvc) UploadIllustrationImg(ctx context.Context, mimeType string, 
 		return "", NewErrorImageFileExtFromMimeType(mimeType)
 	}
 	ext := exts[0]
-	s3Key := fmt.Sprintf("%s/%s%s", "task-illustrations", sha2, ext)
-	_, err = ts.publicStore.Upload(body, s3Key, mimeType)
+	storedKey := fmt.Sprintf("%s%s", sha2, ext)
+	_, err = ts.publicStore.Upload(body, taskIllustrationObjectKey(storedKey), mimeType)
 	if err != nil {
 		l.Error("upload illustration", "error", err)
 		return "", NewErrorInternalServerError()
 	}
-	return s3Key, nil
+	return storedKey, nil
 }
 
 // upload and return an object key. use a new uuid in the filename instead of a sha256 hash.
@@ -402,7 +402,7 @@ func (ts *taskSrvc) DeleteIllustrationImg(ctx context.Context, taskId string) sr
 		return NewErrorImageNotFound(taskId)
 	}
 
-	s3Key := t.IllustrImg.S3Key
+	s3Key := taskIllustrationObjectKey(t.IllustrImg.S3Key)
 
 	// Check if the image exists in S3
 	exists, err := ts.publicStore.Exists(s3Key)
@@ -442,6 +442,7 @@ func (ts *taskSrvc) DeleteIllustrationImg(ctx context.Context, taskId string) sr
 // It updates the illustration image information in the database.
 func (ts *taskSrvc) UpdateIllustrationImg(ctx context.Context, taskId string, img IllustrationImage) srvcerror.E {
 	l := ts.logger(ctx)
+	img.S3Key = taskIllustrationStoredKey(img.S3Key)
 
 	err := ts.repo.UpdateIllustrationImg(ctx, taskId, img)
 	if err != nil {
@@ -992,11 +993,11 @@ func (ts *taskSrvc) uploadTaskArchiveAssets(ctx context.Context, t taskfs.Task, 
 		if err != nil {
 			return fmt.Errorf("get file ext for %s: %w", ill.Fname, err)
 		}
-		s3Key := fmt.Sprintf("%s/%s%s", "task-illustrations", shaHex, ext)
-		if _, err := ts.publicStore.Upload(ill.Content, s3Key, illMime); err != nil {
+		storedKey := fmt.Sprintf("%s%s", shaHex, ext)
+		if _, err := ts.publicStore.Upload(ill.Content, taskIllustrationObjectKey(storedKey), illMime); err != nil {
 			return fmt.Errorf("upload illustration: %w", err)
 		}
-		res.IllustrImg = &IllustrationImage{S3Key: s3Key, WidthPx: width, HeightPx: height, SzInBytes: len(ill.Content)}
+		res.IllustrImg = &IllustrationImage{S3Key: storedKey, WidthPx: width, HeightPx: height, SzInBytes: len(ill.Content)}
 	}
 
 	// Original PDFs (optional)
