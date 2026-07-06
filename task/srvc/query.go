@@ -94,7 +94,7 @@ func (ts *taskSrvc) GetTaskFullNames(ctx context.Context, shortIDs []string) ([]
 }
 
 func (ts *taskSrvc) GetHttpUrlForIllustrImg(ctx context.Context, s3Key string) (string, srvcerror.E) {
-	url, err := filestore.AssetURL(ts.apiPublicBaseURL, s3Key)
+	url, err := filestore.AssetURL(ts.apiPublicBaseURL, taskIllustrationObjectKey(s3Key))
 	if err != nil {
 		ts.logger(ctx).Error("build illustration image URL", "error", err)
 		return "", NewErrorInternalServerError()
