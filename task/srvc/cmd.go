@@ -59,6 +59,9 @@ func (ts *taskSrvc) UpdateStatementMd(ctx context.Context, taskId string, statem
 }
 
 func (ts *taskSrvc) CreateTask(ctx context.Context, task Task) srvcerror.E {
+	for i := range task.MdImages {
+		task.MdImages[i].S3Key = taskStatementImageStoredKey(task.MdImages[i].S3Key)
+	}
 	err := ts.repo.CreateTask(ctx, task)
 	if err != nil {
 		l := ts.logger(ctx)
@@ -140,7 +143,7 @@ func (ts *taskSrvc) DownloadOgFileArchive(ctx context.Context, s3Key string) ([]
 	return body, nil
 }
 
-// Object key format: "task/<taskId>/md-images/<uuid>.<extension>"
+// Object key format: "md-images/<taskId>/<sha256-prefix>.<extension>"
 func (ts *taskSrvc) UploadStatementImage(ctx context.Context, taskId string, imgFilename string, imageMimeType string, body []byte) (string, srvcerror.E) {
 	l := ts.logger(ctx)
 
@@ -175,10 +178,8 @@ func (ts *taskSrvc) UploadStatementImage(ctx context.Context, taskId string, img
 		}
 	}
 
-	// generate a new UUID for the image (to avoid collision and reduce complexity when renaming semantic filenames), and upload it to S3
-	newImgUuid := uuid.New().String()
-	s3Key := fmt.Sprintf("task/%s/md-images/%s%s", taskId, newImgUuid, ext)
-	s3Uri, err := ts.publicStore.Upload(body, s3Key, imageMimeType)
+	storedKey := fmt.Sprintf("%s/%s%s", taskId, Sha2Hex(body)[:12], ext)
+	s3Uri, err := ts.publicStore.Upload(body, taskStatementImageObjectKey(storedKey), imageMimeType)
 	if err != nil {
 		l.Error("failed to upload to S3", "error", err)
 		return "", NewErrorInternalServerError()
@@ -186,7 +187,7 @@ func (ts *taskSrvc) UploadStatementImage(ctx context.Context, taskId string, img
 
 	// update the task with the new image
 	err = ts.repo.AddStatementImg(ctx, taskId, StatementImage{
-		S3Key:     s3Key,
+		S3Key:     storedKey,
 		Filename:  imgFilename,
 		WidthPx:   width,
 		HeightPx:  height,
@@ -353,8 +354,7 @@ func (ts *taskSrvc) DeleteStatementImage(ctx context.Context, taskId string, fil
 		return NewErrorImageNotFound(filename)
 	}
 
-	// The S3 key is already stored directly in the database
-	s3Key := targetImage.S3Key
+	s3Key := taskStatementImageObjectKey(targetImage.S3Key)
 
 	// Check if the image exists in S3
 	exists, err := ts.publicStore.Exists(s3Key)
@@ -525,7 +525,7 @@ func (ts *taskSrvc) mapToTaskfs(ctx context.Context, t Task) (taskfs.Task, error
 	}
 	images := []taskfs.Image{}
 	for _, image := range t.MdImages {
-		content, err := ts.publicStore.Download(image.S3Key)
+		content, err := ts.publicStore.Download(taskStatementImageObjectKey(image.S3Key))
 		if err != nil {
 			prefix := "download statement image from S3"
 			return taskfs.Task{}, fmt.Errorf("%s: %w", prefix, err)
@@ -958,17 +958,16 @@ func (ts *taskSrvc) uploadTaskArchiveAssets(ctx context.Context, t taskfs.Task, 
 		if err != nil {
 			return fmt.Errorf("get image dims for %s: %w", img.Fname, err)
 		}
-		newUuid := uuid.New().String()
 		ext, err := MimeToFileExt(mimeType)
 		if err != nil {
 			return fmt.Errorf("get file ext for %s: %w", img.Fname, err)
 		}
-		s3Key := fmt.Sprintf("task/%s/md-images/%s%s", t.ShortID, newUuid, ext)
-		if _, err := ts.publicStore.Upload(img.Content, s3Key, mimeType); err != nil {
+		storedKey := fmt.Sprintf("%s/%s%s", t.ShortID, Sha2Hex(img.Content)[:12], ext)
+		if _, err := ts.publicStore.Upload(img.Content, taskStatementImageObjectKey(storedKey), mimeType); err != nil {
 			return fmt.Errorf("upload statement image %d: %w", i+1, err)
 		}
 		res.MdImages = append(res.MdImages, StatementImage{
-			S3Key:     s3Key,
+			S3Key:     storedKey,
 			Filename:  img.Fname,
 			WidthPx:   width,
 			HeightPx:  height,

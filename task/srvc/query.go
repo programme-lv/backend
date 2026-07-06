@@ -103,7 +103,7 @@ func (ts *taskSrvc) GetHttpUrlForIllustrImg(ctx context.Context, s3Key string) (
 }
 
 func (ts *taskSrvc) GetHttpUrlForStatementImage(ctx context.Context, s3Key string) (string, srvcerror.E) {
-	url, err := filestore.AssetURL(ts.apiPublicBaseURL, s3Key)
+	url, err := filestore.AssetURL(ts.apiPublicBaseURL, taskStatementImageObjectKey(s3Key))
 	if err != nil {
 		ts.logger(ctx).Error("build statement image URL", "error", err)
 		return "", NewErrorInternalServerError()
