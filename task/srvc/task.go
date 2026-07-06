@@ -158,7 +158,7 @@ type IllustrationImage struct {
 }
 
 type StatementImage struct {
-	S3Key     string // e.g. task-md-images/<sanitized-filename>.png
+	S3Key     string // e.g. <task_id>/<sha256-prefix>.png; md-images/ is implicit
 	Filename  string // filename of the image, e.g., nekoks.png
 	WidthPx   int    // og width [px] stored in s3
 	HeightPx  int    // og height [px] stored in s3

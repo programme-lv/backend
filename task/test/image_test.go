@@ -55,7 +55,8 @@ func TestPostStatementImageHttpRequest(t *testing.T) {
 	require.Greater(t, img.WidthPx, 0)
 	require.Greater(t, img.HeightPx, 0)
 	require.Greater(t, img.SzInBytes, 0)
-	require.Contains(t, img.S3Key, "task/")
+	require.Contains(t, img.S3Key, "aplusb/")
+	require.NotContains(t, img.S3Key, "md-images/")
 	t.Logf("s3 key: %s", img.S3Key)
 
 	// 6. Test deleting the image without authentication - should fail
