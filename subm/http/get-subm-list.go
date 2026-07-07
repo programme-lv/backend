@@ -30,6 +30,7 @@ type Pagination struct {
 func (h *SubmHttpHandler) GetSubmList(w http.ResponseWriter, r *http.Request) {
 	log := ctxlog.FromContext(r.Context())
 	log.Info("getting submission list")
+	w.Header().Set("Cache-Control", "no-store")
 
 	// Parse pagination parameters from query string
 	limit := 30 // Default limit
