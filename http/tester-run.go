@@ -8,7 +8,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/programme-lv/backend/common/jsonresp"
-	"github.com/programme-lv/backend/exec"
+	"github.com/programme-lv/backend/modules/exec"
 )
 
 func (httpserver *HttpServer) testerRun(w http.ResponseWriter, r *http.Request) {
