@@ -5,7 +5,7 @@ package mockuser
 import (
 	context "context"
 
-	user "github.com/programme-lv/backend/user"
+	user "github.com/programme-lv/backend/modules/user"
 	mock "github.com/stretchr/testify/mock"
 
 	uuid "github.com/google/uuid"

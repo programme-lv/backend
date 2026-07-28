@@ -5,7 +5,7 @@ package mocktasksrvc
 import (
 	context "context"
 
-	srvc "github.com/programme-lv/backend/task/srvc"
+	srvc "github.com/programme-lv/backend/modules/task/srvc"
 	mock "github.com/stretchr/testify/mock"
 
 	srvcerror "github.com/programme-lv/backend/common/srvcerror"

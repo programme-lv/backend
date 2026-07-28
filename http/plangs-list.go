@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/programme-lv/backend/common/jsonresp"
-	"github.com/programme-lv/backend/plang"
+	"github.com/programme-lv/backend/modules/plang"
 )
 
 // ProgrammingLang represents a programming language.

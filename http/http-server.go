@@ -13,10 +13,10 @@ import (
 	"github.com/go-chi/cors"
 	"github.com/google/uuid"
 	"github.com/programme-lv/backend/common/ctxlog"
-	"github.com/programme-lv/backend/exec"
-	http1 "github.com/programme-lv/backend/subm/http"
-	"github.com/programme-lv/backend/user/auth"
-	userhttp "github.com/programme-lv/backend/user/http"
+	"github.com/programme-lv/backend/modules/exec"
+	http1 "github.com/programme-lv/backend/modules/subm/http"
+	"github.com/programme-lv/backend/modules/user/auth"
+	userhttp "github.com/programme-lv/backend/modules/user/http"
 )
 
 // HttpReqInfo describes info about HTTP request

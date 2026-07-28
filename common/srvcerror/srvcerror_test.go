@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/programme-lv/backend/common/srvcerror"
-	"github.com/programme-lv/backend/user"
+	"github.com/programme-lv/backend/modules/user"
 	"github.com/stretchr/testify/require"
 )
 
