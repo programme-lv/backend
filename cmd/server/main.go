@@ -46,6 +46,7 @@ func main() {
 	conf.MustRunPostgresMigrationsFromEnv()
 
 	storageRoot := conf.MustGetFileStorageRootFromEnv()
+	slog.Info("file storage root", "path", storageRoot)
 	apiPublicBaseURL := conf.MustGetPublicAPIBaseURLFromEnv()
 	testfileSigningKey := conf.MustGetTestfileDownloadSigningKeyFromEnv()
 	publicStore := conf.MustGetFileStore(storageRoot, "public")
