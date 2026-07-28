@@ -13,8 +13,9 @@ import (
 	"github.com/lmittmann/tint"
 	"github.com/programme-lv/backend/common/ctxlog"
 	"github.com/programme-lv/backend/conf"
-	"github.com/programme-lv/backend/http"
 	"github.com/programme-lv/backend/modules/exec"
+	exechttp "github.com/programme-lv/backend/modules/exec/http"
+	planghttp "github.com/programme-lv/backend/modules/plang/http"
 	"github.com/programme-lv/backend/modules/subm/domain"
 	submhttp "github.com/programme-lv/backend/modules/subm/http"
 	submpgrepo "github.com/programme-lv/backend/modules/subm/pgrepo"
@@ -86,12 +87,21 @@ func main() {
 		taskhttp.WithFileStores(publicStore, testfileStore, testfileSigningKey),
 	)
 	userHttpHandler := userhttp.NewUserHttpHandler(userSrvc, jwtKey, userhttp.WithCookieDomain(cookieDomain))
+	execHttpHandler := exechttp.NewExecHttpHandler(execSrvc)
+	plangHttpHandler := planghttp.NewPlangHttpHandler()
 
 	// Start HTTP server
-	httpServer := http.NewHttpServer(submHttpHandler, taskHttpHandler, userHttpHandler, execSrvc, jwtKey)
+	httpServer := newHTTPServer(
+		submHttpHandler,
+		taskHttpHandler,
+		userHttpHandler,
+		execHttpHandler,
+		plangHttpHandler,
+		jwtKey,
+	)
 
 	slog.Info("starting server", "address", address)
-	err := httpServer.Start(address)
+	err := httpServer.start(address)
 	slog.Info("server stopped", "error", err)
 }
 

@@ -10,7 +10,7 @@ import (
 	"github.com/programme-lv/backend/common/jsonresp"
 )
 
-func (httpserver *HttpServer) execGet(w http.ResponseWriter, r *http.Request) {
+func (h *ExecHttpHandler) execGet(w http.ResponseWriter, r *http.Request) {
 	execUuidStr := chi.URLParam(r, "execUuid")
 	execUuid, err := uuid.Parse(execUuidStr)
 	if err != nil {
@@ -18,7 +18,7 @@ func (httpserver *HttpServer) execGet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	exec, err := httpserver.execSrvc.Get(context.TODO(), execUuid)
+	exec, err := h.execSrvc.Get(context.TODO(), execUuid)
 	if err != nil {
 		jsonresp.HandleSrvcError(slog.Default(), w, err)
 		return
