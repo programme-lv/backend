@@ -11,7 +11,7 @@ import (
 	"github.com/programme-lv/backend/modules/exec"
 )
 
-func (httpserver *HttpServer) testerRun(w http.ResponseWriter, r *http.Request) {
+func (h *ExecHttpHandler) testerRun(w http.ResponseWriter, r *http.Request) {
 	type test struct {
 		InSha256   *string `json:"in_sha256"`
 		InUrl      *string `json:"in_url"`
@@ -51,7 +51,7 @@ func (httpserver *HttpServer) testerRun(w http.ResponseWriter, r *http.Request) 
 	}
 
 	execUuid := uuid.New()
-	err := httpserver.execSrvc.Enqueue(
+	err := h.execSrvc.Enqueue(
 		context.Background(),
 		execUuid,
 		req.SrcCode,
@@ -80,7 +80,7 @@ func (httpserver *HttpServer) testerRun(w http.ResponseWriter, r *http.Request) 
 	jsonresp.Success(w, res)
 }
 
-func (httpserver *HttpServer) testerListen(w http.ResponseWriter, r *http.Request) {
+func (h *ExecHttpHandler) testerListen(w http.ResponseWriter, r *http.Request) {
 	type request struct {
 		ExecUuid string `json:"exec_uuid"`
 	}
@@ -97,13 +97,12 @@ func (httpserver *HttpServer) testerListen(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	ch, err := httpserver.execSrvc.Listen(context.Background(), execUuid)
+	ch, err := h.execSrvc.Listen(context.Background(), execUuid)
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
-	// Set CORS headers explicitly for SSE
 	origin := r.Header.Get("Origin")
 	allowedOrigins := map[string]bool{
 		"http://localhost:3000":    true,

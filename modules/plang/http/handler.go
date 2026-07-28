@@ -4,11 +4,22 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/programme-lv/backend/common/jsonresp"
 	"github.com/programme-lv/backend/modules/plang"
 )
 
-// ProgrammingLang represents a programming language.
+type PlangHttpHandler struct{}
+
+func NewPlangHttpHandler() *PlangHttpHandler {
+	return &PlangHttpHandler{}
+}
+
+func (h *PlangHttpHandler) RegisterRoutes(r *chi.Mux) {
+	r.Get("/programming-languages", h.listProgrammingLangs)
+	r.Get("/langs", h.listProgrammingLangs)
+}
+
 type ProgrammingLang struct {
 	ID               string  `json:"id"`
 	FullName         string  `json:"fullName"`
@@ -22,7 +33,7 @@ type ProgrammingLang struct {
 	Enabled          bool    `json:"enabled"`
 }
 
-func (httpserver *HttpServer) listProgrammingLangs(w http.ResponseWriter, r *http.Request) {
+func (h *PlangHttpHandler) listProgrammingLangs(w http.ResponseWriter, r *http.Request) {
 	type listProgLangsResponse []*ProgrammingLang
 
 	langs, err := plang.ListProgrammingLanguages()

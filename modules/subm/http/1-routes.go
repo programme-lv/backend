@@ -12,6 +12,7 @@ func (h *SubmHttpHandler) RegisterRoutes(r *chi.Mux, jwtKey []byte) {
 		r.Get("/subm", h.GetSubmList)
 		r.Get("/subm/{subm-uuid}", h.GetFullSubm)
 		r.Get("/subm/scores/{username}", h.GetMaxScorePerTask)
+		r.Get("/subm-updates", h.ListenToSubmListUpdates)
 
 		// admin-only routes
 		r.Group(func(r chi.Router) {

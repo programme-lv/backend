@@ -1,4 +1,4 @@
-package http
+package main
 
 import (
 	"fmt"
@@ -23,7 +23,7 @@ type statsLogger struct {
 func newStatsLogger() *statsLogger {
 	sl := &statsLogger{
 		stats:         make(map[string]*endpointStats),
-		flushInterval: 5 * time.Second, // Print stats every 5 seconds
+		flushInterval: 5 * time.Second,
 	}
 	go sl.periodicFlush()
 	return sl
@@ -43,7 +43,6 @@ func (sl *statsLogger) flushStats() {
 	now := time.Now()
 	for endpoint, stats := range sl.stats {
 		if stats.count > 0 && now.Sub(stats.lastPrinted) >= sl.flushInterval {
-			// Convert to float64 and round to 2 decimal places
 			avgTimeMs := float64(stats.totalTime.Microseconds()) / float64(stats.count) / 1000.0
 
 			slog.Info("endpoint stats",
@@ -52,7 +51,6 @@ func (sl *statsLogger) flushStats() {
 				"avg_time_ms", fmt.Sprintf("%.2f", avgTimeMs),
 				"period", sl.flushInterval,
 			)
-			// Reset stats after printing
 			stats.count = 0
 			stats.totalTime = 0
 			stats.lastPrinted = now
