@@ -75,6 +75,24 @@ func NewErrorInternalServerError() srvcerror.E {
 	).SetHttpStatusCode(http.StatusInternalServerError)
 }
 
+const ErrCodeInvalidTaskZip = "invalid_task_zip"
+
+func NewErrorInvalidTaskZip(reason string) srvcerror.E {
+	return srvcerror.New(
+		ErrCodeInvalidTaskZip,
+		fmt.Sprintf("nederīgs TaskZip: %s", reason),
+	).SetHttpStatusCode(http.StatusBadRequest)
+}
+
+const ErrCodeUnsupportedTaskZip = "unsupported_task_zip"
+
+func NewErrorUnsupportedTaskZip(reason string) srvcerror.E {
+	return srvcerror.New(
+		ErrCodeUnsupportedTaskZip,
+		fmt.Sprintf("neatbalstīts TaskZip: %s", reason),
+	).SetHttpStatusCode(http.StatusBadRequest)
+}
+
 const ErrCodeTaskAlreadyExists = "task_already_exists"
 
 func NewErrorTaskAlreadyExists(taskId string) srvcerror.E {

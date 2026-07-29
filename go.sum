@@ -132,8 +132,6 @@ github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINE
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 h1:Jamvg5psRIccs7FGNTlIRMkT8wgtp5eCXdBlqhYGL6U=
 github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
-github.com/programme-lv/taskzip v0.0.0-20250929193140-6b3f4d719dc9 h1:8J9lc3XLJvXEahywXi/zeMd38IcABtSuqx3qw7SYQHY=
-github.com/programme-lv/taskzip v0.0.0-20250929193140-6b3f4d719dc9/go.mod h1:N8q1TTv6EIILV4K2FZLL9gry32mx1g1zxpKvZbFU1d0=
 github.com/programme-lv/tester v0.2.1-0.20250928195358-fca731c3350c h1:4bX0OGbTxabjnWQV9R8UVTmB1StRIVrC5othKkhgvys=
 github.com/programme-lv/tester v0.2.1-0.20250928195358-fca731c3350c/go.mod h1:J3iNGuvpd1eH8rQ9TzCDjFio+581IL1g/CIHMbGs64E=
 github.com/rivo/uniseg v0.4.7 h1:WUdvkW8uEhrYfLC4ZzdpI2ztxP1I582+49Oc5Mq64VQ=
