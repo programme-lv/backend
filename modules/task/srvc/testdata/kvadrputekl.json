@@ -45,12 +45,6 @@
       "SzInBytes": 40791
     }
   ],
-  "PdfStatements": [
-    {
-      "LangIso639": "lv",
-      "ObjectUrl": "https://proglv-public.s3.eu-central-1.amazonaws.com/task-pdf-statements/f27386f1b69f3c020335fe7c84316c5da099933832043e6a5820bcdb0cd66a81.pdf"
-    }
-  ],
   "VisInpSubtasks": [
     {
       "SubtaskId": 1,

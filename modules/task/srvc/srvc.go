@@ -20,10 +20,6 @@ type TaskService interface {
 	GetTestDownlUrl(ctx context.Context, testFileSha256 string) (string, srvcerror.E)
 	DownloadTestFile(ctx context.Context, testFileSha256 string) ([]byte, srvcerror.E)
 
-	// original pdf statement
-	UploadStatementPdf(ctx context.Context, body []byte) (string, srvcerror.E)
-	GetHttpUrlForPdfStatement(ctx context.Context, pdfStatementS3Key string) (string, srvcerror.E)
-
 	// illustration image
 	UploadIllustrationImg(ctx context.Context, mimeType string, body []byte) (string, srvcerror.E)
 	DeleteIllustrationImg(ctx context.Context, taskId string) srvcerror.E

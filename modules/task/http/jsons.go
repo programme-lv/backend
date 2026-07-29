@@ -64,21 +64,20 @@ type IllustrationImage struct {
 }
 
 type Task struct {
-	ShortTaskID            string             `json:"short_task_id"`
-	TaskFullName           string             `json:"task_full_name"`
-	MemoryLimitMegabytes   int                `json:"memory_limit_megabytes"`
-	CPUTimeLimitSeconds    float64            `json:"cpu_time_limit_seconds"`
-	OriginOlympiad         string             `json:"origin_olympiad"`
-	IllustrationImg        *IllustrationImage `json:"illustration_img"`
-	DifficultyRating       *int               `json:"difficulty_rating"`
-	DefaultMDStatement     MdStatement        `json:"default_md_statement"`
-	StatementImages        []StatementImage   `json:"statement_images"`
-	Examples               []Example          `json:"examples"`
-	DefaultPDFStatementURL *string            `json:"default_pdf_statement_url"`
-	OriginNotes            map[string]string  `json:"origin_notes"`
-	VisibleInputSubtasks   []VisInputSubtask  `json:"visible_input_subtasks"`
-	StatementSubtasks      []SubtaskOverview  `json:"statement_subtasks"`
-	TestingType            string             `json:"testing_type"`
+	ShortTaskID          string             `json:"short_task_id"`
+	TaskFullName         string             `json:"task_full_name"`
+	MemoryLimitMegabytes int                `json:"memory_limit_megabytes"`
+	CPUTimeLimitSeconds  float64            `json:"cpu_time_limit_seconds"`
+	OriginOlympiad       string             `json:"origin_olympiad"`
+	IllustrationImg      *IllustrationImage `json:"illustration_img"`
+	DifficultyRating     *int               `json:"difficulty_rating"`
+	DefaultMDStatement   MdStatement        `json:"default_md_statement"`
+	StatementImages      []StatementImage   `json:"statement_images"`
+	Examples             []Example          `json:"examples"`
+	OriginNotes          map[string]string  `json:"origin_notes"`
+	VisibleInputSubtasks []VisInputSubtask  `json:"visible_input_subtasks"`
+	StatementSubtasks    []SubtaskOverview  `json:"statement_subtasks"`
+	TestingType          string             `json:"testing_type"`
 }
 
 type SubtaskOverview struct {
@@ -133,19 +132,6 @@ func (h *taskHttpHandler) mapTaskResponse(task srvc.Task) Task {
 	if task.DifficultyRating != 0 {
 		difficultyRating = new(int)
 		*difficultyRating = task.DifficultyRating
-	}
-
-	pdfStatements := task.PdfStatements
-	defaultPdfStatementUrl := new(string)
-	for _, pdfStatement := range pdfStatements {
-		if pdfStatement.LangIso639 == "lv" {
-			url, err := h.taskSrvc.GetHttpUrlForPdfStatement(context.TODO(), pdfStatement.S3Key)
-			if err != nil {
-				slog.Error("failed to get public url for pdf statement", "error", err)
-				url = ""
-			}
-			*defaultPdfStatementUrl = url
-		}
 	}
 
 	originNotes := task.OriginNotes
@@ -210,21 +196,20 @@ func (h *taskHttpHandler) mapTaskResponse(task srvc.Task) Task {
 	}
 
 	response := Task{
-		ShortTaskID:            task.ShortId,
-		TaskFullName:           task.DefaultFullName(),
-		MemoryLimitMegabytes:   task.MemLimMegabytes,
-		CPUTimeLimitSeconds:    task.CpuTimeLimSecs,
-		OriginOlympiad:         task.OriginOlympiad,
-		IllustrationImg:        h.mapTaskIllustrImg(task.IllustrImg),
-		DifficultyRating:       difficultyRating,
-		DefaultMDStatement:     defaultMdStatement,
-		StatementImages:        h.mapTaskStatementImages(task.MdImages),
-		Examples:               mapTaskExamples(task.Examples),
-		DefaultPDFStatementURL: defaultPdfStatementUrl,
-		OriginNotes:            originNotesAsAMap,
-		VisibleInputSubtasks:   visInputSubtasks,
-		StatementSubtasks:      subtasks,
-		TestingType:            testingType,
+		ShortTaskID:          task.ShortId,
+		TaskFullName:         task.DefaultFullName(),
+		MemoryLimitMegabytes: task.MemLimMegabytes,
+		CPUTimeLimitSeconds:  task.CpuTimeLimSecs,
+		OriginOlympiad:       task.OriginOlympiad,
+		IllustrationImg:      h.mapTaskIllustrImg(task.IllustrImg),
+		DifficultyRating:     difficultyRating,
+		DefaultMDStatement:   defaultMdStatement,
+		StatementImages:      h.mapTaskStatementImages(task.MdImages),
+		Examples:             mapTaskExamples(task.Examples),
+		OriginNotes:          originNotesAsAMap,
+		VisibleInputSubtasks: visInputSubtasks,
+		StatementSubtasks:    subtasks,
+		TestingType:          testingType,
 	}
 	return response
 }

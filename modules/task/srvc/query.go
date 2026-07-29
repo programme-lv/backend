@@ -111,15 +111,6 @@ func (ts *taskSrvc) GetHttpUrlForStatementImage(ctx context.Context, s3Key strin
 	return url, nil
 }
 
-func (ts *taskSrvc) GetHttpUrlForPdfStatement(ctx context.Context, s3Key string) (string, srvcerror.E) {
-	url, err := filestore.AssetURL(ts.apiPublicBaseURL, s3Key)
-	if err != nil {
-		ts.logger(ctx).Error("build pdf statement URL", "error", err)
-		return "", NewErrorInternalServerError()
-	}
-	return url, nil
-}
-
 // GetTestDownlUrl implements submadapter.TaskSrvcFacade.
 func (ts *taskSrvc) GetTestDownlUrl(ctx context.Context, testFileSha256 string) (string, srvcerror.E) {
 	return filestore.SignedTestfileURL(

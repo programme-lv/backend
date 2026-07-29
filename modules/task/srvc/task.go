@@ -55,7 +55,6 @@ type Task struct {
 	// statement
 	MdStatements   []MarkdownStatement
 	MdImages       []StatementImage
-	PdfStatements  []PdfStatement
 	VisInpSubtasks []VisibleInputSubtask
 	Examples       []Example
 	Subtasks       []Subtask
@@ -205,12 +204,6 @@ func (t *Task) FindTestgroupSubtasks(testGroupId int) []int {
 		}
 	}
 	return subtasks
-}
-
-// PdfStatement represents a PDF statement with language and checksum.
-type PdfStatement struct {
-	LangIso639 string
-	S3Key      string
 }
 
 // OriginNote represents origin notes with language and information.
