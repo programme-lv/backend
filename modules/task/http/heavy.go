@@ -21,7 +21,7 @@ type UploadTaskResponse struct {
 }
 
 // UploadTask handles task upload via multipart/form-data with field name "task_zip".
-// It calls the service to import the taskfs ZIP, and returns the created task id.
+// It calls the service to import a TaskZip v1 archive and returns the created task ID.
 // Optional query parameter ?override_id=<new_id> can be used to override the task's short ID.
 func (h *taskHttpHandler) UploadTask(w http.ResponseWriter, r *http.Request) {
 	logger := h.logger(r.Context()).With("handler", "UploadTask")
