@@ -84,20 +84,6 @@ func (ts *taskSrvc) DeleteTask(ctx context.Context, shortId string) srvcerror.E 
 	return nil
 }
 
-// Object key format: "task-pdf-statements/<sha2>.pdf"
-// returns the object key for the uploaded pdf statement.
-func (ts *taskSrvc) UploadStatementPdf(ctx context.Context, body []byte) (string, srvcerror.E) {
-	l := ts.logger(ctx)
-	shaHex := Sha2Hex(body)
-	s3Key := fmt.Sprintf("%s/%s.pdf", "task-pdf-statements", shaHex)
-	_, err := ts.publicStore.Upload(body, s3Key, "application/pdf")
-	if err != nil {
-		l.Error("upload PDF statement", "error", err)
-		return "", NewErrorInternalServerError()
-	}
-	return s3Key, nil
-}
-
 // Object key format: "illustrations/<sha2>.<ext>"
 // returns the stored key for the uploaded illustration image.
 func (ts *taskSrvc) UploadIllustrationImg(ctx context.Context, mimeType string, body []byte) (string, srvcerror.E) {
@@ -803,7 +789,7 @@ func (ts *taskSrvc) ImportTaskFromZip(ctx context.Context, zipBytes []byte, over
 		return "", NewErrorTaskAlreadyExists(serviceTask.ShortId)
 	}
 
-	// Now do the heavy uploads (images, PDFs, test files)
+	// Now do the heavy uploads (images, test files)
 	err = ts.uploadTaskArchiveAssets(ctx, archTask, &serviceTask)
 	if err != nil {
 		l.Error("failed to upload task assets", "error", err)
@@ -945,7 +931,7 @@ func (ts *taskSrvc) mapFromTaskfs(t taskfs.Task, overrideId string) (Task, error
 	return res, nil
 }
 
-// uploadTaskArchiveAssets handles heavy uploads (images, PDFs, test files) for task import
+// uploadTaskArchiveAssets handles heavy uploads (images, test files) for task import
 func (ts *taskSrvc) uploadTaskArchiveAssets(ctx context.Context, t taskfs.Task, res *Task) error {
 	// Upload statement images to S3 and record metadata
 	for i, img := range t.Statement.Images {
@@ -997,15 +983,6 @@ func (ts *taskSrvc) uploadTaskArchiveAssets(ctx context.Context, t taskfs.Task, 
 			return fmt.Errorf("upload illustration: %w", err)
 		}
 		res.IllustrImg = &IllustrationImage{S3Key: storedKey, WidthPx: width, HeightPx: height, SzInBytes: len(ill.Content)}
-	}
-
-	// Original PDFs (optional)
-	for _, pdf := range t.Archive.GetOgStatementPdfs() {
-		s3Key, err := ts.UploadStatementPdf(ctx, pdf.Content)
-		if err != nil && etrace.IsCritical(err) {
-			return fmt.Errorf("upload pdf: %w", err)
-		}
-		res.PdfStatements = append(res.PdfStatements, PdfStatement{LangIso639: pdf.Language, S3Key: s3Key})
 	}
 
 	// Tests: upload to testfile bucket and record sha256

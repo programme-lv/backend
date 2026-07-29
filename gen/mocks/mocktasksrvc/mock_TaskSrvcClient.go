@@ -463,65 +463,6 @@ func (_c *MockTaskSrvcClient_GetHttpUrlForIllustrImg_Call) RunAndReturn(run func
 	return _c
 }
 
-// GetHttpUrlForPdfStatement provides a mock function with given fields: ctx, pdfStatementS3Key
-func (_m *MockTaskSrvcClient) GetHttpUrlForPdfStatement(ctx context.Context, pdfStatementS3Key string) (string, *srvcerror.Error) {
-	ret := _m.Called(ctx, pdfStatementS3Key)
-
-	if len(ret) == 0 {
-		panic("no return value specified for GetHttpUrlForPdfStatement")
-	}
-
-	var r0 string
-	var r1 *srvcerror.Error
-	if rf, ok := ret.Get(0).(func(context.Context, string) (string, *srvcerror.Error)); ok {
-		return rf(ctx, pdfStatementS3Key)
-	}
-	if rf, ok := ret.Get(0).(func(context.Context, string) string); ok {
-		r0 = rf(ctx, pdfStatementS3Key)
-	} else {
-		r0 = ret.Get(0).(string)
-	}
-
-	if rf, ok := ret.Get(1).(func(context.Context, string) *srvcerror.Error); ok {
-		r1 = rf(ctx, pdfStatementS3Key)
-	} else {
-		if ret.Get(1) != nil {
-			r1 = ret.Get(1).(*srvcerror.Error)
-		}
-	}
-
-	return r0, r1
-}
-
-// MockTaskSrvcClient_GetHttpUrlForPdfStatement_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetHttpUrlForPdfStatement'
-type MockTaskSrvcClient_GetHttpUrlForPdfStatement_Call struct {
-	*mock.Call
-}
-
-// GetHttpUrlForPdfStatement is a helper method to define mock.On call
-//   - ctx context.Context
-//   - pdfStatementS3Key string
-func (_e *MockTaskSrvcClient_Expecter) GetHttpUrlForPdfStatement(ctx interface{}, pdfStatementS3Key interface{}) *MockTaskSrvcClient_GetHttpUrlForPdfStatement_Call {
-	return &MockTaskSrvcClient_GetHttpUrlForPdfStatement_Call{Call: _e.mock.On("GetHttpUrlForPdfStatement", ctx, pdfStatementS3Key)}
-}
-
-func (_c *MockTaskSrvcClient_GetHttpUrlForPdfStatement_Call) Run(run func(ctx context.Context, pdfStatementS3Key string)) *MockTaskSrvcClient_GetHttpUrlForPdfStatement_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(string))
-	})
-	return _c
-}
-
-func (_c *MockTaskSrvcClient_GetHttpUrlForPdfStatement_Call) Return(_a0 string, _a1 *srvcerror.Error) *MockTaskSrvcClient_GetHttpUrlForPdfStatement_Call {
-	_c.Call.Return(_a0, _a1)
-	return _c
-}
-
-func (_c *MockTaskSrvcClient_GetHttpUrlForPdfStatement_Call) RunAndReturn(run func(context.Context, string) (string, *srvcerror.Error)) *MockTaskSrvcClient_GetHttpUrlForPdfStatement_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
 // GetHttpUrlForStatementImage provides a mock function with given fields: ctx, statementImageS3Key
 func (_m *MockTaskSrvcClient) GetHttpUrlForStatementImage(ctx context.Context, statementImageS3Key string) (string, *srvcerror.Error) {
 	ret := _m.Called(ctx, statementImageS3Key)
@@ -1398,65 +1339,6 @@ func (_c *MockTaskSrvcClient_UploadStatementImage_Call) Return(_a0 string, _a1 *
 }
 
 func (_c *MockTaskSrvcClient_UploadStatementImage_Call) RunAndReturn(run func(context.Context, string, string, string, []byte) (string, *srvcerror.Error)) *MockTaskSrvcClient_UploadStatementImage_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// UploadStatementPdf provides a mock function with given fields: ctx, body
-func (_m *MockTaskSrvcClient) UploadStatementPdf(ctx context.Context, body []byte) (string, *srvcerror.Error) {
-	ret := _m.Called(ctx, body)
-
-	if len(ret) == 0 {
-		panic("no return value specified for UploadStatementPdf")
-	}
-
-	var r0 string
-	var r1 *srvcerror.Error
-	if rf, ok := ret.Get(0).(func(context.Context, []byte) (string, *srvcerror.Error)); ok {
-		return rf(ctx, body)
-	}
-	if rf, ok := ret.Get(0).(func(context.Context, []byte) string); ok {
-		r0 = rf(ctx, body)
-	} else {
-		r0 = ret.Get(0).(string)
-	}
-
-	if rf, ok := ret.Get(1).(func(context.Context, []byte) *srvcerror.Error); ok {
-		r1 = rf(ctx, body)
-	} else {
-		if ret.Get(1) != nil {
-			r1 = ret.Get(1).(*srvcerror.Error)
-		}
-	}
-
-	return r0, r1
-}
-
-// MockTaskSrvcClient_UploadStatementPdf_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UploadStatementPdf'
-type MockTaskSrvcClient_UploadStatementPdf_Call struct {
-	*mock.Call
-}
-
-// UploadStatementPdf is a helper method to define mock.On call
-//   - ctx context.Context
-//   - body []byte
-func (_e *MockTaskSrvcClient_Expecter) UploadStatementPdf(ctx interface{}, body interface{}) *MockTaskSrvcClient_UploadStatementPdf_Call {
-	return &MockTaskSrvcClient_UploadStatementPdf_Call{Call: _e.mock.On("UploadStatementPdf", ctx, body)}
-}
-
-func (_c *MockTaskSrvcClient_UploadStatementPdf_Call) Run(run func(ctx context.Context, body []byte)) *MockTaskSrvcClient_UploadStatementPdf_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].([]byte))
-	})
-	return _c
-}
-
-func (_c *MockTaskSrvcClient_UploadStatementPdf_Call) Return(_a0 string, _a1 *srvcerror.Error) *MockTaskSrvcClient_UploadStatementPdf_Call {
-	_c.Call.Return(_a0, _a1)
-	return _c
-}
-
-func (_c *MockTaskSrvcClient_UploadStatementPdf_Call) RunAndReturn(run func(context.Context, []byte) (string, *srvcerror.Error)) *MockTaskSrvcClient_UploadStatementPdf_Call {
 	_c.Call.Return(run)
 	return _c
 }

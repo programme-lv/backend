@@ -592,27 +592,6 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 	taskImgsRows.Close()
 	t.MdImages = taskImgs
 
-	// Load PDF statements.
-	pdfRows, err := r.pool.Query(ctx, `
-		SELECT lang_iso639, s3_key 
-		FROM task_pdf_statements 
-		WHERE task_short_id = $1
-	`, shortId)
-	if err != nil {
-		return t, fmt.Errorf("failed to load pdf statements: %w", err)
-	}
-	var pdfStatements []srvc.PdfStatement
-	for pdfRows.Next() {
-		var pdf srvc.PdfStatement
-		if err := pdfRows.Scan(&pdf.LangIso639, &pdf.S3Key); err != nil {
-			pdfRows.Close()
-			return t, fmt.Errorf("failed to load pdf statement: %w", err)
-		}
-		pdfStatements = append(pdfStatements, pdf)
-	}
-	pdfRows.Close()
-	t.PdfStatements = pdfStatements
-
 	// Load Visible Input Subtasks and their tests.
 	visRows, err := r.pool.Query(ctx, `
 		SELECT id, external_subtask_id 
@@ -973,17 +952,6 @@ func (r *taskPgRepo) CreateTask(ctx context.Context, t srvc.Task) error {
 		}
 	}
 
-	// Insert PDF statements.
-	for _, pdf := range t.PdfStatements {
-		_, err = tx.Exec(ctx, `
-			INSERT INTO task_pdf_statements (task_short_id, lang_iso639, s3_key)
-			VALUES ($1, $2, $3)
-		`, t.ShortId, pdf.LangIso639, pdf.S3Key)
-		if err != nil {
-			return fmt.Errorf("failed to insert pdf statement: %w", err)
-		}
-	}
-
 	// Insert visible input subtasks and their tests.
 	for _, vis := range t.VisInpSubtasks {
 		var visSubtaskID int
@@ -1138,12 +1106,6 @@ func (r *taskPgRepo) DeleteTask(ctx context.Context, shortId string) error {
 	_, err = tx.Exec(ctx, `DELETE FROM task_origin_notes WHERE task_short_id = $1`, shortId)
 	if err != nil {
 		return fmt.Errorf("failed to delete task origin notes: %w", err)
-	}
-
-	// Delete task_pdf_statements
-	_, err = tx.Exec(ctx, `DELETE FROM task_pdf_statements WHERE task_short_id = $1`, shortId)
-	if err != nil {
-		return fmt.Errorf("failed to delete task pdf statements: %w", err)
 	}
 
 	// Delete task_subtask_test_ids (via task_subtasks CASCADE)
