@@ -79,6 +79,26 @@ func TestStreamFileFramesReadError(t *testing.T) {
 	require.ErrorContains(t, terminalErr, "read test file")
 }
 
+func TestStreamFileFramesPublishError(t *testing.T) {
+	for _, status := range []string{"chunk", "done"} {
+		t.Run(status, func(t *testing.T) {
+			publishErr := errors.New("publish unavailable")
+			var terminalErr error
+			err := streamFileFrames(bytes.NewBufferString("data"), 8, func(got string, _ int, _ []byte) error {
+				if got == status {
+					return publishErr
+				}
+				return nil
+			}, func(err error) {
+				terminalErr = err
+			})
+			require.ErrorIs(t, err, publishErr)
+			require.ErrorIs(t, terminalErr, publishErr)
+			require.ErrorContains(t, terminalErr, "publish test file "+status)
+		})
+	}
+}
+
 func TestFileChunkSize(t *testing.T) {
 	size, err := fileChunkSize(1024)
 	require.NoError(t, err)

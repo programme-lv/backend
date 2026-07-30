@@ -46,6 +46,7 @@ type execSrvc struct {
 	natsInbox     string
 	fileSubject   string
 	testfileStore TestFileStore
+	publishJob    func(*nats.Msg) error
 
 	mu sync.Mutex
 	// maps exec IDs to client result channels
@@ -271,6 +272,7 @@ func NewExecSrvc(ctx context.Context, repo ExecRepo, natsConn *nats.Conn, testfi
 		natsInbox:     nats.NewInbox(),
 		fileSubject:   nats.NewInbox(),
 		testfileStore: testfileStore,
+		publishJob:    natsConn.PublishMsg,
 		execRepo:      repo,
 		notifiers:     make(map[uuid.UUID]chan Event),
 		organizers:    make(map[uuid.UUID]*ExecResStreamOrganizer),
@@ -373,31 +375,30 @@ func (e *execSrvc) Enqueue(
 	// 6. setup execution state
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
-	e.execWg.Store(execUuid, wg)
 	e.mu.Lock()
+	e.execWg.Store(execUuid, wg)
 	e.notifiers[execUuid] = make(chan Event, 1000)
 	e.organizers[execUuid] = org
 	e.executions[execUuid] = &exec
 	e.fileHashes[execUuid] = allowedFileHashes(tests)
-	e.mu.Unlock()
 
 	// 7. send encoded message to job queue
 	msg := nats.NewMsg(NatsSubject)
 	msg.Reply = e.natsInbox
 	msg.Header.Set(fileSubjectHeader, e.fileSubject)
 	msg.Data = encodedBytes
-	pubErr := e.natsConn.PublishMsg(msg)
+	pubErr := e.publishJob(msg)
 	if pubErr != nil {
-		e.mu.Lock()
 		delete(e.notifiers, execUuid)
 		delete(e.organizers, execUuid)
 		delete(e.executions, execUuid)
 		delete(e.fileHashes, execUuid)
-		e.mu.Unlock()
 		e.execWg.Delete(execUuid)
+		e.mu.Unlock()
 		l.Error("publish eval req to nats", "error", pubErr)
 		return srvcerror.InternalServerError()
 	}
+	e.mu.Unlock()
 
 	return nil
 }
@@ -431,8 +432,9 @@ func (e *execSrvc) Get(
 ) (Execution, srvcerror.E) {
 	l := ctxlog.FromContext(ctx).With("query", "get execution")
 
-	// Get the WaitGroup for this execution
+	e.mu.Lock()
 	wgVal, exists := e.execWg.Load(execId)
+	e.mu.Unlock()
 	if !exists {
 		exec, err := e.execRepo.Get(ctx, execId)
 		if err != nil {

@@ -131,17 +131,26 @@ func streamFileFrames(
 		n, readErr := reader.Read(buf)
 		if n > 0 {
 			if err := publish("chunk", sequence, buf[:n]); err != nil {
-				return err
+				return reportPublishError("chunk", err, publishError)
 			}
 		}
 		if errors.Is(readErr, io.EOF) {
-			return publish("done", 0, nil)
+			if err := publish("done", 0, nil); err != nil {
+				return reportPublishError("done", err, publishError)
+			}
+			return nil
 		}
 		if readErr != nil {
 			publishError(fmt.Errorf("read test file: %w", readErr))
 			return readErr
 		}
 	}
+}
+
+func reportPublishError(status string, err error, publishError func(error)) error {
+	wrapped := fmt.Errorf("publish test file %s: %w", status, err)
+	publishError(wrapped)
+	return wrapped
 }
 
 func fileChunkSize(maxPayload int64) (int, error) {
