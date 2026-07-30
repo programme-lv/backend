@@ -61,14 +61,10 @@ services:
 
   nats:
     image: nats:2.11
-    command: ["-js", "--store_dir", "/data"]
-    volumes:
-      - nats-data:/data
     restart: unless-stopped
 
 volumes:
   postgres-data:
-  nats-data:
 
 # Example for joining an existing external Docker network used by Nginx Proxy
 # Manager. Create the network outside this stack first if it does not exist:

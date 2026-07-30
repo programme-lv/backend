@@ -42,8 +42,10 @@ type execSrvc struct {
 	// either in-mem or s3
 	execRepo ExecRepo
 
-	natsConn  *nats.Conn
-	natsInbox string
+	natsConn      *nats.Conn
+	natsInbox     string
+	fileSubject   string
+	testfileStore TestFileStore
 
 	mu sync.Mutex
 	// maps exec IDs to client result channels
@@ -55,108 +57,109 @@ type execSrvc struct {
 
 	organizers map[uuid.UUID]*ExecResStreamOrganizer
 	executions map[uuid.UUID]*Execution
+	fileHashes map[uuid.UUID]map[string]struct{}
 }
 
 func (e *execSrvc) StartPollingResultQueue(ctx context.Context) error {
-	e.mu.Lock()
-	defer e.mu.Unlock()
-
 	notAlreadyPolling := e.isPolling.CompareAndSwap(false, true)
 	if !notAlreadyPolling {
 		return fmt.Errorf("already polling result queue")
 	}
 
-	sub, err := e.natsConn.Subscribe(e.natsInbox, func(msg *nats.Msg) {
-		e.mu.Lock()
-		defer e.mu.Unlock()
-
-		var header testerapi.Header
-		err := json.Unmarshal(msg.Data, &header)
-		if err != nil {
-			e.logger.Error("unsmarshall NATS msg header", "error", err)
-			return
-		}
-
-		execUuid, err := uuid.Parse(header.EvalUuid)
-		if err != nil {
-			e.logger.Error("parse eval uuid", "error", err)
-			return
-		}
-
-		org, exists := e.organizers[execUuid]
-		if !exists {
-			e.logger.Error("stream organizer not found", "exec_uuid", execUuid)
-			return
-		}
-		if org == nil {
-			panic("stream organizer is nil")
-		}
-
-		if org.HasFinished() {
-			e.logger.Error("stream organizer has finished", "exec_uuid", execUuid)
-			return
-		}
-
-		ev, err := mapTesterMsgJsonToEvent(msg.Data, header.MsgType)
-		if err != nil {
-			e.logger.Error("map tester msg json to event", "error", err)
-			return
-		}
-
-		events, err := org.Add(ev)
-		if err != nil {
-			e.logger.Error("add event to stream organizer", "error", err)
-			return
-		}
-
-		for _, event := range events {
-			e.notifiers[execUuid] <- event
-		}
-
-		exec, ok := e.executions[execUuid]
-		if !ok {
-			e.logger.Error("execution not found", "exec_uuid", execUuid)
-			return
-		}
-		if exec == nil {
-			panic("execution is nil")
-		}
-		for _, event := range events {
-			err := applyEventToExec(exec, event)
-			if err != nil {
-				e.logger.Error("apply ev to exec", "error", err)
-			}
-		}
-		if org.HasFinished() {
-			close(e.notifiers[execUuid])
-			delete(e.notifiers, execUuid) // deleting closes the channel
-			delete(e.organizers, execUuid)
-			delete(e.executions, execUuid)
-
-			err = e.execRepo.Save(ctx, exec)
-			if err != nil {
-				e.logger.Error("save exec", "error", err)
-				return
-			}
-
-			wgVal, exists := e.execWg.Load(execUuid)
-			if !exists {
-				e.logger.Error("wait group not found", "exec_uuid", execUuid)
-				return
-			}
-			wg := wgVal.(*sync.WaitGroup)
-			wg.Done()
-		}
+	fileSub, err := e.natsConn.Subscribe(e.fileSubject, func(msg *nats.Msg) {
+		go e.handleFileRequest(msg)
 	})
 	if err != nil {
+		e.isPolling.Store(false)
+		return fmt.Errorf("subscribe to test file subject: %w", err)
+	}
+
+	resultSub, err := e.natsConn.Subscribe(e.natsInbox, func(msg *nats.Msg) {
+		e.handleResultMessage(ctx, msg)
+	})
+	if err != nil {
+		_ = fileSub.Unsubscribe()
+		e.isPolling.Store(false)
 		return fmt.Errorf("subscribe to nats inbox: %w", err)
 	}
 	go func() {
 		<-ctx.Done()
-		sub.Unsubscribe()
+		_ = resultSub.Unsubscribe()
+		_ = fileSub.Unsubscribe()
+		e.isPolling.Store(false)
 	}()
 
 	return nil
+}
+
+func (e *execSrvc) handleResultMessage(ctx context.Context, msg *nats.Msg) {
+	var header testerapi.Header
+	if err := json.Unmarshal(msg.Data, &header); err != nil {
+		e.logger.Error("unsmarshall NATS msg header", "error", err)
+		return
+	}
+	execUUID, err := uuid.Parse(header.EvalUuid)
+	if err != nil {
+		e.logger.Error("parse eval uuid", "error", err)
+		return
+	}
+	event, err := mapTesterMsgJsonToEvent(msg.Data, header.MsgType)
+	if err != nil {
+		e.logger.Error("map tester msg json to event", "error", err)
+		return
+	}
+
+	e.mu.Lock()
+	org, exists := e.organizers[execUUID]
+	if !exists || org == nil || org.HasFinished() {
+		e.mu.Unlock()
+		e.logger.Error("stream organizer unavailable", "exec_uuid", execUUID)
+		return
+	}
+	events, err := org.Add(event)
+	if err != nil {
+		e.mu.Unlock()
+		e.logger.Error("add event to stream organizer", "error", err)
+		return
+	}
+	execution := e.executions[execUUID]
+	notifier := e.notifiers[execUUID]
+	if execution == nil || notifier == nil {
+		e.mu.Unlock()
+		e.logger.Error("execution state unavailable", "exec_uuid", execUUID)
+		return
+	}
+	for _, event := range events {
+		if err := applyEventToExec(execution, event); err != nil {
+			e.logger.Error("apply ev to exec", "error", err)
+		}
+	}
+	finished := org.HasFinished()
+	if finished {
+		delete(e.notifiers, execUUID)
+		delete(e.organizers, execUUID)
+		delete(e.executions, execUUID)
+		delete(e.fileHashes, execUUID)
+	}
+	e.mu.Unlock()
+
+	for _, event := range events {
+		notifier <- event
+	}
+	if !finished {
+		return
+	}
+	close(notifier)
+	if err := e.execRepo.Save(ctx, execution); err != nil {
+		e.logger.Error("save exec", "error", err)
+		return
+	}
+	wgVal, exists := e.execWg.Load(execUUID)
+	if !exists {
+		e.logger.Error("wait group not found", "exec_uuid", execUUID)
+		return
+	}
+	wgVal.(*sync.WaitGroup).Done()
 }
 
 func mapTesterMsgJsonToEvent(msgJson []byte, msgType testerapi.MsgType) (Event, error) {
@@ -261,15 +264,18 @@ func mapTesterRuntimeData(rd *testerapi.RuntimeData) *RunData {
 	}
 }
 
-func NewExecSrvc(ctx context.Context, repo ExecRepo, natsConn *nats.Conn) *execSrvc {
+func NewExecSrvc(ctx context.Context, repo ExecRepo, natsConn *nats.Conn, testfileStore TestFileStore) *execSrvc {
 	esrvc := &execSrvc{
-		logger:     ctxlog.FromContext(ctx),
-		natsConn:   natsConn,
-		natsInbox:  nats.NewInbox(),
-		execRepo:   repo,
-		notifiers:  make(map[uuid.UUID]chan Event),
-		organizers: make(map[uuid.UUID]*ExecResStreamOrganizer),
-		executions: make(map[uuid.UUID]*Execution),
+		logger:        ctxlog.FromContext(ctx),
+		natsConn:      natsConn,
+		natsInbox:     nats.NewInbox(),
+		fileSubject:   nats.NewInbox(),
+		testfileStore: testfileStore,
+		execRepo:      repo,
+		notifiers:     make(map[uuid.UUID]chan Event),
+		organizers:    make(map[uuid.UUID]*ExecResStreamOrganizer),
+		executions:    make(map[uuid.UUID]*Execution),
+		fileHashes:    make(map[uuid.UUID]map[string]struct{}),
 	}
 
 	return esrvc
@@ -293,9 +299,6 @@ func (e *execSrvc) Enqueue(
 	params TestingParams,
 ) srvcerror.E {
 	l := ctxlog.FromContext(ctx).With("cmd", "enqueue execution")
-
-	e.mu.Lock()
-	defer e.mu.Unlock()
 
 	// 1. construct execution request
 	execReq := ExecRequest{
@@ -326,15 +329,7 @@ func (e *execSrvc) Enqueue(
 		return srvcerror.InternalServerError()
 	}
 
-	// 3. create WaitGroup for awaiting results
-	wg := &sync.WaitGroup{}
-	wg.Add(1)
-	e.execWg.Store(execUuid, wg)
-
-	// 4. setup notification channel
-	e.notifiers[execUuid] = make(chan Event, 1000)
-
-	// 5. setup stream organizer
+	// 3. setup stream organizer
 	hasCompile := lang.CompCmd != nil
 	noOfTests := len(tests)
 	org, orgErr := newResultStreamOrganizer(hasCompile, noOfTests)
@@ -342,9 +337,7 @@ func (e *execSrvc) Enqueue(
 		l.Error("setup result stream organizer", "error", orgErr)
 		return srvcerror.InternalServerError()
 	}
-	e.organizers[execUuid] = org
-
-	// 6. initialize empty execution
+	// 4. initialize empty execution
 	exec := Execution{
 		UUID:      execUuid,
 		Stage:     StageWaiting,
@@ -359,9 +352,8 @@ func (e *execSrvc) Enqueue(
 	for i := 0; i < noOfTests; i++ {
 		exec.TestRes = append(exec.TestRes, TestRes{ID: i + 1})
 	}
-	e.executions[execUuid] = &exec
 
-	// 7. encode the execution request
+	// 5. encode the execution request
 	testerReq := execReq.MapToTesterApiType()
 	reqJson, marshalErr := json.Marshal(testerReq)
 	if marshalErr != nil {
@@ -378,9 +370,31 @@ func (e *execSrvc) Enqueue(
 	encoded := base64.StdEncoding.EncodeToString(compressed)
 	encodedBytes := []byte(encoded)
 
-	// 8. send encoded message to job queue
-	pubErr := e.natsConn.PublishRequest(NatsSubject, e.natsInbox, encodedBytes)
+	// 6. setup execution state
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+	e.execWg.Store(execUuid, wg)
+	e.mu.Lock()
+	e.notifiers[execUuid] = make(chan Event, 1000)
+	e.organizers[execUuid] = org
+	e.executions[execUuid] = &exec
+	e.fileHashes[execUuid] = allowedFileHashes(tests)
+	e.mu.Unlock()
+
+	// 7. send encoded message to job queue
+	msg := nats.NewMsg(NatsSubject)
+	msg.Reply = e.natsInbox
+	msg.Header.Set(fileSubjectHeader, e.fileSubject)
+	msg.Data = encodedBytes
+	pubErr := e.natsConn.PublishMsg(msg)
 	if pubErr != nil {
+		e.mu.Lock()
+		delete(e.notifiers, execUuid)
+		delete(e.organizers, execUuid)
+		delete(e.executions, execUuid)
+		delete(e.fileHashes, execUuid)
+		e.mu.Unlock()
+		e.execWg.Delete(execUuid)
 		l.Error("publish eval req to nats", "error", pubErr)
 		return srvcerror.InternalServerError()
 	}

@@ -3,7 +3,6 @@ package exec_test
 // we test integration with tester
 
 import (
-	"log"
 	"testing"
 	"time"
 
@@ -15,17 +14,14 @@ import (
 )
 
 func init() {
-	err := godotenv.Load("../.env")
-	if err != nil {
-		log.Fatalf("error loading .env file: %v", err)
-	}
+	_ = godotenv.Load("../.env")
 }
 
 func TestExecResult(t *testing.T) {
 	ctx := t.Context()
 	repo := exec.NewInMemExecRepo()
 	natsConn := conf.MustGetNatsConnFromEnv(ctx)
-	srvc := exec.NewExecSrvc(ctx, repo, natsConn)
+	srvc := exec.NewExecSrvc(ctx, repo, natsConn, nil)
 
 	pollingErr := srvc.StartPollingResultQueue(ctx)
 	require.NoError(t, pollingErr)
@@ -115,7 +111,7 @@ func TestEventStream(t *testing.T) {
 	ctx := t.Context()
 	repo := exec.NewInMemExecRepo()
 	natsConn := conf.MustGetNatsConnFromEnv(ctx)
-	srvc := exec.NewExecSrvc(ctx, repo, natsConn)
+	srvc := exec.NewExecSrvc(ctx, repo, natsConn, nil)
 
 	pollingErr := srvc.StartPollingResultQueue(ctx)
 	require.NoError(t, pollingErr)
@@ -186,7 +182,7 @@ func BenchmarkExecResult(b *testing.B) {
 	ctx := b.Context()
 	repo := exec.NewInMemExecRepo()
 	natsConn := conf.MustGetNatsConnFromEnv(ctx)
-	srvc := exec.NewExecSrvc(ctx, repo, natsConn)
+	srvc := exec.NewExecSrvc(ctx, repo, natsConn, nil)
 
 	pollingErr := srvc.StartPollingResultQueue(ctx)
 	require.NoError(b, pollingErr)

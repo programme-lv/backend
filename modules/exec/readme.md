@@ -12,7 +12,11 @@ we have to somehow simulate the receiving of many events and monitor memory usag
 
 get rid of the handlers channel to avoid writing to closed channel and goroutine circus.
 
-# ExecSrvc - Code Execution Service
+# ExecSrvc - code execution service
+
+The current execution transport is Core NATS.
+See [NATS execution transport](../../docs/nats-execution.md) for subject ownership, result streaming, and test-file retrieval.
+The SQS notes below are obsolete and have been removed.
 
 A Go package that provides a robust service for executing and testing code submissions in various programming languages.
 
@@ -20,10 +24,10 @@ This service is designed to handle concurrent test execution while maintaining o
 
 ## Features
 
-- Process code execution requests through AWS SQS queues
+- Publish code execution requests through Core NATS
 - Execute code in different programming languages with customizable compilation and execution commands
 - Maintain sequential ordering of test results even with concurrent test execution
-- Store execution results in S3 bucket
+- Store completed execution results in the configured file store
 - Stream execution events for real-time progress monitoring
 - Verify execution parameters like memory limits and timeouts
 
@@ -31,46 +35,31 @@ This service is designed to handle concurrent test execution while maintaining o
 
 - `ExecSrvc`: Main service that handles code execution requests and result management
 - `ExecResStreamOrganizer`: Manages ordered streaming of execution results
-- `ExecRepo`: Interface for execution result storage (S3 or in-memory implementations)
+- `ExecRepo`: Interface for execution result storage
 
 ## Usage
 
 ```go
-// Create a new execution service with default configuration
-srvc := execsrvc.NewDefaultExecSrvc()
-
-// Or create with custom configuration
 srvc := execsrvc.NewExecSrvc(
-    logger,
-    sqsClient,
-    submissionQueueURL,
+    ctx,
     execRepository,
-    responseQueueURL,
-    externalPartnerPassword,
+    natsConnection,
+    testfileStore,
 )
 
-// Enqueue code for execution
-execID, err := srvc.Enqueue(
-    code,
-    tests,
-    params,
-)
+err := srvc.Enqueue(ctx, execUUID, sourceCode, languageID, tests, params)
 
 // Get execution results
-exec, err := srvc.Get(ctx, execID)
+exec, err := srvc.Get(ctx, execUUID)
 ```
 
 ## Configuration
 
-The service requires the following environment variables for AWS services setup:
-- AWS credentials and region configuration
-- SQS queue URLs for submission and response queues
-- S3 bucket configuration for result storage
-- External partner password for authentication
+The service uses `NATS_URL` and `FILE_STORAGE_ROOT`.
+The HTTP fallback for test files additionally depends on `API_PUBLIC_BASE_URL` and `TESTFILE_DOWNLOAD_SIGNING_KEY`.
 
 ## TODO / ideas
 
-- [ ] Add tests for S3 repository functionality
 - [ ] Integrate with submission service using PostgreSQL for scoring storage
 - [ ] Implement minimum memory limits per programming language
 - [ ] Add support for evaluation without API key (without result persistence)

@@ -3,6 +3,7 @@ package filestore
 import (
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"mime"
 	"net/http"
@@ -59,6 +60,18 @@ func (s *Store) Download(key string) ([]byte, error) {
 		return nil, fmt.Errorf("read object: %w", err)
 	}
 	return content, nil
+}
+
+func (s *Store) Open(key string) (io.ReadCloser, error) {
+	fullPath, err := s.Path(key)
+	if err != nil {
+		return nil, err
+	}
+	file, err := os.Open(fullPath)
+	if err != nil {
+		return nil, fmt.Errorf("open object: %w", err)
+	}
+	return file, nil
 }
 
 func (s *Store) Exists(key string) (bool, error) {
