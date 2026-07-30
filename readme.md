@@ -1,8 +1,13 @@
 
-To start server without processing tester results from SQS
+Execution jobs and results use Core NATS.
+Test-file cache misses can also use Core NATS; see [docs/nats-execution.md](docs/nats-execution.md).
+
+To start the server without processing tester results from NATS:
 ```
 go run cmd/server/main.go -listen-sqs=false
 ```
+
+The flag name is retained for compatibility and is misleading.
 
 ## Development
 
@@ -11,8 +16,7 @@ set up an .env file
 ```
 JWT_KEY=...
 
-SQS_SUBM_QUEUE_URL=...
-SQS_RESPONSE_QUEUE_URL=...
+NATS_URL=nats://localhost:4222
 
 EXTERNAL_EVAL_KEY=...
 

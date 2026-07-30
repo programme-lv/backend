@@ -35,8 +35,7 @@ const (
 func main() {
 	setupLogger()
 
-	// Add flag for SQS listening
-	listenSQS := flag.Bool("listen-sqs", true, "Whether to listen to result SQS queue")
+	listenResults := flag.Bool("listen-sqs", true, "Whether to listen for NATS execution results")
 	flag.Parse()
 
 	jwtKey := conf.MustGetJwtKeyFromEnv()
@@ -57,15 +56,15 @@ func main() {
 	execCtx = ctxlog.WithLogger(execCtx, slog.Default().With("module", "exec"))
 	execRepo := exec.NewFileExecRepo(execCtx, execStore)
 	natsConn := conf.MustGetNatsConnFromEnv(execCtx)
-	execSrvc := exec.NewExecSrvc(execCtx, execRepo, natsConn)
-	if *listenSQS {
+	execSrvc := exec.NewExecSrvc(execCtx, execRepo, natsConn, testfileStore)
+	if *listenResults {
 		err := execSrvc.StartPollingResultQueue(execCtx)
 		if err != nil {
-			slog.Error("failed to listen to result SQS", "error", err)
+			slog.Error("listen for NATS execution results", "error", err)
 			os.Exit(1)
 		}
 	} else {
-		slog.Info("listening to execution result SQS disabled")
+		slog.Info("NATS execution result listener disabled")
 	}
 
 	// Initialize user service
