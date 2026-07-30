@@ -93,6 +93,7 @@ func TestTaskPgRepo(t *testing.T) {
 	assert.Equal(t, "LIO", retrievedTask.OriginOlympiad, "OriginOlympiad mismatch")
 	assert.Equal(t, "PPS", retrievedTask.OriginOrg, "OriginOrg mismatch")
 	assert.Equal(t, "2024/2025", retrievedTask.OriginYear, "OriginYear mismatch")
+	assert.Equal(t, []string{"junior"}, retrievedTask.OriginDivisions, "OriginDivisions mismatch")
 	assert.Contains(t, retrievedTask.ProblemTags, "two-sum", "ProblemTags missing two-sum")
 	assert.Equal(t, []string{"Kaspars", "Pēteris"}, retrievedTask.Authors, "Authors mismatch")
 	assert.Equal(t, "task-archives/aplusbirc.zip", retrievedTask.OgFilesZipS3Key, "ArchiveS3Key mismatch")
@@ -173,8 +174,9 @@ func TestTaskPgRepo(t *testing.T) {
 		assert.Equal(t, "A+B=C", taskPreview.DefaultFullName(), "Preview FullName mismatch")
 		assert.Equal(t, "task-md-images/nekoks.png", taskPreview.IllustrImg.S3Key, "Preview IllustrImgS3Key mismatch")
 		assert.Equal(t, "LIO", taskPreview.OriginOlympiad, "Preview OriginOlympiad mismatch")
-		assert.Equal(t, "", taskPreview.OriginOrg, "Preview OriginOrg mismatch")
-		assert.Equal(t, "", taskPreview.OriginYear, "Preview OriginYear mismatch")
+		assert.Equal(t, "PPS", taskPreview.OriginOrg, "Preview OriginOrg mismatch")
+		assert.Equal(t, "2024/2025", taskPreview.OriginYear, "Preview OriginYear mismatch")
+		assert.Equal(t, []string{"junior"}, taskPreview.OriginDivisions, "Preview OriginDivisions mismatch")
 		assert.Equal(t, 3, taskPreview.DifficultyRating, "Preview DifficultyRating mismatch")
 
 		// Verify illustration image fields
@@ -200,6 +202,7 @@ func TestTaskPgRepo(t *testing.T) {
 		require.NoError(t, err, "Failed to list task previews")
 		require.Len(t, taskPreviews, 1, "Should have exactly one task preview")
 		assert.Equal(t, "LIO 38. atlases kārta", taskPreviews[0].OriginNoteShort, "Listed preview OriginNoteShort mismatch")
+		assert.Equal(t, []string{"junior"}, taskPreviews[0].OriginDivisions, "Listed preview divisions mismatch")
 	})
 
 	// Test DeleteTask

@@ -36,6 +36,7 @@ func mapTaskZipOrigin(t taskzipv1.Task, res *Task) {
 		res.OriginOlympiad = t.Origin.Olymp
 		res.OriginOrg = t.Origin.Org
 		res.OlympStage = t.Origin.Stage
+		res.OriginDivisions = t.Origin.Divisions
 		res.Authors = t.Origin.Authors
 		res.OrigLang = t.Origin.Lang
 		if t.Origin.Year != nil {
@@ -174,13 +175,14 @@ func mapToTaskZip(t Task) (taskzipv1.Task, error) {
 func mapServiceOrigin(t Task, res *taskzipv1.Task) {
 	origin := &taskzipv1.Origin{
 		Olymp: t.OriginOlympiad, Stage: t.OlympStage, Org: t.OriginOrg,
-		Authors: t.Authors, Lang: t.OrigLang,
+		Divisions: t.OriginDivisions, Authors: t.Authors, Lang: t.OrigLang,
 	}
 	if year, err := strconv.Atoi(t.OriginYear); err == nil {
 		origin.Year = &year
 	}
 	if origin.Olymp != "" || origin.Stage != "" || origin.Org != "" ||
-		len(origin.Authors) != 0 || origin.Lang != "" || origin.Year != nil {
+		len(origin.Divisions) != 0 || len(origin.Authors) != 0 ||
+		origin.Lang != "" || origin.Year != nil {
 		res.Origin = origin
 	}
 	if t.DifficultyRating != 0 {

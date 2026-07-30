@@ -32,6 +32,7 @@ func (ts *taskSrvc) GetTaskPreview(ctx context.Context, id string) (res TaskPrev
 		ts.logger(ctx).Error("get task preview", "error", errDb)
 		return TaskPreview{}, NewErrorInternalServerError()
 	}
+	applyPreviewOriginNotes(&taskPreview)
 	return taskPreview, nil
 }
 
@@ -40,6 +41,9 @@ func (ts *taskSrvc) ListTaskPreviews(ctx context.Context) ([]TaskPreview, srvcer
 	if err != nil {
 		ts.logger(ctx).Error("list task previews", "error", err)
 		return nil, NewErrorInternalServerError()
+	}
+	for i := range taskPreviews {
+		applyPreviewOriginNotes(&taskPreviews[i])
 	}
 	return taskPreviews, nil
 }
@@ -61,6 +65,7 @@ func (ts *taskSrvc) GetTask(ctx context.Context, id string) (Task, srvcerror.E) 
 		ts.logger(ctx).Error("get task", "error", err)
 		return Task{}, NewErrorInternalServerError()
 	}
+	applyOriginNotes(&task)
 	if task.Interactor != "" {
 		for i := range task.MdStatements {
 			if task.MdStatements[i].Notes == "" {
@@ -77,6 +82,9 @@ func (ts *taskSrvc) ListTasks(ctx context.Context) ([]Task, srvcerror.E) {
 	if err != nil {
 		ts.logger(ctx).Error("list tasks", "error", err)
 		return nil, NewErrorInternalServerError()
+	}
+	for i := range tasks {
+		applyOriginNotes(&tasks[i])
 	}
 	return tasks, nil
 }

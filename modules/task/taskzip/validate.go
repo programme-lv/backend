@@ -12,7 +12,10 @@ import (
 	"unicode/utf8"
 )
 
-var upperCodeRE = regexp.MustCompile(`^[A-Z0-9]{1,10}$`)
+var (
+	upperCodeRE    = regexp.MustCompile(`^[A-Z0-9]{1,10}$`)
+	divisionSlugRE = regexp.MustCompile(`^[a-z0-9]+(?:-[a-z0-9]+)*$`)
+)
 
 func validate(task *Task) error {
 	if task.Testing.Type == "interactor" {
@@ -103,9 +106,23 @@ func validateOrigin(origin *Origin) error {
 	if origin.Lang != "" && !langRE.MatchString(origin.Lang) {
 		return errors.New("invalid origin.lang")
 	}
+	if err := validateDivisions(origin.Divisions); err != nil {
+		return err
+	}
 	if origin.Solvers != nil && origin.Contestants != nil &&
 		*origin.Solvers > *origin.Contestants {
 		return errors.New("origin.solvers exceeds contestants")
+	}
+	return nil
+}
+
+func validateDivisions(divisions []string) error {
+	seen := make(map[string]bool, len(divisions))
+	for _, division := range divisions {
+		if !divisionSlugRE.MatchString(division) || seen[division] {
+			return fmt.Errorf("invalid origin.divisions slug %q", division)
+		}
+		seen[division] = true
 	}
 	return nil
 }

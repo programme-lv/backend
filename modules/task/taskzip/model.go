@@ -70,6 +70,7 @@ type Origin struct {
 	Olymp       string
 	Year        *int
 	Stage       string
+	Divisions   []string
 	Org         string
 	Authors     []string
 	Lang        string

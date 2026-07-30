@@ -74,7 +74,7 @@ func (r *taskPgRepo) ListTaskPreviews(ctx context.Context, limit int, offset int
 		       t.full_name_dict,
 		       t.orig_lang,
 		       t.illustr_img_s3_key, t.width_px, t.height_px, t.filesize_bytes, 
-		       t.origin_olympiad, COALESCE(t.origin_org,''), COALESCE(t.origin_year,''), COALESCE(t.olymp_stage,''), t.difficulty_rating,
+		       t.origin_olympiad, COALESCE(t.origin_org,''), COALESCE(t.origin_year,''), COALESCE(t.olymp_stage,''), COALESCE(t.origin_divisions,'[]'::jsonb), t.difficulty_rating,
 		       COALESCE(
 			       (SELECT ton.info 
 				FROM task_origin_notes ton 
@@ -117,6 +117,7 @@ func (r *taskPgRepo) ListTaskPreviews(ctx context.Context, limit int, offset int
 		var szInBytes *int = nil
 		var story, originNote, originNoteShort *string // Use pointers to handle NULL values
 		var fullNameBytes []byte
+		var divisionsBytes []byte
 		err := rows.Scan(
 			&p.ShortId,
 			&fullNameBytes,
@@ -129,6 +130,7 @@ func (r *taskPgRepo) ListTaskPreviews(ctx context.Context, limit int, offset int
 			&p.OriginOrg,
 			&p.OriginYear,
 			&p.OlympStage,
+			&divisionsBytes,
 			&p.DifficultyRating,
 			&originNote,
 			&originNoteShort,
@@ -143,6 +145,9 @@ func (r *taskPgRepo) ListTaskPreviews(ctx context.Context, limit int, offset int
 			if uerr := json.Unmarshal(fullNameBytes, &nameMap); uerr == nil {
 				p.FullName = nameMap
 			}
+		}
+		if len(divisionsBytes) > 0 {
+			_ = json.Unmarshal(divisionsBytes, &p.OriginDivisions)
 		}
 
 		// Handle NULL values
@@ -400,9 +405,11 @@ func (r *taskPgRepo) GetTaskPreview(ctx context.Context, shortId string) (srvc.T
 	var szInBytes *int = nil
 
 	// Load main task row.
-	var fullNameBytes []byte
+	var fullNameBytes, divisionsBytes []byte
 	err := r.pool.QueryRow(ctx, `
-		SELECT short_id, full_name_dict, orig_lang, illustr_img_s3_key, width_px, height_px, filesize_bytes, origin_olympiad, difficulty_rating
+		SELECT short_id, full_name_dict, orig_lang, illustr_img_s3_key, width_px, height_px, filesize_bytes,
+		       origin_olympiad, COALESCE(origin_org,''), COALESCE(origin_year,''),
+		       COALESCE(olymp_stage,''), COALESCE(origin_divisions,'[]'::jsonb), difficulty_rating
 		FROM tasks
 		WHERE short_id = $1
 	`, shortId).Scan(
@@ -414,6 +421,10 @@ func (r *taskPgRepo) GetTaskPreview(ctx context.Context, shortId string) (srvc.T
 		&heightPx,
 		&szInBytes,
 		&t.OriginOlympiad,
+		&t.OriginOrg,
+		&t.OriginYear,
+		&t.OlympStage,
+		&divisionsBytes,
 		&t.DifficultyRating,
 	)
 	if err == nil && len(fullNameBytes) > 0 {
@@ -421,6 +432,9 @@ func (r *taskPgRepo) GetTaskPreview(ctx context.Context, shortId string) (srvc.T
 		if uerr := json.Unmarshal(fullNameBytes, &nameMap); uerr == nil {
 			t.FullName = nameMap
 		}
+	}
+	if err == nil && len(divisionsBytes) > 0 {
+		_ = json.Unmarshal(divisionsBytes, &t.OriginDivisions)
 	}
 	if err != nil {
 		return t, fmt.Errorf("failed to load task preview: %w", err)
@@ -437,11 +451,10 @@ func (r *taskPgRepo) GetTaskPreview(ctx context.Context, shortId string) (srvc.T
 	}
 
 	err = r.pool.QueryRow(ctx, `
-		SELECT info 
-		FROM task_origin_notes 
-		WHERE task_short_id = $1
-		LIMIT 1
-	`, shortId).Scan(&t.OriginNote)
+		SELECT
+			COALESCE((SELECT info FROM task_origin_notes WHERE task_short_id = $1 LIMIT 1), ''),
+			COALESCE((SELECT info_short FROM task_origin_notes WHERE task_short_id = $1 LIMIT 1), '')
+	`, shortId).Scan(&t.OriginNote, &t.OriginNoteShort)
 	if err != nil {
 		return t, fmt.Errorf("failed to load origin note: %w", err)
 	}
@@ -474,9 +487,10 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 	// Load main task row.
 	var fullNameBytes []byte
 	var authorsBytes []byte
+	var divisionsBytes []byte
 	var problemTagsBytes []byte
 	err := r.pool.QueryRow(ctx, `
-		SELECT short_id, full_name_dict, orig_lang, readme, illustr_img_s3_key, width_px, height_px, filesize_bytes, mem_lim_megabytes, cpu_time_lim_secs, origin_olympiad, COALESCE(origin_org,''), COALESCE(origin_year,''), COALESCE(olymp_stage,''), COALESCE(authors,'[]'::jsonb), COALESCE(problem_tags,'[]'::jsonb), COALESCE(archive_s3_key,''), difficulty_rating, checker, interactor
+		SELECT short_id, full_name_dict, orig_lang, readme, illustr_img_s3_key, width_px, height_px, filesize_bytes, mem_lim_megabytes, cpu_time_lim_secs, origin_olympiad, COALESCE(origin_org,''), COALESCE(origin_year,''), COALESCE(olymp_stage,''), COALESCE(origin_divisions,'[]'::jsonb), COALESCE(authors,'[]'::jsonb), COALESCE(problem_tags,'[]'::jsonb), COALESCE(archive_s3_key,''), difficulty_rating, checker, interactor
 		FROM tasks
 		WHERE short_id = $1
 	`, shortId).Scan(
@@ -494,6 +508,7 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 		&t.OriginOrg,
 		&t.OriginYear,
 		&t.OlympStage,
+		&divisionsBytes,
 		&authorsBytes,
 		&problemTagsBytes,
 		&t.OgFilesZipS3Key,
@@ -512,6 +527,9 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 		if uerr := json.Unmarshal(authorsBytes, &authors); uerr == nil {
 			t.Authors = authors
 		}
+	}
+	if err == nil && len(divisionsBytes) > 0 {
+		_ = json.Unmarshal(divisionsBytes, &t.OriginDivisions)
 	}
 	if err == nil && len(problemTagsBytes) > 0 {
 		var tags []string
@@ -912,9 +930,9 @@ func (r *taskPgRepo) CreateTask(ctx context.Context, t srvc.Task) error {
 	}
 
 	_, err = tx.Exec(ctx, `
-		INSERT INTO tasks (short_id, full_name_dict, orig_lang, readme, illustr_img_s3_key, width_px, height_px, filesize_bytes, mem_lim_megabytes, cpu_time_lim_secs, origin_olympiad, origin_org, origin_year, olymp_stage, authors, problem_tags, archive_s3_key, difficulty_rating, checker, interactor)
-		VALUES ($1, $2::jsonb, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15::jsonb, $16::jsonb, $17, $18, $19, $20)
-	`, t.ShortId, mustMarshalMapToJSONB(t.FullName), t.OrigLang, t.Readme, illustrS3Key, illustrWidthPx, illustrHeightPx, illustrSzInBytes, t.MemLimMegabytes, t.CpuTimeLimSecs, t.OriginOlympiad, t.OriginOrg, t.OriginYear, t.OlympStage, mustMarshalSliceToJSONB(t.Authors), mustMarshalSliceToJSONB(t.ProblemTags), t.OgFilesZipS3Key, t.DifficultyRating, t.Checker, t.Interactor)
+		INSERT INTO tasks (short_id, full_name_dict, orig_lang, readme, illustr_img_s3_key, width_px, height_px, filesize_bytes, mem_lim_megabytes, cpu_time_lim_secs, origin_olympiad, origin_org, origin_year, olymp_stage, origin_divisions, authors, problem_tags, archive_s3_key, difficulty_rating, checker, interactor)
+		VALUES ($1, $2::jsonb, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15::jsonb, $16::jsonb, $17::jsonb, $18, $19, $20, $21)
+	`, t.ShortId, mustMarshalMapToJSONB(t.FullName), t.OrigLang, t.Readme, illustrS3Key, illustrWidthPx, illustrHeightPx, illustrSzInBytes, t.MemLimMegabytes, t.CpuTimeLimSecs, t.OriginOlympiad, t.OriginOrg, t.OriginYear, t.OlympStage, mustMarshalSliceToJSONB(t.OriginDivisions), mustMarshalSliceToJSONB(t.Authors), mustMarshalSliceToJSONB(t.ProblemTags), t.OgFilesZipS3Key, t.DifficultyRating, t.Checker, t.Interactor)
 	if err != nil {
 		return fmt.Errorf("failed to insert main task: %w", err)
 	}

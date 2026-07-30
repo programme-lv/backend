@@ -49,6 +49,7 @@ func TestImportExportTaskZip(t *testing.T) {
 	require.Contains(t, imported.MdStatements[0].Story, "veģetāra čūska")
 	require.NotEmpty(t, imported.Checker)
 	require.Empty(t, imported.OgFilesZipS3Key)
+	imported.OriginDivisions = []string{"junior", "senior"}
 
 	repo.EXPECT().Exists(ctx, id).Return(true, nil).Once()
 	repo.EXPECT().GetTask(ctx, id).Return(imported, nil).Once()
@@ -62,6 +63,7 @@ func TestImportExportTaskZip(t *testing.T) {
 	require.Len(t, parsed.Tests, 159)
 	require.Len(t, parsed.TestGroups, 53)
 	require.Len(t, parsed.Subtasks, 5)
+	require.Equal(t, []string{"junior", "senior"}, parsed.Origin.Divisions)
 
 	var reimported srvc.Task
 	repo.EXPECT().Exists(ctx, "lio2026cuska-copy").Return(false, nil).Once()
@@ -79,6 +81,7 @@ func TestImportExportTaskZip(t *testing.T) {
 	require.Len(t, reimported.TestGroups, len(imported.TestGroups))
 	require.Len(t, reimported.Subtasks, len(imported.Subtasks))
 	require.Equal(t, imported.FullName, reimported.FullName)
+	require.Equal(t, imported.OriginDivisions, reimported.OriginDivisions)
 }
 
 func assertIgnoredDirectoriesOmitted(t *testing.T, data []byte) {

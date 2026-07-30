@@ -65,6 +65,7 @@ type originTOML struct {
 	Olymp       string   `toml:"olymp,omitempty"`
 	Year        *int     `toml:"year,omitempty"`
 	Stage       string   `toml:"stage,omitempty"`
+	Divisions   []string `toml:"divisions,omitempty"`
 	Org         string   `toml:"org,omitempty"`
 	Authors     []string `toml:"authors,omitempty"`
 	Lang        string   `toml:"lang,omitempty"`
@@ -331,7 +332,8 @@ func fromTOML(m taskTOML) Task {
 	if m.Origin != nil {
 		t.Origin = &Origin{
 			Olymp: m.Origin.Olymp, Year: m.Origin.Year, Stage: m.Origin.Stage,
-			Org: m.Origin.Org, Authors: m.Origin.Authors, Lang: m.Origin.Lang,
+			Divisions: m.Origin.Divisions, Org: m.Origin.Org,
+			Authors: m.Origin.Authors, Lang: m.Origin.Lang,
 			Contestants: m.Origin.Contestants, Solvers: m.Origin.Solvers,
 		}
 	}
@@ -363,7 +365,8 @@ func toTOML(t Task) taskTOML {
 	if t.Origin != nil {
 		m.Origin = &originTOML{
 			Olymp: t.Origin.Olymp, Year: t.Origin.Year, Stage: t.Origin.Stage,
-			Org: t.Origin.Org, Authors: t.Origin.Authors, Lang: t.Origin.Lang,
+			Divisions: t.Origin.Divisions, Org: t.Origin.Org,
+			Authors: t.Origin.Authors, Lang: t.Origin.Lang,
 			Contestants: t.Origin.Contestants, Solvers: t.Origin.Solvers,
 		}
 	}

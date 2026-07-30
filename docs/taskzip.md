@@ -12,6 +12,7 @@ Interactive tasks are rejected because submission evaluation does not support
 them yet.
 Contestant attachments are also rejected because the backend has no storage or
 delivery model for them.
+Origin divisions are preserved as an ordered array during import and export.
 
 `archive/` and `testspec/` are authoring and archival inputs.
 They are accepted but ignored during import and omitted during export.
