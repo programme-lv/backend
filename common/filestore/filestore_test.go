@@ -1,6 +1,7 @@
 package filestore
 
 import (
+	"io"
 	"net/http/httptest"
 	"testing"
 	"time"
@@ -18,6 +19,13 @@ func TestStoreUploadDownloadAndServe(t *testing.T) {
 	got, err := store.Download("task/a/file.txt")
 	require.NoError(t, err)
 	require.Equal(t, []byte("hello"), got)
+
+	file, err := store.Open("task/a/file.txt")
+	require.NoError(t, err)
+	opened, err := io.ReadAll(file)
+	require.NoError(t, err)
+	require.NoError(t, file.Close())
+	require.Equal(t, []byte("hello"), opened)
 
 	req := httptest.NewRequest("GET", "/assets/task/a/file.txt", nil)
 	rec := httptest.NewRecorder()
