@@ -32,6 +32,6 @@ func newTaskSrvc(t *testing.T) srvc.TaskService {
 func newTaskHttpHandler(ts srvc.TaskService) http.Handler {
 	handler := taskhttp.NewTaskHttpHandler(ts)
 	router := chi.NewRouter()
-	handler.RegisterRoutes(router, []byte("test"), []byte("test-admin-api-key"))
+	handler.RegisterRoutes(router, []byte("test"), []byte("test-admin-api-key"), false)
 	return router
 }
