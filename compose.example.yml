@@ -10,6 +10,7 @@ services:
       dockerfile: Dockerfile
     environment:
       JWT_KEY: "replace-with-a-long-random-secret"
+      ADMIN_API_KEY: "replace-with-a-separate-long-random-secret"
       COOKIE_DOMAIN: ".programme.lv"
 
       POSTGRES_HOST: "postgres"
@@ -25,9 +26,6 @@ services:
       FILE_STORAGE_ROOT: "/mnt/programme-lv-storage"
       API_PUBLIC_BASE_URL: "https://api.programme.lv"
       TESTFILE_DOWNLOAD_SIGNING_KEY: "replace-with-a-long-random-secret"
-
-      AWS_ACCESS_KEY_ID: "replace-aws-access-key-id"
-      AWS_SECRET_ACCESS_KEY: "replace-aws-secret-access-key"
     volumes:
       - /mnt/programme-lv-storage:/mnt/programme-lv-storage
     ports:

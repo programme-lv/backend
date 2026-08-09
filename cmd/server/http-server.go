@@ -13,7 +13,7 @@ type httpRouteRegistrar interface {
 }
 
 type authenticatedHTTPRouteRegistrar interface {
-	RegisterRoutes(r *chi.Mux, jwtKey []byte)
+	RegisterRoutes(r *chi.Mux, jwtKey, adminAPIKey []byte)
 }
 
 type httpServer struct {
@@ -24,6 +24,7 @@ type httpServer struct {
 	plangHTTPHandler httpRouteRegistrar
 	router           *chi.Mux
 	jwtKey           []byte
+	adminAPIKey      []byte
 }
 
 func newHTTPServer(
@@ -33,6 +34,7 @@ func newHTTPServer(
 	execHTTPHandler httpRouteRegistrar,
 	plangHTTPHandler httpRouteRegistrar,
 	jwtKey []byte,
+	adminAPIKey []byte,
 ) *httpServer {
 	router := chi.NewRouter()
 
@@ -60,6 +62,7 @@ func newHTTPServer(
 		plangHTTPHandler: plangHTTPHandler,
 		router:           router,
 		jwtKey:           jwtKey,
+		adminAPIKey:      adminAPIKey,
 	}
 
 	server.routes()
@@ -72,8 +75,8 @@ func (s *httpServer) start(address string) error {
 }
 
 func (s *httpServer) routes() {
-	s.submHTTPHandler.RegisterRoutes(s.router, s.jwtKey)
-	s.taskHTTPHandler.RegisterRoutes(s.router, s.jwtKey)
+	s.submHTTPHandler.RegisterRoutes(s.router, s.jwtKey, s.adminAPIKey)
+	s.taskHTTPHandler.RegisterRoutes(s.router, s.jwtKey, s.adminAPIKey)
 	s.userHTTPHandler.RegisterRoutes(s.router)
 	s.execHTTPHandler.RegisterRoutes(s.router)
 	s.plangHTTPHandler.RegisterRoutes(s.router)

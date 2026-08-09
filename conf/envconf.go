@@ -97,6 +97,10 @@ func MustGetJwtKeyFromEnv() []byte {
 	return []byte(getRequiredEnv("JWT_KEY"))
 }
 
+func MustGetAdminAPIKeyFromEnv() []byte {
+	return []byte(getRequiredEnv("ADMIN_API_KEY"))
+}
+
 func MustGetFileStorageRootFromEnv() string {
 	root := getRequiredEnv("FILE_STORAGE_ROOT")
 	info, err := os.Stat(root)

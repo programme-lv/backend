@@ -57,7 +57,7 @@ func NewTaskHttpHandler(taskSrvc srvc.TaskService, opts ...HandlerOption) *taskH
 	return h
 }
 
-func (h *taskHttpHandler) RegisterRoutes(r *chi.Mux, jwtKey []byte) {
+func (h *taskHttpHandler) RegisterRoutes(r *chi.Mux, jwtKey, adminAPIKey []byte) {
 	if h.publicAssetStore != nil {
 		r.Get("/assets/*", h.ServePublicAsset)
 	}
@@ -77,7 +77,7 @@ func (h *taskHttpHandler) RegisterRoutes(r *chi.Mux, jwtKey []byte) {
 
 		// admin-only routes
 		r.Group(func(r chi.Router) {
-			r.Use(auth.HttpJwtAllowOnlyAdmins)
+			r.Use(auth.HttpAllowOnlyAdmins(adminAPIKey))
 
 			// resource-intensive routes
 			r.Group(func(r chi.Router) {

@@ -25,6 +25,15 @@ func newErrUsernameTooLong() srvcerror.E {
 	).SetHttpStatusCode(http.StatusBadRequest)
 }
 
+const ErrCodeUsernameReserved = "username_reserved"
+
+func newErrUsernameReserved() srvcerror.E {
+	return srvcerror.New(
+		ErrCodeUsernameReserved,
+		"lietotājvārds ir rezervēts",
+	).SetHttpStatusCode(http.StatusBadRequest)
+}
+
 const ErrCodeUsernameAlreadyExists = "username_exists"
 
 func newErrUsernameExists() srvcerror.E {
