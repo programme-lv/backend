@@ -2,25 +2,42 @@ package auth
 
 import (
 	"context"
+	"crypto/subtle"
 	"net/http"
+	"strings"
 
 	"github.com/programme-lv/backend/common/jsonresp"
 )
 
-// HttpJwtAllowOnlyAdmins is a middleware that ensures only admin users can access the route
-func HttpJwtAllowOnlyAdmins(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		claims, ok := r.Context().Value(CtxJwtClaimsKey).(*JwtClaims)
-		if !ok || claims == nil {
-			jsonresp.Unauthorized(w, "failed to authenticate user via jwt")
-			return
-		}
-		if claims.Username != "admin" {
+// HttpAllowOnlyAdmins allows requests authenticated either by an admin JWT or
+// by the server-to-server admin API key.
+func HttpAllowOnlyAdmins(adminAPIKey []byte) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if IsAdmin(r.Context()) || hasAdminAPIKey(r, adminAPIKey) {
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			claims, _ := r.Context().Value(CtxJwtClaimsKey).(*JwtClaims)
+			if claims == nil {
+				jsonresp.Unauthorized(w, "admin authentication required")
+				return
+			}
 			jsonresp.Forbidden(w, "access is restricted to admins only")
-			return
-		}
-		next.ServeHTTP(w, r)
-	})
+		})
+	}
+}
+
+func hasAdminAPIKey(r *http.Request, adminAPIKey []byte) bool {
+	const bearerPrefix = "Bearer "
+
+	authorization := r.Header.Get("Authorization")
+	if len(adminAPIKey) == 0 || !strings.HasPrefix(authorization, bearerPrefix) {
+		return false
+	}
+	provided := []byte(strings.TrimPrefix(authorization, bearerPrefix))
+	return subtle.ConstantTimeCompare(provided, adminAPIKey) == 1
 }
 
 // HttpJwtAuthentication validates JWT token and adds the claims to the request context

@@ -15,10 +15,9 @@ set up an .env file
 
 ```
 JWT_KEY=...
+ADMIN_API_KEY=...
 
 NATS_URL=nats://localhost:4222
-
-EXTERNAL_EVAL_KEY=...
 
 POSTGRES_DB=...
 POSTGRES_USER=...
@@ -33,6 +32,15 @@ FILE_STORAGE_ROOT=/mnt/programme-lv-storage
 API_PUBLIC_BASE_URL=https://api.programme.lv
 TESTFILE_DOWNLOAD_SIGNING_KEY=...
 ```
+
+Admin routes accept either an admin user's `auth_token` cookie or the
+server-to-server API key:
+
+```http
+Authorization: Bearer <ADMIN_API_KEY>
+```
+
+Do not expose `ADMIN_API_KEY` to browser-side code.
 
 let's clone the database from prod
 

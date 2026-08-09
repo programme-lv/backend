@@ -5,7 +5,7 @@ import (
 	"github.com/programme-lv/backend/modules/user/auth"
 )
 
-func (h *SubmHttpHandler) RegisterRoutes(r *chi.Mux, jwtKey []byte) {
+func (h *SubmHttpHandler) RegisterRoutes(r *chi.Mux, jwtKey, adminAPIKey []byte) {
 	r.Group(func(r chi.Router) {
 		r.Use(auth.HttpJwtAuthentication(jwtKey))
 		r.Post("/subm", h.PostSubm)
@@ -16,7 +16,7 @@ func (h *SubmHttpHandler) RegisterRoutes(r *chi.Mux, jwtKey []byte) {
 
 		// admin-only routes
 		r.Group(func(r chi.Router) {
-			r.Use(auth.HttpJwtAllowOnlyAdmins)
+			r.Use(auth.HttpAllowOnlyAdmins(adminAPIKey))
 			r.Post("/reeval", h.ReevalSubms)
 		})
 	})

@@ -3,6 +3,7 @@ package user
 import (
 	"context"
 	"net/mail"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -170,11 +171,19 @@ func insertUser(pg *pgxpool.Pool, user *dbUser) error {
 func validateUsername(username string) srvcerror.E {
 	const minUsernameLength = 2
 	const maxUsernameLength = 32
+	reservedUsernames := map[string]struct{}{
+		"admin":  {},
+		"system": {},
+		"test":   {},
+	}
 	if len(username) < minUsernameLength {
 		return newErrUsernameTooShort(minUsernameLength)
 	}
 	if len(username) > maxUsernameLength {
 		return newErrUsernameTooLong()
+	}
+	if _, reserved := reservedUsernames[strings.ToLower(username)]; reserved {
+		return newErrUsernameReserved()
 	}
 	return nil
 }

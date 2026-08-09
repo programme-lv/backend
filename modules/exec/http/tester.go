@@ -22,7 +22,6 @@ func (h *ExecHttpHandler) testerRun(w http.ResponseWriter, r *http.Request) {
 	}
 
 	type request struct {
-		ApiKey     string  `json:"api_key"`
 		SrcCode    string  `json:"src_code"`
 		ProgLangId string  `json:"lang_id"`
 		CpuMs      int     `json:"cpu_ms"`

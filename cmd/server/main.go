@@ -39,6 +39,7 @@ func main() {
 	flag.Parse()
 
 	jwtKey := conf.MustGetJwtKeyFromEnv()
+	adminAPIKey := conf.MustGetAdminAPIKeyFromEnv()
 	cookieDomain := conf.MustGetCookieDomainFromEnv()
 
 	pgPool := conf.MustGetPgxPoolFromEnv()
@@ -87,7 +88,7 @@ func main() {
 		taskhttp.WithFileStores(publicStore, testfileStore, testfileSigningKey),
 	)
 	userHttpHandler := userhttp.NewUserHttpHandler(userSrvc, jwtKey, userhttp.WithCookieDomain(cookieDomain))
-	execHttpHandler := exechttp.NewExecHttpHandler(execSrvc)
+	execHttpHandler := exechttp.NewExecHttpHandler(execSrvc, adminAPIKey)
 	plangHttpHandler := planghttp.NewPlangHttpHandler()
 
 	// Start HTTP server
@@ -98,6 +99,7 @@ func main() {
 		execHttpHandler,
 		plangHttpHandler,
 		jwtKey,
+		adminAPIKey,
 	)
 
 	slog.Info("starting server", "address", address)
