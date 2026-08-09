@@ -2,11 +2,13 @@ package user
 
 import (
 	"context"
+	"errors"
 	"net/mail"
 	"strings"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/programme-lv/backend/common/ctxlog"
 	"github.com/programme-lv/backend/common/srvcerror"
@@ -45,21 +47,16 @@ func (s *userSrvc) CreateUser(ctx context.Context, p CreateUserParams) (res *Use
 		}
 	}
 
-	all, selectErr := selectAllUsers(s.postgres)
+	usernameExists, emailExists, selectErr := checkUserConflicts(ctx, s.postgres, p.Username, p.Email)
 	if selectErr != nil {
-		l.Error("list users", "error", selectErr)
+		l.Error("check user conflicts", "error", selectErr)
 		return nil, newErrInternalSE()
 	}
-
-	for _, user := range all {
-		// username must be unique
-		if user.Username == p.Username {
-			return nil, newErrUsernameExists()
-		}
-		// email must be unique
-		if user.Email == p.Email {
-			return nil, newErrEmailExists()
-		}
+	if usernameExists {
+		return nil, newErrUsernameExists()
+	}
+	if emailExists {
+		return nil, newErrEmailExists()
 	}
 
 	bcryptPwd, bcryptErr := bcrypt.GenerateFromPassword(
@@ -91,6 +88,15 @@ func (s *userSrvc) CreateUser(ctx context.Context, p CreateUserParams) (res *Use
 
 	insertErr := insertUser(s.postgres, row)
 	if insertErr != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(insertErr, &pgErr) && pgErr.Code == "23505" {
+			switch pgErr.ConstraintName {
+			case "users_username_key":
+				return nil, newErrUsernameExists()
+			case "users_email_key":
+				return nil, newErrEmailExists()
+			}
+		}
 		l.Error("insert user", "error", insertErr)
 		return nil, newErrInternalSE()
 	}
@@ -104,6 +110,20 @@ func (s *userSrvc) CreateUser(ctx context.Context, p CreateUserParams) (res *Use
 	}
 
 	return res, nil
+}
+
+func checkUserConflicts(
+	ctx context.Context,
+	pg *pgxpool.Pool,
+	username string,
+	email string,
+) (usernameExists, emailExists bool, err error) {
+	err = pg.QueryRow(ctx, `
+		SELECT
+			EXISTS(SELECT 1 FROM users WHERE username = $1),
+			EXISTS(SELECT 1 FROM users WHERE email = $2)
+	`, username, email).Scan(&usernameExists, &emailExists)
+	return usernameExists, emailExists, err
 }
 
 type dbUser struct {

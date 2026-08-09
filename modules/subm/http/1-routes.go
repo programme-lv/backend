@@ -5,9 +5,9 @@ import (
 	"github.com/programme-lv/backend/modules/user/auth"
 )
 
-func (h *SubmHttpHandler) RegisterRoutes(r *chi.Mux, jwtKey, adminAPIKey []byte) {
+func (h *SubmHttpHandler) RegisterRoutes(r *chi.Mux, jwtKey, adminAPIKey []byte, cookieSecure bool) {
 	r.Group(func(r chi.Router) {
-		r.Use(auth.HttpJwtAuthentication(jwtKey))
+		r.Use(auth.HttpJwtAuthentication(jwtKey, cookieSecure))
 		r.Post("/subm", h.PostSubm)
 		r.Get("/subm", h.GetSubmList)
 		r.Get("/subm/{subm-uuid}", h.GetFullSubm)

@@ -923,7 +923,7 @@ func (r *taskPgRepo) CreateTask(ctx context.Context, t srvc.Task) error {
 	var illustrS3Key string
 	var illustrWidthPx, illustrHeightPx, illustrSzInBytes int
 	if t.IllustrImg != nil {
-		illustrS3Key = t.IllustrImg.S3Key
+		illustrS3Key = t.IllustrImg.S3Key // gitleaks:allow -- storage path, not a credential
 		illustrWidthPx = t.IllustrImg.WidthPx
 		illustrHeightPx = t.IllustrImg.HeightPx
 		illustrSzInBytes = t.IllustrImg.SzInBytes

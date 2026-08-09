@@ -47,6 +47,9 @@ func TestLoginHttp(t *testing.T) {
 	}
 	require.NotNil(t, authCookie, "No auth_token cookie found in response")
 	assert.True(t, authCookie.HttpOnly, "Cookie should be HttpOnly")
+	assert.True(t, authCookie.Secure, "Cookie should be Secure")
+	assert.Equal(t, http.SameSiteLaxMode, authCookie.SameSite)
+	assert.Equal(t, "/", authCookie.Path)
 	assert.NotEmpty(t, authCookie.Value, "Cookie value should not be empty")
 
 	// Parse the response body

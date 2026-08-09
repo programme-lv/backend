@@ -27,22 +27,21 @@ type Pagination struct {
 	HasMore bool `json:"hasMore"`
 }
 
+const (
+	defaultSubmListLimit = 30
+	maxSubmListLimit     = 100
+)
+
 func (h *SubmHttpHandler) GetSubmList(w http.ResponseWriter, r *http.Request) {
 	log := ctxlog.FromContext(r.Context())
 	log.Info("getting submission list")
 	w.Header().Set("Cache-Control", "no-store")
 
 	// Parse pagination parameters from query string
-	limit := 30 // Default limit
+	limit := defaultSubmListLimit
 	offset := 0 // Default offset
 
-	limitStr := r.URL.Query().Get("limit")
-	if limitStr != "" {
-		parsedLimit, err := strconv.Atoi(limitStr)
-		if err == nil && parsedLimit > 0 {
-			limit = parsedLimit
-		}
-	}
+	limit = parseSubmListLimit(r.URL.Query().Get("limit"))
 
 	offsetStr := r.URL.Query().Get("offset")
 	if offsetStr != "" {
@@ -174,4 +173,12 @@ func (h *SubmHttpHandler) GetSubmList(w http.ResponseWriter, r *http.Request) {
 	response := result.(PaginatedResponse)
 	log.Info("returning submission list", "count", len(response.Page.([]SubmListEntry)), "total", response.Pagination.Total)
 	jsonresp.Success(w, response)
+}
+
+func parseSubmListLimit(raw string) int {
+	parsed, err := strconv.Atoi(raw)
+	if err != nil || parsed <= 0 {
+		return defaultSubmListLimit
+	}
+	return min(parsed, maxSubmListLimit)
 }

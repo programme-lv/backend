@@ -10,6 +10,7 @@ type UserHttpHandler struct {
 	userSrvc     user.UserService
 	jwtKey       []byte
 	cookieDomain string
+	cookieSecure bool
 }
 
 // NewUserHttpHandler creates a new UserHttpHandler with the given user service and JWT key.
@@ -19,6 +20,7 @@ func NewUserHttpHandler(userSrvc user.UserService, jwtKey []byte, options ...fun
 		userSrvc:     userSrvc,
 		jwtKey:       jwtKey,
 		cookieDomain: "",
+		cookieSecure: false,
 	}
 
 	// Apply any provided options
@@ -36,9 +38,15 @@ func WithCookieDomain(domain string) func(*UserHttpHandler) {
 	}
 }
 
+func WithSecureCookie(secure bool) func(*UserHttpHandler) {
+	return func(h *UserHttpHandler) {
+		h.cookieSecure = secure
+	}
+}
+
 func (h *UserHttpHandler) RegisterRoutes(r *chi.Mux) {
 	r.Group(func(r chi.Router) {
-		r.Use(auth.HttpJwtAuthentication(h.jwtKey))
+		r.Use(auth.HttpJwtAuthentication(h.jwtKey, h.cookieSecure))
 		r.Post("/login", h.Login)
 		r.Post("/users", h.Register)
 		r.Get("/role", h.GetRole)
