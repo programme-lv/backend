@@ -46,7 +46,7 @@ func WithSecureCookie(secure bool) func(*UserHttpHandler) {
 
 func (h *UserHttpHandler) RegisterRoutes(r *chi.Mux) {
 	r.Group(func(r chi.Router) {
-		r.Use(auth.HttpJwtAuthentication(h.jwtKey))
+		r.Use(auth.HttpJwtAuthentication(h.jwtKey, h.cookieSecure))
 		r.Post("/login", h.Login)
 		r.Post("/users", h.Register)
 		r.Get("/role", h.GetRole)

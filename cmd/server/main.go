@@ -106,6 +106,7 @@ func main() {
 		plangHttpHandler,
 		jwtKey,
 		adminAPIKey,
+		cookieSecure,
 	)
 
 	slog.Info("starting server", "address", address)

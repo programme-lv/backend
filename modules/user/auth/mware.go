@@ -40,8 +40,13 @@ func hasAdminAPIKey(r *http.Request, adminAPIKey []byte) bool {
 	return subtle.ConstantTimeCompare(provided, adminAPIKey) == 1
 }
 
-// HttpJwtAuthentication validates JWT token and adds the claims to the request context
-func HttpJwtAuthentication(jwtKey []byte) func(next http.Handler) http.Handler {
+// HttpJwtAuthentication validates JWT token and adds the claims to the request context.
+// Optional cookieSecure parameter controls the Secure flag when clearing invalid tokens.
+func HttpJwtAuthentication(jwtKey []byte, cookieSecure ...bool) func(next http.Handler) http.Handler {
+	secure := true
+	if len(cookieSecure) > 0 {
+		secure = cookieSecure[0]
+	}
 	return func(next http.Handler) http.Handler {
 		handlerFunc := func(w http.ResponseWriter, r *http.Request) {
 			// get token from cookie instead of Authorization header
@@ -65,7 +70,7 @@ func HttpJwtAuthentication(jwtKey []byte) func(next http.Handler) http.Handler {
 					MaxAge:   -1,
 					HttpOnly: true,
 					SameSite: http.SameSiteLaxMode,
-					Secure:   true,
+					Secure:   secure,
 				})
 				// continue as unauthenticated user
 				ctx := context.WithValue(r.Context(), CtxJwtClaimsKey, (*JwtClaims)(nil))
