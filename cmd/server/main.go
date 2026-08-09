@@ -41,6 +41,7 @@ func main() {
 	jwtKey := conf.MustGetJwtKeyFromEnv()
 	adminAPIKey := conf.MustGetAdminAPIKeyFromEnv()
 	cookieDomain := conf.MustGetCookieDomainFromEnv()
+	cookieSecure := conf.MustGetCookieSecureFromEnv()
 
 	pgPool := conf.MustGetPgxPoolFromEnv()
 	conf.MustRunPostgresMigrationsFromEnv()
@@ -87,7 +88,12 @@ func main() {
 		taskSrvc,
 		taskhttp.WithFileStores(publicStore, testfileStore, testfileSigningKey),
 	)
-	userHttpHandler := userhttp.NewUserHttpHandler(userSrvc, jwtKey, userhttp.WithCookieDomain(cookieDomain))
+	userHttpHandler := userhttp.NewUserHttpHandler(
+		userSrvc,
+		jwtKey,
+		userhttp.WithCookieDomain(cookieDomain),
+		userhttp.WithSecureCookie(cookieSecure),
+	)
 	execHttpHandler := exechttp.NewExecHttpHandler(execSrvc, adminAPIKey)
 	plangHttpHandler := planghttp.NewPlangHttpHandler()
 

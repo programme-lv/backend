@@ -12,6 +12,7 @@ services:
       JWT_KEY: "replace-with-a-long-random-secret"
       ADMIN_API_KEY: "replace-with-a-separate-long-random-secret"
       COOKIE_DOMAIN: ".programme.lv"
+      COOKIE_SECURE: "true"
 
       POSTGRES_HOST: "postgres"
       POSTGRES_PORT: "5432"
@@ -21,7 +22,7 @@ services:
       POSTGRES_SSLMODE: "disable"
       POSTGRES_MIGRATIONS_PATH: "/backend/postgres/migrate"
 
-      NATS_URL: "nats://nats:4222"
+      NATS_URL: "nats://programme:replace-nats-password@nats:4222"
 
       FILE_STORAGE_ROOT: "/mnt/programme-lv-storage"
       API_PUBLIC_BASE_URL: "https://api.programme.lv"
@@ -59,6 +60,7 @@ services:
 
   nats:
     image: nats:2.11
+    command: ["--user", "programme", "--pass", "replace-nats-password"]
     restart: unless-stopped
 
 volumes:

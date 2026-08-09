@@ -64,6 +64,8 @@ func HttpJwtAuthentication(jwtKey []byte) func(next http.Handler) http.Handler {
 					Path:     "/",
 					MaxAge:   -1,
 					HttpOnly: true,
+					SameSite: http.SameSiteLaxMode,
+					Secure:   true,
 				})
 				// continue as unauthenticated user
 				ctx := context.WithValue(r.Context(), CtxJwtClaimsKey, (*JwtClaims)(nil))

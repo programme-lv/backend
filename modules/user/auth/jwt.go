@@ -36,11 +36,14 @@ func GenerateJWT(username, email string, uuid uuid.UUID, jwtKey []byte, validFor
 func ValidateJWT(tokenStr string, jwtKey []byte) (*JwtClaims, error) {
 	claims := &JwtClaims{}
 	token, err := jwt.ParseWithClaims(tokenStr, claims, func(token *jwt.Token) (interface{}, error) {
+		if token.Method != jwt.SigningMethodHS256 {
+			return nil, errors.New("unexpected JWT signing method")
+		}
 		return jwtKey, nil
-	})
+	}, jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Alg()}))
 
 	if err != nil {
-		if err == jwt.ErrSignatureInvalid {
+		if errors.Is(err, jwt.ErrSignatureInvalid) {
 			return nil, errors.New("invalid token signature")
 		}
 		return nil, err

@@ -46,7 +46,11 @@ func newTestPgDb(t *testing.T) *pgxpool.Pool {
 func newUserHttpHandler(t *testing.T) http.Handler {
 	pg := newTestPgDb(t)
 	userSrvc := user.NewUserService(pg)
-	userHandler := userhttp.NewUserHttpHandler(userSrvc, []byte("test"))
+	userHandler := userhttp.NewUserHttpHandler(
+		userSrvc,
+		[]byte("test"),
+		userhttp.WithSecureCookie(true),
+	)
 	chi := chi.NewRouter()
 	userHandler.RegisterRoutes(chi)
 	return chi

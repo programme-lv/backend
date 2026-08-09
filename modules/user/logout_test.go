@@ -42,4 +42,7 @@ func TestLogout(t *testing.T) {
 	require.NotNil(t, authCookie, "No auth_token cookie found in response")
 	assert.Empty(t, authCookie.Value, "Cookie value should be empty")
 	assert.True(t, authCookie.MaxAge < 0, "Cookie should be set to expire")
+	assert.True(t, authCookie.Secure, "Cookie should be Secure")
+	assert.Equal(t, http.SameSiteLaxMode, authCookie.SameSite)
+	assert.Equal(t, "/", authCookie.Path)
 }

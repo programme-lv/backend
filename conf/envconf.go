@@ -2,21 +2,14 @@ package conf
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
-	"time"
+	"strconv"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/aws/retry"
-	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
-	"github.com/aws/aws-sdk-go-v2/service/sqs"
-	"github.com/aws/smithy-go/logging"
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
@@ -26,10 +19,7 @@ import (
 	"github.com/programme-lv/backend/common/filestore"
 )
 
-const (
-	awsRegion   = "eu-central-1"
-	repoDirName = "backend"
-)
+const repoDirName = "backend"
 
 func FindProjectRoot() string {
 	re := regexp.MustCompile(`^(.*` + repoDirName + `)`)
@@ -47,42 +37,6 @@ func init() {
 			"cwd", rootPath,
 		)
 	}
-}
-
-type slogLogger struct {
-	logger *slog.Logger
-}
-
-func newSlogLogger(logger *slog.Logger) *slogLogger {
-	return &slogLogger{
-		logger: logger,
-	}
-}
-
-func (l slogLogger) Logf(classification logging.Classification, format string, v ...interface{}) {
-	switch classification {
-	case logging.Warn: // up the severity beause warning should not happen
-		l.logger.Error(format, v...)
-	case logging.Debug: // same goes for debug messages
-		l.logger.Info(format, v...)
-	default:
-		// should never happen
-		panic(fmt.Sprintf("unknown classification: %s", classification))
-	}
-}
-
-func MustGetSqsClientFromEnv(logger *slog.Logger) *sqs.Client {
-	cfg, err := config.LoadDefaultConfig(context.TODO(),
-		config.WithRegion(awsRegion),
-		config.WithRetryer(func() aws.Retryer {
-			return retry.AddWithMaxAttempts(retry.NewStandard(), 10)
-		}),
-		config.WithLogger(newSlogLogger(logger)),
-	)
-	if err != nil {
-		panic(fmt.Errorf("unable to load SDK config, %v", err))
-	}
-	return sqs.NewFromConfig(cfg)
 }
 
 func MustGetNatsConnFromEnv(ctx context.Context) *nats.Conn {
@@ -145,6 +99,16 @@ func MustGetFileStore(root string, subdir string) *filestore.Store {
 
 func MustGetCookieDomainFromEnv() string {
 	return getRequiredEnv("COOKIE_DOMAIN")
+}
+
+func MustGetCookieSecureFromEnv() bool {
+	value := getRequiredEnv("COOKIE_SECURE")
+	secure, err := strconv.ParseBool(value)
+	if err != nil {
+		slog.Error("COOKIE_SECURE must be true or false", "value", value)
+		os.Exit(1)
+	}
+	return secure
 }
 
 func MustGetPgxPoolFromEnv() *pgxpool.Pool {
@@ -236,51 +200,7 @@ func getPgMigrationURLFromEnv() string {
 }
 
 func getPostgresPasswordFromEnv() string {
-	pw := os.Getenv("POSTGRES_PW")
-	if pw == "" {
-		secretName := getRequiredEnv("POSTGRES_PW_SECRET_NAME")
-		secretValue, err := getSecretFromAWS(secretName)
-		if err != nil {
-			slog.Error("failed to get postgres password from AWS", "error", err)
-			os.Exit(1)
-		}
-
-		var secret struct {
-			Password string `json:"password"`
-		}
-		if err := json.Unmarshal([]byte(secretValue), &secret); err != nil {
-			slog.Error("failed to parse postgres password secret", "error", err)
-			os.Exit(1)
-		}
-		pw = secret.Password
-	}
-
-	return pw
-}
-
-func getSecretFromAWS(secretName string) (string, error) {
-	cfg, err := config.LoadDefaultConfig(context.TODO())
-	if err != nil {
-		return "", err
-	}
-
-	svc := secretsmanager.NewFromConfig(cfg, func(opts *secretsmanager.Options) {
-		opts.Region = awsRegion
-	})
-
-	input := &secretsmanager.GetSecretValueInput{
-		SecretId: aws.String(secretName),
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	result, err := svc.GetSecretValue(ctx, input)
-	if err != nil {
-		return "", err
-	}
-
-	return *result.SecretString, nil
+	return getRequiredEnv("POSTGRES_PW")
 }
 
 func getRequiredEnv(name string) string {

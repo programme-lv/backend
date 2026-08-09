@@ -10,6 +10,7 @@ type UserHttpHandler struct {
 	userSrvc     user.UserService
 	jwtKey       []byte
 	cookieDomain string
+	cookieSecure bool
 }
 
 // NewUserHttpHandler creates a new UserHttpHandler with the given user service and JWT key.
@@ -19,6 +20,7 @@ func NewUserHttpHandler(userSrvc user.UserService, jwtKey []byte, options ...fun
 		userSrvc:     userSrvc,
 		jwtKey:       jwtKey,
 		cookieDomain: "",
+		cookieSecure: false,
 	}
 
 	// Apply any provided options
@@ -33,6 +35,12 @@ func NewUserHttpHandler(userSrvc user.UserService, jwtKey []byte, options ...fun
 func WithCookieDomain(domain string) func(*UserHttpHandler) {
 	return func(h *UserHttpHandler) {
 		h.cookieDomain = domain
+	}
+}
+
+func WithSecureCookie(secure bool) func(*UserHttpHandler) {
+	return func(h *UserHttpHandler) {
+		h.cookieSecure = secure
 	}
 }
 

@@ -48,10 +48,10 @@ func (httpserver *UserHttpHandler) Login(w http.ResponseWriter, r *http.Request)
 		Value:    token,
 		Expires:  expirationTime,
 		HttpOnly: true,
-		Path:     "",
+		Path:     "/",
 		Domain:   httpserver.cookieDomain,
-		SameSite: http.SameSiteDefaultMode,
-		Secure:   r.TLS != nil, // Set Secure flag if using HTTPS
+		SameSite: http.SameSiteLaxMode,
+		Secure:   httpserver.cookieSecure,
 	}
 	http.SetCookie(w, &cookie)
 

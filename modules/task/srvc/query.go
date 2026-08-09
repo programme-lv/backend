@@ -9,6 +9,8 @@ import (
 	"github.com/programme-lv/backend/common/srvcerror"
 )
 
+const testfileDownloadURLValidity = time.Hour
+
 func (ts *taskSrvc) SearchTasksByName(ctx context.Context, name string) ([]string, srvcerror.E) {
 	taskIds, err := ts.repo.SearchTasksByName(ctx, name)
 	if err != nil {
@@ -125,7 +127,7 @@ func (ts *taskSrvc) GetTestDownlUrl(ctx context.Context, testFileSha256 string) 
 		ts.apiPublicBaseURL,
 		testFileSha256,
 		ts.testfileDownloadSigningKey,
-		time.Now().Add(24*time.Hour),
+		time.Now().Add(testfileDownloadURLValidity),
 	), nil
 }
 
