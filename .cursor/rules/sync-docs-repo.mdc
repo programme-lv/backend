@@ -1,0 +1,26 @@
+---
+description: Separate project-wide documentation from backend implementation documentation
+alwaysApply: true
+---
+
+# Documentation ownership
+
+Use the sibling `programme-lv/docs` repository at `../docs` for project-wide and operational truth:
+
+- Cross-repository architecture, API contracts, and decisions.
+- Deployment state, production configuration, security posture, blockers, and roadmaps.
+- User status dumps, recorded concisely in `../docs/journal/YYYY-MM-DD.md`.
+- Notable project outcomes, summarized newest-first in `../docs/CHANGELOG.md`.
+
+Use this repository's `docs/` directory for knowledge needed to modify the backend:
+
+- Internal architecture and module responsibilities.
+- Backend-specific implementation of shared contracts.
+- Non-obvious invariants, compatibility constraints, failure modes, and verification steps.
+
+Do not put journals or global project status in backend docs.
+Do not duplicate PR history or behavior obvious from code.
+When a change affects both scopes, update each at its own level and link documents when useful.
+Never include chat transcripts, command output, or secret values.
+Reconcile stale durable documentation instead of appending contradictory dated sections.
+Follow the docs repository's own rules when editing it.
