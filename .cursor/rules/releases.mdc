@@ -1,0 +1,33 @@
+---
+description: SemVer git tags drive Docker image publishes; pin production deploys to release tags
+alwaysApply: true
+---
+
+# Container releases
+
+Docker images are published **only** when an annotated SemVer git tag matching `v*` is pushed.
+Merges to `main` do not build or push images.
+
+## Versioning
+
+- Independent SemVer for this repo: `vMAJOR.MINOR.PATCH` (start production baseline at `v1.0.0`).
+- `PATCH`: fixes, security, internal changes with no deploy/API/config break.
+- `MINOR`: backward-compatible features.
+- `MAJOR`: incompatible API, config, migration, or deployment changes.
+- Never move or overwrite a release tag.
+- Do not reuse pre-`v1` historical tags for current `main`.
+
+## Publish flow
+
+1. Merge the release commit to `main` via PR (ruleset `pr-only main`).
+2. Create an annotated tag on that commit, e.g. `git tag -a v1.2.0 -m "v1.2.0" && git push origin v1.2.0`.
+3. Workflow `.github/workflows/publish-ghcr.yml` builds and pushes to `ghcr.io/programme-lv/backend` with tags: the SemVer ref, short SHA, and mutable `latest`.
+
+## Deploy
+
+- Pin production Compose to the SemVer tag, e.g. `ghcr.io/programme-lv/backend:v1.2.0`.
+- Never deploy `:latest` in production.
+- `docker compose restart` does not pull new images. Use `docker compose pull && docker compose up -d`.
+- Roll back by restoring the previous Compose image tag and pulling/up again.
+
+Project-wide release policy also lives in `../docs/github/container-releases.md`.
