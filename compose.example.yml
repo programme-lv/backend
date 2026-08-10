@@ -2,7 +2,7 @@
 # Replace placeholder values before deploying.
 services:
   backend:
-    # image: ghcr.io/programme-lv/backend:latest
+    # image: ghcr.io/programme-lv/backend:v1.0.0
     # To build this repo locally instead of pulling from GHCR, comment out
     # image above and uncomment:
     build:
