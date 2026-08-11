@@ -51,14 +51,21 @@ func (s *userSrvc) RequestPasswordReset(ctx context.Context, login string) srvce
 	}
 
 	if s.emailCfg.WebsiteBaseURL == "" {
-		l.Error("skip password reset email: WEBSITE_PUBLIC_BASE_URL is empty")
-		return nil
+		l.Error("password reset email blocked: WEBSITE_PUBLIC_BASE_URL is empty")
+		return newErrEmailSendFailed()
 	}
 
 	rawToken, tokenHash, genErr := generateEmailToken()
 	if genErr != nil {
 		l.Error("generate password reset token", "error", genErr)
-		return nil
+		return newErrEmailSendFailed()
+	}
+
+	expiresAt := time.Now().Add(s.emailCfg.ResetTokenTTL)
+	tokenUUID, insertErr := insertEmailToken(ctx, s.postgres, user.UUID, purposePasswordReset, tokenHash, expiresAt)
+	if insertErr != nil {
+		l.Error("store password reset token", "error", insertErr)
+		return newErrEmailSendFailed()
 	}
 
 	actionURL := s.websiteURL("/reset-password", rawToken)
@@ -69,7 +76,8 @@ func (s *userSrvc) RequestPasswordReset(ctx context.Context, login string) srvce
 	})
 	if renderErr != nil {
 		l.Error("render password reset email", "error", renderErr)
-		return nil
+		s.rollbackEmailToken(ctx, tokenUUID, "render password reset email")
+		return newErrEmailSendFailed()
 	}
 
 	if sendErr := s.mailer.Send(ctx, mail.Message{
@@ -79,12 +87,12 @@ func (s *userSrvc) RequestPasswordReset(ctx context.Context, login string) srvce
 		HTMLBody: rendered.HTMLBody,
 	}); sendErr != nil {
 		l.Error("send password reset email", "error", sendErr)
-		return nil
+		s.rollbackEmailToken(ctx, tokenUUID, "send password reset email")
+		return mapMailSendErr(sendErr)
 	}
 
-	expiresAt := time.Now().Add(s.emailCfg.ResetTokenTTL)
-	if insertErr := insertEmailToken(ctx, s.postgres, user.UUID, purposePasswordReset, tokenHash, expiresAt); insertErr != nil {
-		l.Error("store password reset token", "error", insertErr)
+	if markErr := markEmailTokenSent(ctx, s.postgres, tokenUUID); markErr != nil {
+		l.Error("mark password reset token sent", "error", markErr)
 	}
 
 	return nil
@@ -180,7 +188,7 @@ func (s *userSrvc) RequestEmailVerification(ctx context.Context, userUUID uuid.U
 
 	if sendErr := s.sendEmailVerification(ctx, user); sendErr != nil {
 		l.Error("send email verification", "error", sendErr)
-		return newErrInternalSE()
+		return mapMailSendErr(sendErr)
 	}
 	return nil
 }
@@ -245,13 +253,18 @@ func (s *userSrvc) sendEmailVerification(ctx context.Context, user dbUser) error
 	l := ctxlog.FromContext(ctx).With("cmd", "send email verification")
 
 	if s.emailCfg.WebsiteBaseURL == "" {
-		l.Info("skip email verification: WEBSITE_PUBLIC_BASE_URL is empty")
-		return nil
+		return fmt.Errorf("website base url empty")
 	}
 
 	rawToken, tokenHash, genErr := generateEmailToken()
 	if genErr != nil {
 		return genErr
+	}
+
+	expiresAt := time.Now().Add(s.emailCfg.VerifyTokenTTL)
+	tokenUUID, insertErr := insertEmailToken(ctx, s.postgres, user.UUID, purposeEmailVerify, tokenHash, expiresAt)
+	if insertErr != nil {
+		return insertErr
 	}
 
 	actionURL := s.websiteURL("/verify-email", rawToken)
@@ -261,6 +274,7 @@ func (s *userSrvc) sendEmailVerification(ctx context.Context, user dbUser) error
 		ExpiryNote: fmt.Sprintf("Saite derīga %s.", formatTTL(s.emailCfg.VerifyTokenTTL)),
 	})
 	if renderErr != nil {
+		s.rollbackEmailToken(ctx, tokenUUID, "render email verification")
 		return renderErr
 	}
 
@@ -271,14 +285,30 @@ func (s *userSrvc) sendEmailVerification(ctx context.Context, user dbUser) error
 		HTMLBody: rendered.HTMLBody,
 	}); sendErr != nil {
 		l.Error("smtp send email verification", "error", sendErr)
+		s.rollbackEmailToken(ctx, tokenUUID, "send email verification")
 		return sendErr
 	}
-
-	expiresAt := time.Now().Add(s.emailCfg.VerifyTokenTTL)
-	if insertErr := insertEmailToken(ctx, s.postgres, user.UUID, purposeEmailVerify, tokenHash, expiresAt); insertErr != nil {
-		return insertErr
+	if markErr := markEmailTokenSent(ctx, s.postgres, tokenUUID); markErr != nil {
+		l.Error("mark email verification token sent", "error", markErr)
 	}
 	return nil
+}
+
+func (s *userSrvc) rollbackEmailToken(ctx context.Context, tokenUUID uuid.UUID, reason string) {
+	l := ctxlog.FromContext(ctx).With("cmd", "rollback email token", "reason", reason)
+	if err := deleteEmailToken(ctx, s.postgres, tokenUUID); err != nil {
+		l.Error("delete email token after send failure", "error", err)
+		if invErr := invalidateEmailToken(ctx, s.postgres, tokenUUID); invErr != nil {
+			l.Error("invalidate email token after delete failure", "error", invErr)
+		}
+	}
+}
+
+func mapMailSendErr(err error) srvcerror.E {
+	if errors.Is(err, mail.ErrRateLimited) {
+		return newErrEmailSendTooFrequent()
+	}
+	return newErrEmailSendFailed()
 }
 
 func (s *userSrvc) websiteURL(path, token string) string {
@@ -293,21 +323,23 @@ func (s *userSrvc) websiteURL(path, token string) string {
 }
 
 func (s *userSrvc) isWithinCooldown(ctx context.Context, userUUID uuid.UUID, purpose string) (bool, error) {
-	var createdAt time.Time
+	var sentAt time.Time
 	err := s.postgres.QueryRow(ctx, `
-		SELECT created_at
+		SELECT sent_at
 		FROM user_email_tokens
-		WHERE user_uuid = $1 AND purpose = $2
-		ORDER BY created_at DESC
+		WHERE user_uuid = $1
+		  AND purpose = $2
+		  AND sent_at IS NOT NULL
+		ORDER BY sent_at DESC
 		LIMIT 1
-	`, userUUID, purpose).Scan(&createdAt)
+	`, userUUID, purpose).Scan(&sentAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return false, nil
 	}
 	if err != nil {
 		return false, err
 	}
-	return time.Since(createdAt) < s.emailCfg.PerUserCooldown, nil
+	return time.Since(sentAt) < s.emailCfg.PerUserCooldown, nil
 }
 
 type emailTokenRow struct {
@@ -340,11 +372,36 @@ func insertEmailToken(
 	purpose string,
 	tokenHash string,
 	expiresAt time.Time,
-) error {
+) (uuid.UUID, error) {
+	id := uuid.New()
 	_, err := pg.Exec(ctx, `
 		INSERT INTO user_email_tokens (uuid, user_uuid, purpose, token_hash, expires_at)
 		VALUES ($1, $2, $3, $4, $5)
-	`, uuid.New(), userUUID, purpose, tokenHash, expiresAt)
+	`, id, userUUID, purpose, tokenHash, expiresAt)
+	return id, err
+}
+
+func deleteEmailToken(ctx context.Context, pg *pgxpool.Pool, tokenUUID uuid.UUID) error {
+	_, err := pg.Exec(ctx, `DELETE FROM user_email_tokens WHERE uuid = $1`, tokenUUID)
+	return err
+}
+
+func markEmailTokenSent(ctx context.Context, pg *pgxpool.Pool, tokenUUID uuid.UUID) error {
+	_, err := pg.Exec(ctx, `
+		UPDATE user_email_tokens
+		SET sent_at = NOW()
+		WHERE uuid = $1 AND sent_at IS NULL
+	`, tokenUUID)
+	return err
+}
+
+func invalidateEmailToken(ctx context.Context, pg *pgxpool.Pool, tokenUUID uuid.UUID) error {
+	_, err := pg.Exec(ctx, `
+		UPDATE user_email_tokens
+		SET used_at = COALESCE(used_at, NOW()),
+		    expires_at = LEAST(expires_at, NOW())
+		WHERE uuid = $1
+	`, tokenUUID)
 	return err
 }
 

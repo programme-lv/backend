@@ -2,7 +2,7 @@ package mail
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"log/slog"
 	"sync"
 	"time"
@@ -15,6 +15,11 @@ type Message struct {
 	TextBody string
 	HTMLBody string
 }
+
+var (
+	ErrRateLimited = errors.New("email rate limited")
+	ErrDisabled    = errors.New("smtp disabled")
+)
 
 // Mailer sends transactional email.
 type Mailer interface {
@@ -32,7 +37,12 @@ func (noopMailer) Send(ctx context.Context, msg Message) error {
 		"to", msg.To,
 		"subject", msg.Subject,
 	)
-	return nil
+	return ErrDisabled
+}
+
+type sendSlot struct {
+	id uint64
+	at time.Time
 }
 
 // RateLimitedMailer wraps a Mailer with a process-local rolling hourly send cap.
@@ -41,7 +51,8 @@ type RateLimitedMailer struct {
 	inner Mailer
 	limit int
 	mu    sync.Mutex
-	sent  []time.Time
+	sent  []sendSlot
+	seq   uint64
 }
 
 func NewRateLimitedMailer(inner Mailer, hourlyLimit int) *RateLimitedMailer {
@@ -57,32 +68,35 @@ func (m *RateLimitedMailer) Send(ctx context.Context, msg Message) error {
 
 	m.mu.Lock()
 	kept := m.sent[:0]
-	for _, t := range m.sent {
-		if t.After(cutoff) {
-			kept = append(kept, t)
+	for _, slot := range m.sent {
+		if slot.at.After(cutoff) {
+			kept = append(kept, slot)
 		}
 	}
 	m.sent = kept
-	atLimit := len(m.sent) >= m.limit
-	m.mu.Unlock()
-
-	if atLimit {
-		return fmt.Errorf("global email hourly limit reached (%d)", m.limit)
+	if len(m.sent) >= m.limit {
+		m.mu.Unlock()
+		return ErrRateLimited
 	}
+	m.seq++
+	id := m.seq
+	m.sent = append(m.sent, sendSlot{id: id, at: now})
+	m.mu.Unlock()
 
 	if err := m.inner.Send(ctx, msg); err != nil {
+		m.releaseReservation(id)
 		return err
 	}
+	return nil
+}
 
+func (m *RateLimitedMailer) releaseReservation(id uint64) {
 	m.mu.Lock()
-	cutoff = time.Now().Add(-time.Hour)
-	kept = m.sent[:0]
-	for _, t := range m.sent {
-		if t.After(cutoff) {
-			kept = append(kept, t)
+	defer m.mu.Unlock()
+	for i, slot := range m.sent {
+		if slot.id == id {
+			m.sent = append(m.sent[:i], m.sent[i+1:]...)
+			return
 		}
 	}
-	m.sent = append(kept, time.Now())
-	m.mu.Unlock()
-	return nil
 }
