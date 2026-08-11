@@ -248,7 +248,6 @@ func MustGetEmailConfigFromEnv() EmailConfig {
 		Password:          os.Getenv("SMTP_PASSWORD"),
 		From:              os.Getenv("SMTP_FROM"),
 		FromName:          os.Getenv("SMTP_FROM_NAME"),
-		WebsiteBaseURL:    strings.TrimRight(getRequiredEnv("WEBSITE_PUBLIC_BASE_URL"), "/"),
 		ResetTokenTTL:     durationFromEnv("EMAIL_RESET_TOKEN_TTL", time.Hour),
 		VerifyTokenTTL:    durationFromEnv("EMAIL_VERIFY_TOKEN_TTL", 24*time.Hour),
 		PerUserCooldown:   durationFromEnv("EMAIL_PER_USER_COOLDOWN", 5*time.Minute),
@@ -266,14 +265,15 @@ func MustGetEmailConfigFromEnv() EmailConfig {
 	}
 	cfg.Port = port
 
+	if !enabled {
+		return cfg
+	}
+
+	cfg.WebsiteBaseURL = strings.TrimRight(getRequiredEnv("WEBSITE_PUBLIC_BASE_URL"), "/")
 	parsed, err := url.Parse(cfg.WebsiteBaseURL)
 	if err != nil || parsed.Scheme == "" || parsed.Host == "" {
 		slog.Error("WEBSITE_PUBLIC_BASE_URL is invalid", "value", cfg.WebsiteBaseURL, "error", err)
 		os.Exit(1)
-	}
-
-	if !enabled {
-		return cfg
 	}
 
 	if cfg.Host == "" {

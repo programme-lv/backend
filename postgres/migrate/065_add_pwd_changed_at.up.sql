@@ -1,0 +1,2 @@
+ALTER TABLE users
+    ADD COLUMN IF NOT EXISTS pwd_changed_at TIMESTAMPTZ;

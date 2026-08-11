@@ -37,6 +37,7 @@ func newHTTPServer(
 	jwtKey []byte,
 	adminAPIKey []byte,
 	cookieSecure bool,
+	pwdChangedChecker auth.PasswordChangedChecker,
 ) *httpServer {
 	router := chi.NewRouter()
 
@@ -54,7 +55,10 @@ func newHTTPServer(
 		MaxAge:           3000,
 	}))
 
-	router.Use(auth.HttpJwtAuthentication(jwtKey, cookieSecure))
+	router.Use(auth.HttpJwtAuthenticationWithOptions(jwtKey, auth.JwtAuthOptions{
+		CookieSecure:      cookieSecure,
+		PwdChangedChecker: pwdChangedChecker,
+	}))
 
 	server := &httpServer{
 		submHTTPHandler:  submHTTPHandler,

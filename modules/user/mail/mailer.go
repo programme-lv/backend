@@ -67,8 +67,15 @@ func (m *RateLimitedMailer) Send(ctx context.Context, msg Message) error {
 		m.mu.Unlock()
 		return fmt.Errorf("global email hourly limit reached (%d)", m.limit)
 	}
+	m.mu.Unlock()
+
+	if err := m.inner.Send(ctx, msg); err != nil {
+		return err
+	}
+
+	m.mu.Lock()
 	m.sent = append(m.sent, now)
 	m.mu.Unlock()
 
-	return m.inner.Send(ctx, msg)
+	return nil
 }

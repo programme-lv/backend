@@ -56,12 +56,6 @@ func (s *userSrvc) RequestPasswordReset(ctx context.Context, login string) srvce
 		return nil
 	}
 
-	expiresAt := time.Now().Add(s.emailCfg.ResetTokenTTL)
-	if insertErr := insertEmailToken(ctx, s.postgres, user.UUID, purposePasswordReset, tokenHash, expiresAt); insertErr != nil {
-		l.Error("store password reset token", "error", insertErr)
-		return nil
-	}
-
 	actionURL := s.websiteURL("/reset-password", rawToken)
 	rendered, renderErr := mail.RenderPasswordReset(mail.TemplateData{
 		Username:   user.Username,
@@ -80,6 +74,13 @@ func (s *userSrvc) RequestPasswordReset(ctx context.Context, login string) srvce
 		HTMLBody: rendered.HTMLBody,
 	}); sendErr != nil {
 		l.Error("send password reset email", "error", sendErr)
+		return nil
+	}
+
+	expiresAt := time.Now().Add(s.emailCfg.ResetTokenTTL)
+	if insertErr := insertEmailToken(ctx, s.postgres, user.UUID, purposePasswordReset, tokenHash, expiresAt); insertErr != nil {
+		l.Error("store password reset token", "error", insertErr)
+		return nil
 	}
 
 	return nil
@@ -90,15 +91,6 @@ func (s *userSrvc) ConfirmPasswordReset(ctx context.Context, token string, newPa
 
 	if validateErr := validatePassword(newPassword); validateErr != nil {
 		return validateErr
-	}
-
-	row, err := loadValidEmailToken(ctx, s.postgres, purposePasswordReset, hashEmailToken(token))
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return newErrEmailTokenInvalid()
-		}
-		l.Error("load password reset token", "error", err)
-		return newErrInternalSE()
 	}
 
 	bcryptPwd, bcryptErr := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
@@ -114,17 +106,31 @@ func (s *userSrvc) ConfirmPasswordReset(ctx context.Context, token string, newPa
 	}
 	defer tx.Rollback(ctx)
 
-	if _, updErr := tx.Exec(ctx, `
-		UPDATE users SET bcrypt_pwd = $1 WHERE uuid = $2
-	`, string(bcryptPwd), row.UserUUID); updErr != nil {
-		l.Error("update password", "error", updErr)
+	tokenHash := hashEmailToken(token)
+	row, err := loadValidEmailTokenTx(ctx, tx, purposePasswordReset, tokenHash)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return newErrEmailTokenInvalid()
+		}
+		l.Error("load password reset token", "error", err)
 		return newErrInternalSE()
 	}
 
-	if _, markErr := tx.Exec(ctx, `
+	markRes, markErr := tx.Exec(ctx, `
 		UPDATE user_email_tokens SET used_at = NOW() WHERE uuid = $1 AND used_at IS NULL
-	`, row.UUID); markErr != nil {
+	`, row.UUID)
+	if markErr != nil {
 		l.Error("mark password reset token used", "error", markErr)
+		return newErrInternalSE()
+	}
+	if markRes.RowsAffected() == 0 {
+		return newErrEmailTokenInvalid()
+	}
+
+	if _, updErr := tx.Exec(ctx, `
+		UPDATE users SET bcrypt_pwd = $1, pwd_changed_at = NOW() WHERE uuid = $2
+	`, string(bcryptPwd), row.UserUUID); updErr != nil {
+		l.Error("update password", "error", updErr)
 		return newErrInternalSE()
 	}
 
@@ -232,11 +238,6 @@ func (s *userSrvc) sendEmailVerification(ctx context.Context, user dbUser) error
 		return genErr
 	}
 
-	expiresAt := time.Now().Add(s.emailCfg.VerifyTokenTTL)
-	if insertErr := insertEmailToken(ctx, s.postgres, user.UUID, purposeEmailVerify, tokenHash, expiresAt); insertErr != nil {
-		return insertErr
-	}
-
 	actionURL := s.websiteURL("/verify-email", rawToken)
 	rendered, renderErr := mail.RenderEmailVerify(mail.TemplateData{
 		Username:   user.Username,
@@ -256,6 +257,12 @@ func (s *userSrvc) sendEmailVerification(ctx context.Context, user dbUser) error
 		l.Error("smtp send email verification", "error", sendErr)
 		return sendErr
 	}
+
+	expiresAt := time.Now().Add(s.emailCfg.VerifyTokenTTL)
+	if insertErr := insertEmailToken(ctx, s.postgres, user.UUID, purposeEmailVerify, tokenHash, expiresAt); insertErr != nil {
+		return insertErr
+	}
+
 	return nil
 }
 
@@ -302,6 +309,24 @@ func loadValidEmailToken(ctx context.Context, pg *pgxpool.Pool, purpose, tokenHa
 		  AND purpose = $2
 		  AND used_at IS NULL
 		  AND expires_at > NOW()
+	`, tokenHash, purpose).Scan(&row.UUID, &row.UserUUID)
+	return row, err
+}
+
+type pgxQuerier interface {
+	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
+}
+
+func loadValidEmailTokenTx(ctx context.Context, q pgxQuerier, purpose, tokenHash string) (emailTokenRow, error) {
+	var row emailTokenRow
+	err := q.QueryRow(ctx, `
+		SELECT uuid, user_uuid
+		FROM user_email_tokens
+		WHERE token_hash = $1
+		  AND purpose = $2
+		  AND used_at IS NULL
+		  AND expires_at > NOW()
+		FOR UPDATE
 	`, tokenHash, purpose).Scan(&row.UUID, &row.UserUUID)
 	return row, err
 }
