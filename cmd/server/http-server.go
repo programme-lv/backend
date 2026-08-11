@@ -13,7 +13,7 @@ type httpRouteRegistrar interface {
 }
 
 type authenticatedHTTPRouteRegistrar interface {
-	RegisterRoutes(r *chi.Mux, jwtKey, adminAPIKey []byte, cookieSecure bool)
+	RegisterRoutes(r *chi.Mux, jwtKey, adminAPIKey []byte, cookieSecure bool, pwdChangedAt auth.PasswordChangedAtLookup)
 }
 
 type httpServer struct {
@@ -26,6 +26,7 @@ type httpServer struct {
 	jwtKey           []byte
 	adminAPIKey      []byte
 	cookieSecure     bool
+	pwdChangedAt     auth.PasswordChangedAtLookup
 }
 
 func newHTTPServer(
@@ -37,6 +38,7 @@ func newHTTPServer(
 	jwtKey []byte,
 	adminAPIKey []byte,
 	cookieSecure bool,
+	pwdChangedAt auth.PasswordChangedAtLookup,
 ) *httpServer {
 	router := chi.NewRouter()
 
@@ -54,7 +56,11 @@ func newHTTPServer(
 		MaxAge:           3000,
 	}))
 
-	router.Use(auth.HttpJwtAuthentication(jwtKey, cookieSecure))
+	router.Use(auth.HttpJwtAuthentication(
+		jwtKey,
+		auth.WithSecureCookie(cookieSecure),
+		auth.WithPasswordChangedAtLookup(pwdChangedAt),
+	))
 
 	server := &httpServer{
 		submHTTPHandler:  submHTTPHandler,
@@ -66,6 +72,7 @@ func newHTTPServer(
 		jwtKey:           jwtKey,
 		adminAPIKey:      adminAPIKey,
 		cookieSecure:     cookieSecure,
+		pwdChangedAt:     pwdChangedAt,
 	}
 
 	server.routes()
@@ -78,8 +85,8 @@ func (s *httpServer) start(address string) error {
 }
 
 func (s *httpServer) routes() {
-	s.submHTTPHandler.RegisterRoutes(s.router, s.jwtKey, s.adminAPIKey, s.cookieSecure)
-	s.taskHTTPHandler.RegisterRoutes(s.router, s.jwtKey, s.adminAPIKey, s.cookieSecure)
+	s.submHTTPHandler.RegisterRoutes(s.router, s.jwtKey, s.adminAPIKey, s.cookieSecure, s.pwdChangedAt)
+	s.taskHTTPHandler.RegisterRoutes(s.router, s.jwtKey, s.adminAPIKey, s.cookieSecure, s.pwdChangedAt)
 	s.userHTTPHandler.RegisterRoutes(s.router)
 	s.execHTTPHandler.RegisterRoutes(s.router)
 	s.plangHTTPHandler.RegisterRoutes(s.router)

@@ -35,6 +35,7 @@ type UserService interface {
 	ConfirmPasswordReset(ctx context.Context, token string, newPassword string) srvcerror.E
 	RequestEmailVerification(ctx context.Context, userUUID uuid.UUID) srvcerror.E
 	ConfirmEmailVerification(ctx context.Context, token string) srvcerror.E
+	PasswordChangedAt(ctx context.Context, userUUID uuid.UUID) (time.Time, error)
 }
 
 func NewUserService(pg *pgxpool.Pool, mailer mail.Mailer, emailCfg EmailFlowConfig) *userSrvc {
@@ -157,4 +158,12 @@ func (s *userSrvc) GetUsernames(ctx context.Context,
 	}
 
 	return usernames, nil
+}
+
+func (s *userSrvc) PasswordChangedAt(ctx context.Context, userUUID uuid.UUID) (time.Time, error) {
+	var changedAt time.Time
+	err := s.postgres.QueryRow(ctx, `
+		SELECT pwd_changed_at FROM users WHERE uuid = $1
+	`, userUUID).Scan(&changedAt)
+	return changedAt, err
 }
