@@ -91,6 +91,10 @@ func (s *userSrvc) RequestPasswordReset(ctx context.Context, login string) srvce
 		return mapMailSendErr(sendErr)
 	}
 
+	if markErr := markEmailTokenSent(ctx, s.postgres, tokenUUID); markErr != nil {
+		l.Error("mark password reset token sent", "error", markErr)
+	}
+
 	return nil
 }
 
@@ -284,6 +288,9 @@ func (s *userSrvc) sendEmailVerification(ctx context.Context, user dbUser) error
 		s.rollbackEmailToken(ctx, tokenUUID, "send email verification")
 		return sendErr
 	}
+	if markErr := markEmailTokenSent(ctx, s.postgres, tokenUUID); markErr != nil {
+		l.Error("mark email verification token sent", "error", markErr)
+	}
 	return nil
 }
 
@@ -316,24 +323,23 @@ func (s *userSrvc) websiteURL(path, token string) string {
 }
 
 func (s *userSrvc) isWithinCooldown(ctx context.Context, userUUID uuid.UUID, purpose string) (bool, error) {
-	var createdAt time.Time
+	var sentAt time.Time
 	err := s.postgres.QueryRow(ctx, `
-		SELECT created_at
+		SELECT sent_at
 		FROM user_email_tokens
 		WHERE user_uuid = $1
 		  AND purpose = $2
-		  AND used_at IS NULL
-		  AND expires_at > NOW()
-		ORDER BY created_at DESC
+		  AND sent_at IS NOT NULL
+		ORDER BY sent_at DESC
 		LIMIT 1
-	`, userUUID, purpose).Scan(&createdAt)
+	`, userUUID, purpose).Scan(&sentAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return false, nil
 	}
 	if err != nil {
 		return false, err
 	}
-	return time.Since(createdAt) < s.emailCfg.PerUserCooldown, nil
+	return time.Since(sentAt) < s.emailCfg.PerUserCooldown, nil
 }
 
 type emailTokenRow struct {
@@ -377,6 +383,15 @@ func insertEmailToken(
 
 func deleteEmailToken(ctx context.Context, pg *pgxpool.Pool, tokenUUID uuid.UUID) error {
 	_, err := pg.Exec(ctx, `DELETE FROM user_email_tokens WHERE uuid = $1`, tokenUUID)
+	return err
+}
+
+func markEmailTokenSent(ctx context.Context, pg *pgxpool.Pool, tokenUUID uuid.UUID) error {
+	_, err := pg.Exec(ctx, `
+		UPDATE user_email_tokens
+		SET sent_at = NOW()
+		WHERE uuid = $1 AND sent_at IS NULL
+	`, tokenUUID)
 	return err
 }
 

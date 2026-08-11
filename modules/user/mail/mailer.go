@@ -40,13 +40,19 @@ func (noopMailer) Send(ctx context.Context, msg Message) error {
 	return ErrDisabled
 }
 
+type sendSlot struct {
+	id uint64
+	at time.Time
+}
+
 // RateLimitedMailer wraps a Mailer with a process-local rolling hourly send cap.
 // Assumes a single backend instance.
 type RateLimitedMailer struct {
 	inner Mailer
 	limit int
 	mu    sync.Mutex
-	sent  []time.Time
+	sent  []sendSlot
+	seq   uint64
 }
 
 func NewRateLimitedMailer(inner Mailer, hourlyLimit int) *RateLimitedMailer {
@@ -62,9 +68,9 @@ func (m *RateLimitedMailer) Send(ctx context.Context, msg Message) error {
 
 	m.mu.Lock()
 	kept := m.sent[:0]
-	for _, t := range m.sent {
-		if t.After(cutoff) {
-			kept = append(kept, t)
+	for _, slot := range m.sent {
+		if slot.at.After(cutoff) {
+			kept = append(kept, slot)
 		}
 	}
 	m.sent = kept
@@ -72,22 +78,23 @@ func (m *RateLimitedMailer) Send(ctx context.Context, msg Message) error {
 		m.mu.Unlock()
 		return ErrRateLimited
 	}
-	m.sent = append(m.sent, now)
-	reservedAt := now
+	m.seq++
+	id := m.seq
+	m.sent = append(m.sent, sendSlot{id: id, at: now})
 	m.mu.Unlock()
 
 	if err := m.inner.Send(ctx, msg); err != nil {
-		m.releaseReservation(reservedAt)
+		m.releaseReservation(id)
 		return err
 	}
 	return nil
 }
 
-func (m *RateLimitedMailer) releaseReservation(reservedAt time.Time) {
+func (m *RateLimitedMailer) releaseReservation(id uint64) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	for i, t := range m.sent {
-		if t.Equal(reservedAt) {
+	for i, slot := range m.sent {
+		if slot.id == id {
 			m.sent = append(m.sent[:i], m.sent[i+1:]...)
 			return
 		}
