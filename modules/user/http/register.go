@@ -19,14 +19,6 @@ func (httpserver *UserHttpHandler) Register(w http.ResponseWriter, r *http.Reque
 		Password  string  `json:"password"`
 	}
 
-	type registerResponse struct {
-		UUID      string  `json:"uuid"`
-		Username  string  `json:"username"`
-		Email     string  `json:"email"`
-		Firstname *string `json:"firstname"`
-		Lastname  *string `json:"lastname"`
-	}
-
 	var request registerRequest
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
@@ -46,13 +38,5 @@ func (httpserver *UserHttpHandler) Register(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	response := registerResponse{
-		UUID:      user.UUID.String(),
-		Username:  user.Username,
-		Email:     user.Email,
-		Firstname: user.Firstname,
-		Lastname:  user.Lastname,
-	}
-
-	jsonresp.Success(w, response)
+	jsonresp.Success(w, toHTTPUser(user))
 }

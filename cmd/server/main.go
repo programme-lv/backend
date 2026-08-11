@@ -25,6 +25,7 @@ import (
 	tasksrvc "github.com/programme-lv/backend/modules/task/srvc"
 	usersrvc "github.com/programme-lv/backend/modules/user"
 	userhttp "github.com/programme-lv/backend/modules/user/http"
+	"github.com/programme-lv/backend/modules/user/mail"
 	"github.com/schollz/progressbar/v3"
 )
 
@@ -70,7 +71,25 @@ func main() {
 	}
 
 	// Initialize user service
-	userSrvc := usersrvc.NewUserService(pgPool)
+	emailCfg := conf.MustGetEmailConfigFromEnv()
+	var userMailer mail.Mailer = mail.NewNoopMailer()
+	if emailCfg.Enabled {
+		userMailer = mail.NewSMTPMailer(mail.SMTPConfig{
+			Host:     emailCfg.Host,
+			Port:     emailCfg.Port,
+			Username: emailCfg.Username,
+			Password: emailCfg.Password,
+			From:     emailCfg.From,
+			FromName: emailCfg.FromName,
+		})
+	}
+	userMailer = mail.NewRateLimitedMailer(userMailer, emailCfg.GlobalHourlyLimit)
+	userSrvc := usersrvc.NewUserService(pgPool, userMailer, usersrvc.EmailFlowConfig{
+		WebsiteBaseURL:  emailCfg.WebsiteBaseURL,
+		ResetTokenTTL:   emailCfg.ResetTokenTTL,
+		VerifyTokenTTL:  emailCfg.VerifyTokenTTL,
+		PerUserCooldown: emailCfg.PerUserCooldown,
+	})
 
 	// Initialize task service
 	taskRepo := repo.NewTaskPgRepo(pgPool)

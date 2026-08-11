@@ -77,13 +77,14 @@ func (s *userSrvc) CreateUser(ctx context.Context, p CreateUserParams) (res *Use
 	}
 
 	row := &dbUser{
-		UUID:      uuid.New(),
-		Firstname: firstname,
-		Lastname:  lastname,
-		Username:  p.Username,
-		Email:     p.Email,
-		BcryptPwd: string(bcryptPwd),
-		CreatedAt: time.Now(),
+		UUID:          uuid.New(),
+		Firstname:     firstname,
+		Lastname:      lastname,
+		Username:      p.Username,
+		Email:         p.Email,
+		BcryptPwd:     string(bcryptPwd),
+		CreatedAt:     time.Now(),
+		EmailVerified: false,
 	}
 
 	insertErr := insertUser(s.postgres, row)
@@ -101,12 +102,17 @@ func (s *userSrvc) CreateUser(ctx context.Context, p CreateUserParams) (res *Use
 		return nil, newErrInternalSE()
 	}
 
+	if sendErr := s.sendEmailVerification(ctx, *row); sendErr != nil {
+		l.Error("send registration verification email", "error", sendErr)
+	}
+
 	res = &User{
-		UUID:      row.UUID,
-		Username:  row.Username,
-		Email:     row.Email,
-		Firstname: &row.Firstname,
-		Lastname:  &row.Lastname,
+		UUID:          row.UUID,
+		Username:      row.Username,
+		Email:         row.Email,
+		Firstname:     &row.Firstname,
+		Lastname:      &row.Lastname,
+		EmailVerified: row.EmailVerified,
 	}
 
 	return res, nil
@@ -127,18 +133,19 @@ func checkUserConflicts(
 }
 
 type dbUser struct {
-	UUID      uuid.UUID
-	Firstname string
-	Lastname  string
-	Username  string
-	Email     string
-	BcryptPwd string
-	CreatedAt time.Time
+	UUID          uuid.UUID
+	Firstname     string
+	Lastname      string
+	Username      string
+	Email         string
+	BcryptPwd     string
+	CreatedAt     time.Time
+	EmailVerified bool
 }
 
 func selectAllUsers(pg *pgxpool.Pool) ([]dbUser, error) {
 	rows, err := pg.Query(context.Background(), `
-		SELECT uuid, firstname, lastname, username, email, bcrypt_pwd, created_at
+		SELECT uuid, firstname, lastname, username, email, bcrypt_pwd, created_at, email_verified
 		FROM users
 	`)
 	if err != nil {
@@ -157,6 +164,7 @@ func selectAllUsers(pg *pgxpool.Pool) ([]dbUser, error) {
 			&user.Email,
 			&user.BcryptPwd,
 			&user.CreatedAt,
+			&user.EmailVerified,
 		)
 		if err != nil {
 			return nil, err
@@ -173,8 +181,8 @@ func selectAllUsers(pg *pgxpool.Pool) ([]dbUser, error) {
 
 func insertUser(pg *pgxpool.Pool, user *dbUser) error {
 	_, err := pg.Exec(context.Background(), `
-		INSERT INTO users (uuid, firstname, lastname, username, email, bcrypt_pwd, created_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		INSERT INTO users (uuid, firstname, lastname, username, email, bcrypt_pwd, created_at, email_verified)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 	`,
 		user.UUID,
 		user.Firstname,
@@ -183,6 +191,7 @@ func insertUser(pg *pgxpool.Pool, user *dbUser) error {
 		user.Email,
 		user.BcryptPwd,
 		user.CreatedAt,
+		user.EmailVerified,
 	)
 	return err
 }

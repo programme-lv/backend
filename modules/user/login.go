@@ -28,18 +28,19 @@ func (s *userSrvc) Login(ctx context.Context, username string, password string) 
 	}
 
 	return &User{
-		UUID:      user.UUID,
-		Username:  user.Username,
-		Email:     user.Email,
-		Firstname: &user.Firstname,
-		Lastname:  &user.Lastname,
+		UUID:          user.UUID,
+		Username:      user.Username,
+		Email:         user.Email,
+		Firstname:     &user.Firstname,
+		Lastname:      &user.Lastname,
+		EmailVerified: user.EmailVerified,
 	}, nil
 }
 
 func selectUserByUsername(ctx context.Context, pg *pgxpool.Pool, username string) (dbUser, error) {
 	var user dbUser
 	err := pg.QueryRow(ctx, `
-		SELECT uuid, firstname, lastname, username, email, bcrypt_pwd, created_at
+		SELECT uuid, firstname, lastname, username, email, bcrypt_pwd, created_at, email_verified
 		FROM users
 		WHERE username = $1
 	`, username).Scan(
@@ -50,6 +51,7 @@ func selectUserByUsername(ctx context.Context, pg *pgxpool.Pool, username string
 		&user.Email,
 		&user.BcryptPwd,
 		&user.CreatedAt,
+		&user.EmailVerified,
 	)
 	return user, err
 }

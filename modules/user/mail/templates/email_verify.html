@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="lv">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>E-pasta apstiprināšana</title>
+</head>
+<body style="margin:0;padding:0;background:#f4f4f5;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#18181b;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f4f4f5;padding:32px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:480px;background:#ffffff;border-radius:8px;padding:32px;">
+          <tr>
+            <td>
+              <p style="margin:0 0 8px;font-size:20px;font-weight:600;">programme.lv</p>
+              <h1 style="margin:0 0 16px;font-size:22px;font-weight:600;">Apstipriniet e-pastu</h1>
+              <p style="margin:0 0 16px;font-size:15px;line-height:1.5;">
+                Sveiki{{if .Username}}, {{.Username}}{{end}}! Nospiediet pogu zemāk, lai apstiprinātu e-pasta adresi.
+              </p>
+              <p style="margin:0 0 24px;">
+                <a href="{{.ActionURL}}" style="display:inline-block;background:#16a34a;color:#ffffff;text-decoration:none;padding:12px 20px;border-radius:6px;font-size:15px;font-weight:600;">
+                  Apstiprināt e-pastu
+                </a>
+              </p>
+              <p style="margin:0 0 12px;font-size:13px;line-height:1.5;color:#52525b;">{{.ExpiryNote}}</p>
+              <p style="margin:0;font-size:13px;line-height:1.5;color:#52525b;">
+                Ja jūs neveicāt reģistrāciju, ignorējiet šo e-pastu.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

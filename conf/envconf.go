@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"regexp"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
@@ -210,4 +212,104 @@ func getRequiredEnv(name string) string {
 		os.Exit(1)
 	}
 	return value
+}
+
+// EmailConfig holds SMTP + transactional-email rate/TTL settings.
+type EmailConfig struct {
+	Enabled           bool
+	Host              string
+	Port              int
+	Username          string
+	Password          string
+	From              string
+	FromName          string
+	WebsiteBaseURL    string
+	ResetTokenTTL     time.Duration
+	VerifyTokenTTL    time.Duration
+	PerUserCooldown   time.Duration
+	GlobalHourlyLimit int
+}
+
+func MustGetEmailConfigFromEnv() EmailConfig {
+	enabled := false
+	if raw := os.Getenv("SMTP_ENABLED"); raw != "" {
+		parsed, err := strconv.ParseBool(raw)
+		if err != nil {
+			slog.Error("SMTP_ENABLED must be true or false", "value", raw)
+			os.Exit(1)
+		}
+		enabled = parsed
+	}
+
+	cfg := EmailConfig{
+		Enabled:           enabled,
+		Host:              os.Getenv("SMTP_HOST"),
+		Username:          os.Getenv("SMTP_USERNAME"),
+		Password:          os.Getenv("SMTP_PASSWORD"),
+		From:              os.Getenv("SMTP_FROM"),
+		FromName:          os.Getenv("SMTP_FROM_NAME"),
+		WebsiteBaseURL:    strings.TrimRight(getRequiredEnv("WEBSITE_PUBLIC_BASE_URL"), "/"),
+		ResetTokenTTL:     durationFromEnv("EMAIL_RESET_TOKEN_TTL", time.Hour),
+		VerifyTokenTTL:    durationFromEnv("EMAIL_VERIFY_TOKEN_TTL", 24*time.Hour),
+		PerUserCooldown:   durationFromEnv("EMAIL_PER_USER_COOLDOWN", 5*time.Minute),
+		GlobalHourlyLimit: intFromEnv("EMAIL_GLOBAL_HOURLY_LIMIT", 60),
+	}
+
+	port := 587
+	if raw := os.Getenv("SMTP_PORT"); raw != "" {
+		parsed, err := strconv.Atoi(raw)
+		if err != nil || parsed <= 0 {
+			slog.Error("SMTP_PORT must be a positive integer", "value", raw)
+			os.Exit(1)
+		}
+		port = parsed
+	}
+	cfg.Port = port
+
+	parsed, err := url.Parse(cfg.WebsiteBaseURL)
+	if err != nil || parsed.Scheme == "" || parsed.Host == "" {
+		slog.Error("WEBSITE_PUBLIC_BASE_URL is invalid", "value", cfg.WebsiteBaseURL, "error", err)
+		os.Exit(1)
+	}
+
+	if !enabled {
+		return cfg
+	}
+
+	if cfg.Host == "" {
+		slog.Error("SMTP_HOST env var is not set")
+		os.Exit(1)
+	}
+	if cfg.From == "" {
+		slog.Error("SMTP_FROM env var is not set")
+		os.Exit(1)
+	}
+
+	return cfg
+}
+
+func durationFromEnv(name string, fallback time.Duration) time.Duration {
+	raw := os.Getenv(name)
+	if raw == "" {
+		return fallback
+	}
+	parsed, err := time.ParseDuration(raw)
+	if err != nil || parsed <= 0 {
+		slog.Error(name+" must be a positive duration (e.g. 1h, 5m)", "value", raw)
+		os.Exit(1)
+	}
+	return parsed
+}
+
+func intFromEnv(name string, fallback int) int {
+	raw := os.Getenv(name)
+	if raw == "" {
+		return fallback
+	}
+	parsed, err := strconv.Atoi(raw)
+	if err != nil || parsed <= 0 {
+		slog.Error(name+" must be a positive integer", "value", raw)
+		os.Exit(1)
+	}
+	return parsed
 }

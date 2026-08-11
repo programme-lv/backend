@@ -32,7 +32,24 @@ COOKIE_SECURE=false
 FILE_STORAGE_ROOT=/mnt/programme-lv-storage
 API_PUBLIC_BASE_URL=https://api.programme.lv
 TESTFILE_DOWNLOAD_SIGNING_KEY=...
+
+# Transactional email (SES SMTP). Default SMTP_ENABLED=false skips sending.
+SMTP_ENABLED=false
+SMTP_HOST=email-smtp.eu-central-1.amazonaws.com
+SMTP_PORT=587
+SMTP_USERNAME=...
+SMTP_PASSWORD=...
+SMTP_FROM=noreply@programme.lv
+SMTP_FROM_NAME=programme.lv
+WEBSITE_PUBLIC_BASE_URL=https://programme.lv
+# Optional overrides (Go durations / int):
+# EMAIL_RESET_TOKEN_TTL=1h
+# EMAIL_VERIFY_TOKEN_TTL=24h
+# EMAIL_PER_USER_COOLDOWN=5m
+# EMAIL_GLOBAL_HOURLY_LIMIT=60
 ```
+
+Local email preview: point SMTP at [Mailpit](https://github.com/axllent/mailpit) (`SMTP_HOST=localhost`, `SMTP_PORT=1025`, empty username/password, `SMTP_ENABLED=true`) and open its UI.
 
 Admin routes accept either an admin user's `auth_token` cookie or the
 server-to-server API key:

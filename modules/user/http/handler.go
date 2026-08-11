@@ -52,5 +52,9 @@ func (h *UserHttpHandler) RegisterRoutes(r *chi.Mux) {
 		r.Get("/role", h.GetRole)
 		r.Post("/logout", h.Logout)
 		r.Get("/whoami", h.WhoAmI)
+		r.Post("/password-reset/request", h.RequestPasswordReset)
+		r.Post("/password-reset/confirm", h.ConfirmPasswordReset)
+		r.Post("/email-verification/request", h.RequestEmailVerification)
+		r.Post("/email-verification/confirm", h.ConfirmEmailVerification)
 	})
 }

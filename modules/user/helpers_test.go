@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -14,6 +15,7 @@ import (
 	"github.com/peterldowns/pgtestdb/migrators/golangmigrator"
 	"github.com/programme-lv/backend/modules/user"
 	userhttp "github.com/programme-lv/backend/modules/user/http"
+	"github.com/programme-lv/backend/modules/user/mail"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -45,7 +47,12 @@ func newTestPgDb(t *testing.T) *pgxpool.Pool {
 
 func newUserHttpHandler(t *testing.T) http.Handler {
 	pg := newTestPgDb(t)
-	userSrvc := user.NewUserService(pg)
+	userSrvc := user.NewUserService(pg, mail.NewNoopMailer(), user.EmailFlowConfig{
+		WebsiteBaseURL:  "http://localhost:3000",
+		ResetTokenTTL:   time.Hour,
+		VerifyTokenTTL:  24 * time.Hour,
+		PerUserCooldown: 5 * time.Minute,
+	})
 	userHandler := userhttp.NewUserHttpHandler(
 		userSrvc,
 		[]byte("test"),

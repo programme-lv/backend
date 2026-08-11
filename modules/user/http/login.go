@@ -55,11 +55,5 @@ func (httpserver *UserHttpHandler) Login(w http.ResponseWriter, r *http.Request)
 	}
 	http.SetCookie(w, &cookie)
 
-	jsonresp.Success(w, User{
-		UUID:      user.UUID.String(),
-		Username:  user.Username,
-		Email:     user.Email,
-		Firstname: user.Firstname,
-		Lastname:  user.Lastname,
-	})
+	jsonresp.Success(w, toHTTPUser(user))
 }

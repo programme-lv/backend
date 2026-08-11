@@ -27,6 +27,19 @@ services:
       FILE_STORAGE_ROOT: "/mnt/programme-lv-storage"
       API_PUBLIC_BASE_URL: "https://api.programme.lv"
       TESTFILE_DOWNLOAD_SIGNING_KEY: "replace-with-a-long-random-secret"
+
+      SMTP_ENABLED: "true"
+      SMTP_HOST: "email-smtp.eu-central-1.amazonaws.com"
+      SMTP_PORT: "587"
+      SMTP_USERNAME: "replace-ses-smtp-username"
+      SMTP_PASSWORD: "replace-ses-smtp-password"
+      SMTP_FROM: "noreply@programme.lv"
+      SMTP_FROM_NAME: "programme.lv"
+      WEBSITE_PUBLIC_BASE_URL: "https://programme.lv"
+      # EMAIL_RESET_TOKEN_TTL: "1h"
+      # EMAIL_VERIFY_TOKEN_TTL: "24h"
+      # EMAIL_PER_USER_COOLDOWN: "5m"
+      # EMAIL_GLOBAL_HOURLY_LIMIT: "60"
     volumes:
       - /mnt/programme-lv-storage:/mnt/programme-lv-storage
     ports:
