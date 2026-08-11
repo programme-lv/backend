@@ -76,7 +76,7 @@ func (s *userSrvc) RequestPasswordReset(ctx context.Context, login string) srvce
 	})
 	if renderErr != nil {
 		l.Error("render password reset email", "error", renderErr)
-		_ = deleteEmailToken(ctx, s.postgres, tokenUUID)
+		s.rollbackEmailToken(ctx, tokenUUID, "render password reset email")
 		return newErrEmailSendFailed()
 	}
 
@@ -87,7 +87,7 @@ func (s *userSrvc) RequestPasswordReset(ctx context.Context, login string) srvce
 		HTMLBody: rendered.HTMLBody,
 	}); sendErr != nil {
 		l.Error("send password reset email", "error", sendErr)
-		_ = deleteEmailToken(ctx, s.postgres, tokenUUID)
+		s.rollbackEmailToken(ctx, tokenUUID, "send password reset email")
 		return mapMailSendErr(sendErr)
 	}
 
@@ -270,7 +270,7 @@ func (s *userSrvc) sendEmailVerification(ctx context.Context, user dbUser) error
 		ExpiryNote: fmt.Sprintf("Saite derīga %s.", formatTTL(s.emailCfg.VerifyTokenTTL)),
 	})
 	if renderErr != nil {
-		_ = deleteEmailToken(ctx, s.postgres, tokenUUID)
+		s.rollbackEmailToken(ctx, tokenUUID, "render email verification")
 		return renderErr
 	}
 
@@ -281,10 +281,20 @@ func (s *userSrvc) sendEmailVerification(ctx context.Context, user dbUser) error
 		HTMLBody: rendered.HTMLBody,
 	}); sendErr != nil {
 		l.Error("smtp send email verification", "error", sendErr)
-		_ = deleteEmailToken(ctx, s.postgres, tokenUUID)
+		s.rollbackEmailToken(ctx, tokenUUID, "send email verification")
 		return sendErr
 	}
 	return nil
+}
+
+func (s *userSrvc) rollbackEmailToken(ctx context.Context, tokenUUID uuid.UUID, reason string) {
+	l := ctxlog.FromContext(ctx).With("cmd", "rollback email token", "reason", reason)
+	if err := deleteEmailToken(ctx, s.postgres, tokenUUID); err != nil {
+		l.Error("delete email token after send failure", "error", err)
+		if invErr := invalidateEmailToken(ctx, s.postgres, tokenUUID); invErr != nil {
+			l.Error("invalidate email token after delete failure", "error", invErr)
+		}
+	}
 }
 
 func mapMailSendErr(err error) srvcerror.E {
@@ -310,7 +320,10 @@ func (s *userSrvc) isWithinCooldown(ctx context.Context, userUUID uuid.UUID, pur
 	err := s.postgres.QueryRow(ctx, `
 		SELECT created_at
 		FROM user_email_tokens
-		WHERE user_uuid = $1 AND purpose = $2
+		WHERE user_uuid = $1
+		  AND purpose = $2
+		  AND used_at IS NULL
+		  AND expires_at > NOW()
 		ORDER BY created_at DESC
 		LIMIT 1
 	`, userUUID, purpose).Scan(&createdAt)
@@ -364,6 +377,16 @@ func insertEmailToken(
 
 func deleteEmailToken(ctx context.Context, pg *pgxpool.Pool, tokenUUID uuid.UUID) error {
 	_, err := pg.Exec(ctx, `DELETE FROM user_email_tokens WHERE uuid = $1`, tokenUUID)
+	return err
+}
+
+func invalidateEmailToken(ctx context.Context, pg *pgxpool.Pool, tokenUUID uuid.UUID) error {
+	_, err := pg.Exec(ctx, `
+		UPDATE user_email_tokens
+		SET used_at = COALESCE(used_at, NOW()),
+		    expires_at = LEAST(expires_at, NOW())
+		WHERE uuid = $1
+	`, tokenUUID)
 	return err
 }
 
