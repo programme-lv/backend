@@ -57,7 +57,7 @@ func NewTaskHttpHandler(taskSrvc srvc.TaskService, opts ...HandlerOption) *taskH
 	return h
 }
 
-func (h *taskHttpHandler) RegisterRoutes(r *chi.Mux, jwtKey, adminAPIKey []byte, cookieSecure bool) {
+func (h *taskHttpHandler) RegisterRoutes(r *chi.Mux, jwtKey, adminAPIKey []byte, cookieSecure bool, pwdChangedAt auth.PasswordChangedAtLookup) {
 	if h.publicAssetStore != nil {
 		r.Get("/assets/*", h.ServePublicAsset)
 	}
@@ -66,7 +66,11 @@ func (h *taskHttpHandler) RegisterRoutes(r *chi.Mux, jwtKey, adminAPIKey []byte,
 	}
 
 	r.Group(func(r chi.Router) {
-		r.Use(auth.HttpJwtAuthentication(jwtKey, cookieSecure))
+		r.Use(auth.HttpJwtAuthentication(
+			jwtKey,
+			auth.WithSecureCookie(cookieSecure),
+			auth.WithPasswordChangedAtLookup(pwdChangedAt),
+		))
 
 		// routes are throttled because of response caching (prevents cache stampede)
 		r.Group(func(r chi.Router) {

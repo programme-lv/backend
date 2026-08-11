@@ -126,6 +126,7 @@ func main() {
 		jwtKey,
 		adminAPIKey,
 		cookieSecure,
+		userSrvc.PasswordChangedAt,
 	)
 
 	slog.Info("starting server", "address", address)

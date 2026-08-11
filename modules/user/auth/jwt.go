@@ -21,12 +21,16 @@ type ClaimsKeyType string
 var CtxJwtClaimsKey ClaimsKeyType = "jwtClaims"
 
 func GenerateJWT(username, email string, uuid uuid.UUID, jwtKey []byte, validFor time.Duration) (string, error) {
-	expirationTime := time.Now().Add(validFor)
+	now := time.Now()
+	expirationTime := now.Add(validFor)
 
 	claims := &JwtClaims{
-		Username:         username,
-		UUID:             uuid.String(),
-		RegisteredClaims: jwt.RegisteredClaims{ExpiresAt: jwt.NewNumericDate(expirationTime)},
+		Username: username,
+		UUID:     uuid.String(),
+		RegisteredClaims: jwt.RegisteredClaims{
+			IssuedAt:  jwt.NewNumericDate(now),
+			ExpiresAt: jwt.NewNumericDate(expirationTime),
+		},
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
