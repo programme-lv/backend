@@ -2,7 +2,7 @@ package mail
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"log/slog"
 	"sync"
 	"time"
@@ -15,6 +15,11 @@ type Message struct {
 	TextBody string
 	HTMLBody string
 }
+
+var (
+	ErrRateLimited = errors.New("email rate limited")
+	ErrDisabled    = errors.New("smtp disabled")
+)
 
 // Mailer sends transactional email.
 type Mailer interface {
@@ -32,7 +37,7 @@ func (noopMailer) Send(ctx context.Context, msg Message) error {
 		"to", msg.To,
 		"subject", msg.Subject,
 	)
-	return nil
+	return ErrDisabled
 }
 
 // RateLimitedMailer wraps a Mailer with a process-local rolling hourly send cap.
@@ -63,26 +68,28 @@ func (m *RateLimitedMailer) Send(ctx context.Context, msg Message) error {
 		}
 	}
 	m.sent = kept
-	atLimit := len(m.sent) >= m.limit
-	m.mu.Unlock()
-
-	if atLimit {
-		return fmt.Errorf("global email hourly limit reached (%d)", m.limit)
+	if len(m.sent) >= m.limit {
+		m.mu.Unlock()
+		return ErrRateLimited
 	}
+	m.sent = append(m.sent, now)
+	reservedAt := now
+	m.mu.Unlock()
 
 	if err := m.inner.Send(ctx, msg); err != nil {
+		m.releaseReservation(reservedAt)
 		return err
 	}
+	return nil
+}
 
+func (m *RateLimitedMailer) releaseReservation(reservedAt time.Time) {
 	m.mu.Lock()
-	cutoff = time.Now().Add(-time.Hour)
-	kept = m.sent[:0]
-	for _, t := range m.sent {
-		if t.After(cutoff) {
-			kept = append(kept, t)
+	defer m.mu.Unlock()
+	for i, t := range m.sent {
+		if t.Equal(reservedAt) {
+			m.sent = append(m.sent[:i], m.sent[i+1:]...)
+			return
 		}
 	}
-	m.sent = append(kept, time.Now())
-	m.mu.Unlock()
-	return nil
 }

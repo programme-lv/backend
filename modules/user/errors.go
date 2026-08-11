@@ -157,3 +157,12 @@ func newErrEmailSendTooFrequent() srvcerror.E {
 		"e-pastu var nosūtīt atkārtoti pēc neilga laika",
 	).SetHttpStatusCode(http.StatusTooManyRequests)
 }
+
+const ErrCodeEmailSendFailed = "email_send_failed"
+
+func newErrEmailSendFailed() srvcerror.E {
+	return srvcerror.New(
+		ErrCodeEmailSendFailed,
+		"neizdevās nosūtīt e-pastu, mēģiniet vēlāk",
+	).SetHttpStatusCode(http.StatusServiceUnavailable)
+}
