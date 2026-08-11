@@ -139,3 +139,21 @@ func newErrUsernameOrPasswordIncorrect() srvcerror.E {
 		"lietotājvārds vai parole nav pareiza",
 	).SetHttpStatusCode(http.StatusUnauthorized)
 }
+
+const ErrCodeEmailTokenInvalid = "email_token_invalid"
+
+func newErrEmailTokenInvalid() srvcerror.E {
+	return srvcerror.New(
+		ErrCodeEmailTokenInvalid,
+		"saite ir nederīga vai beigusies",
+	).SetHttpStatusCode(http.StatusBadRequest)
+}
+
+const ErrCodeEmailSendTooFrequent = "email_send_too_frequent"
+
+func newErrEmailSendTooFrequent() srvcerror.E {
+	return srvcerror.New(
+		ErrCodeEmailSendTooFrequent,
+		"e-pastu var nosūtīt atkārtoti pēc neilga laika",
+	).SetHttpStatusCode(http.StatusTooManyRequests)
+}

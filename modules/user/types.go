@@ -3,11 +3,12 @@ package user
 import "github.com/google/uuid"
 
 type User struct {
-	UUID      uuid.UUID
-	Username  string
-	Email     string
-	Firstname *string
-	Lastname  *string
+	UUID          uuid.UUID
+	Username      string
+	Email         string
+	Firstname     *string
+	Lastname      *string
+	EmailVerified bool
 }
 
 type JWTClaims struct {
