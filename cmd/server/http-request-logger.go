@@ -18,6 +18,7 @@ const slowRequestThreshold = 500 * time.Millisecond
 type httpReqInfo struct {
 	method    string
 	uri       string
+	path      string
 	referer   string
 	ipaddr    string
 	requestID string
@@ -68,7 +69,8 @@ func logHTTPReq(ri *httpReqInfo) {
 	switch {
 	case ri.code >= 400:
 		slog.Warn("http info", attrs...)
-	case ri.duration >= slowRequestThreshold:
+	case ri.path != "/subm-updates" && ri.duration >= slowRequestThreshold:
+		// SSE /subm-updates duration is connection lifetime, not handler latency.
 		slog.Info("http slow", attrs...)
 	default:
 		// Routine successful requests are metrics-only; avoid stdout spam.
@@ -105,6 +107,7 @@ func requestLoggerMiddleware(next http.Handler) http.Handler {
 		reqInfo := &httpReqInfo{
 			method:    r.Method,
 			uri:       r.URL.String(),
+			path:      r.URL.Path,
 			referer:   r.Header.Get("Referer"),
 			userAgent: r.Header.Get("User-Agent"),
 			requestID: requestID,
