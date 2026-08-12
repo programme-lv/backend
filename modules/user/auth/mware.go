@@ -114,7 +114,7 @@ func HttpJwtAuthentication(jwtKey []byte, opts ...JwtAuthOption) func(next http.
 					clearAndGuest()
 					return
 				}
-				if claims.IssuedAt == nil || claims.IssuedAt.Time.Before(changedAt) {
+				if claims.IssuedAt == nil || claims.IssuedAt.Time.Unix() < changedAt.Unix() {
 					clearAndGuest()
 					return
 				}

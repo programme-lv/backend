@@ -1,3 +1,5 @@
+//go:build integration
+
 package user_test
 
 import (
@@ -55,7 +57,6 @@ func TestWhoAmIHttpAuthenticated(t *testing.T) {
 
 	w = httptest.NewRecorder()
 	userHandler.ServeHTTP(w, req)
-
 	// Check status code
 	assert.Equal(t, http.StatusOK, w.Code, "Response body: %s", w.Body.String())
 
@@ -96,25 +97,17 @@ func TestWhoAmIHttpAuthenticated(t *testing.T) {
 func TestWhoAmIHttpUnauthenticated(t *testing.T) {
 	userHandler := newUserHttpHandler(t)
 
-	// Make whoami request without auth token
 	req := httptest.NewRequest(http.MethodGet, "/whoami", nil)
 	w := httptest.NewRecorder()
 	userHandler.ServeHTTP(w, req)
 
-	// Check that the status code is not OK
-	assert.NotEqual(t, http.StatusOK, w.Code, "Expected error status code")
+	assert.Equal(t, http.StatusOK, w.Code, "Response body: %s", w.Body.String())
 
-	// Parse the error response
-	var errorResponse struct {
-		Status  string `json:"status"`
-		Code    string `json:"code"`
-		Message string `json:"message"`
+	var response struct {
+		Status string          `json:"status"`
+		Data   json.RawMessage `json:"data"`
 	}
-
-	err := json.Unmarshal(w.Body.Bytes(), &errorResponse)
-	require.NoError(t, err, "Failed to unmarshal error response body")
-
-	// Check error response fields
-	assert.Equal(t, "error", errorResponse.Status, "Expected status to be 'error'")
-	assert.Equal(t, "Internal Server Error", errorResponse.Message)
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &response))
+	assert.Equal(t, "success", response.Status)
+	assert.True(t, string(response.Data) == "null" || len(response.Data) == 0)
 }

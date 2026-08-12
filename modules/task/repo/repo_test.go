@@ -1,3 +1,5 @@
+//go:build integration
+
 package repo_test
 
 import (
@@ -6,51 +8,16 @@ import (
 	"os"
 	"testing"
 
-	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/jackc/pgx/v5/stdlib"
-	"github.com/peterldowns/pgtestdb"
-	"github.com/peterldowns/pgtestdb/migrators/golangmigrator"
+	"github.com/programme-lv/backend/common/testutil"
 	"github.com/programme-lv/backend/modules/task/repo"
 	"github.com/programme-lv/backend/modules/task/srvc"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-// NewDB returns a connection pool to a unique and isolated test database,
-// fully migrated and ready for testing
-func NewDB(t *testing.T) *pgxpool.Pool {
-	t.Helper()
-	ctx := context.Background()
-	conf := pgtestdb.Config{
-		DriverName: "pgx",
-		User:       "proglv", // local dev pg user
-		Password:   "proglv", // local dev pg password
-		Host:       "localhost",
-		Port:       "5433",
-		Options:    "sslmode=disable",
-	}
-	gm := golangmigrator.New("../../postgres/migrate")
-	config := pgtestdb.Custom(t, conf, gm)
-
-	pool, err := pgxpool.New(ctx, config.URL())
-	if err != nil {
-		t.Fatalf("Failed to create connection pool: %v", err)
-	}
-	t.Cleanup(func() {
-		pool.Close()
-	})
-
-	return pool
-}
-
 func TestTaskPgRepo(t *testing.T) {
-	// read the testdata/aplusbirc.json file
-	// parse it into a tasksrvc.Task struct
-	// insert the task into the database
-	// read the task from the database
-	// compare the task with manual inspection
-
-	pool := NewDB(t)
+	pool := testutil.MustGetMigratedTestPostgresDb(t)
 	repo := repo.NewTaskPgRepo(pool)
 
 	taskJson, err := os.ReadFile("testdata/aplusbirc.json")
