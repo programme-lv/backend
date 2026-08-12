@@ -10,21 +10,7 @@ permissions:
   contents: read
 
 jobs:
-  unit:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-
-      - name: Set up Go
-        uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
-        with:
-          go-version-file: go.mod
-
-      - name: Unit tests
-        run: go test ./...
-
-  integration:
+  test:
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -53,6 +39,9 @@ jobs:
         uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
         with:
           go-version-file: go.mod
+
+      - name: Unit tests
+        run: go test ./...
 
       - name: Integration tests
         run: go test -tags=integration ./...
