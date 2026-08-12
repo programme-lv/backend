@@ -3,25 +3,12 @@ issue-845-fix: True
 resolve-type-alias: False
 disable-version-string: True
 packages:
-  github.com/programme-lv/backend/user:
-    config:
-      all: true
-      filename: "mock_{{.InterfaceName}}.go"
-      dir: "gen/mocks/mockuser"
-      mockname: "Mock{{.InterfaceName}}"
-      outpkg: "mockuser"
-  github.com/programme-lv/backend/task/srvc:
-    template: "testify"
-    config:
-      all: true
-      filename: "mock_{{.InterfaceName}}.go"
-      dir: "gen/mocks/mocktasksrvc"
-      mockname: "Mock{{.InterfaceName}}"
-      outpkg: "mocktasksrvc"
-  github.com/programme-lv/backend/subm/submsrvc:
-    config:
-      all: true
-      filename: "mock_{{.InterfaceName}}.go"
-      dir: "gen/mocks/mocksubmsrvc"
-      mockname: "Mock{{.InterfaceName}}"
-      outpkg: "mocksubmsrvc"
+  github.com/programme-lv/backend/modules/task/srvc:
+    interfaces:
+      TaskPgRepo:
+        config:
+          filename: "mock_{{.InterfaceName}}.go"
+          dir: "gen/mocks/mocktasksrvc"
+          mockname: "Mock{{.InterfaceName}}"
+          outpkg: "mocktasksrvc"
+          template: "testify"
