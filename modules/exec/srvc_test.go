@@ -1,3 +1,5 @@
+//go:build tester
+
 package exec_test
 
 // we test integration with tester
