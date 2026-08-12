@@ -10,6 +10,24 @@ go run cmd/server/main.go -listen-sqs=false
 
 The flag name is retained for compatibility and is misleading.
 
+## Local observability
+
+Prometheus + Grafana (separate from the app Compose stack):
+
+```bash
+docker compose -f compose.observability.yml up -d
+```
+
+Requires the API on host `:8080` with `/metrics` exposed. Scrapes via `host.docker.internal`.
+
+- Grafana: http://localhost:3001 (default `admin`/`admin`)
+- Prometheus: http://localhost:9090
+- Provisioned dashboard: **Backend HTTP** (rate, p95/avg latency, response bandwidth by chi route)
+
+Routine 2xx/3xx under 500ms are not logged at Info; use Grafana for traffic shape. Do not expose `/metrics` publicly without network policy or auth.
+
+Project notes: sibling repo `docs/github/observability.md`.
+
 ## Development
 
 set up an .env file
