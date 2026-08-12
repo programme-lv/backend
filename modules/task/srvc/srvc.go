@@ -11,7 +11,6 @@ import (
 
 type TaskService interface {
 	GetTask(ctx context.Context, shortId string) (Task, srvcerror.E)
-	ListTasks(ctx context.Context) ([]Task, srvcerror.E)
 	CreateTask(ctx context.Context, task Task) srvcerror.E
 	DeleteTask(ctx context.Context, shortId string) srvcerror.E
 
@@ -46,10 +45,6 @@ type TaskService interface {
 	GetTaskFullNames(ctx context.Context, shortIds []string) ([]string, srvcerror.E)
 	ResolveNames(ctx context.Context, shortIds []string) ([]string, srvcerror.E)
 	SearchTasksByName(ctx context.Context, name string) ([]string, srvcerror.E)
-
-	// original file archive
-	UploadOgFileArchive(ctx context.Context, zipBytes []byte) (string, srvcerror.E)
-	DownloadOgFileArchive(ctx context.Context, s3Key string) ([]byte, srvcerror.E)
 }
 
 type ObjectStore interface {

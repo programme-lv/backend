@@ -28,7 +28,6 @@ type userSrvc struct {
 type UserService interface {
 	GetUserByUsername(ctx context.Context, username string) (User, srvcerror.E)
 	GetUserByUUID(ctx context.Context, uuid uuid.UUID) (User, srvcerror.E)
-	GetUsernames(ctx context.Context, uuids []uuid.UUID) ([]string, srvcerror.E)
 	Login(ctx context.Context, username string, password string) (*User, srvcerror.E)
 	CreateUser(ctx context.Context, user CreateUserParams) (*User, srvcerror.E)
 	RequestPasswordReset(ctx context.Context, login string) srvcerror.E
@@ -129,35 +128,6 @@ func (s *userSrvc) GetUserByUUID(ctx context.Context, uuid uuid.UUID) (res User,
 	}
 
 	return resSlice[0], nil
-}
-
-func (s *userSrvc) GetUsernames(ctx context.Context,
-	uuids []uuid.UUID) ([]string, srvcerror.E) {
-	l := ctxlog.FromContext(ctx).With("query", "get usernames")
-
-	allUsers, err := selectAllUsers(s.postgres)
-	if err != nil {
-		l.Error("list users", "error", err)
-		return nil, srvcerror.InternalServerError()
-	}
-
-	usernames := make([]string, 0, len(uuids))
-
-	for _, id := range uuids {
-		found := false
-		for _, user := range allUsers {
-			if user.UUID == id {
-				usernames = append(usernames, user.Username)
-				found = true
-				break
-			}
-		}
-		if !found {
-			return nil, ErrUserNotFound
-		}
-	}
-
-	return usernames, nil
 }
 
 func (s *userSrvc) PasswordChangedAt(ctx context.Context, userUUID uuid.UUID) (time.Time, error) {

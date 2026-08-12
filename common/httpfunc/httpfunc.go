@@ -9,28 +9,6 @@ import (
 	"github.com/programme-lv/backend/common/jsonresp"
 )
 
-type HandlerFuncImpl[Q any, R any] func(ctx context.Context, request Q) (response R, err jsonresp.HttpStatusCoder)
-
-func Json[Q any, R any](handler HandlerFuncImpl[Q, R]) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-		var req Q
-		t := reflect.TypeOf(req)
-		if t.Size() > 0 {
-			if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-				jsonresp.BadRequest(w, err.Error())
-				return
-			}
-		}
-		result, err := handler(ctx, req)
-		if err != nil {
-			jsonresp.WriteError(w, err)
-			return
-		}
-		jsonresp.Success(w, result)
-	}
-}
-
 type HandlerNoReq[R any] func(ctx context.Context) (response R, err jsonresp.HttpStatusCoder)
 
 func NoReqJsonResp[R any](handler HandlerNoReq[R]) http.HandlerFunc {

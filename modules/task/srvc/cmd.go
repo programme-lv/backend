@@ -11,7 +11,6 @@ import (
 	"mime"
 	"path/filepath"
 
-	"github.com/google/uuid"
 	"github.com/klauspost/compress/zstd"
 	"github.com/programme-lv/backend/common/srvcerror"
 )
@@ -91,27 +90,6 @@ func (ts *taskSrvc) UploadIllustrationImg(ctx context.Context, mimeType string, 
 		return "", NewErrorInternalServerError()
 	}
 	return storedKey, nil
-}
-
-// upload and return an object key. use a new uuid in the filename instead of a sha256 hash.
-func (ts *taskSrvc) UploadOgFileArchive(ctx context.Context, zipBytes []byte) (string, srvcerror.E) {
-	archiveUuid := uuid.New().String()
-	s3Key := fmt.Sprintf("og-file-archives/%s.zip", archiveUuid)
-	_, err := ts.publicStore.Upload(zipBytes, s3Key, "application/zip")
-	if err != nil {
-		ts.logger(ctx).Error("upload og file archive", "error", err)
-		return "", NewErrorInternalServerError()
-	}
-	return s3Key, nil
-}
-
-func (ts *taskSrvc) DownloadOgFileArchive(ctx context.Context, s3Key string) ([]byte, srvcerror.E) {
-	body, err := ts.publicStore.Download(s3Key)
-	if err != nil {
-		ts.logger(ctx).Error("download og file archive", "error", err)
-		return nil, NewErrorInternalServerError()
-	}
-	return body, nil
 }
 
 // Object key format: "md-images/<taskId>/<sha256-prefix>.<extension>"
@@ -267,14 +245,6 @@ func CompressWithZstd(data []byte) ([]byte, error) {
 
 	compressed := encoder.EncodeAll(data, make([]byte, 0, len(data)))
 	return compressed, nil
-}
-
-func MustCompressWithZstd(data []byte) []byte {
-	compressed, err := CompressWithZstd(data)
-	if err != nil {
-		panic(err)
-	}
-	return compressed
 }
 
 // DecompressWithZstd decompresses data that was compressed with Zstandard.

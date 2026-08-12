@@ -26,10 +26,3 @@ func FromContext(ctx context.Context) *slog.Logger {
 func WithLogger(ctx context.Context, logger *slog.Logger) context.Context {
 	return context.WithValue(ctx, LoggerKey, logger)
 }
-
-// WithRequestID adds a request ID to the logger in the context
-func WithRequestID(ctx context.Context, requestID string) context.Context {
-	logger := FromContext(ctx)
-	loggerWithRequestID := logger.With("request_id", requestID)
-	return WithLogger(ctx, loggerWithRequestID)
-}

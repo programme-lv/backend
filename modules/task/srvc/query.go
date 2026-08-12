@@ -79,18 +79,6 @@ func (ts *taskSrvc) GetTask(ctx context.Context, id string) (Task, srvcerror.E) 
 	return task, nil
 }
 
-func (ts *taskSrvc) ListTasks(ctx context.Context) ([]Task, srvcerror.E) {
-	tasks, err := ts.repo.ListTasks(ctx, 100, 0)
-	if err != nil {
-		ts.logger(ctx).Error("list tasks", "error", err)
-		return nil, NewErrorInternalServerError()
-	}
-	for i := range tasks {
-		applyOriginNotes(&tasks[i])
-	}
-	return tasks, nil
-}
-
 func (ts *taskSrvc) GetTaskFullNames(ctx context.Context, shortIDs []string) ([]string, srvcerror.E) {
 	fullNames, err := ts.repo.ResolveNames(ctx, shortIDs)
 	if err != nil {
