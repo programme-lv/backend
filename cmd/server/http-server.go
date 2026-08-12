@@ -44,9 +44,6 @@ func newHTTPServer(
 
 	router.Use(requestLoggerMiddleware)
 
-	statsLogger := newStatsLogger()
-	router.Use(statsLogger.middleware)
-
 	router.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{"http://localhost:3000", "https://programme.lv", "https://www.programme.lv"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
@@ -85,6 +82,8 @@ func (s *httpServer) start(address string) error {
 }
 
 func (s *httpServer) routes() {
+	s.router.Handle("/metrics", metricsHandler())
+
 	s.submHTTPHandler.RegisterRoutes(s.router, s.jwtKey, s.adminAPIKey, s.cookieSecure, s.pwdChangedAt)
 	s.taskHTTPHandler.RegisterRoutes(s.router, s.jwtKey, s.adminAPIKey, s.cookieSecure, s.pwdChangedAt)
 	s.userHTTPHandler.RegisterRoutes(s.router)

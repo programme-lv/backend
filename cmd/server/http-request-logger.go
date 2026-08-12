@@ -13,9 +13,12 @@ import (
 	"github.com/programme-lv/backend/common/ctxlog"
 )
 
+const slowRequestThreshold = 500 * time.Millisecond
+
 type httpReqInfo struct {
 	method    string
 	uri       string
+	path      string
 	referer   string
 	ipaddr    string
 	requestID string
@@ -52,12 +55,7 @@ func (resolver *httpIPResolver) resolveIP(req *http.Request) string {
 }
 
 func logHTTPReq(ri *httpReqInfo) {
-	logger := slog.Info
-	if ri.code >= 400 {
-		logger = slog.Warn
-	}
-
-	logger("http info",
+	attrs := []any{
 		"req", ri.requestID,
 		"m", ri.method,
 		"uri", ri.uri,
@@ -66,7 +64,17 @@ func logHTTPReq(ri *httpReqInfo) {
 		"ms", ri.duration.Milliseconds(),
 		"ip", ri.ipaddr,
 		"ua", ri.userAgent,
-	)
+	}
+
+	switch {
+	case ri.code >= 400:
+		slog.Warn("http info", attrs...)
+	case ri.path != "/subm-updates" && ri.duration >= slowRequestThreshold:
+		// SSE /subm-updates duration is connection lifetime, not handler latency.
+		slog.Info("http slow", attrs...)
+	default:
+		// Routine successful requests are metrics-only; avoid stdout spam.
+	}
 
 	slog.Debug("http info",
 		"req-id", ri.requestID,
@@ -99,6 +107,7 @@ func requestLoggerMiddleware(next http.Handler) http.Handler {
 		reqInfo := &httpReqInfo{
 			method:    r.Method,
 			uri:       r.URL.String(),
+			path:      r.URL.Path,
 			referer:   r.Header.Get("Referer"),
 			userAgent: r.Header.Get("User-Agent"),
 			requestID: requestID,
@@ -119,6 +128,7 @@ func requestLoggerMiddleware(next http.Handler) http.Handler {
 		reqInfo.written = metrics.Written
 		reqInfo.duration = metrics.Duration
 
+		recordHTTPMetrics(r, reqInfo.method, reqInfo.code, reqInfo.written, reqInfo.duration)
 		logHTTPReq(reqInfo)
 	})
 }
