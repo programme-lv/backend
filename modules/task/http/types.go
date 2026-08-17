@@ -7,8 +7,6 @@ import (
 	"github.com/programme-lv/backend/modules/task/srvc"
 )
 
-type Empty struct{}
-
 type TaskPreview struct {
 	ShortId          string             `json:"short_id"`
 	FullName         string             `json:"full_name"`
