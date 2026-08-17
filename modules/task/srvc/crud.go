@@ -23,7 +23,15 @@ func (ts *taskSrvc) CreateTask(ctx context.Context, task Task) srvcerror.E {
 // DeleteTask removes database rows for the task. Object-store files are not deleted.
 func (ts *taskSrvc) DeleteTask(ctx context.Context, shortId string) srvcerror.E {
 	l := ts.logger(ctx)
-	err := ts.repo.DeleteTask(ctx, shortId)
+	exists, err := ts.repo.Exists(ctx, shortId)
+	if err != nil {
+		l.Error("check if task exists", "error", err)
+		return srvcerror.InternalServerError()
+	}
+	if !exists {
+		return errTaskNotFound(shortId)
+	}
+	err = ts.repo.DeleteTask(ctx, shortId)
 	if err != nil {
 		l.Error("delete task", "task_id", shortId, "error", err)
 		return srvcerror.InternalServerError()

@@ -2,6 +2,7 @@ package srvc
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"time"
@@ -13,6 +14,7 @@ import (
 	"github.com/programme-lv/backend/modules/plang"
 	"github.com/programme-lv/backend/modules/subm/domain"
 	tasksrvc "github.com/programme-lv/backend/modules/task/srvc"
+	usersrvc "github.com/programme-lv/backend/modules/user"
 )
 
 type SubmitSolParams struct {
@@ -28,6 +30,9 @@ func (s *submSrvc) SubmitSol(ctx context.Context, p SubmitSolParams) srvcerror.E
 		DoesUserExist: func(ctx context.Context, uuid uuid.UUID) (bool, srvcerror.E) {
 			user, err := s.userSrvc.GetUserByUUID(ctx, uuid)
 			if err != nil {
+				if errors.Is(err, usersrvc.ErrUserNotFound) {
+					return false, nil
+				}
 				return false, err
 			}
 			return user.UUID == uuid, nil

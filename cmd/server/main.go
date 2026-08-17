@@ -198,6 +198,7 @@ func runScoreMigrationIfNeeded(pgPool *pgxpool.Pool, submSrvc srvc.SubmissionSer
 	slog.Info("processing submissions", "total", len(subms))
 	bar := progressbar.Default(int64(len(subms)), "recalculating scores")
 
+	failed := 0
 	for _, subm := range subms {
 		bar.Add(1)
 
@@ -206,15 +207,18 @@ func runScoreMigrationIfNeeded(pgPool *pgxpool.Pool, submSrvc srvc.SubmissionSer
 			slog.Info("re-evaluating submission", "subm_uuid", subm.UUID)
 			if reEvalErr != nil {
 				slog.Error("re-evaluate submission", "error", reEvalErr, "subm_uuid", subm.UUID)
+				failed++
 				continue
 			}
 
 			subm, err = submSrvc.ViewSubm(ctx, subm.UUID)
 			if err != nil {
 				slog.Error("get submission after re-eval", "error", err, "subm_uuid", subm.UUID)
+				failed++
 				continue
 			}
 
+			evalFinished := false
 			for {
 				eval, err := submSrvc.GetEval(ctx, subm.CurrEvalUUID)
 				if err != nil {
@@ -222,9 +226,14 @@ func runScoreMigrationIfNeeded(pgPool *pgxpool.Pool, submSrvc srvc.SubmissionSer
 					break
 				}
 				if eval.Stage == domain.EvalStageFinished {
+					evalFinished = true
 					break
 				}
 				time.Sleep(1 * time.Second)
+			}
+			if !evalFinished {
+				failed++
+				continue
 			}
 			slog.Info("eval finished", "eval_uuid", subm.CurrEvalUUID)
 		}
@@ -232,15 +241,21 @@ func runScoreMigrationIfNeeded(pgPool *pgxpool.Pool, submSrvc srvc.SubmissionSer
 		eval, err := submSrvc.GetEval(ctx, subm.CurrEvalUUID)
 		if err != nil {
 			slog.Error("get eval", "error", err, "eval_uuid", subm.CurrEvalUUID)
+			failed++
 			continue
 		}
 
 		storeEvalErr := evalPgRepo.StoreEval(ctx, eval)
 		if storeEvalErr != nil {
 			slog.Error("store eval", "error", storeEvalErr, "eval_uuid", eval.UUID)
+			failed++
 			continue
 		}
 	}
 
+	if failed > 0 {
+		slog.Error("score migration finished with failures", "failed", failed, "total", len(subms))
+		return
+	}
 	slog.Info("score migration completed")
 }
