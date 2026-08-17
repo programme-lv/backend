@@ -33,7 +33,7 @@ func NewNoopMailer() Mailer {
 }
 
 func (noopMailer) Send(ctx context.Context, msg Message) error {
-	slog.InfoContext(ctx, "smtp disabled; skipping email",
+	slog.DebugContext(ctx, "smtp disabled; skipping email",
 		"to", msg.To,
 		"subject", msg.Subject,
 	)

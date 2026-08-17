@@ -29,7 +29,6 @@ func (h *SubmHttpHandler) GetFullSubm(w http.ResponseWriter, r *http.Request) {
 	log := ctxlog.FromContext(r.Context())
 
 	id := chi.URLParam(r, "subm-id")
-	log.Info("getting full submission", "subm_id", id)
 
 	parsed, ok := parseSubmPathID(id)
 	if !ok {
@@ -61,6 +60,5 @@ func (h *SubmHttpHandler) GetFullSubm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Info("returning full submission", "subm_uuid", subm.UUID, "short_id", subm.ShortID)
 	jsonresp.Success(w, response)
 }

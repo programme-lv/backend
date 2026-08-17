@@ -3,8 +3,6 @@ package srvc
 import (
 	"context"
 	"errors"
-	"fmt"
-	"log/slog"
 	"time"
 
 	"github.com/google/uuid"
@@ -314,7 +312,7 @@ func (h procExecEvCmdHandler) Handle(ctx context.Context, p procExecEvParams) er
 		log.Error(action, "eval_uuid", p.Eval.UUID)
 		return srvcerror.InternalServerError()
 	}
-	slog.Info("received event", "event", fmt.Sprintf("%+v", p.Event.Type()))
+	log.Debug("received event", "event", p.Event.Type())
 
 	eval := applyExecEventToEval(latestEval, p.Event)
 
@@ -337,7 +335,7 @@ func (h procExecEvCmdHandler) Handle(ctx context.Context, p procExecEvParams) er
 				finishedTests++
 			}
 		}
-		slog.Info("test progress", "finished", finishedTests, "total", len(eval.Tests))
+		log.Debug("test progress", "finished", finishedTests, "total", len(eval.Tests))
 		h.InProgrEval[p.Eval.UUID] = eval
 	}
 

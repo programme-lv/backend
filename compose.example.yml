@@ -27,6 +27,7 @@ services:
       FILE_STORAGE_ROOT: "/mnt/programme-lv-storage"
       API_PUBLIC_BASE_URL: "https://api.programme.lv"
       TESTFILE_DOWNLOAD_SIGNING_KEY: "replace-with-a-long-random-secret"
+      # LOG_LEVEL: "warn" # debug, info, warn, error. Unset without a .env file is warn.
 
       SMTP_ENABLED: "true"
       SMTP_HOST: "email-smtp.eu-central-1.amazonaws.com"

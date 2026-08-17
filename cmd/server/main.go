@@ -47,7 +47,7 @@ func main() {
 	conf.MustRunPostgresMigrationsFromEnv()
 
 	storageRoot := conf.MustGetFileStorageRootFromEnv()
-	slog.Info("file storage root", "path", storageRoot)
+	slog.Debug("file storage root", "path", storageRoot)
 	apiPublicBaseURL := conf.MustGetPublicAPIBaseURLFromEnv()
 	testfileSigningKey := conf.MustGetTestfileDownloadSigningKeyFromEnv()
 	publicStore := conf.MustGetFileStore(storageRoot, "public")
@@ -136,7 +136,7 @@ func main() {
 func setupLogger() {
 	slog.SetDefault(slog.New(
 		tint.NewHandler(os.Stdout, &tint.Options{
-			Level:      slog.LevelInfo,
+			Level:      conf.MustGetLogLevelFromEnv(),
 			TimeFormat: time.Kitchen,
 			AddSource:  true,
 		}),

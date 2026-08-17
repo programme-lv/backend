@@ -31,7 +31,6 @@ func (r *FileEvalRepo) Save(ctx context.Context, eval *Execution) error {
 	}
 
 	key := fmt.Sprintf("%s.json", eval.UUID.String())
-	r.logger.Info("saving eval to file store", "key", key)
 
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()

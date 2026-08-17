@@ -33,7 +33,6 @@ const (
 
 func (h *SubmHttpHandler) GetSubmList(w http.ResponseWriter, r *http.Request) {
 	log := ctxlog.FromContext(r.Context())
-	log.Info("getting submission list")
 	w.Header().Set("Cache-Control", "no-store")
 
 	// Parse pagination parameters from query string
@@ -66,7 +65,6 @@ func (h *SubmHttpHandler) GetSubmList(w http.ResponseWriter, r *http.Request) {
 	// Try to get from cache first
 	if cachedResponse, found := h.submCache.Get(cacheKey); found {
 		if response, ok := cachedResponse.(PaginatedResponse); ok {
-			log.Info("returning cached submission list", "limit", limit, "offset", offset, "search", search, "includeAdmin", includeAdmin)
 			jsonresp.Success(w, response)
 			return
 		}
@@ -99,8 +97,6 @@ func (h *SubmHttpHandler) GetSubmList(w http.ResponseWriter, r *http.Request) {
 			return nil, err
 		}
 
-		log.Debug("submissions retrieved successfully", "count", len(subms))
-
 		mapSubmList := func(subms []domain.Subm) []SubmListEntry {
 			response := make([]SubmListEntry, 0)
 			for _, subm := range subms {
@@ -115,7 +111,6 @@ func (h *SubmHttpHandler) GetSubmList(w http.ResponseWriter, r *http.Request) {
 		}
 
 		submEntries := mapSubmList(subms)
-		log.Info("processed submission list", "count", len(submEntries), "total", totalCount)
 
 		// Create paginated response
 		hasMore := offset+len(submEntries) < totalCount
@@ -146,7 +141,6 @@ func (h *SubmHttpHandler) GetSubmList(w http.ResponseWriter, r *http.Request) {
 		jsonresp.InternalError(w)
 		return
 	}
-	log.Info("returning submission list", "count", len(response.Page), "total", response.Pagination.Total)
 	jsonresp.Success(w, response)
 }
 

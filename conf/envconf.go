@@ -23,6 +23,8 @@ import (
 
 const repoDirName = "backend"
 
+var envFileLoaded bool
+
 func FindProjectRoot() string {
 	re := regexp.MustCompile(`^(.*` + repoDirName + `)`)
 	cwd, err := os.Getwd()
@@ -37,11 +39,38 @@ func FindProjectRoot() string {
 func init() {
 	rootPath := FindProjectRoot()
 	err := godotenv.Load(rootPath + `/.env`)
+	envFileLoaded = err == nil
+}
+
+// MustGetLogLevelFromEnv returns the slog level from LOG_LEVEL.
+// Unset: info when a .env file loaded (development), warn otherwise (production).
+func MustGetLogLevelFromEnv() slog.Level {
+	raw := os.Getenv("LOG_LEVEL")
+	level, err := resolveLogLevel(raw, envFileLoaded)
 	if err != nil {
-		slog.Info("no .env file loaded; using process environment",
-			"error", err,
-			"cwd", rootPath,
-		)
+		slog.Error("LOG_LEVEL must be debug, info, warn, or error", "value", raw)
+		os.Exit(1)
+	}
+	return level
+}
+
+func resolveLogLevel(raw string, dotenvLoaded bool) (slog.Level, error) {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "":
+		if dotenvLoaded {
+			return slog.LevelInfo, nil
+		}
+		return slog.LevelWarn, nil
+	case "debug", "dbg":
+		return slog.LevelDebug, nil
+	case "info":
+		return slog.LevelInfo, nil
+	case "warn", "warning":
+		return slog.LevelWarn, nil
+	case "error":
+		return slog.LevelError, nil
+	default:
+		return 0, fmt.Errorf("invalid LOG_LEVEL")
 	}
 }
 
@@ -165,7 +194,7 @@ func MustRunPostgresMigrationsFromEnv() {
 	case nil:
 		slog.Info("postgres migrations applied")
 	case migrate.ErrNoChange:
-		slog.Info("postgres schema already up to date")
+		slog.Debug("postgres schema already up to date")
 	default:
 		slog.Error("run postgres migrations", "error", err)
 		os.Exit(1)
