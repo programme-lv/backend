@@ -43,15 +43,7 @@ func newHTTPServer(
 	router := chi.NewRouter()
 
 	router.Use(requestLoggerMiddleware)
-
-	router.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:3000", "https://programme.lv", "https://www.programme.lv"},
-		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"*"},
-		ExposedHeaders:   []string{"Link"},
-		AllowCredentials: true,
-		MaxAge:           3000,
-	}))
+	router.Use(corsHandler())
 
 	router.Use(auth.HttpJwtAuthentication(
 		jwtKey,
@@ -75,6 +67,17 @@ func newHTTPServer(
 	server.routes()
 
 	return server
+}
+
+func corsHandler() func(http.Handler) http.Handler {
+	return cors.Handler(cors.Options{
+		AllowedOrigins:   []string{"http://localhost:3000", "https://programme.lv", "https://www.programme.lv"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"*"},
+		ExposedHeaders:   []string{"Link"},
+		AllowCredentials: true,
+		MaxAge:           3000,
+	})
 }
 
 func (s *httpServer) start(address string) error {
