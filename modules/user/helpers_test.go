@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/programme-lv/backend/common/testutil"
 	"github.com/programme-lv/backend/modules/user"
 	userhttp "github.com/programme-lv/backend/modules/user/http"
@@ -20,6 +21,12 @@ import (
 )
 
 func newUserHttpHandler(t *testing.T) http.Handler {
+	t.Helper()
+	handler, _ := newUserHttpHandlerWithPool(t)
+	return handler
+}
+
+func newUserHttpHandlerWithPool(t *testing.T) (http.Handler, *pgxpool.Pool) {
 	t.Helper()
 	pg := testutil.MustGetMigratedTestPostgresDb(t)
 	userSrvc := user.NewUserService(pg, mail.NewNoopMailer(), user.EmailFlowConfig{
@@ -35,7 +42,7 @@ func newUserHttpHandler(t *testing.T) http.Handler {
 	)
 	r := chi.NewRouter()
 	userHandler.RegisterRoutes(r)
-	return r
+	return r, pg
 }
 
 func newJsonReq(method, path string, body map[string]interface{}) (*http.Request, error) {
@@ -79,6 +86,40 @@ func login(t *testing.T, handler http.Handler, loginData map[string]interface{})
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, req)
 	return w
+}
+
+func jsonAuthed(t *testing.T, handler http.Handler, method, path string, body map[string]interface{}, token string) *httptest.ResponseRecorder {
+	t.Helper()
+	var req *http.Request
+	var err error
+	if body == nil {
+		req = httptest.NewRequest(method, path, nil)
+	} else {
+		req, err = newJsonReq(method, path, body)
+		require.NoError(t, err)
+	}
+	if token != "" {
+		req.AddCookie(&http.Cookie{Name: "auth_token", Value: token})
+	}
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+	return w
+}
+
+func authCookieValue(t *testing.T, w *httptest.ResponseRecorder) string {
+	t.Helper()
+	for _, cookie := range w.Result().Cookies() {
+		if cookie.Name == "auth_token" && cookie.Value != "" {
+			return cookie.Value
+		}
+	}
+	t.Fatal("No auth_token cookie found in response")
+	return ""
+}
+
+func whoami(t *testing.T, handler http.Handler, token string) *httptest.ResponseRecorder {
+	t.Helper()
+	return jsonAuthed(t, handler, http.MethodGet, "/whoami", nil, token)
 }
 
 func registerAndLogin(t *testing.T, userHttpHandler http.Handler, username string) string {

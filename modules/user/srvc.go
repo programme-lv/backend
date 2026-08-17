@@ -34,6 +34,8 @@ type UserService interface {
 	ConfirmPasswordReset(ctx context.Context, token string, newPassword string) srvcerror.E
 	RequestEmailVerification(ctx context.Context, userUUID uuid.UUID) srvcerror.E
 	ConfirmEmailVerification(ctx context.Context, token string) srvcerror.E
+	ChangePassword(ctx context.Context, userUUID uuid.UUID, current, newPassword string) srvcerror.E
+	UpdateProfile(ctx context.Context, userUUID uuid.UUID, firstname, lastname string) (*User, srvcerror.E)
 	PasswordChangedAt(ctx context.Context, userUUID uuid.UUID) (time.Time, error)
 }
 

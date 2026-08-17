@@ -4,11 +4,9 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
-	"time"
 
 	"github.com/programme-lv/backend/common/jsonresp"
 	"github.com/programme-lv/backend/common/srvcerror"
-	"github.com/programme-lv/backend/modules/user/auth"
 )
 
 func (httpserver *UserHttpHandler) Login(w http.ResponseWriter, r *http.Request) {
@@ -29,31 +27,11 @@ func (httpserver *UserHttpHandler) Login(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	validFor := 24 * time.Hour
-
-	token, jwtErr := auth.GenerateJWT(
-		user.Username,
-		user.Email, user.UUID,
-		httpserver.jwtKey, validFor)
-	if jwtErr != nil {
-		slog.Error("generate JWT", "error", jwtErr)
+	if cookieErr := httpserver.issueAuthCookie(w, user); cookieErr != nil {
+		slog.Error("generate JWT", "error", cookieErr)
 		jsonresp.HandleSrvcError(slog.Default(), w, srvcerror.InternalServerError())
 		return
 	}
-
-	// Set the JWT token as HTTP-only cookie
-	expirationTime := time.Now().Add(validFor)
-	cookie := http.Cookie{
-		Name:     "auth_token",
-		Value:    token,
-		Expires:  expirationTime,
-		HttpOnly: true,
-		Path:     "/",
-		Domain:   httpserver.cookieDomain,
-		SameSite: http.SameSiteLaxMode,
-		Secure:   httpserver.cookieSecure,
-	}
-	http.SetCookie(w, &cookie)
 
 	jsonresp.Success(w, toHTTPUser(user))
 }

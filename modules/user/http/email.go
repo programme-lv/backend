@@ -5,9 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/google/uuid"
 	"github.com/programme-lv/backend/common/jsonresp"
-	"github.com/programme-lv/backend/modules/user/auth"
 )
 
 func (h *UserHttpHandler) RequestPasswordReset(w http.ResponseWriter, r *http.Request) {
@@ -50,15 +48,8 @@ func (h *UserHttpHandler) ConfirmPasswordReset(w http.ResponseWriter, r *http.Re
 }
 
 func (h *UserHttpHandler) RequestEmailVerification(w http.ResponseWriter, r *http.Request) {
-	claims, ok := r.Context().Value(auth.CtxJwtClaimsKey).(*auth.JwtClaims)
-	if !ok || claims == nil {
-		jsonresp.Unauthorized(w, "authentication required")
-		return
-	}
-
-	userUUID, err := uuid.Parse(claims.UUID)
-	if err != nil {
-		jsonresp.Unauthorized(w, "authentication required")
+	userUUID, ok := requireUserUUID(w, r)
+	if !ok {
 		return
 	}
 
