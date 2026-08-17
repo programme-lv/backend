@@ -2,6 +2,7 @@
 Execution jobs and results use Core NATS.
 Test-file cache misses can also use Core NATS; see [docs/nats-execution.md](docs/nats-execution.md).
 How to run unit / integration / tester suites: [docs/testing.md](docs/testing.md).
+Go style: [docs/go.md](docs/go.md).
 Submission public IDs vs UUIDs: [docs/submission-ids.md](docs/submission-ids.md).
 
 To start the server without processing tester results from NATS:
