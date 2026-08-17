@@ -161,7 +161,7 @@ func TestTaskPgRepo(t *testing.T) {
 		// Test getting preview for non-existent task
 		_, err = repo.GetTaskPreview(ctx, "non-existent-task")
 		assert.Error(t, err, "Getting preview for non-existent task should fail")
-		assert.Contains(t, err.Error(), "failed to load task preview", "Error message should indicate task preview loading failed")
+		assert.Contains(t, err.Error(), "load task preview", "Error message should indicate task preview loading failed")
 	})
 
 	t.Run("ListTaskPreviews", func(t *testing.T) {

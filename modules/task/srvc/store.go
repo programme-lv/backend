@@ -57,11 +57,9 @@ func (ts *taskSrvc) UploadIllustrationImg(ctx context.Context, mimeType string, 
 	sha2 := sha2Hex(body)
 	exts, err := mime.ExtensionsByType(mimeType)
 	if err != nil {
-		l.Error("get file extension", "error", err)
 		return "", errUnknownImageExt(mimeType)
 	}
 	if len(exts) == 0 {
-		l.Error("file extension not found", "mime_type", mimeType)
 		return "", errUnknownImageExt(mimeType)
 	}
 	ext := exts[0]
@@ -81,13 +79,11 @@ func (ts *taskSrvc) UploadStatementImage(ctx context.Context, taskId string, img
 
 	ext, err := mimeToFileExt(imageMimeType)
 	if err != nil {
-		l.Error("get image file extension from mime type", "error", err)
 		return "", errUnknownImageExt(imageMimeType)
 	}
 
 	width, height, err := getImgWidthHeighPx(body, imageMimeType)
 	if err != nil {
-		l.Error("get image width and height", "error", err)
 		return "", ErrImageDimensions
 	}
 
@@ -145,7 +141,6 @@ func (ts *taskSrvc) DeleteStatementImage(ctx context.Context, taskId string, fil
 	}
 
 	if targetImage == nil {
-		l.Error("image with filename not found", "filename", filename)
 		return errImageNotFound(filename)
 	}
 
@@ -186,7 +181,6 @@ func (ts *taskSrvc) DeleteIllustrationImg(ctx context.Context, taskId string) sr
 	}
 
 	if t.IllustrImg.ObjectKey == "" {
-		l.Error("no illustration image found for task", "task_id", taskId)
 		return ErrIllustrationNotFound
 	}
 

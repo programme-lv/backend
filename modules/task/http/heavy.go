@@ -188,7 +188,7 @@ func (h *taskHttpHandler) UploadIllustration(w http.ResponseWriter, r *http.Requ
 
 	objectKey, uploadIllustrationErr := h.taskSrvc.UploadIllustrationImg(r.Context(), imageMimeType, imageBytes)
 	if uploadIllustrationErr != nil {
-		jsonresp.HandleSrvcError(slog.Default(), w, err)
+		jsonresp.WriteError(w, uploadIllustrationErr)
 		return
 	}
 
@@ -202,7 +202,7 @@ func (h *taskHttpHandler) UploadIllustration(w http.ResponseWriter, r *http.Requ
 
 	updateIllustrationErr := h.taskSrvc.UpdateIllustrationImg(r.Context(), taskId, illustrationImg)
 	if updateIllustrationErr != nil {
-		jsonresp.HandleSrvcError(slog.Default(), w, err)
+		jsonresp.WriteError(w, updateIllustrationErr)
 		return
 	}
 

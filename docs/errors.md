@@ -80,6 +80,7 @@ Fixed messages are vars; funcs exist only to `WithMsg`.
 500s are `srvcerror.InternalServerError()`.
 
 Task module [`modules/task/srvc/error.go`](../modules/task/srvc/error.go) follows the sentinel/`WithMsg` shape.
+Its service logs only unexpected failures, HTTP passes service errors through `WriteError`, and repo wrap strings omit `failed to`.
 Other modules still mix `newErr*` helpers and `ErrCode*` consts; do not copy that for new work.
 
 ## HTTP

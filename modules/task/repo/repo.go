@@ -46,7 +46,7 @@ func (r *taskPgRepo) SearchTasksByName(ctx context.Context, name string) ([]stri
 		LIMIT 100
 	`, "%"+name+"%")
 	if err != nil {
-		return nil, fmt.Errorf("failed to search tasks by name: %w", err)
+		return nil, fmt.Errorf("search tasks by name: %w", err)
 	}
 	defer rows.Close()
 
@@ -54,7 +54,7 @@ func (r *taskPgRepo) SearchTasksByName(ctx context.Context, name string) ([]stri
 	for rows.Next() {
 		var id string
 		if err := rows.Scan(&id); err != nil {
-			return nil, fmt.Errorf("failed to scan task id: %w", err)
+			return nil, fmt.Errorf("scan task id: %w", err)
 		}
 		taskIds = append(taskIds, id)
 	}
@@ -104,7 +104,7 @@ func (r *taskPgRepo) ListTaskPreviews(ctx context.Context, limit int, offset int
 		LIMIT $1 OFFSET $2
 	`, limit, offset)
 	if err != nil {
-		return nil, fmt.Errorf("failed to query task previews: %w", err)
+		return nil, fmt.Errorf("query task previews: %w", err)
 	}
 	defer rows.Close()
 
@@ -137,7 +137,7 @@ func (r *taskPgRepo) ListTaskPreviews(ctx context.Context, limit int, offset int
 			&story,
 		)
 		if err != nil {
-			return nil, fmt.Errorf("failed to scan task preview: %w", err)
+			return nil, fmt.Errorf("scan task preview: %w", err)
 		}
 
 		if len(fullNameBytes) > 0 {
@@ -190,7 +190,7 @@ func (r *taskPgRepo) AddStatementImg(ctx context.Context, taskId string, img srv
 	// Start a transaction
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to begin transaction: %w", err)
+		return fmt.Errorf("begin transaction: %w", err)
 	}
 
 	// Defer rollback in case of error - transaction is committed later if successful
@@ -202,7 +202,7 @@ func (r *taskPgRepo) AddStatementImg(ctx context.Context, taskId string, img srv
 		SELECT EXISTS(SELECT 1 FROM tasks WHERE short_id = $1)
 	`, taskId).Scan(&exists)
 	if err != nil {
-		return fmt.Errorf("failed to check if task exists: %w", err)
+		return fmt.Errorf("check if task exists: %w", err)
 	}
 	if !exists {
 		return fmt.Errorf("task with ID %s does not exist", taskId)
@@ -214,7 +214,7 @@ func (r *taskPgRepo) AddStatementImg(ctx context.Context, taskId string, img srv
 		SELECT EXISTS(SELECT 1 FROM task_images WHERE task_short_id = $1 AND object_key = $2)
 	`, taskId, img.ObjectKey).Scan(&imageExists)
 	if err != nil {
-		return fmt.Errorf("failed to check if image exists: %w", err)
+		return fmt.Errorf("check if image exists: %w", err)
 	}
 
 	if imageExists {
@@ -225,7 +225,7 @@ func (r *taskPgRepo) AddStatementImg(ctx context.Context, taskId string, img srv
 			WHERE task_short_id = $1 AND object_key = $2
 		`, taskId, img.ObjectKey, img.Filename, img.WidthPx, img.HeightPx, img.SzInBytes)
 		if err != nil {
-			return fmt.Errorf("failed to update statement image: %w", err)
+			return fmt.Errorf("update statement image: %w", err)
 		}
 	} else {
 		// Insert new image
@@ -234,13 +234,13 @@ func (r *taskPgRepo) AddStatementImg(ctx context.Context, taskId string, img srv
 			VALUES ($1, $2, $3, $4, $5, $6)
 		`, taskId, img.ObjectKey, img.Filename, img.WidthPx, img.HeightPx, img.SzInBytes)
 		if err != nil {
-			return fmt.Errorf("failed to insert statement image: %w", err)
+			return fmt.Errorf("insert statement image: %w", err)
 		}
 	}
 
 	// Commit the transaction
 	if err = tx.Commit(ctx); err != nil {
-		return fmt.Errorf("failed to commit transaction: %w", err)
+		return fmt.Errorf("commit transaction: %w", err)
 	}
 
 	return nil
@@ -250,7 +250,7 @@ func (r *taskPgRepo) AddStatementImg(ctx context.Context, taskId string, img srv
 func (r *taskPgRepo) UpdateStatement(ctx context.Context, taskId string, statement srvc.MarkdownStatement) error {
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to begin transaction: %w", err)
+		return fmt.Errorf("begin transaction: %w", err)
 	}
 
 	// Defer rollback in case of error - transaction is committed later if successful
@@ -262,7 +262,7 @@ func (r *taskPgRepo) UpdateStatement(ctx context.Context, taskId string, stateme
 		SELECT EXISTS(SELECT 1 FROM tasks WHERE short_id = $1)
 	`, taskId).Scan(&exists)
 	if err != nil {
-		return fmt.Errorf("failed to check if task exists: %w", err)
+		return fmt.Errorf("check if task exists: %w", err)
 	}
 	if !exists {
 		return fmt.Errorf("task with ID %s does not exist", taskId)
@@ -274,7 +274,7 @@ func (r *taskPgRepo) UpdateStatement(ctx context.Context, taskId string, stateme
 		SELECT EXISTS(SELECT 1 FROM task_md_statements WHERE task_short_id = $1 AND lang_iso639 = $2)
 	`, taskId, statement.LangIso639).Scan(&statementExists)
 	if err != nil {
-		return fmt.Errorf("failed to check if statement exists: %w", err)
+		return fmt.Errorf("check if statement exists: %w", err)
 	}
 
 	if statementExists {
@@ -286,7 +286,7 @@ func (r *taskPgRepo) UpdateStatement(ctx context.Context, taskId string, stateme
 		`, taskId, statement.LangIso639, statement.Story, statement.Input, statement.Output,
 			statement.Notes, statement.Scoring, statement.Talk, statement.Example)
 		if err != nil {
-			return fmt.Errorf("failed to update markdown statement: %w", err)
+			return fmt.Errorf("update markdown statement: %w", err)
 		}
 	} else {
 		// Insert new statement
@@ -296,13 +296,13 @@ func (r *taskPgRepo) UpdateStatement(ctx context.Context, taskId string, stateme
 		`, taskId, statement.LangIso639, statement.Story, statement.Input, statement.Output,
 			statement.Notes, statement.Scoring, statement.Talk, statement.Example)
 		if err != nil {
-			return fmt.Errorf("failed to insert new markdown statement: %w", err)
+			return fmt.Errorf("insert new markdown statement: %w", err)
 		}
 	}
 
 	// Commit the transaction
 	if err = tx.Commit(ctx); err != nil {
-		return fmt.Errorf("failed to commit transaction: %w", err)
+		return fmt.Errorf("commit transaction: %w", err)
 	}
 
 	return nil
@@ -314,7 +314,7 @@ func (r *taskPgRepo) DeleteStatementImg(ctx context.Context, taskId string, file
 	// Start a transaction
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to begin transaction: %w", err)
+		return fmt.Errorf("begin transaction: %w", err)
 	}
 
 	// Defer rollback in case of error - transaction is committed later if successful
@@ -326,7 +326,7 @@ func (r *taskPgRepo) DeleteStatementImg(ctx context.Context, taskId string, file
 		SELECT EXISTS(SELECT 1 FROM task_images WHERE task_short_id = $1 AND file_name = $2)
 	`, taskId, filename).Scan(&imageExists)
 	if err != nil {
-		return fmt.Errorf("failed to check if image exists: %w", err)
+		return fmt.Errorf("check if image exists: %w", err)
 	}
 	if !imageExists {
 		return fmt.Errorf("image with filename %s does not exist for task %s", filename, taskId)
@@ -338,12 +338,12 @@ func (r *taskPgRepo) DeleteStatementImg(ctx context.Context, taskId string, file
 		WHERE task_short_id = $1 AND file_name = $2
 	`, taskId, filename)
 	if err != nil {
-		return fmt.Errorf("failed to delete statement image: %w", err)
+		return fmt.Errorf("delete statement image: %w", err)
 	}
 
 	// Commit the transaction
 	if err = tx.Commit(ctx); err != nil {
-		return fmt.Errorf("failed to commit transaction: %w", err)
+		return fmt.Errorf("commit transaction: %w", err)
 	}
 
 	return nil
@@ -355,7 +355,7 @@ func (r *taskPgRepo) UpdateIllustrationImg(ctx context.Context, taskId string, i
 	// Start a transaction
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to begin transaction: %w", err)
+		return fmt.Errorf("begin transaction: %w", err)
 	}
 
 	// Defer rollback in case of error - transaction is committed later if successful
@@ -367,7 +367,7 @@ func (r *taskPgRepo) UpdateIllustrationImg(ctx context.Context, taskId string, i
 		SELECT EXISTS(SELECT 1 FROM tasks WHERE short_id = $1)
 	`, taskId).Scan(&taskExists)
 	if err != nil {
-		return fmt.Errorf("failed to check if task exists: %w", err)
+		return fmt.Errorf("check if task exists: %w", err)
 	}
 	if !taskExists {
 		return fmt.Errorf("task with ID %s does not exist", taskId)
@@ -380,12 +380,12 @@ func (r *taskPgRepo) UpdateIllustrationImg(ctx context.Context, taskId string, i
 		WHERE short_id = $1
 	`, taskId, img.ObjectKey, img.WidthPx, img.HeightPx, img.SzInBytes)
 	if err != nil {
-		return fmt.Errorf("failed to update illustration image: %w", err)
+		return fmt.Errorf("update illustration image: %w", err)
 	}
 
 	// Commit the transaction
 	if err = tx.Commit(ctx); err != nil {
-		return fmt.Errorf("failed to commit transaction: %w", err)
+		return fmt.Errorf("commit transaction: %w", err)
 	}
 
 	return nil
@@ -437,7 +437,7 @@ func (r *taskPgRepo) GetTaskPreview(ctx context.Context, shortId string) (srvc.T
 		_ = json.Unmarshal(divisionsBytes, &t.OriginDivisions)
 	}
 	if err != nil {
-		return t, fmt.Errorf("failed to load task preview: %w", err)
+		return t, fmt.Errorf("load task preview: %w", err)
 	}
 
 	// Set illustration image only if it has valid data
@@ -456,7 +456,7 @@ func (r *taskPgRepo) GetTaskPreview(ctx context.Context, shortId string) (srvc.T
 			COALESCE((SELECT info_short FROM task_origin_notes WHERE task_short_id = $1 LIMIT 1), '')
 	`, shortId).Scan(&t.OriginNote, &t.OriginNoteShort)
 	if err != nil {
-		return t, fmt.Errorf("failed to load origin note: %w", err)
+		return t, fmt.Errorf("load origin note: %w", err)
 	}
 
 	// Load the first markdown statement story (for preview)
@@ -538,7 +538,7 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 		}
 	}
 	if err != nil {
-		return t, fmt.Errorf("failed to load task: %w", err)
+		return t, fmt.Errorf("load task: %w", err)
 	}
 
 	if illustrImg.ObjectKey != "" &&
@@ -557,13 +557,13 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 		WHERE task_short_id = $1
 	`, shortId)
 	if err != nil {
-		return t, fmt.Errorf("failed to load origin notes: %w", err)
+		return t, fmt.Errorf("load origin notes: %w", err)
 	}
 	for originRows.Next() {
 		var note srvc.OriginNote
 		if err := originRows.Scan(&note.Lang, &note.Info); err != nil {
 			originRows.Close()
-			return t, fmt.Errorf("failed to load origin note: %w", err)
+			return t, fmt.Errorf("load origin note: %w", err)
 		}
 		t.OriginNotes = append(t.OriginNotes, note)
 	}
@@ -576,7 +576,7 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 		WHERE task_short_id = $1
 	`, shortId)
 	if err != nil {
-		return t, fmt.Errorf("failed to load markdown statements: %w", err)
+		return t, fmt.Errorf("load markdown statements: %w", err)
 	}
 	var mdStatements []srvc.MarkdownStatement
 	for mdStmtRows.Next() {
@@ -584,7 +584,7 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 		var mdStmtID int
 		if err := mdStmtRows.Scan(&mdStmtID, &md.LangIso639, &md.Story, &md.Input, &md.Output, &md.Notes, &md.Scoring, &md.Talk, &md.Example); err != nil {
 			mdStmtRows.Close()
-			return t, fmt.Errorf("failed to load markdown statement: %w", err)
+			return t, fmt.Errorf("load markdown statement: %w", err)
 		}
 		mdStatements = append(mdStatements, md)
 	}
@@ -596,14 +596,14 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 		WHERE task_short_id = $1
 	`, shortId)
 	if err != nil {
-		return t, fmt.Errorf("failed to load task images: %w", err)
+		return t, fmt.Errorf("load task images: %w", err)
 	}
 	var taskImgs []srvc.StatementImage
 	for taskImgsRows.Next() {
 		var img srvc.StatementImage
 		if err := taskImgsRows.Scan(&img.ObjectKey, &img.Filename, &img.WidthPx, &img.HeightPx, &img.SzInBytes); err != nil {
 			taskImgsRows.Close()
-			return t, fmt.Errorf("failed to load task image: %w", err)
+			return t, fmt.Errorf("load task image: %w", err)
 		}
 		taskImgs = append(taskImgs, img)
 	}
@@ -617,7 +617,7 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 		WHERE task_short_id = $1
 	`, shortId)
 	if err != nil {
-		return t, fmt.Errorf("failed to load visible input subtasks: %w", err)
+		return t, fmt.Errorf("load visible input subtasks: %w", err)
 	}
 	var visInpSubtasks []srvc.VisibleInputSubtask
 	for visRows.Next() {
@@ -625,7 +625,7 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 		var dbSubtaskID int
 		if err := visRows.Scan(&dbSubtaskID, &subtask.SubtaskId); err != nil {
 			visRows.Close()
-			return t, fmt.Errorf("failed to load visible input subtask: %w", err)
+			return t, fmt.Errorf("load visible input subtask: %w", err)
 		}
 
 		// Load tests for this visible input subtask.
@@ -636,7 +636,7 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 		`, dbSubtaskID)
 		if err != nil {
 			visRows.Close()
-			return t, fmt.Errorf("failed to load visible input subtask tests: %w", err)
+			return t, fmt.Errorf("load visible input subtask tests: %w", err)
 		}
 		var visTests []srvc.VisInpSubtaskTest
 		for testRows.Next() {
@@ -662,7 +662,7 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 		WHERE task_short_id = $1
 	`, shortId)
 	if err != nil {
-		return t, fmt.Errorf("failed to load examples: %w", err)
+		return t, fmt.Errorf("load examples: %w", err)
 	}
 	var examples []srvc.Example
 	for exRows.Next() {
@@ -670,7 +670,7 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 		var noteBytes []byte
 		if err := exRows.Scan(&ex.Input, &ex.Output, &noteBytes); err != nil {
 			exRows.Close()
-			return t, fmt.Errorf("failed to load example: %w", err)
+			return t, fmt.Errorf("load example: %w", err)
 		}
 		if len(noteBytes) > 0 {
 			var noteMap map[string]string
@@ -690,14 +690,14 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 		WHERE task_short_id = $1
 	`, shortId)
 	if err != nil {
-		return t, fmt.Errorf("failed to load evaluation tests: %w", err)
+		return t, fmt.Errorf("load evaluation tests: %w", err)
 	}
 	var tests []srvc.Test
 	for testEvalRows.Next() {
 		var test srvc.Test
 		if err := testEvalRows.Scan(&test.InpSha2, &test.AnsSha2); err != nil {
 			testEvalRows.Close()
-			return t, fmt.Errorf("failed to load evaluation test: %w", err)
+			return t, fmt.Errorf("load evaluation test: %w", err)
 		}
 		tests = append(tests, test)
 	}
@@ -712,7 +712,7 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 		ORDER BY id
 	`, shortId)
 	if err != nil {
-		return t, fmt.Errorf("failed to load scoring subtasks: %w", err)
+		return t, fmt.Errorf("load scoring subtasks: %w", err)
 	}
 	var subtasks []srvc.Subtask
 	for subtaskRows.Next() {
@@ -722,11 +722,11 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 		var descBytes []byte
 		if err := subtaskRows.Scan(&stID, &st.Score, &descBytes); err != nil {
 			subtaskRows.Close()
-			return t, fmt.Errorf("failed to load scoring subtask: %w", err)
+			return t, fmt.Errorf("load scoring subtask: %w", err)
 		}
 		if err := json.Unmarshal(descBytes, &st.Descriptions); err != nil {
 			subtaskRows.Close()
-			return t, fmt.Errorf("failed to unmarshal descriptions: %w", err)
+			return t, fmt.Errorf("unmarshal descriptions: %w", err)
 		}
 
 		// Load associated test IDs for this subtask.
@@ -737,7 +737,7 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 		`, stID)
 		if err != nil {
 			subtaskRows.Close()
-			return t, fmt.Errorf("failed to load subtask test IDs: %w", err)
+			return t, fmt.Errorf("load subtask test IDs: %w", err)
 		}
 		var testIDs []int
 		for testIdRows.Next() {
@@ -745,7 +745,7 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 			if err := testIdRows.Scan(&tid); err != nil {
 				testIdRows.Close()
 				subtaskRows.Close()
-				return t, fmt.Errorf("failed to load subtask test ID: %w", err)
+				return t, fmt.Errorf("load subtask test ID: %w", err)
 			}
 			testIDs = append(testIDs, tid)
 		}
@@ -763,7 +763,7 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 		WHERE task_short_id = $1
 	`, shortId)
 	if err != nil {
-		return t, fmt.Errorf("failed to load test groups: %w", err)
+		return t, fmt.Errorf("load test groups: %w", err)
 	}
 	var testGroups []srvc.TestGroup
 	for tgRows.Next() {
@@ -771,7 +771,7 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 		var tgID int
 		if err := tgRows.Scan(&tgID, &tg.Points, &tg.Public); err != nil {
 			tgRows.Close()
-			return t, fmt.Errorf("failed to load test group: %w", err)
+			return t, fmt.Errorf("load test group: %w", err)
 		}
 		// Load test IDs for this test group.
 		tgTestRows, err := r.pool.Query(ctx, `
@@ -781,7 +781,7 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 		`, tgID)
 		if err != nil {
 			tgRows.Close()
-			return t, fmt.Errorf("failed to load test group test IDs: %w", err)
+			return t, fmt.Errorf("load test group test IDs: %w", err)
 		}
 		var tgTestIDs []int
 		for tgTestRows.Next() {
@@ -789,7 +789,7 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 			if err := tgTestRows.Scan(&tid); err != nil {
 				tgTestRows.Close()
 				tgRows.Close()
-				return t, fmt.Errorf("failed to load test group test ID: %w", err)
+				return t, fmt.Errorf("load test group test ID: %w", err)
 			}
 			tgTestIDs = append(tgTestIDs, tid)
 		}
@@ -807,7 +807,7 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 		WHERE task_id = $1
 	`, shortId)
 	if err != nil {
-		return t, fmt.Errorf("failed to load solutions: %w", err)
+		return t, fmt.Errorf("load solutions: %w", err)
 	}
 	var solutions []srvc.Solution
 	for solutionRows.Next() {
@@ -815,7 +815,7 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 		var subtasksBytes []byte
 		if err := solutionRows.Scan(&sol.Fname, &sol.Content, &subtasksBytes); err != nil {
 			solutionRows.Close()
-			return t, fmt.Errorf("failed to load solution: %w", err)
+			return t, fmt.Errorf("load solution: %w", err)
 		}
 		if len(subtasksBytes) > 0 {
 			var subtasks []int
@@ -840,7 +840,7 @@ func (r *taskPgRepo) ListTasks(ctx context.Context, limit int, offset int) ([]sr
 		LIMIT $1 OFFSET $2
 	`, limit, offset)
 	if err != nil {
-		return nil, fmt.Errorf("failed to load tasks: %w", err)
+		return nil, fmt.Errorf("load tasks: %w", err)
 	}
 	defer rows.Close()
 
@@ -848,11 +848,11 @@ func (r *taskPgRepo) ListTasks(ctx context.Context, limit int, offset int) ([]sr
 	for rows.Next() {
 		var shortId string
 		if err := rows.Scan(&shortId); err != nil {
-			return nil, fmt.Errorf("failed to load task short ID: %w", err)
+			return nil, fmt.Errorf("load task short ID: %w", err)
 		}
 		task, err := r.GetTask(ctx, shortId)
 		if err != nil {
-			return nil, fmt.Errorf("failed to load task: %w", err)
+			return nil, fmt.Errorf("load task: %w", err)
 		}
 		tasks = append(tasks, task)
 	}
@@ -871,7 +871,7 @@ func (r *taskPgRepo) ResolveNames(ctx context.Context, shortIds []string) ([]str
 		ORDER BY short_id
 	`, shortIds)
 	if err != nil {
-		return nil, fmt.Errorf("failed to resolve names: %w", err)
+		return nil, fmt.Errorf("resolve names: %w", err)
 	}
 	defer rows.Close()
 
@@ -879,7 +879,7 @@ func (r *taskPgRepo) ResolveNames(ctx context.Context, shortIds []string) ([]str
 	for rows.Next() {
 		var fullName string
 		if err := rows.Scan(&fullName); err != nil {
-			return nil, fmt.Errorf("failed to load full name: %w", err)
+			return nil, fmt.Errorf("load full name: %w", err)
 		}
 		names = append(names, fullName)
 	}
@@ -890,7 +890,7 @@ func (r *taskPgRepo) Exists(ctx context.Context, shortId string) (bool, error) {
 	var exists bool
 	err := r.pool.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM tasks WHERE short_id = $1)", shortId).Scan(&exists)
 	if err != nil {
-		return false, fmt.Errorf("failed to check if task exists: %w", err)
+		return false, fmt.Errorf("check if task exists: %w", err)
 	}
 	return exists, nil
 }
@@ -900,7 +900,7 @@ func (r *taskPgRepo) CreateTask(ctx context.Context, t srvc.Task) error {
 	// Check if the task already exists.
 	exists, err := r.Exists(ctx, t.ShortId)
 	if err != nil {
-		return fmt.Errorf("failed to check if task exists: %w", err)
+		return fmt.Errorf("check if task exists: %w", err)
 	}
 	if exists {
 		return fmt.Errorf("task %s already exists", t.ShortId)
@@ -908,7 +908,7 @@ func (r *taskPgRepo) CreateTask(ctx context.Context, t srvc.Task) error {
 
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to begin transaction: %w", err)
+		return fmt.Errorf("begin transaction: %w", err)
 	}
 	// Ensure proper transaction handling.
 	defer func() {
@@ -934,7 +934,7 @@ func (r *taskPgRepo) CreateTask(ctx context.Context, t srvc.Task) error {
 		VALUES ($1, $2::jsonb, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15::jsonb, $16::jsonb, $17::jsonb, $18, $19, $20, $21)
 	`, t.ShortId, mustMarshalMapToJSONB(t.FullName), t.OrigLang, t.Readme, illustrObjectKey, illustrWidthPx, illustrHeightPx, illustrSzInBytes, t.MemLimMegabytes, t.CpuTimeLimSecs, t.OriginOlympiad, t.OriginOrg, t.OriginYear, t.OlympStage, mustMarshalSliceToJSONB(t.OriginDivisions), mustMarshalSliceToJSONB(t.Authors), mustMarshalSliceToJSONB(t.ProblemTags), t.OgFilesZipObjectKey, t.DifficultyRating, t.Checker, t.Interactor)
 	if err != nil {
-		return fmt.Errorf("failed to insert main task: %w", err)
+		return fmt.Errorf("insert main task: %w", err)
 	}
 
 	// Insert origin notes.
@@ -944,7 +944,7 @@ func (r *taskPgRepo) CreateTask(ctx context.Context, t srvc.Task) error {
 			VALUES ($1, $2, $3)
 		`, t.ShortId, note.Lang, note.Info)
 		if err != nil {
-			return fmt.Errorf("failed to insert origin note: %w", err)
+			return fmt.Errorf("insert origin note: %w", err)
 		}
 	}
 
@@ -957,7 +957,7 @@ func (r *taskPgRepo) CreateTask(ctx context.Context, t srvc.Task) error {
 			RETURNING id
 		`, t.ShortId, md.LangIso639, md.Story, md.Input, md.Output, md.Notes, md.Scoring, md.Talk, md.Example).Scan(&mdStmtID)
 		if err != nil {
-			return fmt.Errorf("failed to insert markdown statement: %w", err)
+			return fmt.Errorf("insert markdown statement: %w", err)
 		}
 	}
 	for _, img := range t.MdImages {
@@ -966,7 +966,7 @@ func (r *taskPgRepo) CreateTask(ctx context.Context, t srvc.Task) error {
 			VALUES ($1, $2, $3, $4, $5, $6)
 		`, t.ShortId, img.ObjectKey, img.Filename, img.WidthPx, img.HeightPx, img.SzInBytes)
 		if err != nil {
-			return fmt.Errorf("failed to insert markdown image: %w", err)
+			return fmt.Errorf("insert markdown image: %w", err)
 		}
 	}
 
@@ -979,7 +979,7 @@ func (r *taskPgRepo) CreateTask(ctx context.Context, t srvc.Task) error {
 			RETURNING id
 		`, t.ShortId, vis.SubtaskId).Scan(&visSubtaskID)
 		if err != nil {
-			return fmt.Errorf("failed to insert visible input subtask: %w", err)
+			return fmt.Errorf("insert visible input subtask: %w", err)
 		}
 		for _, visTest := range vis.Tests {
 			_, err = tx.Exec(ctx, `
@@ -987,7 +987,7 @@ func (r *taskPgRepo) CreateTask(ctx context.Context, t srvc.Task) error {
 				VALUES ($1, $2, $3)
 			`, visSubtaskID, visTest.TestId, visTest.Input)
 			if err != nil {
-				return fmt.Errorf("failed to insert visible input subtask test: %w", err)
+				return fmt.Errorf("insert visible input subtask test: %w", err)
 			}
 		}
 	}
@@ -999,7 +999,7 @@ func (r *taskPgRepo) CreateTask(ctx context.Context, t srvc.Task) error {
 			VALUES ($1, $2, $3, $4::jsonb)
 		`, t.ShortId, ex.Input, ex.Output, mustMarshalMapToJSONB(ex.MdNote))
 		if err != nil {
-			return fmt.Errorf("failed to insert example: %w", err)
+			return fmt.Errorf("insert example: %w", err)
 		}
 	}
 
@@ -1010,7 +1010,7 @@ func (r *taskPgRepo) CreateTask(ctx context.Context, t srvc.Task) error {
 			VALUES ($1, $2, $3)
 		`, t.ShortId, test.InpSha2, test.AnsSha2)
 		if err != nil {
-			return fmt.Errorf("failed to insert evaluation test: %w", err)
+			return fmt.Errorf("insert evaluation test: %w", err)
 		}
 	}
 
@@ -1018,7 +1018,7 @@ func (r *taskPgRepo) CreateTask(ctx context.Context, t srvc.Task) error {
 	for _, st := range t.Subtasks {
 		descBytes, err := json.Marshal(st.Descriptions)
 		if err != nil {
-			return fmt.Errorf("failed to marshal subtask descriptions: %w", err)
+			return fmt.Errorf("marshal subtask descriptions: %w", err)
 		}
 		var subtaskID int
 		err = tx.QueryRow(ctx, `
@@ -1027,7 +1027,7 @@ func (r *taskPgRepo) CreateTask(ctx context.Context, t srvc.Task) error {
 			RETURNING id
 		`, t.ShortId, st.Score, descBytes).Scan(&subtaskID)
 		if err != nil {
-			return fmt.Errorf("failed to insert scoring subtask: %w", err)
+			return fmt.Errorf("insert scoring subtask: %w", err)
 		}
 		for _, tid := range st.TestIDs {
 			_, err = tx.Exec(ctx, `
@@ -1035,7 +1035,7 @@ func (r *taskPgRepo) CreateTask(ctx context.Context, t srvc.Task) error {
 				VALUES ($1, $2)
 			`, subtaskID, tid)
 			if err != nil {
-				return fmt.Errorf("failed to insert scoring subtask test ID: %w", err)
+				return fmt.Errorf("insert scoring subtask test ID: %w", err)
 			}
 		}
 	}
@@ -1049,7 +1049,7 @@ func (r *taskPgRepo) CreateTask(ctx context.Context, t srvc.Task) error {
 			RETURNING id
 		`, t.ShortId, tg.Points, tg.Public).Scan(&tgID)
 		if err != nil {
-			return fmt.Errorf("failed to insert test group: %w", err)
+			return fmt.Errorf("insert test group: %w", err)
 		}
 		for _, tid := range tg.TestIDs {
 			_, err = tx.Exec(ctx, `
@@ -1057,7 +1057,7 @@ func (r *taskPgRepo) CreateTask(ctx context.Context, t srvc.Task) error {
 				VALUES ($1, $2)
 			`, tgID, tid)
 			if err != nil {
-				return fmt.Errorf("failed to insert test group test ID: %w", err)
+				return fmt.Errorf("insert test group test ID: %w", err)
 			}
 		}
 	}
@@ -1066,14 +1066,14 @@ func (r *taskPgRepo) CreateTask(ctx context.Context, t srvc.Task) error {
 	for _, sol := range t.Solutions {
 		subtasksBytes, err := json.Marshal(sol.Subtasks)
 		if err != nil {
-			return fmt.Errorf("failed to marshal solution subtasks: %w", err)
+			return fmt.Errorf("marshal solution subtasks: %w", err)
 		}
 		_, err = tx.Exec(ctx, `
 			INSERT INTO task_solutions (task_id, fname, content, subtasks)
 			VALUES ($1, $2, $3, $4)
 		`, t.ShortId, sol.Fname, sol.Content, subtasksBytes)
 		if err != nil {
-			return fmt.Errorf("failed to insert solution: %w", err)
+			return fmt.Errorf("insert solution: %w", err)
 		}
 	}
 
@@ -1086,7 +1086,7 @@ func (r *taskPgRepo) DeleteTask(ctx context.Context, shortId string) error {
 	// Check if the task exists first
 	exists, err := r.Exists(ctx, shortId)
 	if err != nil {
-		return fmt.Errorf("failed to check if task exists: %w", err)
+		return fmt.Errorf("check if task exists: %w", err)
 	}
 	if !exists {
 		return fmt.Errorf("task %s does not exist", shortId)
@@ -1095,7 +1095,7 @@ func (r *taskPgRepo) DeleteTask(ctx context.Context, shortId string) error {
 	// Start a transaction to ensure atomicity
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to begin transaction: %w", err)
+		return fmt.Errorf("begin transaction: %w", err)
 	}
 	defer func() {
 		if err != nil {
@@ -1111,64 +1111,64 @@ func (r *taskPgRepo) DeleteTask(ctx context.Context, shortId string) error {
 	// Delete task_examples
 	_, err = tx.Exec(ctx, `DELETE FROM task_examples WHERE task_short_id = $1`, shortId)
 	if err != nil {
-		return fmt.Errorf("failed to delete task examples: %w", err)
+		return fmt.Errorf("delete task examples: %w", err)
 	}
 
 	// Delete task_md_statements
 	_, err = tx.Exec(ctx, `DELETE FROM task_md_statements WHERE task_short_id = $1`, shortId)
 	if err != nil {
-		return fmt.Errorf("failed to delete task md statements: %w", err)
+		return fmt.Errorf("delete task md statements: %w", err)
 	}
 
 	// Delete task_origin_notes
 	_, err = tx.Exec(ctx, `DELETE FROM task_origin_notes WHERE task_short_id = $1`, shortId)
 	if err != nil {
-		return fmt.Errorf("failed to delete task origin notes: %w", err)
+		return fmt.Errorf("delete task origin notes: %w", err)
 	}
 
 	// Delete task_subtask_test_ids (via task_subtasks CASCADE)
 	// Delete task_subtasks
 	_, err = tx.Exec(ctx, `DELETE FROM task_subtasks WHERE task_short_id = $1`, shortId)
 	if err != nil {
-		return fmt.Errorf("failed to delete task subtasks: %w", err)
+		return fmt.Errorf("delete task subtasks: %w", err)
 	}
 
 	// Delete task_images
 	_, err = tx.Exec(ctx, `DELETE FROM task_images WHERE task_short_id = $1`, shortId)
 	if err != nil {
-		return fmt.Errorf("failed to delete task images: %w", err)
+		return fmt.Errorf("delete task images: %w", err)
 	}
 
 	// Delete task_test_group_test_ids (via task_test_groups CASCADE)
 	// Delete task_test_groups
 	_, err = tx.Exec(ctx, `DELETE FROM task_test_groups WHERE task_short_id = $1`, shortId)
 	if err != nil {
-		return fmt.Errorf("failed to delete task test groups: %w", err)
+		return fmt.Errorf("delete task test groups: %w", err)
 	}
 
 	// Delete task_tests
 	_, err = tx.Exec(ctx, `DELETE FROM task_tests WHERE task_short_id = $1`, shortId)
 	if err != nil {
-		return fmt.Errorf("failed to delete task tests: %w", err)
+		return fmt.Errorf("delete task tests: %w", err)
 	}
 
 	// Delete task_vis_inp_subtask_tests (via task_vis_inp_subtasks CASCADE)
 	// Delete task_vis_inp_subtasks
 	_, err = tx.Exec(ctx, `DELETE FROM task_vis_inp_subtasks WHERE task_short_id = $1`, shortId)
 	if err != nil {
-		return fmt.Errorf("failed to delete task vis inp subtasks: %w", err)
+		return fmt.Errorf("delete task vis inp subtasks: %w", err)
 	}
 
 	// Delete task_solutions
 	_, err = tx.Exec(ctx, `DELETE FROM task_solutions WHERE task_id = $1`, shortId)
 	if err != nil {
-		return fmt.Errorf("failed to delete task solutions: %w", err)
+		return fmt.Errorf("delete task solutions: %w", err)
 	}
 
 	// Finally, delete the main task record
 	result, err := tx.Exec(ctx, `DELETE FROM tasks WHERE short_id = $1`, shortId)
 	if err != nil {
-		return fmt.Errorf("failed to delete task: %w", err)
+		return fmt.Errorf("delete task: %w", err)
 	}
 
 	// Verify that the task was actually deleted

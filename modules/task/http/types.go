@@ -2,7 +2,6 @@ package http
 
 import (
 	"context"
-	"log/slog"
 
 	"github.com/programme-lv/backend/modules/task/srvc"
 )
@@ -227,7 +226,6 @@ func (h *taskHttpHandler) mapTaskIllustrImg(illustrImg *srvc.IllustrationImage) 
 
 	httpUrl, err := h.taskSrvc.GetHttpUrlForIllustrImg(context.TODO(), illustrImg.ObjectKey)
 	if err != nil {
-		slog.Error("get public url for illustration image", "error", err)
 		return nil
 	}
 
@@ -257,7 +255,6 @@ func (h *taskHttpHandler) mapTaskStatementImages(images []srvc.StatementImage) [
 	for i, image := range images {
 		httpUrl, err := h.taskSrvc.GetHttpUrlForStatementImage(context.TODO(), image.ObjectKey)
 		if err != nil {
-			slog.Error("get public url for statement image", "error", err)
 			httpUrl = ""
 		}
 		response[i] = StatementImage{
