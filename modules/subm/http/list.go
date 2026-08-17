@@ -1,12 +1,10 @@
 package http
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
 
-	"github.com/google/uuid"
 	"github.com/programme-lv/backend/common/ctxlog"
 	"github.com/programme-lv/backend/common/jsonresp"
 	"github.com/programme-lv/backend/modules/subm/domain"
@@ -58,38 +56,12 @@ func (h *SubmHttpHandler) GetSubmList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	onlyMyStr := r.URL.Query().Get("my")
-	onlyMy := false
-	if onlyMyStr == "true" {
-		onlyMy = true
-	}
-
-	var authorUuid *uuid.UUID
-	if onlyMy {
-		userUuid, err := auth.GetUserUuidFromCtx(r.Context())
-		if errors.Is(err, auth.ErrNoJwtClaims) || errors.Is(err, auth.ErrEmptyJwtClaims) {
-			jsonresp.Unauthorized(w, "jwt claims are missing")
-			return
-		}
-		if err != nil {
-			log.Error("get user uuid from context", "error", err)
-			jsonresp.HandleErrorWithContext(r.Context(), w, err)
-			return
-		}
-		authorUuid = &userUuid
-	}
-
 	includeAdmin := false
 	if auth.IsAdmin(r.Context()) {
 		includeAdmin = true
 	}
 
-	// Create a cache key based on pagination parameters
-	authorUuidStr := ""
-	if authorUuid != nil {
-		authorUuidStr = authorUuid.String()
-	}
-	cacheKey := fmt.Sprintf("subm_list:%d:%d:%s:%s:%t", limit, offset, search, authorUuidStr, includeAdmin)
+	cacheKey := fmt.Sprintf("subm_list:%d:%d:%s:%t", limit, offset, search, includeAdmin)
 
 	// Try to get from cache first
 	if cachedResponse, found := h.submCache.Get(cacheKey); found {
@@ -111,7 +83,7 @@ func (h *SubmHttpHandler) GetSubmList(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Get total count of submissions
-		totalCount, countSubmsErr := h.submSrvc.CountSubms(r.Context(), search, authorUuid, includeAdmin)
+		totalCount, countSubmsErr := h.submSrvc.CountSubms(r.Context(), search, nil, includeAdmin)
 		if countSubmsErr != nil {
 			return nil, countSubmsErr
 		}
@@ -121,7 +93,6 @@ func (h *SubmHttpHandler) GetSubmList(w http.ResponseWriter, r *http.Request) {
 			Limit:        limit,
 			Offset:       offset,
 			Search:       search,
-			Author:       authorUuid,
 			IncludeAdmin: includeAdmin,
 		})
 		if err != nil {
