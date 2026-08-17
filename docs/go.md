@@ -3,7 +3,8 @@
 Read these before changing Go in this repo:
 
 1. [Effective Go](go/effective.md) — local copy of https://go.dev/doc/effective_go
-2. [Code review comments](go/review.md) — Go wiki review comments plus common extras
+2. [Go Doc Comments](go/comment.md) — local copy of https://go.dev/doc/comment
+3. [Code review comments](go/review.md) — Go wiki review comments plus common extras
 
 Live originals win if a local copy is stale.
 

@@ -26,7 +26,7 @@ go vet ./...
 
 ## Comment Sentences
 
-See [Effective Go — Commentary](https://go.dev/doc/effective_go#commentary). Comments documenting declarations should be full sentences, even if that seems a little redundant. This approach makes them format well when extracted into godoc. Comments should begin with the name of the thing being described and end in a period:
+See [Go Doc Comments](comment.md) and [Effective Go — Commentary](https://go.dev/doc/effective_go#commentary). Comments documenting declarations should be full sentences, even if that seems a little redundant. This approach makes them format well when extracted into godoc. Comments should begin with the name of the thing being described and end in a period:
 
 ```go
 // Request represents a request to run a command.
@@ -113,7 +113,7 @@ func Key() string {
 
 ## Doc Comments
 
-All top-level, exported names should have doc comments, as should non-trivial unexported type or function declarations. See [Effective Go — Commentary](https://go.dev/doc/effective_go#commentary).
+All top-level, exported names should have doc comments, as should non-trivial unexported type or function declarations. See [Go Doc Comments](comment.md).
 
 ## Don't Panic
 
@@ -457,7 +457,7 @@ These are examples, and sensible variants of these are acceptable.
 
 Note that starting the sentence with a lower-case word is not among the acceptable options for package comments, as these are publicly-visible and should be written in proper English, including capitalizing the first word of the sentence. When the binary name is the first word, capitalizing it is required even though it does not strictly match the spelling of the command-line invocation.
 
-See [Effective Go — Commentary](https://go.dev/doc/effective_go#commentary).
+See [Go Doc Comments](comment.md).
 
 ## Package Names
 

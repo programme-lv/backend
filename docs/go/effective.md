@@ -139,7 +139,7 @@ are useful within an expression or to disable large swaths of code.
 Comments that appear before top-level declarations, with no intervening newlines,
 are considered to document the declaration itself.
 These “doc comments” are the primary documentation for a given Go package or command.
-For more about doc comments, see “[Go Doc Comments](https://go.dev/doc/comment)”.
+For more about doc comments, see “[Go Doc Comments](comment.md)” ([live](https://go.dev/doc/comment)).
 
 ## Names
 

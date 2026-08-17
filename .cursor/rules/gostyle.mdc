@@ -1,12 +1,12 @@
 ---
-description: Go style — Effective Go and code review comments
+description: Go style — Effective Go, doc comments, and code review comments
 globs: "**/*.go"
 alwaysApply: false
 ---
 
 # Go style
 
-Follow [docs/go.md](docs/go.md): [Effective Go](docs/go/effective.md) then [code review comments](docs/go/review.md).
+Follow [docs/go.md](docs/go.md): [Effective Go](docs/go/effective.md), [doc comments](docs/go/comment.md), then [code review comments](docs/go/review.md).
 
 Repo overrides (win over those guides):
 
