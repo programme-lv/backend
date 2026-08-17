@@ -7,106 +7,86 @@ import (
 	"github.com/programme-lv/backend/common/srvcerror"
 )
 
-const ErrCodeTaskNotFound = "task_not_found"
+var ErrTaskNotFound = srvcerror.New(
+	"task_not_found",
+	"uzdevums netika atrasts",
+).SetHttpStatusCode(http.StatusNotFound)
 
-func NewErrorTaskNotFound(taskId string) srvcerror.E {
-	return srvcerror.New(
-		ErrCodeTaskNotFound,
-		fmt.Sprintf("uzdevums '%s' netika atrasts", taskId),
-	).SetHttpStatusCode(http.StatusNotFound)
+func errTaskNotFound(taskId string) srvcerror.E {
+	return ErrTaskNotFound.WithMsg(fmt.Sprintf("uzdevums '%s' netika atrasts", taskId))
 }
 
+// ErrSomeTaskNotFound means a batch name lookup missed at least one short ID.
 var ErrSomeTaskNotFound = srvcerror.New(
 	"some_task_not_found",
 	"kāds no uzdevumiem netika atrasts",
 ).SetHttpStatusCode(http.StatusNotFound)
 
-const ErrCodeImageAlreadyExists = "image_already_exists"
+var ErrImageAlreadyExists = srvcerror.New(
+	"image_already_exists",
+	"attēls ar šādu nosaukumu jau eksistē",
+).SetHttpStatusCode(http.StatusConflict)
 
-func NewErrorImageAlreadyExists(filename string) srvcerror.E {
-	return srvcerror.New(
-		ErrCodeImageAlreadyExists,
-		fmt.Sprintf("attēls ar nosaukumu '%s' jau eksistē", filename),
-	).SetHttpStatusCode(http.StatusConflict)
+func errImageAlreadyExists(filename string) srvcerror.E {
+	return ErrImageAlreadyExists.WithMsg(fmt.Sprintf("attēls ar nosaukumu '%s' jau eksistē", filename))
 }
 
-const ErrCodeImageFileExtFromMimeType = "image_file_ext_from_mime_type"
+var ErrUnknownImageExt = srvcerror.New(
+	"unknown_image_extension",
+	"neatbalstīts attēla tips",
+).SetHttpStatusCode(http.StatusBadRequest)
 
-func NewErrorImageFileExtFromMimeType(mime string) srvcerror.E {
-	return srvcerror.New(
-		ErrCodeImageFileExtFromMimeType,
-		fmt.Sprintf("neizdevās iegūt attēla faila paplašinājumu [.png, .jpg, .jpeg, ...] no MIME tipa '%s'", mime),
-	).SetHttpStatusCode(http.StatusBadRequest)
+func errUnknownImageExt(mime string) srvcerror.E {
+	return ErrUnknownImageExt.WithMsg(fmt.Sprintf("neatbalstīts attēla tips '%s'", mime))
 }
 
-const ErrCodeGetImageWidthAndHeight = "image_width_and_height"
+var ErrImageDimensions = srvcerror.New(
+	"image_dimensions",
+	"attēla izmēru nevar nolasīt",
+).SetHttpStatusCode(http.StatusBadRequest)
 
-func NewErrorGetImageWidthAndHeight() srvcerror.E {
-	return srvcerror.New(
-		ErrCodeGetImageWidthAndHeight,
-		"neizdevās iegūt attēla platumu un augstumu [px]",
-	).SetHttpStatusCode(http.StatusBadRequest)
+var ErrImageSize = srvcerror.New(
+	"image_inadequate_dimensions",
+	"attēls ir pārāk mazs vai pārāk liels",
+).SetHttpStatusCode(http.StatusBadRequest)
+
+var ErrInvalidTaskZip = srvcerror.New(
+	"invalid_task_zip",
+	"nederīgs TaskZip",
+).SetHttpStatusCode(http.StatusBadRequest)
+
+func errInvalidTaskZip(reason string) srvcerror.E {
+	return ErrInvalidTaskZip.WithMsg(fmt.Sprintf("nederīgs TaskZip: %s", reason))
 }
 
-const ErrCodeImageInadequateDimensions = "image_inadequate_dimensions"
+var ErrUnsupportedTaskZip = srvcerror.New(
+	"unsupported_task_zip",
+	"neatbalstīts TaskZip",
+).SetHttpStatusCode(http.StatusBadRequest)
 
-func NewErrorImageInadequateDimensions() srvcerror.E {
-	return srvcerror.New(
-		ErrCodeImageInadequateDimensions,
-		"attēls ir pārāk mazs vai pārāk liels",
-	).SetHttpStatusCode(http.StatusBadRequest)
+func errUnsupportedTaskZip(reason string) srvcerror.E {
+	return ErrUnsupportedTaskZip.WithMsg(fmt.Sprintf("neatbalstīts TaskZip: %s", reason))
 }
 
-const ErrCodeFailedToGetTaskFromDb = "failed_to_get_task_from_db"
+var ErrTaskAlreadyExists = srvcerror.New(
+	"task_already_exists",
+	"uzdevums ar šādu ID jau eksistē",
+).SetHttpStatusCode(http.StatusConflict)
 
-func NewErrorFailedToGetTaskFromDb(taskId string) srvcerror.E {
-	return srvcerror.New(
-		ErrCodeFailedToGetTaskFromDb,
-		fmt.Sprintf("neizdevās iegūt uzdevumu '%s' no datubāzes", taskId),
-	).SetHttpStatusCode(http.StatusInternalServerError)
+func errTaskAlreadyExists(taskId string) srvcerror.E {
+	return ErrTaskAlreadyExists.WithMsg(fmt.Sprintf("uzdevums ar ID '%s' jau eksistē", taskId))
 }
 
-const ErrCodeInternalServerError = "internal_server_error"
+var ErrImageNotFound = srvcerror.New(
+	"image_not_found",
+	"attēls netika atrasts",
+).SetHttpStatusCode(http.StatusNotFound)
 
-func NewErrorInternalServerError() srvcerror.E {
-	return srvcerror.New(
-		ErrCodeInternalServerError,
-		"iekšēja servera kļūda",
-	).SetHttpStatusCode(http.StatusInternalServerError)
+func errImageNotFound(filename string) srvcerror.E {
+	return ErrImageNotFound.WithMsg(fmt.Sprintf("attēls ar nosaukumu '%s' netika atrasts", filename))
 }
 
-const ErrCodeInvalidTaskZip = "invalid_task_zip"
-
-func NewErrorInvalidTaskZip(reason string) srvcerror.E {
-	return srvcerror.New(
-		ErrCodeInvalidTaskZip,
-		fmt.Sprintf("nederīgs TaskZip: %s", reason),
-	).SetHttpStatusCode(http.StatusBadRequest)
-}
-
-const ErrCodeUnsupportedTaskZip = "unsupported_task_zip"
-
-func NewErrorUnsupportedTaskZip(reason string) srvcerror.E {
-	return srvcerror.New(
-		ErrCodeUnsupportedTaskZip,
-		fmt.Sprintf("neatbalstīts TaskZip: %s", reason),
-	).SetHttpStatusCode(http.StatusBadRequest)
-}
-
-const ErrCodeTaskAlreadyExists = "task_already_exists"
-
-func NewErrorTaskAlreadyExists(taskId string) srvcerror.E {
-	return srvcerror.New(
-		ErrCodeTaskAlreadyExists,
-		fmt.Sprintf("uzdevums ar ID '%s' jau eksistē", taskId),
-	).SetHttpStatusCode(http.StatusConflict)
-}
-
-const ErrCodeImageNotFound = "image_not_found"
-
-func NewErrorImageNotFound(filename string) srvcerror.E {
-	return srvcerror.New(
-		ErrCodeImageNotFound,
-		fmt.Sprintf("attēls ar nosaukumu '%s' netika atrasts", filename),
-	).SetHttpStatusCode(http.StatusNotFound)
-}
+var ErrIllustrationNotFound = srvcerror.New(
+	"illustration_not_found",
+	"uzdevumam nav ilustrācijas",
+).SetHttpStatusCode(http.StatusNotFound)

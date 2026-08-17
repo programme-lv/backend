@@ -13,6 +13,7 @@ type E interface {
 
 	HttpStatusCode() int
 	SetHttpStatusCode(code int) E
+	WithMsg(msg string) E
 }
 
 // Error implements the E interface
@@ -68,6 +69,11 @@ func (e Error) HttpStatusCode() int {
 
 func (e Error) SetHttpStatusCode(code int) E {
 	e.httpStatus = code
+	return e
+}
+
+func (e Error) WithMsg(msg string) E {
+	e.msgToUser = msg
 	return e
 }
 

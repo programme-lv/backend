@@ -104,7 +104,7 @@ func (t *Task) InteractorPtr() *string {
 	return nil
 }
 
-// DefaultFullName returns the preferred full name, prioritizing OrigLang, then 'lv', then any available name.
+// DefaultFullName prefers OrigLang, then lv, then any remaining name.
 func (t *Task) DefaultFullName() string {
 	if t.FullName == nil {
 		return ""
@@ -184,7 +184,6 @@ type Test struct {
 	AnsSha2 string
 }
 
-// TestGroup represents a group of tests within a task.
 type TestGroup struct {
 	Points int
 	Public bool
@@ -192,6 +191,7 @@ type TestGroup struct {
 	TestIDs []int
 }
 
+// FindTestgroupSubtasks returns 1-based subtask IDs that include tests from the given 1-based test group.
 func (t *Task) FindTestgroupSubtasks(testGroupId int) []int {
 	tests := make([]int, 0)
 	tests = append(tests, t.TestGroups[testGroupId-1].TestIDs...)
@@ -208,13 +208,12 @@ func (t *Task) FindTestgroupSubtasks(testGroupId int) []int {
 	return subtasks
 }
 
-// OriginNote represents origin notes with language and information.
 type OriginNote struct {
 	Lang string
 	Info string
 }
 
-// DefaultFullName returns the preferred full name for TaskPreview.
+// DefaultFullName prefers OrigLang, then lv, then any remaining name.
 func (t *TaskPreview) DefaultFullName() string {
 	if t.FullName == nil {
 		return ""

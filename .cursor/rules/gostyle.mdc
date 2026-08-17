@@ -12,7 +12,7 @@ Repo overrides (win over those guides):
 
 - Filenames: lowercase, no separators, one word when possible.
 - No `failed to` prefix on logs or errors.
-- Wrap with `fmt.Errorf("...: %w", err)`, not `pkg/errors`.
+- Wrap with `fmt.Errorf("...: %w", err)` inside repo and other non-HTTP Go, not `pkg/errors`. Do not wrap `srvcerror.E` in `%w` before HTTP. See [docs/errors.md](docs/errors.md).
 - No Makefile for fmt/vet/test unless we add one on purpose.
 - Keep `cmd/` `modules/` `common/` `postgres/`. Do not adopt golang-standards/project-layout.
 - Do not add new `util` / `misc` / `types` packages.

@@ -1,3 +1,6 @@
+// Package srvc is the task service: use-case orchestration, persistence, and object-store I/O.
+//
+// Construct a service with [NewTaskSrvc].
 package srvc
 
 import (
@@ -81,18 +84,20 @@ type taskSrvc struct {
 	apiPublicBaseURL           string
 	testfileDownloadSigningKey []byte
 
-	// dlGroup deduplicates concurrent DownloadTestFile calls per key to prevent thundering herd
+	// dlGroup coalesces concurrent DownloadTestFile calls for the same key.
 	dlGroup singleflight.Group
 }
 
 type TaskSrvcOption func(*taskSrvc)
 
+// WithPublicAPIBaseURL sets the public API origin used to build asset URLs.
 func WithPublicAPIBaseURL(baseURL string) TaskSrvcOption {
 	return func(ts *taskSrvc) {
 		ts.apiPublicBaseURL = baseURL
 	}
 }
 
+// WithTestfileDownloadSigningKey sets the HMAC key used to sign test-file download URLs.
 func WithTestfileDownloadSigningKey(key []byte) TaskSrvcOption {
 	return func(ts *taskSrvc) {
 		ts.testfileDownloadSigningKey = key
