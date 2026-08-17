@@ -71,7 +71,7 @@ func logHTTPReq(ri *httpReqInfo) {
 		slog.Warn("http info", attrs...)
 	case ri.path != "/subm-updates" && ri.duration >= slowRequestThreshold:
 		// SSE /subm-updates duration is connection lifetime, not handler latency.
-		slog.Info("http slow", attrs...)
+		slog.Warn("http slow", attrs...)
 	default:
 		// Routine successful requests are metrics-only; avoid stdout spam.
 	}

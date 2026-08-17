@@ -38,7 +38,6 @@ var ErrJwtTokenMissing = ErrUnauthorized.WithMsg("JWT netika atrasts")
 
 func (h *SubmHttpHandler) PostSubm(w http.ResponseWriter, r *http.Request) {
 	log := ctxlog.FromContext(r.Context())
-	log.Info("processing submission request")
 
 	type createSubmissionRequest struct {
 		Submission        string `json:"submission"`
@@ -79,13 +78,6 @@ func (h *SubmHttpHandler) PostSubm(w http.ResponseWriter, r *http.Request) {
 	h.lastSubmTime[request.Username] = now
 	h.rateLock.Unlock()
 
-	log.Info(
-		"post submission request details",
-		"username", request.Username,
-		"programming_lang_id", request.ProgrammingLangID,
-		"task_code_id", request.TaskCodeID,
-	)
-
 	author, err := h.userSrvc.GetUserByUsername(r.Context(), request.Username)
 	if err != nil {
 		jsonresp.HandleErrorWithContext(r.Context(), w, err)
@@ -93,7 +85,6 @@ func (h *SubmHttpHandler) PostSubm(w http.ResponseWriter, r *http.Request) {
 	}
 
 	submUUID := uuid.New()
-	log.Info("generated submission UUID", "subm_uuid", submUUID)
 
 	submitErr := h.submSrvc.SubmitSol(r.Context(), srvc.SubmitSolParams{
 		UUID:        submUUID,
@@ -121,7 +112,13 @@ func (h *SubmHttpHandler) PostSubm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Info("submission created successfully", "subm_uuid", submUUID)
+	log.Debug(
+		"submission created",
+		"subm_uuid", submUUID,
+		"username", request.Username,
+		"programming_lang_id", request.ProgrammingLangID,
+		"task_code_id", request.TaskCodeID,
+	)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	if err := json.NewEncoder(w).Encode(response); err != nil {

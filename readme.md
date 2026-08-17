@@ -4,6 +4,7 @@ Test-file cache misses can also use Core NATS; see [docs/nats-execution.md](docs
 How to run unit / integration / tester suites: [docs/testing.md](docs/testing.md).
 Go style: [docs/go.md](docs/go.md).
 Errors by layer (HTTP / srvc / repo): [docs/errors.md](docs/errors.md).
+Log levels: [docs/logging.md](docs/logging.md).
 Submission public IDs vs UUIDs: [docs/submission-ids.md](docs/submission-ids.md).
 
 To start the server without processing tester results from NATS:
@@ -27,7 +28,7 @@ Requires the API on host `:8080` with `/metrics` exposed. Scrapes via `host.dock
 - Prometheus: http://localhost:9090
 - Provisioned dashboard: **Backend HTTP** (rate, p95/avg latency, response bandwidth by chi route)
 
-Routine 2xx/3xx under 500ms are not logged at Info; use Grafana for traffic shape. Do not expose `/metrics` publicly without network policy or auth.
+Routine 2xx/3xx under 500ms are not logged; status ≥ 400 and slow requests log at Warn. Default process level is Info when a `.env` file loads, Warn in production (no `.env`). Override with `LOG_LEVEL`. Use Grafana for traffic shape. Do not expose `/metrics` publicly without network policy or auth.
 
 Project notes: sibling repo `docs/github/observability.md`.
 
@@ -50,6 +51,9 @@ POSTGRES_PW=...
 
 COOKIE_DOMAIN=...
 COOKIE_SECURE=false
+
+# debug, info, warn, error. Unset: info with a .env file, warn without.
+# LOG_LEVEL=info
 
 FILE_STORAGE_ROOT=/mnt/programme-lv-storage
 API_PUBLIC_BASE_URL=https://api.programme.lv
