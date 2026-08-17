@@ -19,7 +19,7 @@ require (
 	github.com/pelletier/go-toml/v2 v2.2.4
 	github.com/peterldowns/pgtestdb v0.1.1
 	github.com/peterldowns/pgtestdb/migrators/golangmigrator v0.1.1
-	github.com/programme-lv/tester v0.2.1-0.20250928195358-fca731c3350c
+	github.com/programme-lv/tester v0.2.1-0.20260817210842-f677aff2ae30
 	github.com/prometheus/client_golang v1.24.1
 	github.com/schollz/progressbar/v3 v3.19.0
 	github.com/stretchr/testify v1.11.1

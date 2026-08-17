@@ -2,6 +2,7 @@ package exec
 
 import (
 	"fmt"
+	"reflect"
 	"time"
 
 	"github.com/google/uuid"
@@ -90,7 +91,7 @@ func (e *Execution) SimilarTo(other Execution) error {
 			return fmt.Errorf("subm_comp mismatch: %w", err)
 		}
 	}
-	if e.Params != other.Params {
+	if !reflect.DeepEqual(e.Params, other.Params) {
 		return fmt.Errorf("testing params mismatch: %+v != %+v", e.Params, other.Params)
 	}
 	return nil
@@ -108,6 +109,10 @@ type TestingParams struct {
 
 	// optional testlib.h interactor program.
 	Interactor *string `json:"interactor"`
+
+	// Groups are scoring units as 1-based test IDs.
+	// Empty or omitted: tester runs every test.
+	Groups [][]int `json:"groups,omitempty"`
 }
 
 func (p *TestingParams) IsValid() error {
@@ -340,6 +345,8 @@ type ExecRequest struct {
 
 	// optional testlib.h interactor program.
 	Interactor *string `json:"interactor"`
+
+	Groups [][]int `json:"groups,omitempty"`
 }
 
 func (e ExecRequest) IsValid() error {
@@ -401,6 +408,7 @@ func (e ExecRequest) MapToTesterApiType() *testerapi.ExecReq {
 			ExecCmd:       e.Lang.ExecCmd,
 		},
 		Tests:      testsTester,
+		Groups:     e.Groups,
 		Checker:    e.Checker,
 		Interactor: e.Interactor,
 		CpuMs:      int32(e.CpuMs),

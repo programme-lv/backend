@@ -106,8 +106,8 @@ github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINE
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 h1:Jamvg5psRIccs7FGNTlIRMkT8wgtp5eCXdBlqhYGL6U=
 github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
-github.com/programme-lv/tester v0.2.1-0.20250928195358-fca731c3350c h1:4bX0OGbTxabjnWQV9R8UVTmB1StRIVrC5othKkhgvys=
-github.com/programme-lv/tester v0.2.1-0.20250928195358-fca731c3350c/go.mod h1:J3iNGuvpd1eH8rQ9TzCDjFio+581IL1g/CIHMbGs64E=
+github.com/programme-lv/tester v0.2.1-0.20260817210842-f677aff2ae30 h1:ThOWU4SH8MScjjhuY3XGWw1ohNiGd1uz3LUaMfONdzo=
+github.com/programme-lv/tester v0.2.1-0.20260817210842-f677aff2ae30/go.mod h1:CmjETlVNgfHhaVCof8gdvd9YenZwUk2+V294+ECt5eQ=
 github.com/prometheus/client_golang v1.24.1 h1:JnJkREXzWxUdCuPFpIWZiPispT9xVV59uiuyR2bPlnU=
 github.com/prometheus/client_golang v1.24.1/go.mod h1:F+oSRECHg4sse5ucfYpYDeIv/hu68Zo0uoHKetWnzcE=
 github.com/prometheus/client_model v0.6.2 h1:oBsgwpGs7iVziMvrGhE53c/GrLUsZdHnqNwqPLxwZyk=

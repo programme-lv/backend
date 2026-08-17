@@ -184,7 +184,9 @@ func mapSubmEval(eval domain.Eval) Eval {
 
 	verdicts := ""
 	for _, test := range eval.Tests {
-		if test.Finished {
+		if test.Ig {
+			verdicts += "I" // ignored
+		} else if test.Finished {
 			if test.Ac {
 				verdicts += "A" // accepted
 			} else if test.Wa {
@@ -195,8 +197,6 @@ func mapSubmEval(eval domain.Eval) Eval {
 				verdicts += "M" // memory limit exceeded
 			} else if test.Re {
 				verdicts += "R" // runtime error
-			} else if test.Ig {
-				verdicts += "I" // ignored
 			} else {
 				verdicts += "U" // unknown
 			}

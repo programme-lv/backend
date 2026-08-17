@@ -219,6 +219,7 @@ func (s *submSrvc) enqueueExecAndListen(ctx context.Context, eval domain.Eval, s
 			MemKiB:     eval.MemLimKiB,
 			Checker:    eval.Checker,
 			Interactor: eval.Interactor,
+			Groups:     scoringGroups(eval),
 		},
 	)
 	if err != nil {
@@ -291,6 +292,25 @@ func constructExecEnqueueTests(
 	return evalReqTests
 }
 
+func scoringGroups(eval domain.Eval) [][]int {
+	switch eval.ScoreUnit {
+	case domain.ScoreUnitTestGroup:
+		groups := make([][]int, 0, len(eval.Groups))
+		for _, g := range eval.Groups {
+			groups = append(groups, g.TgTests)
+		}
+		return groups
+	case domain.ScoreUnitSubtask:
+		groups := make([][]int, 0, len(eval.Subtasks))
+		for _, st := range eval.Subtasks {
+			groups = append(groups, st.StTests)
+		}
+		return groups
+	default:
+		return nil
+	}
+}
+
 type procExecEvParams struct {
 	Eval  domain.Eval
 	Event exec.Event
@@ -331,7 +351,7 @@ func (h procExecEvCmdHandler) Handle(ctx context.Context, p procExecEvParams) er
 	} else {
 		finishedTests := 0
 		for _, test := range eval.Tests {
-			if test.Finished {
+			if test.Finished || test.Ig {
 				finishedTests++
 			}
 		}
