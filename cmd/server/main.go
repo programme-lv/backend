@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"flag"
-	"fmt"
 	"log/slog"
 	"os"
 	"time"
@@ -147,7 +146,7 @@ func setupLogger() {
 func newSubmHttpHandler(userSrvc usersrvc.UserService, taskSrvc tasksrvc.TaskService, execSrvc exec.CodeExecutionService) *submhttp.SubmHttpHandler {
 	pgPool, err := conf.GetPgxPoolFromEnv()
 	if err != nil {
-		slog.Error("failed to create pg pool", "error", err)
+		slog.Error("create pg pool", "error", err)
 		os.Exit(1)
 	}
 
@@ -163,9 +162,7 @@ func newSubmHttpHandler(userSrvc usersrvc.UserService, taskSrvc tasksrvc.TaskSer
 
 // runScoreMigrationIfNeeded checks if there are evaluations without score info
 // and recalculates/stores them. This is a one-time migration.
-func runScoreMigrationIfNeeded(pgPool *pgxpool.Pool, submSrvc srvc.SubmissionService, evalPgRepo interface {
-	StoreEval(ctx context.Context, eval domain.Eval) error
-}) {
+func runScoreMigrationIfNeeded(pgPool *pgxpool.Pool, submSrvc srvc.SubmissionService, evalPgRepo srvc.EvalRepo) {
 	ctx := context.Background()
 
 	// Check if there are evaluations missing score info
@@ -176,7 +173,7 @@ func runScoreMigrationIfNeeded(pgPool *pgxpool.Pool, submSrvc srvc.SubmissionSer
 		WHERE e.received_score IS NULL
 	`).Scan(&count)
 	if err != nil {
-		slog.Error("failed to check for missing scores", "error", err)
+		slog.Error("check for missing scores", "error", err)
 		return
 	}
 
@@ -194,7 +191,7 @@ func runScoreMigrationIfNeeded(pgPool *pgxpool.Pool, submSrvc srvc.SubmissionSer
 		Author: nil,
 	})
 	if err != nil {
-		slog.Error("failed to list submissions", "error", err)
+		slog.Error("list submissions", "error", err)
 		return
 	}
 
@@ -208,21 +205,21 @@ func runScoreMigrationIfNeeded(pgPool *pgxpool.Pool, submSrvc srvc.SubmissionSer
 			reEvalErr := submSrvc.ReEvalSubm(ctx, subm.UUID)
 			slog.Info("re-evaluating submission", "subm_uuid", subm.UUID)
 			if reEvalErr != nil {
-				slog.Error("failed to re-evaluate submission", "error", reEvalErr)
-				panic(reEvalErr)
+				slog.Error("re-evaluate submission", "error", reEvalErr, "subm_uuid", subm.UUID)
+				continue
 			}
 
 			subm, err = submSrvc.ViewSubm(ctx, subm.UUID)
 			if err != nil {
-				slog.Error("failed to get subm", "error", err)
-				panic(err)
+				slog.Error("get submission after re-eval", "error", err, "subm_uuid", subm.UUID)
+				continue
 			}
 
 			for {
 				eval, err := submSrvc.GetEval(ctx, subm.CurrEvalUUID)
 				if err != nil {
-					slog.Error("failed to get eval", "error", err)
-					panic(err)
+					slog.Error("get eval during re-eval wait", "error", err, "eval_uuid", subm.CurrEvalUUID)
+					break
 				}
 				if eval.Stage == domain.EvalStageFinished {
 					break
@@ -234,15 +231,14 @@ func runScoreMigrationIfNeeded(pgPool *pgxpool.Pool, submSrvc srvc.SubmissionSer
 
 		eval, err := submSrvc.GetEval(ctx, subm.CurrEvalUUID)
 		if err != nil {
-			slog.Error("failed to get eval", "error", err)
-			fmt.Printf("%+v\n", subm)
-			panic(err)
+			slog.Error("get eval", "error", err, "eval_uuid", subm.CurrEvalUUID)
+			continue
 		}
 
 		storeEvalErr := evalPgRepo.StoreEval(ctx, eval)
 		if storeEvalErr != nil {
-			slog.Error("failed to store eval", "error", storeEvalErr)
-			panic(storeEvalErr)
+			slog.Error("store eval", "error", storeEvalErr, "eval_uuid", eval.UUID)
+			continue
 		}
 	}
 

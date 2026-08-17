@@ -1,6 +1,7 @@
 package http
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -15,8 +16,8 @@ import (
 
 // PaginatedResponse represents a paginated response with data and pagination metadata
 type PaginatedResponse struct {
-	Page       interface{} `json:"page"`
-	Pagination Pagination  `json:"pagination"`
+	Page       []SubmListEntry `json:"page"`
+	Pagination Pagination      `json:"pagination"`
 }
 
 // Pagination represents pagination metadata
@@ -66,7 +67,7 @@ func (h *SubmHttpHandler) GetSubmList(w http.ResponseWriter, r *http.Request) {
 	var authorUuid *uuid.UUID
 	if onlyMy {
 		userUuid, err := auth.GetUserUuidFromCtx(r.Context())
-		if err == auth.ErrNoJwtClaims || err == auth.ErrEmptyJwtClaims {
+		if errors.Is(err, auth.ErrNoJwtClaims) || errors.Is(err, auth.ErrEmptyJwtClaims) {
 			jsonresp.Unauthorized(w, "jwt claims are missing")
 			return
 		}
@@ -168,8 +169,13 @@ func (h *SubmHttpHandler) GetSubmList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response := result.(PaginatedResponse)
-	log.Info("returning submission list", "count", len(response.Page.([]SubmListEntry)), "total", response.Pagination.Total)
+	response, ok := result.(PaginatedResponse)
+	if !ok {
+		log.Error("submission list cache value has unexpected type")
+		jsonresp.InternalError(w)
+		return
+	}
+	log.Info("returning submission list", "count", len(response.Page), "total", response.Pagination.Total)
 	jsonresp.Success(w, response)
 }
 

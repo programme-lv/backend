@@ -24,8 +24,8 @@ func (h *taskHttpHandler) GetTaskView(ctx context.Context) (Task, jsonresp.HttpS
 
 	response := h.mapTaskResponse(t)
 	if response.TaskFullName == "" {
-		// Empty name is a mapper or data bug, not a client error.
-		panic("task full name is empty")
+		h.logger(ctx).Error("task full name empty", "task_id", taskId)
+		return Task{}, jsonresp.ErrInternalServerError
 	}
 
 	h.getTaskViewCache.Set(taskId, response, 20*time.Second)

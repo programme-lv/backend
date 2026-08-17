@@ -24,7 +24,11 @@ func Success(w http.ResponseWriter, data any) error {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	return json.NewEncoder(w).Encode(resp)
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		slog.Error("write json success response", "error", err)
+		return err
+	}
+	return nil
 }
 
 func WriteCustom(w http.ResponseWriter, errMsg string, statusCode int, errCode string) error {
@@ -35,7 +39,11 @@ func WriteCustom(w http.ResponseWriter, errMsg string, statusCode int, errCode s
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
-	return json.NewEncoder(w).Encode(resp)
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		slog.Error("write json error response", "error", err)
+		return err
+	}
+	return nil
 }
 
 type HttpStatusCoder interface {

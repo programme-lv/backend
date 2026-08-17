@@ -25,7 +25,11 @@ const repoDirName = "backend"
 
 func FindProjectRoot() string {
 	re := regexp.MustCompile(`^(.*` + repoDirName + `)`)
-	cwd, _ := os.Getwd()
+	cwd, err := os.Getwd()
+	if err != nil {
+		slog.Error("get working directory", "error", err)
+		return ""
+	}
 	rootPath := re.Find([]byte(cwd))
 	return string(rootPath)
 }
@@ -44,7 +48,8 @@ func init() {
 func MustGetNatsConnFromEnv(ctx context.Context) *nats.Conn {
 	conn, err := nats.Connect(os.Getenv("NATS_URL"))
 	if err != nil {
-		panic(fmt.Errorf("unable to connect to nats: %v", err))
+		slog.Error("connect to nats", "error", err)
+		os.Exit(1)
 	}
 	return conn
 }
@@ -116,7 +121,7 @@ func MustGetCookieSecureFromEnv() bool {
 func MustGetPgxPoolFromEnv() *pgxpool.Pool {
 	pgxPool, err := GetPgxPoolFromEnv()
 	if err != nil {
-		slog.Error("failed to create pg pool", "error", err)
+		slog.Error("create pg pool", "error", err)
 		os.Exit(1)
 	}
 	return pgxPool

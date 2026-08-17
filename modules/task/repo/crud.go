@@ -23,14 +23,7 @@ func (r *taskPgRepo) CreateTask(ctx context.Context, t srvc.Task) error {
 	if err != nil {
 		return fmt.Errorf("begin transaction: %w", err)
 	}
-	// Ensure proper transaction handling.
-	defer func() {
-		if err != nil {
-			_ = tx.Rollback(ctx)
-		} else {
-			err = tx.Commit(ctx)
-		}
-	}()
+	defer tx.Rollback(ctx)
 
 	// Insert main task.
 	var illustrObjectKey string
@@ -42,10 +35,27 @@ func (r *taskPgRepo) CreateTask(ctx context.Context, t srvc.Task) error {
 		illustrSzInBytes = t.IllustrImg.SzInBytes
 	}
 
+	fullNameJSON, err := marshalStringMapJSON(t.FullName)
+	if err != nil {
+		return err
+	}
+	divisionsJSON, err := marshalStringSliceJSON(t.OriginDivisions)
+	if err != nil {
+		return err
+	}
+	authorsJSON, err := marshalStringSliceJSON(t.Authors)
+	if err != nil {
+		return err
+	}
+	tagsJSON, err := marshalStringSliceJSON(t.ProblemTags)
+	if err != nil {
+		return err
+	}
+
 	_, err = tx.Exec(ctx, `
 		INSERT INTO tasks (short_id, full_name_dict, orig_lang, readme, illustr_img_object_key, width_px, height_px, filesize_bytes, mem_lim_megabytes, cpu_time_lim_secs, origin_olympiad, origin_org, origin_year, olymp_stage, origin_divisions, authors, problem_tags, archive_object_key, difficulty_rating, checker, interactor)
 		VALUES ($1, $2::jsonb, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15::jsonb, $16::jsonb, $17::jsonb, $18, $19, $20, $21)
-	`, t.ShortId, mustMarshalMapToJSONB(t.FullName), t.OrigLang, t.Readme, illustrObjectKey, illustrWidthPx, illustrHeightPx, illustrSzInBytes, t.MemLimMegabytes, t.CpuTimeLimSecs, t.OriginOlympiad, t.OriginOrg, t.OriginYear, t.OlympStage, mustMarshalSliceToJSONB(t.OriginDivisions), mustMarshalSliceToJSONB(t.Authors), mustMarshalSliceToJSONB(t.ProblemTags), t.OgFilesZipObjectKey, t.DifficultyRating, t.Checker, t.Interactor)
+	`, t.ShortId, fullNameJSON, t.OrigLang, t.Readme, illustrObjectKey, illustrWidthPx, illustrHeightPx, illustrSzInBytes, t.MemLimMegabytes, t.CpuTimeLimSecs, t.OriginOlympiad, t.OriginOrg, t.OriginYear, t.OlympStage, divisionsJSON, authorsJSON, tagsJSON, t.OgFilesZipObjectKey, t.DifficultyRating, t.Checker, t.Interactor)
 	if err != nil {
 		return fmt.Errorf("insert main task: %w", err)
 	}
@@ -107,10 +117,14 @@ func (r *taskPgRepo) CreateTask(ctx context.Context, t srvc.Task) error {
 
 	// Insert examples.
 	for _, ex := range t.Examples {
+		noteJSON, marshalErr := marshalStringMapJSON(ex.MdNote)
+		if marshalErr != nil {
+			return marshalErr
+		}
 		_, err = tx.Exec(ctx, `
 			INSERT INTO task_examples (task_short_id, input, output, md_note)
 			VALUES ($1, $2, $3, $4::jsonb)
-		`, t.ShortId, ex.Input, ex.Output, mustMarshalMapToJSONB(ex.MdNote))
+		`, t.ShortId, ex.Input, ex.Output, noteJSON)
 		if err != nil {
 			return fmt.Errorf("insert example: %w", err)
 		}
@@ -190,6 +204,9 @@ func (r *taskPgRepo) CreateTask(ctx context.Context, t srvc.Task) error {
 		}
 	}
 
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("commit: %w", err)
+	}
 	return nil
 }
 
@@ -210,13 +227,7 @@ func (r *taskPgRepo) DeleteTask(ctx context.Context, shortId string) error {
 	if err != nil {
 		return fmt.Errorf("begin transaction: %w", err)
 	}
-	defer func() {
-		if err != nil {
-			_ = tx.Rollback(ctx)
-		} else {
-			err = tx.Commit(ctx)
-		}
-	}()
+	defer tx.Rollback(ctx)
 
 	// Delete from all related tables first (in case of any issues with CASCADE)
 	// The foreign key constraints should handle the cascading, but we'll be explicit
@@ -290,5 +301,8 @@ func (r *taskPgRepo) DeleteTask(ctx context.Context, shortId string) error {
 		return fmt.Errorf("task %s was not deleted", shortId)
 	}
 
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("commit: %w", err)
+	}
 	return nil
 }

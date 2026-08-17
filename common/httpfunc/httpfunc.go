@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"reflect"
 
 	"github.com/programme-lv/backend/common/jsonresp"
 )
@@ -29,12 +28,9 @@ func JsonReqNoResp[Q any](handler HandlerNoResp[Q]) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		var req Q
-		t := reflect.TypeOf(req)
-		if t.Size() > 0 {
-			if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-				jsonresp.BadRequest(w, err.Error())
-				return
-			}
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			jsonresp.BadRequest(w, err.Error())
+			return
 		}
 		if err := handler(ctx, req); err != nil {
 			jsonresp.WriteError(w, err)

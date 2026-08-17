@@ -122,7 +122,9 @@ func (h *SubmHttpHandler) PostSubm(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Info("submission created successfully", "subm_uuid", submUUID)
-	w.WriteHeader(http.StatusCreated)
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+	w.WriteHeader(http.StatusCreated)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		log.Error("write submission response", "error", err)
+	}
 }

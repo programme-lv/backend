@@ -117,7 +117,7 @@ All top-level, exported names should have doc comments, as should non-trivial un
 
 ## Don't Panic
 
-See [Effective Go — Errors](https://go.dev/doc/effective_go#errors). Don't use panic for normal error handling. Use error and multiple return values.
+See [Effective Go — Errors](https://go.dev/doc/effective_go#errors) and [Don't panic](proverbs.md). Don't use panic for normal error handling. Use error and multiple return values. Process start logs and `os.Exit(1)`.
 
 ## Error Strings
 

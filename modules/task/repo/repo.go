@@ -3,28 +3,25 @@ package repo
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// mustMarshalMapToJSONB converts a map into JSON bytes suitable for a jsonb parameter.
-// It never returns nil; on error it returns an empty JSON object.
-func mustMarshalMapToJSONB(m map[string]string) []byte {
+func marshalStringMapJSON(m map[string]string) ([]byte, error) {
 	b, err := json.Marshal(m)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("marshal string map: %w", err)
 	}
-	return b
+	return b, nil
 }
 
-// mustMarshalSliceToJSONB converts a slice of strings into JSON bytes suitable for a jsonb parameter.
-// It never returns nil; on error it returns an empty JSON array.
-func mustMarshalSliceToJSONB(s []string) []byte {
+func marshalStringSliceJSON(s []string) ([]byte, error) {
 	b, err := json.Marshal(s)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("marshal string slice: %w", err)
 	}
-	return b
+	return b, nil
 }
 
 type taskPgRepo struct {
