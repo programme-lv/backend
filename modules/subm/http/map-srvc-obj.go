@@ -243,7 +243,7 @@ func mapSubmEval(eval domain.Eval) Eval {
 }
 
 func (h *SubmHttpHandler) mapMaxScore(ctx context.Context, taskShortID string, m domain.MaxScore) (MaxScore, error) {
-	taskFullNames, err := h.taskSrvc.GetTaskFullNames(ctx, []string{taskShortID})
+	taskFullNames, err := h.taskSrvc.ResolveNames(ctx, []string{taskShortID})
 	if err != nil {
 		return MaxScore{}, err
 	}

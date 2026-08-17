@@ -81,20 +81,18 @@ func Unauthorized(w http.ResponseWriter, errMsg string) {
 	WriteError(w, ErrHttpUnauthorized.WithMsg(errMsg))
 }
 
-// HandleSrvcError handles service errors and writes appropriate HTTP responses
+// HandleSrvcError writes a service error as JSON.
+// It does not log srvcerror values; the service already logged unexpected failures.
+// logger is used only when err is not a srvcerror.E (a programming mistake at the HTTP boundary).
 func HandleSrvcError(logger *slog.Logger, w http.ResponseWriter, err error) {
-	srvcErr, ok := err.(srvcerror.E)
-	if ok {
-		logger.Warn("service error", "error", err)
-		// if srvcErr.HttpStatusCode() == http.StatusInternalServerError {
-		// 	logger.Error("internal server error", "error", err)
-		// }
-		WriteCustom(w, srvcErr.Error(), srvcErr.HttpStatusCode(), srvcErr.ErrorCode())
+	if _, ok := err.(srvcerror.E); ok {
+		WriteError(w, err)
 		return
-	} else {
-		logger.Error("internal server error", "error", err)
-		InternalError(w)
 	}
+	if logger != nil {
+		logger.Error("internal server error", "error", err)
+	}
+	InternalError(w)
 }
 
 // HandleErrorWithContext is a convenience function that extracts the logger from the context

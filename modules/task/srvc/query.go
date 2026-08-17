@@ -75,18 +75,6 @@ func (ts *taskSrvc) GetTask(ctx context.Context, id string) (Task, srvcerror.E) 
 	return task, nil
 }
 
-func (ts *taskSrvc) GetTaskFullNames(ctx context.Context, shortIDs []string) ([]string, srvcerror.E) {
-	fullNames, err := ts.repo.ResolveNames(ctx, shortIDs)
-	if err != nil {
-		ts.logger(ctx).Error("resolve names (full names)", "error", err)
-		return nil, srvcerror.InternalServerError()
-	}
-	if len(fullNames) != len(shortIDs) {
-		return nil, ErrSomeTaskNotFound
-	}
-	return fullNames, nil
-}
-
 func (ts *taskSrvc) ResolveNames(ctx context.Context, shortIds []string) ([]string, srvcerror.E) {
 	names, err := ts.repo.ResolveNames(ctx, shortIds)
 	if err != nil {

@@ -44,8 +44,6 @@ type TaskService interface {
 	ImportTaskFromZip(ctx context.Context, zipBytes []byte, overrideId string) (string, srvcerror.E)
 	ExportTaskAsZip(ctx context.Context, taskId string) ([]byte, srvcerror.E)
 
-	// unorganized
-	GetTaskFullNames(ctx context.Context, shortIds []string) ([]string, srvcerror.E)
 	ResolveNames(ctx context.Context, shortIds []string) ([]string, srvcerror.E)
 	SearchTasksByName(ctx context.Context, name string) ([]string, srvcerror.E)
 }

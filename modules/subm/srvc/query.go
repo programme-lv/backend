@@ -24,7 +24,7 @@ func (s *submSrvc) GetMaxScorePerTask(ctx context.Context, userUUID uuid.UUID) (
 			if exists, ok := taskExistsCache[taskShortID]; ok {
 				return exists, nil
 			}
-			_, err := s.taskSrvc.GetTaskFullNames(ctx, []string{taskShortID})
+			_, err := s.taskSrvc.ResolveNames(ctx, []string{taskShortID})
 			if err != nil {
 				if errors.Is(err, tasksrvc.ErrSomeTaskNotFound) {
 					taskExistsCache[taskShortID] = false

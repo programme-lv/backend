@@ -93,14 +93,12 @@ Do not re-decide service conditions.
 Typed handlers return `jsonresp.HttpStatusCoder`.
 `srvcerror.E` already implements that.
 [`common/httpfunc`](../common/httpfunc/httpfunc.go) calls `jsonresp.WriteError`.
+`jsonresp.HandleSrvcError` writes the same JSON and does not log `srvcerror.E` values.
+It logs only if HTTP received a non-service error (a programming mistake at the gateway).
 
 Log in HTTP only for errors that happen **here**: malformed JSON, missing path param, auth failure, failure to write the response.
 Use `jsonresp` sentinels for those (`ErrHttpBadRequest.WithMsg`, `BadRequest`, `Forbidden`).
 Do not build a `srvcerror` for a problem the service never saw.
-
-`jsonresp.HandleSrvcError` currently `Warn`-logs every service error.
-That duplicates (and for 500s, is weaker than) the service log.
-Prefer `WriteError` after the service has already logged.
 
 JSON body:
 

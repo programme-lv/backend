@@ -81,7 +81,7 @@ func (h *SubmHttpHandler) mapSubmListEntry(
 func (h *SubmHttpHandler) getTaskFullName(ctx context.Context, shortID string) (string, error) {
 	taskNames, err := h.taskSrvc.ResolveNames(ctx, []string{shortID})
 	if err != nil {
-		return "", fmt.Errorf("failed to resolve task name: %w", err)
+		return "", err
 	}
 	if len(taskNames) != 1 {
 		return "", fmt.Errorf("expected 1 task name, got %d", len(taskNames))
