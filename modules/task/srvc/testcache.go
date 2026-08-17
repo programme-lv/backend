@@ -13,31 +13,30 @@ import (
 )
 
 const (
-	// CacheDir is the standard Linux cache directory for proglv
+	// CacheDir is the local directory used to cache decompressed test files.
 	CacheDir = "/var/cache/proglv/testfiles"
 
-	// MaxCacheSize is the maximum cache size in bytes (10GB)
+	// MaxCacheSize is the maximum cache size in bytes (10 GiB).
 	MaxCacheSize = 10 * 1024 * 1024 * 1024
 
-	// MaxConcurrentDownloads limits parallel downloads
+	// MaxConcurrentDownloads is the cap on parallel cache fills.
 	MaxConcurrentDownloads = 10
 )
 
-// TestFileCache manages cached test files with size limits and LRU eviction
+// TestFileCache caches decompressed test files on disk with a size limit and LRU eviction.
 type TestFileCache struct {
 	cacheDir string
 	mu       sync.RWMutex
 	sem      chan struct{} // semaphore for download concurrency
 }
 
-// CacheEntry represents a cached file with metadata
 type CacheEntry struct {
 	Path     string
 	Size     int64
 	LastUsed time.Time
 }
 
-// NewTestFileCache creates a new test file cache
+// NewTestFileCache returns a test-file cache rooted at CacheDir, or a temp dir if that cannot be created.
 func NewTestFileCache() *TestFileCache {
 	cacheDir := CacheDir
 	// Fallback to temp dir if cache dir can't be created
@@ -52,7 +51,6 @@ func NewTestFileCache() *TestFileCache {
 	}
 }
 
-// GetTestFile returns decompressed test file content from cache or downloads it
 func (c *TestFileCache) GetTestFile(ctx context.Context, sha256Hash string, downloadURL string, logger *slog.Logger) ([]byte, error) {
 	// Check cache first
 	if content, found := c.getFromCache(sha256Hash); found {
@@ -82,40 +80,35 @@ func (c *TestFileCache) GetTestFile(ctx context.Context, sha256Hash string, down
 	return content, nil
 }
 
-// getFromCache retrieves file from cache and updates access time
 func (c *TestFileCache) getFromCache(sha256Hash string) ([]byte, bool) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
 	filePath := c.getFilePath(sha256Hash)
 
-	// Check if file exists
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
 		return nil, false
 	}
 
-	// Read file content
 	content, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, false
 	}
 
-	// Update access time
 	go c.touchFile(filePath)
 
 	return content, true
 }
 
-// downloadAndDecompress downloads and decompresses a test file
 func (c *TestFileCache) downloadAndDecompress(ctx context.Context, url string) ([]byte, error) {
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
+		return nil, fmt.Errorf("create request: %w", err)
 	}
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("failed to download: %w", err)
+		return nil, fmt.Errorf("download: %w", err)
 	}
 	defer resp.Body.Close()
 
@@ -123,44 +116,38 @@ func (c *TestFileCache) downloadAndDecompress(ctx context.Context, url string) (
 		return nil, fmt.Errorf("download failed with status: %d", resp.StatusCode)
 	}
 
-	// Read compressed data
 	compressed, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read response: %w", err)
+		return nil, fmt.Errorf("read response: %w", err)
 	}
 
-	// Decompress
-	content, err := DecompressWithZstd(compressed)
+	content, err := decompressWithZstd(compressed)
 	if err != nil {
-		return nil, fmt.Errorf("failed to decompress: %w", err)
+		return nil, fmt.Errorf("decompress: %w", err)
 	}
 
 	return content, nil
 }
 
-// storeInCache stores content in cache with size management
 func (c *TestFileCache) storeInCache(sha256Hash string, content []byte, logger *slog.Logger) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
 	filePath := c.getFilePath(sha256Hash)
 
-	// Ensure we have space
 	if err := c.ensureSpace(int64(len(content)), logger); err != nil {
-		logger.Warn("failed to ensure cache space", "error", err)
+		logger.Warn("ensure cache space", "error", err)
 		return
 	}
 
-	// Write to temp file first
 	tempPath := filePath + ".tmp"
 	if err := os.WriteFile(tempPath, content, 0644); err != nil {
-		logger.Warn("failed to write cache file", "error", err)
+		logger.Warn("write cache file", "error", err)
 		return
 	}
 
-	// Atomic rename
 	if err := os.Rename(tempPath, filePath); err != nil {
-		logger.Warn("failed to rename cache file", "error", err)
+		logger.Warn("rename cache file", "error", err)
 		os.Remove(tempPath)
 		return
 	}
@@ -168,7 +155,6 @@ func (c *TestFileCache) storeInCache(sha256Hash string, content []byte, logger *
 	logger.Debug("test file cached", "sha256", sha256Hash[:8]+"...", "size_bytes", len(content))
 }
 
-// ensureSpace makes sure we have enough space by evicting old files if needed
 func (c *TestFileCache) ensureSpace(neededBytes int64, logger *slog.Logger) error {
 	currentSize, err := c.getCacheSize()
 	if err != nil {
@@ -184,13 +170,11 @@ func (c *TestFileCache) ensureSpace(neededBytes int64, logger *slog.Logger) erro
 		"needed_mb", neededBytes/1024/1024,
 		"limit_mb", MaxCacheSize/1024/1024)
 
-	// Get all cache entries sorted by last used time
 	entries, err := c.getCacheEntries()
 	if err != nil {
 		return err
 	}
 
-	// Evict oldest files until we have enough space
 	toEvict := currentSize + neededBytes - MaxCacheSize
 	var evicted int64
 
@@ -200,7 +184,7 @@ func (c *TestFileCache) ensureSpace(neededBytes int64, logger *slog.Logger) erro
 		}
 
 		if err := os.Remove(entry.Path); err != nil {
-			logger.Warn("failed to evict cache file", "path", entry.Path, "error", err)
+			logger.Warn("evict cache file", "path", entry.Path, "error", err)
 			continue
 		}
 
@@ -212,7 +196,6 @@ func (c *TestFileCache) ensureSpace(neededBytes int64, logger *slog.Logger) erro
 	return nil
 }
 
-// getCacheSize returns the total size of cached files
 func (c *TestFileCache) getCacheSize() (int64, error) {
 	var total int64
 
@@ -229,7 +212,6 @@ func (c *TestFileCache) getCacheSize() (int64, error) {
 	return total, err
 }
 
-// getCacheEntries returns all cache entries sorted by last used time (oldest first)
 func (c *TestFileCache) getCacheEntries() ([]CacheEntry, error) {
 	var entries []CacheEntry
 
@@ -251,7 +233,6 @@ func (c *TestFileCache) getCacheEntries() ([]CacheEntry, error) {
 		return nil, err
 	}
 
-	// Sort by last used time (oldest first)
 	for i := 0; i < len(entries)-1; i++ {
 		for j := i + 1; j < len(entries); j++ {
 			if entries[i].LastUsed.After(entries[j].LastUsed) {
@@ -263,27 +244,23 @@ func (c *TestFileCache) getCacheEntries() ([]CacheEntry, error) {
 	return entries, nil
 }
 
-// getFilePath returns the cache file path for a given SHA256 hash
 func (c *TestFileCache) getFilePath(sha256Hash string) string {
-	// Create subdirectories to avoid too many files in one directory
+	// Shard by the first two hex chars so one directory is not huge.
 	subdir := sha256Hash[:2]
 	dir := filepath.Join(c.cacheDir, subdir)
 	os.MkdirAll(dir, 0755)
 	return filepath.Join(dir, sha256Hash+".txt")
 }
 
-// touchFile updates the modification time of a file
 func (c *TestFileCache) touchFile(filePath string) {
 	now := time.Now()
 	os.Chtimes(filePath, now, now)
 }
 
-// isTemporaryFile checks if a file is a temporary file
 func isTemporaryFile(path string) bool {
 	return filepath.Ext(path) == ".tmp"
 }
 
-// GetCacheStats returns cache statistics
 func (c *TestFileCache) GetCacheStats() (totalSize int64, fileCount int, err error) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()

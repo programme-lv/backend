@@ -2,13 +2,11 @@ package http
 
 import (
 	"context"
-	"log/slog"
 
 	"github.com/programme-lv/backend/modules/task/srvc"
 )
 
-type Empty struct{}
-
+// TaskPreview is the JSON element of GET /tasks.
 type TaskPreview struct {
 	ShortId          string             `json:"short_id"`
 	FullName         string             `json:"full_name"`
@@ -20,12 +18,14 @@ type TaskPreview struct {
 	MdStatementStory string             `json:"md_statement_story"`
 }
 
+// Example is a sample input/output pair shown in the task statement.
 type Example struct {
 	Input  string `json:"input"`
 	Output string `json:"output"`
 	MdNote string `json:"md_note,omitempty"`
 }
 
+// MdStatement is the markdown statement shown to solvers.
 type MdStatement struct {
 	Story   string `json:"story"`
 	Input   string `json:"input"`
@@ -34,21 +34,23 @@ type MdStatement struct {
 	Scoring string `json:"scoring"`
 	Talk    string `json:"talk"`
 	Example string `json:"example"`
-	// Images  []MdImg `json:"images"`
 }
 
+// VisInputSubtask is a subtask whose test inputs are visible to solvers.
 type VisInputSubtask struct {
 	SubtaskID  int                 `json:"subtask"`
 	TestInputs []TestWithOnlyInput `json:"inputs"`
 }
 
+// TestWithOnlyInput is a visible test input without the corresponding output.
 type TestWithOnlyInput struct {
 	TestID int    `json:"test_id"`
 	Input  string `json:"input"`
 }
 
+// StatementImage is an image embedded in the markdown statement.
 type StatementImage struct {
-	S3Key     string `json:"s3_key"`
+	ObjectKey string `json:"object_key"`
 	Filename  string `json:"filename"`
 	HttpUrl   string `json:"http_url"`
 	WidthPx   int    `json:"width_px"`
@@ -56,6 +58,7 @@ type StatementImage struct {
 	SzInBytes int    `json:"sz_in_bytes"`
 }
 
+// IllustrationImage is the image shown next to the task in lists and the task view.
 type IllustrationImage struct {
 	HttpUrl   string `json:"http_url"`
 	WidthPx   int    `json:"width_px"`
@@ -63,6 +66,10 @@ type IllustrationImage struct {
 	SzInBytes int    `json:"sz_in_bytes"`
 }
 
+// Task is the JSON body for GET /tasks/{taskId}.
+// DefaultMDStatement is Latvian if present, otherwise English, otherwise the first statement.
+// OriginNotes maps language code to origin text.
+// TestingType is "checker" or "interactor".
 type Task struct {
 	ShortTaskID          string             `json:"short_task_id"`
 	TaskFullName         string             `json:"task_full_name"`
@@ -80,6 +87,7 @@ type Task struct {
 	TestingType          string             `json:"testing_type"`
 }
 
+// SubtaskOverview is a scoring group shown in the statement.
 type SubtaskOverview struct {
 	SubtaskID    int               `json:"subtask"`
 	Score        int               `json:"score"`
@@ -98,10 +106,10 @@ func mapTaskMdStatement(md *srvc.MarkdownStatement) MdStatement {
 		Scoring: md.Scoring,
 		Talk:    md.Talk,
 		Example: md.Example,
-		// Images: imgSizes,
 	}
 }
 
+// mapTaskExamples copies examples and picks one markdown note: Latvian, else English, else any.
 func mapTaskExamples(examples []srvc.Example) []Example {
 	response := make([]Example, len(examples))
 	for i, e := range examples {
@@ -143,7 +151,6 @@ func (h *taskHttpHandler) mapTaskResponse(task srvc.Task) Task {
 	mdStatements := task.MdStatements
 	defaultMdStatement := MdStatement{}
 	foundMd := false
-	// check if there is an lv statement
 	for _, mdStatement := range mdStatements {
 		if mdStatement.LangIso639 == "lv" {
 			defaultMdStatement = mapTaskMdStatement(&mdStatement)
@@ -151,7 +158,6 @@ func (h *taskHttpHandler) mapTaskResponse(task srvc.Task) Task {
 			break
 		}
 	}
-	// if there is no lv statement, check if there is an en statement
 	if !foundMd {
 		for _, mdStatement := range mdStatements {
 			if mdStatement.LangIso639 == "en" {
@@ -161,7 +167,6 @@ func (h *taskHttpHandler) mapTaskResponse(task srvc.Task) Task {
 			}
 		}
 	}
-	// if there is no en statement, pick the first statement
 	if !foundMd {
 		defaultMdStatement = mapTaskMdStatement(&mdStatements[0])
 	}
@@ -215,13 +220,12 @@ func (h *taskHttpHandler) mapTaskResponse(task srvc.Task) Task {
 }
 
 func (h *taskHttpHandler) mapTaskIllustrImg(illustrImg *srvc.IllustrationImage) *IllustrationImage {
-	if illustrImg == nil || illustrImg.S3Key == "" {
+	if illustrImg == nil || illustrImg.ObjectKey == "" {
 		return nil
 	}
 
-	httpUrl, err := h.taskSrvc.GetHttpUrlForIllustrImg(context.TODO(), illustrImg.S3Key)
+	httpUrl, err := h.taskSrvc.GetHttpUrlForIllustrImg(context.TODO(), illustrImg.ObjectKey)
 	if err != nil {
-		slog.Error("failed to get public url for illustration image", "error", err)
 		return nil
 	}
 
@@ -249,13 +253,12 @@ func (h *taskHttpHandler) mapTaskPreview(preview srvc.TaskPreview) TaskPreview {
 func (h *taskHttpHandler) mapTaskStatementImages(images []srvc.StatementImage) []StatementImage {
 	response := make([]StatementImage, len(images))
 	for i, image := range images {
-		httpUrl, err := h.taskSrvc.GetHttpUrlForStatementImage(context.TODO(), image.S3Key)
+		httpUrl, err := h.taskSrvc.GetHttpUrlForStatementImage(context.TODO(), image.ObjectKey)
 		if err != nil {
-			slog.Error("failed to get public url for statement image", "error", err)
 			httpUrl = ""
 		}
 		response[i] = StatementImage{
-			S3Key:     image.S3Key,
+			ObjectKey: image.ObjectKey,
 			Filename:  image.Filename,
 			HttpUrl:   httpUrl,
 			WidthPx:   image.WidthPx,

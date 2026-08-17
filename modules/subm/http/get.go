@@ -42,7 +42,6 @@ func (h *SubmHttpHandler) GetFullSubm(w http.ResponseWriter, r *http.Request) {
 	if parsed.UUID != uuid.Nil {
 		viewed, err := h.submSrvc.ViewSubm(r.Context(), parsed.UUID)
 		if err != nil {
-			log.Error("failed to get submission", "subm_id", id, "error", err)
 			jsonresp.HandleErrorWithContext(r.Context(), w, err)
 			return
 		}
@@ -50,7 +49,6 @@ func (h *SubmHttpHandler) GetFullSubm(w http.ResponseWriter, r *http.Request) {
 	} else {
 		viewed, err := h.submSrvc.ViewSubmByShortID(r.Context(), parsed.ShortID)
 		if err != nil {
-			log.Error("failed to get submission", "subm_id", id, "error", err)
 			jsonresp.HandleErrorWithContext(r.Context(), w, err)
 			return
 		}
@@ -59,7 +57,6 @@ func (h *SubmHttpHandler) GetFullSubm(w http.ResponseWriter, r *http.Request) {
 
 	response, mapErr := h.mapSubm(r.Context(), subm)
 	if mapErr != nil {
-		log.Error("failed to map submission", "subm_id", id, "error", mapErr)
 		jsonresp.HandleErrorWithContext(r.Context(), w, mapErr)
 		return
 	}

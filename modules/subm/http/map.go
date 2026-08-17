@@ -20,25 +20,25 @@ func mapSubmListEntry(
 
 	username, err := getUsername(ctx, s.AuthorUUID)
 	if err != nil {
-		slog.Default().Warn("failed to get username when mapping subm list entry", "error", err, "subm_uuid", s.UUID, "author_uuid", s.AuthorUUID)
+		slog.Default().Warn("map subm list username", "error", err, "subm_uuid", s.UUID, "author_uuid", s.AuthorUUID)
 		return SubmListEntry{}, err
 	}
 
 	taskName, err := getTaskName(ctx, s.TaskShortID)
 	if err != nil {
-		slog.Default().Warn("failed to get task name when mapping subm list entry", "error", err, "subm_uuid", s.UUID, "task_short_id", s.TaskShortID)
+		slog.Default().Warn("map subm list task name", "error", err, "subm_uuid", s.UUID, "task_short_id", s.TaskShortID)
 		return SubmListEntry{}, err
 	}
 
 	prLang, err := getPrLang(ctx, s.LangShortID)
 	if err != nil {
-		slog.Default().Warn("failed to get pr lang when mapping subm list entry", "error", err, "subm_uuid", s.UUID, "lang_short_id", s.LangShortID)
+		slog.Default().Warn("map subm list pr lang", "error", err, "subm_uuid", s.UUID, "lang_short_id", s.LangShortID)
 		return SubmListEntry{}, err
 	}
 
 	eval, err := getEval(ctx, s.CurrEvalUUID)
 	if err != nil {
-		slog.Default().Warn("failed to get eval when mapping subm list entry", "error", err, "subm_uuid", s.UUID, "curr_eval_uuid", s.CurrEvalUUID)
+		slog.Default().Warn("map subm list eval", "error", err, "subm_uuid", s.UUID, "curr_eval_uuid", s.CurrEvalUUID)
 		return SubmListEntry{}, err
 	}
 
@@ -243,7 +243,7 @@ func mapSubmEval(eval domain.Eval) Eval {
 }
 
 func (h *SubmHttpHandler) mapMaxScore(ctx context.Context, taskShortID string, m domain.MaxScore) (MaxScore, error) {
-	taskFullNames, err := h.taskSrvc.GetTaskFullNames(ctx, []string{taskShortID})
+	taskFullNames, err := h.taskSrvc.ResolveNames(ctx, []string{taskShortID})
 	if err != nil {
 		return MaxScore{}, err
 	}

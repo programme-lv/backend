@@ -1,3 +1,8 @@
+// Package http is the HTTP gateway for the task module.
+//
+// It marshals JSON, enforces JWT and admin auth, caches GET responses,
+// and maps service errors to HTTP status codes.
+// Construct a handler with [NewTaskHttpHandler] and mount it with RegisterRoutes.
 package http
 
 import (
@@ -7,7 +12,6 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	oldCache "github.com/patrickmn/go-cache"
 	"github.com/programme-lv/backend/common/cache"
 	"github.com/programme-lv/backend/common/ctxlog"
 	"github.com/programme-lv/backend/common/filestore"
@@ -16,9 +20,9 @@ import (
 	"github.com/programme-lv/backend/modules/user/auth"
 )
 
+// taskHttpHandler serves the task HTTP API.
 type taskHttpHandler struct {
 	taskSrvc srvc.TaskService
-	cache    *oldCache.Cache
 
 	getTaskViewCache *cache.LruCache[string, Task]
 	getTaskListCache *cache.LruCache[string, []TaskPreview]
@@ -28,8 +32,11 @@ type taskHttpHandler struct {
 	testfileDownloadSigningKey []byte
 }
 
+// A HandlerOption configures a task HTTP handler.
 type HandlerOption func(*taskHttpHandler)
 
+// WithFileStores sets the public asset store, the test-file store,
+// and the HMAC key used to sign test-file download URLs.
 func WithFileStores(publicAssetStore, testfileStore *filestore.Store, testfileDownloadSigningKey []byte) HandlerOption {
 	return func(h *taskHttpHandler) {
 		h.publicAssetStore = publicAssetStore
@@ -38,16 +45,10 @@ func WithFileStores(publicAssetStore, testfileStore *filestore.Store, testfileDo
 	}
 }
 
+// NewTaskHttpHandler returns a task HTTP handler that uses taskSrvc.
 func NewTaskHttpHandler(taskSrvc srvc.TaskService, opts ...HandlerOption) *taskHttpHandler {
-	// Create a cache with 3 second default expiration and 10 second cleanup interval
-	c := oldCache.New(5*time.Second, 10*time.Second)
 	h := &taskHttpHandler{
-		taskSrvc: taskSrvc,
-		cache:    c,
-		// singleflight.Group doesn't need initialization
-
-		// getTaskViewCache: cache.New(cache.WithJanitorInterval[string, Task](10*time.Second), cache.AsLRU[string, Task](lru.WithCapacity(1000))),
-		// getTaskListCache: cache.New(cache.WithJanitorInterval[string, []TaskPreview](10*time.Second), cache.AsLRU[string, []TaskPreview](lru.WithCapacity(1000))),
+		taskSrvc:         taskSrvc,
 		getTaskViewCache: cache.NewLruCache[string, Task](1000),
 		getTaskListCache: cache.NewLruCache[string, []TaskPreview](1000),
 	}
@@ -57,6 +58,11 @@ func NewTaskHttpHandler(taskSrvc srvc.TaskService, opts ...HandlerOption) *taskH
 	return h
 }
 
+// RegisterRoutes mounts task HTTP routes on r.
+// GET /tasks and GET /tasks/{taskId} require a JWT and are throttled
+// to one in-flight request to avoid a cache stampede.
+// Admin routes require an admin API key.
+// Upload and export are throttled separately because they are expensive.
 func (h *taskHttpHandler) RegisterRoutes(r *chi.Mux, jwtKey, adminAPIKey []byte, cookieSecure bool, pwdChangedAt auth.PasswordChangedAtLookup) {
 	if h.publicAssetStore != nil {
 		r.Get("/assets/*", h.ServePublicAsset)
@@ -72,33 +78,27 @@ func (h *taskHttpHandler) RegisterRoutes(r *chi.Mux, jwtKey, adminAPIKey []byte,
 			auth.WithPasswordChangedAtLookup(pwdChangedAt),
 		))
 
-		// routes are throttled because of response caching (prevents cache stampede)
 		r.Group(func(r chi.Router) {
 			r.Use(middleware.ThrottleBacklog(1, 100, 30*time.Second))
 			r.Get("/tasks/{taskId}", hf.NoReqJsonResp(h.GetTaskView))
 			r.Get("/tasks", hf.NoReqJsonResp(h.GetTaskList))
 		})
 
-		// admin-only routes
 		r.Group(func(r chi.Router) {
 			r.Use(auth.HttpAllowOnlyAdmins(adminAPIKey))
 
-			// resource-intensive routes
 			r.Group(func(r chi.Router) {
 				r.Use(middleware.ThrottleBacklog(1, 2, 30*time.Second))
 				r.Get("/tasks/{taskId}/export", h.ExportTask)
 				r.Post("/tasks/upload", h.UploadTask)
 			})
 
-			// task management
 			r.Delete("/tasks/{taskId}", hf.NoReqNoResp(h.DeleteTask))
 
-			// statement
 			r.Patch("/tasks/{taskId}/statements/{langIso639}", hf.JsonReqNoResp(h.PutStatement))
 			r.Post("/tasks/{taskId}/images", h.UploadStatementImage)
 			r.Delete("/tasks/{taskId}/images/{filename}", hf.NoReqNoResp(h.DeleteStatementImage))
 
-			// illustration
 			r.Post("/tasks/{taskId}/illustration", h.UploadIllustration)
 			r.Delete("/tasks/{taskId}/illustration", hf.NoReqNoResp(h.DeleteIllustration))
 		})

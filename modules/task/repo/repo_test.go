@@ -54,7 +54,7 @@ func TestTaskPgRepo(t *testing.T) {
 	// Verify task fields
 	assert.Equal(t, "aplusbirc", retrievedTask.ShortId, "ShortId mismatch")
 	assert.Equal(t, "A+B=C", retrievedTask.DefaultFullName(), "FullName mismatch")
-	assert.Equal(t, "task-md-images/nekoks.png", retrievedTask.IllustrImg.S3Key, "IllustrImgS3Key mismatch") // gitleaks:allow -- test storage path
+	assert.Equal(t, "task-md-images/nekoks.png", retrievedTask.IllustrImg.ObjectKey, "IllustrImgObjectKey mismatch") // gitleaks:allow -- test storage path
 	assert.Equal(t, 256, retrievedTask.MemLimMegabytes, "MemLimMegabytes mismatch")
 	assert.Equal(t, 0.6, retrievedTask.CpuTimeLimSecs, "CpuTimeLimSecs mismatch")
 	assert.Equal(t, "LIO", retrievedTask.OriginOlympiad, "OriginOlympiad mismatch")
@@ -63,7 +63,7 @@ func TestTaskPgRepo(t *testing.T) {
 	assert.Equal(t, []string{"junior"}, retrievedTask.OriginDivisions, "OriginDivisions mismatch")
 	assert.Contains(t, retrievedTask.ProblemTags, "two-sum", "ProblemTags missing two-sum")
 	assert.Equal(t, []string{"Kaspars", "Pēteris"}, retrievedTask.Authors, "Authors mismatch")
-	assert.Equal(t, "task-archives/aplusbirc.zip", retrievedTask.OgFilesZipS3Key, "ArchiveS3Key mismatch")
+	assert.Equal(t, "task-archives/aplusbirc.zip", retrievedTask.OgFilesZipObjectKey, "ArchiveObjectKey mismatch")
 	assert.Equal(t, 3, retrievedTask.DifficultyRating, "DifficultyRating mismatch")
 	assert.Contains(t, retrievedTask.Checker, "#include", "Checker mismatch")
 	assert.Equal(t, "", retrievedTask.Interactor, "Interactor mismatch")
@@ -139,7 +139,7 @@ func TestTaskPgRepo(t *testing.T) {
 		// Verify basic task preview fields
 		assert.Equal(t, "aplusbirc", taskPreview.ShortId, "Preview ShortId mismatch")
 		assert.Equal(t, "A+B=C", taskPreview.DefaultFullName(), "Preview FullName mismatch")
-		assert.Equal(t, "task-md-images/nekoks.png", taskPreview.IllustrImg.S3Key, "Preview IllustrImgS3Key mismatch")
+		assert.Equal(t, "task-md-images/nekoks.png", taskPreview.IllustrImg.ObjectKey, "Preview IllustrImgObjectKey mismatch")
 		assert.Equal(t, "LIO", taskPreview.OriginOlympiad, "Preview OriginOlympiad mismatch")
 		assert.Equal(t, "PPS", taskPreview.OriginOrg, "Preview OriginOrg mismatch")
 		assert.Equal(t, "2024/2025", taskPreview.OriginYear, "Preview OriginYear mismatch")
@@ -161,7 +161,7 @@ func TestTaskPgRepo(t *testing.T) {
 		// Test getting preview for non-existent task
 		_, err = repo.GetTaskPreview(ctx, "non-existent-task")
 		assert.Error(t, err, "Getting preview for non-existent task should fail")
-		assert.Contains(t, err.Error(), "failed to load task preview", "Error message should indicate task preview loading failed")
+		assert.Contains(t, err.Error(), "load task preview", "Error message should indicate task preview loading failed")
 	})
 
 	t.Run("ListTaskPreviews", func(t *testing.T) {

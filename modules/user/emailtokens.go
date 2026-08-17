@@ -52,20 +52,20 @@ func (s *userSrvc) RequestPasswordReset(ctx context.Context, login string) srvce
 
 	if s.emailCfg.WebsiteBaseURL == "" {
 		l.Error("password reset email blocked: WEBSITE_PUBLIC_BASE_URL is empty")
-		return newErrEmailSendFailed()
+		return ErrEmailSendFailed
 	}
 
 	rawToken, tokenHash, genErr := generateEmailToken()
 	if genErr != nil {
 		l.Error("generate password reset token", "error", genErr)
-		return newErrEmailSendFailed()
+		return ErrEmailSendFailed
 	}
 
 	expiresAt := time.Now().Add(s.emailCfg.ResetTokenTTL)
 	tokenUUID, insertErr := insertEmailToken(ctx, s.postgres, user.UUID, purposePasswordReset, tokenHash, expiresAt)
 	if insertErr != nil {
 		l.Error("store password reset token", "error", insertErr)
-		return newErrEmailSendFailed()
+		return ErrEmailSendFailed
 	}
 
 	actionURL := s.websiteURL("/reset-password", rawToken)
@@ -77,7 +77,7 @@ func (s *userSrvc) RequestPasswordReset(ctx context.Context, login string) srvce
 	if renderErr != nil {
 		l.Error("render password reset email", "error", renderErr)
 		s.rollbackEmailToken(ctx, tokenUUID, "render password reset email")
-		return newErrEmailSendFailed()
+		return ErrEmailSendFailed
 	}
 
 	if sendErr := s.mailer.Send(ctx, mail.Message{
@@ -110,23 +110,23 @@ func (s *userSrvc) ConfirmPasswordReset(ctx context.Context, token string, newPa
 	bcryptPwd, bcryptErr := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
 	if bcryptErr != nil {
 		l.Error("hash new password", "error", bcryptErr)
-		return newErrInternalSE()
+		return srvcerror.InternalServerError()
 	}
 
 	tx, txErr := s.postgres.Begin(ctx)
 	if txErr != nil {
 		l.Error("begin password reset tx", "error", txErr)
-		return newErrInternalSE()
+		return srvcerror.InternalServerError()
 	}
 	defer tx.Rollback(ctx)
 
 	row, err := loadValidEmailTokenForUpdate(ctx, tx, purposePasswordReset, tokenHash)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return newErrEmailTokenInvalid()
+			return ErrEmailTokenInvalid
 		}
 		l.Error("load password reset token", "error", err)
-		return newErrInternalSE()
+		return srvcerror.InternalServerError()
 	}
 
 	tag, markErr := tx.Exec(ctx, `
@@ -134,17 +134,17 @@ func (s *userSrvc) ConfirmPasswordReset(ctx context.Context, token string, newPa
 	`, row.UUID)
 	if markErr != nil {
 		l.Error("mark password reset token used", "error", markErr)
-		return newErrInternalSE()
+		return srvcerror.InternalServerError()
 	}
 	if tag.RowsAffected() != 1 {
-		return newErrEmailTokenInvalid()
+		return ErrEmailTokenInvalid
 	}
 
 	if _, updErr := tx.Exec(ctx, `
 		UPDATE users SET bcrypt_pwd = $1, pwd_changed_at = NOW() WHERE uuid = $2
 	`, string(bcryptPwd), row.UserUUID); updErr != nil {
 		l.Error("update password", "error", updErr)
-		return newErrInternalSE()
+		return srvcerror.InternalServerError()
 	}
 
 	if _, invErr := tx.Exec(ctx, `
@@ -153,12 +153,12 @@ func (s *userSrvc) ConfirmPasswordReset(ctx context.Context, token string, newPa
 		WHERE user_uuid = $1 AND purpose = $2 AND used_at IS NULL AND uuid <> $3
 	`, row.UserUUID, purposePasswordReset, row.UUID); invErr != nil {
 		l.Error("invalidate other password reset tokens", "error", invErr)
-		return newErrInternalSE()
+		return srvcerror.InternalServerError()
 	}
 
 	if commitErr := tx.Commit(ctx); commitErr != nil {
 		l.Error("commit password reset", "error", commitErr)
-		return newErrInternalSE()
+		return srvcerror.InternalServerError()
 	}
 
 	return nil
@@ -173,7 +173,7 @@ func (s *userSrvc) RequestEmailVerification(ctx context.Context, userUUID uuid.U
 			return ErrUserNotFound
 		}
 		l.Error("load user for email verification", "error", err)
-		return newErrInternalSE()
+		return srvcerror.InternalServerError()
 	}
 	if user.EmailVerified {
 		return nil
@@ -181,9 +181,9 @@ func (s *userSrvc) RequestEmailVerification(ctx context.Context, userUUID uuid.U
 
 	if cooled, coolErr := s.isWithinCooldown(ctx, user.UUID, purposeEmailVerify); coolErr != nil {
 		l.Error("check email verify cooldown", "error", coolErr)
-		return newErrInternalSE()
+		return srvcerror.InternalServerError()
 	} else if cooled {
-		return newErrEmailSendTooFrequent()
+		return ErrEmailSendTooFrequent
 	}
 
 	if sendErr := s.sendEmailVerification(ctx, user); sendErr != nil {
@@ -201,17 +201,17 @@ func (s *userSrvc) ConfirmEmailVerification(ctx context.Context, token string) s
 	tx, txErr := s.postgres.Begin(ctx)
 	if txErr != nil {
 		l.Error("begin email verify tx", "error", txErr)
-		return newErrInternalSE()
+		return srvcerror.InternalServerError()
 	}
 	defer tx.Rollback(ctx)
 
 	row, err := loadValidEmailTokenForUpdate(ctx, tx, purposeEmailVerify, tokenHash)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return newErrEmailTokenInvalid()
+			return ErrEmailTokenInvalid
 		}
 		l.Error("load email verify token", "error", err)
-		return newErrInternalSE()
+		return srvcerror.InternalServerError()
 	}
 
 	tag, markErr := tx.Exec(ctx, `
@@ -219,17 +219,17 @@ func (s *userSrvc) ConfirmEmailVerification(ctx context.Context, token string) s
 	`, row.UUID)
 	if markErr != nil {
 		l.Error("mark email verify token used", "error", markErr)
-		return newErrInternalSE()
+		return srvcerror.InternalServerError()
 	}
 	if tag.RowsAffected() != 1 {
-		return newErrEmailTokenInvalid()
+		return ErrEmailTokenInvalid
 	}
 
 	if _, updErr := tx.Exec(ctx, `
 		UPDATE users SET email_verified = true WHERE uuid = $1
 	`, row.UserUUID); updErr != nil {
 		l.Error("mark email verified", "error", updErr)
-		return newErrInternalSE()
+		return srvcerror.InternalServerError()
 	}
 
 	if _, invErr := tx.Exec(ctx, `
@@ -238,12 +238,12 @@ func (s *userSrvc) ConfirmEmailVerification(ctx context.Context, token string) s
 		WHERE user_uuid = $1 AND purpose = $2 AND used_at IS NULL AND uuid <> $3
 	`, row.UserUUID, purposeEmailVerify, row.UUID); invErr != nil {
 		l.Error("invalidate other email verify tokens", "error", invErr)
-		return newErrInternalSE()
+		return srvcerror.InternalServerError()
 	}
 
 	if commitErr := tx.Commit(ctx); commitErr != nil {
 		l.Error("commit email verify", "error", commitErr)
-		return newErrInternalSE()
+		return srvcerror.InternalServerError()
 	}
 
 	return nil
@@ -306,9 +306,9 @@ func (s *userSrvc) rollbackEmailToken(ctx context.Context, tokenUUID uuid.UUID, 
 
 func mapMailSendErr(err error) srvcerror.E {
 	if errors.Is(err, mail.ErrRateLimited) {
-		return newErrEmailSendTooFrequent()
+		return ErrEmailSendTooFrequent
 	}
-	return newErrEmailSendFailed()
+	return ErrEmailSendFailed
 }
 
 func (s *userSrvc) websiteURL(path, token string) string {

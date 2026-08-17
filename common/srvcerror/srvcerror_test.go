@@ -22,6 +22,12 @@ func TestIs(t *testing.T) {
 	require.True(t, err1.Is(err2))
 	require.True(t, err2.Is(err1))
 
+	withMsg := err1.WithMsg("changed")
+	require.Equal(t, "changed", withMsg.Error())
+	require.Equal(t, err1.ErrorCode(), withMsg.ErrorCode())
+	require.ErrorIs(t, withMsg, err1)
+	require.Equal(t, "test error msg to user", err1.Error())
+
 	err3 := srvcerror.New("another_error", "another error msg to user")
 	err3Derived := err3
 	require.NotErrorIs(t, err3Derived, err1)

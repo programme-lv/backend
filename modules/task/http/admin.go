@@ -2,13 +2,13 @@ package http
 
 import (
 	"context"
-	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/programme-lv/backend/common/jsonresp"
 	"github.com/programme-lv/backend/modules/task/srvc"
 )
 
+// PutStatementReq is the JSON body for PATCH /tasks/{taskId}/statements/{langIso639}.
 type PutStatementReq struct {
 	Story   string `json:"story"`
 	Input   string `json:"input"`
@@ -19,6 +19,7 @@ type PutStatementReq struct {
 	Example string `json:"example"`
 }
 
+// PutStatement replaces the markdown statement for language langIso639.
 func (h *taskHttpHandler) PutStatement(ctx context.Context, req PutStatementReq) jsonresp.HttpStatusCoder {
 	taskId := chi.URLParamFromCtx(ctx, "taskId")
 	lang := chi.URLParamFromCtx(ctx, "langIso639")
@@ -39,6 +40,7 @@ func (h *taskHttpHandler) PutStatement(ctx context.Context, req PutStatementReq)
 	return nil
 }
 
+// DeleteStatementImage deletes the statement image named {filename} and invalidates cached views.
 func (h *taskHttpHandler) DeleteStatementImage(ctx context.Context) jsonresp.HttpStatusCoder {
 	taskId := chi.URLParamFromCtx(ctx, "taskId")
 	filename := chi.URLParamFromCtx(ctx, "filename")
@@ -53,45 +55,7 @@ func (h *taskHttpHandler) DeleteStatementImage(ctx context.Context) jsonresp.Htt
 	return nil
 }
 
-func (h *taskHttpHandler) GetTaskView(ctx context.Context) (Task, jsonresp.HttpStatusCoder) {
-	taskId := chi.URLParamFromCtx(ctx, "taskId")
-
-	if task, ok := h.getTaskViewCache.Get(taskId); ok {
-		return task, nil
-	}
-
-	t, err := h.taskSrvc.GetTask(ctx, taskId)
-	if err != nil {
-		return Task{}, err
-	}
-
-	response := h.mapTaskResponse(t)
-	if response.TaskFullName == "" {
-		panic("task full name is empty")
-	}
-
-	h.getTaskViewCache.Set(taskId, response, 20*time.Second)
-	return response, nil
-}
-
-func (h *taskHttpHandler) GetTaskList(ctx context.Context) ([]TaskPreview, jsonresp.HttpStatusCoder) {
-	if previews, ok := h.getTaskListCache.Get(""); ok {
-		return previews, nil
-	}
-
-	tasks, err := h.taskSrvc.ListTaskPreviews(ctx)
-	if err != nil {
-		return nil, err
-	}
-	previews := make([]TaskPreview, 0, len(tasks))
-	for _, t := range tasks {
-		previews = append(previews, h.mapTaskPreview(t))
-	}
-
-	h.getTaskListCache.Set("", previews, 20*time.Second)
-	return previews, nil
-}
-
+// DeleteIllustration removes the task list illustration and invalidates cached views.
 func (h *taskHttpHandler) DeleteIllustration(ctx context.Context) jsonresp.HttpStatusCoder {
 	taskId := chi.URLParamFromCtx(ctx, "taskId")
 
@@ -106,7 +70,7 @@ func (h *taskHttpHandler) DeleteIllustration(ctx context.Context) jsonresp.HttpS
 	return nil
 }
 
-// DeleteTaskOld deletes a task and all its related data (admin-only endpoint)
+// DeleteTask deletes the task identified by {taskId} and invalidates cached views.
 func (h *taskHttpHandler) DeleteTask(ctx context.Context) jsonresp.HttpStatusCoder {
 	logger := h.logger(ctx)
 	taskId := chi.URLParamFromCtx(ctx, "taskId")
@@ -120,7 +84,6 @@ func (h *taskHttpHandler) DeleteTask(ctx context.Context) jsonresp.HttpStatusCod
 		return err
 	}
 
-	// Clear any cached data for this task
 	h.getTaskViewCache.Delete(taskId)
 	h.getTaskListCache.Delete("")
 

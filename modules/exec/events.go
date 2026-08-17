@@ -2,8 +2,6 @@ package exec
 
 import (
 	"encoding/json"
-	"reflect"
-	"strings"
 	"time"
 )
 
@@ -24,38 +22,6 @@ const (
 	InternalServerErrorType = "internal_server_error"
 )
 
-// eventToMap converts an event struct to a map[string]interface{} by extracting
-// all JSON-tagged fields and adding the type field at the top level.
-func eventToMap(event Event, data interface{}) (map[string]interface{}, error) {
-	m := make(map[string]interface{})
-	m["type"] = event.Type()
-
-	v := reflect.ValueOf(data)
-	if v.Kind() == reflect.Ptr {
-		v = v.Elem()
-	}
-
-	t := v.Type()
-	for i := 0; i < t.NumField(); i++ {
-		field := t.Field(i)
-		jsonTag := field.Tag.Get("json")
-		if jsonTag == "" || jsonTag == "-" {
-			continue
-		}
-
-		// Parse the tag to handle cases like `json:"field_name,omitempty"`
-		tagName := strings.Split(jsonTag, ",")[0]
-		if tagName == "" {
-			continue
-		}
-
-		fieldValue := v.Field(i)
-		m[tagName] = fieldValue.Interface()
-	}
-
-	return m, nil
-}
-
 type ReceivedSubmission struct {
 	SysInfo   string    `json:"sys_info"`
 	StartedAt time.Time `json:"started_at"`
@@ -68,11 +34,11 @@ func (s ReceivedSubmission) Type() string {
 }
 
 func (s ReceivedSubmission) MarshalJSON() ([]byte, error) {
-	m, err := eventToMap(s, s)
-	if err != nil {
-		return nil, err
-	}
-	return json.Marshal(m)
+	type payload ReceivedSubmission
+	return json.Marshal(struct {
+		Type string `json:"type"`
+		payload
+	}{Type: s.Type(), payload: payload(s)})
 }
 
 type StartedCompiling struct{}
@@ -84,11 +50,9 @@ func (s StartedCompiling) Type() string {
 }
 
 func (s StartedCompiling) MarshalJSON() ([]byte, error) {
-	m, err := eventToMap(s, s)
-	if err != nil {
-		return nil, err
-	}
-	return json.Marshal(m)
+	return json.Marshal(struct {
+		Type string `json:"type"`
+	}{Type: s.Type()})
 }
 
 type FinishedCompiling struct {
@@ -102,11 +66,11 @@ func (s FinishedCompiling) Type() string {
 }
 
 func (s FinishedCompiling) MarshalJSON() ([]byte, error) {
-	m, err := eventToMap(s, s)
-	if err != nil {
-		return nil, err
-	}
-	return json.Marshal(m)
+	type payload FinishedCompiling
+	return json.Marshal(struct {
+		Type string `json:"type"`
+		payload
+	}{Type: s.Type(), payload: payload(s)})
 }
 
 type ReachedTest struct {
@@ -122,11 +86,11 @@ func (s ReachedTest) Type() string {
 }
 
 func (s ReachedTest) MarshalJSON() ([]byte, error) {
-	m, err := eventToMap(s, s)
-	if err != nil {
-		return nil, err
-	}
-	return json.Marshal(m)
+	type payload ReachedTest
+	return json.Marshal(struct {
+		Type string `json:"type"`
+		payload
+	}{Type: s.Type(), payload: payload(s)})
 }
 
 type IgnoredTest struct {
@@ -140,11 +104,11 @@ func (s IgnoredTest) Type() string {
 }
 
 func (s IgnoredTest) MarshalJSON() ([]byte, error) {
-	m, err := eventToMap(s, s)
-	if err != nil {
-		return nil, err
-	}
-	return json.Marshal(m)
+	type payload IgnoredTest
+	return json.Marshal(struct {
+		Type string `json:"type"`
+		payload
+	}{Type: s.Type(), payload: payload(s)})
 }
 
 type FinishedTest struct {
@@ -160,11 +124,11 @@ func (s FinishedTest) Type() string {
 }
 
 func (s FinishedTest) MarshalJSON() ([]byte, error) {
-	m, err := eventToMap(s, s)
-	if err != nil {
-		return nil, err
-	}
-	return json.Marshal(m)
+	type payload FinishedTest
+	return json.Marshal(struct {
+		Type string `json:"type"`
+		payload
+	}{Type: s.Type(), payload: payload(s)})
 }
 
 type FinishedTesting struct{}
@@ -176,11 +140,9 @@ func (s FinishedTesting) Type() string {
 }
 
 func (s FinishedTesting) MarshalJSON() ([]byte, error) {
-	m, err := eventToMap(s, s)
-	if err != nil {
-		return nil, err
-	}
-	return json.Marshal(m)
+	return json.Marshal(struct {
+		Type string `json:"type"`
+	}{Type: s.Type()})
 }
 
 type CompilationError struct {
@@ -194,11 +156,11 @@ func (s CompilationError) Type() string {
 }
 
 func (s CompilationError) MarshalJSON() ([]byte, error) {
-	m, err := eventToMap(s, s)
-	if err != nil {
-		return nil, err
-	}
-	return json.Marshal(m)
+	type payload CompilationError
+	return json.Marshal(struct {
+		Type string `json:"type"`
+		payload
+	}{Type: s.Type(), payload: payload(s)})
 }
 
 type InternalServerError struct {
@@ -212,9 +174,9 @@ func (s InternalServerError) Type() string {
 }
 
 func (s InternalServerError) MarshalJSON() ([]byte, error) {
-	m, err := eventToMap(s, s)
-	if err != nil {
-		return nil, err
-	}
-	return json.Marshal(m)
+	type payload InternalServerError
+	return json.Marshal(struct {
+		Type string `json:"type"`
+		payload
+	}{Type: s.Type(), payload: payload(s)})
 }

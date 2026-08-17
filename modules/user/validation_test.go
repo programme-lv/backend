@@ -13,7 +13,7 @@ func TestValidateUsernameRejectsReservedNames(t *testing.T) {
 			err := validateUsername(username)
 
 			require.Error(t, err)
-			assert.Equal(t, ErrCodeUsernameReserved, err.ErrorCode())
+			assert.Equal(t, ErrUsernameReserved.ErrorCode(), err.ErrorCode())
 		})
 	}
 }

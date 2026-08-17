@@ -73,7 +73,7 @@ func (h *SubmHttpHandler) ListenToSubmListUpdates(w http.ResponseWriter, r *http
 			}
 			entry, err := h.mapSubmListEntry(r.Context(), submCreated)
 			if err != nil {
-				slog.Default().Warn("failed to map subm list entry", "error", err, "subm_uuid", submCreated.UUID)
+				slog.Default().Warn("map subm list entry", "error", err, "subm_uuid", submCreated.UUID)
 				continue
 			}
 			message := SubmissionListUpdate{

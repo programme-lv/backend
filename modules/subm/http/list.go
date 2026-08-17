@@ -1,6 +1,7 @@
 package http
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -15,8 +16,8 @@ import (
 
 // PaginatedResponse represents a paginated response with data and pagination metadata
 type PaginatedResponse struct {
-	Page       interface{} `json:"page"`
-	Pagination Pagination  `json:"pagination"`
+	Page       []SubmListEntry `json:"page"`
+	Pagination Pagination      `json:"pagination"`
 }
 
 // Pagination represents pagination metadata
@@ -66,12 +67,12 @@ func (h *SubmHttpHandler) GetSubmList(w http.ResponseWriter, r *http.Request) {
 	var authorUuid *uuid.UUID
 	if onlyMy {
 		userUuid, err := auth.GetUserUuidFromCtx(r.Context())
-		if err == auth.ErrNoJwtClaims || err == auth.ErrEmptyJwtClaims {
+		if errors.Is(err, auth.ErrNoJwtClaims) || errors.Is(err, auth.ErrEmptyJwtClaims) {
 			jsonresp.Unauthorized(w, "jwt claims are missing")
 			return
 		}
 		if err != nil {
-			log.Error("failed to get user uuid from context", "error", err)
+			log.Error("get user uuid from context", "error", err)
 			jsonresp.HandleErrorWithContext(r.Context(), w, err)
 			return
 		}
@@ -112,7 +113,6 @@ func (h *SubmHttpHandler) GetSubmList(w http.ResponseWriter, r *http.Request) {
 		// Get total count of submissions
 		totalCount, countSubmsErr := h.submSrvc.CountSubms(r.Context(), search, authorUuid, includeAdmin)
 		if countSubmsErr != nil {
-			log.Error("failed to count submissions", "error", countSubmsErr)
 			return nil, countSubmsErr
 		}
 
@@ -125,7 +125,6 @@ func (h *SubmHttpHandler) GetSubmList(w http.ResponseWriter, r *http.Request) {
 			IncludeAdmin: includeAdmin,
 		})
 		if err != nil {
-			log.Error("failed to list submissions", "error", err)
 			return nil, err
 		}
 
@@ -136,7 +135,7 @@ func (h *SubmHttpHandler) GetSubmList(w http.ResponseWriter, r *http.Request) {
 			for _, subm := range subms {
 				entry, err := h.mapSubmListEntry(r.Context(), subm)
 				if err != nil {
-					log.Warn("failed to map subm list entry", "error", err)
+					log.Warn("map subm list entry", "error", err)
 					continue
 				}
 				response = append(response, entry)
@@ -170,8 +169,13 @@ func (h *SubmHttpHandler) GetSubmList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response := result.(PaginatedResponse)
-	log.Info("returning submission list", "count", len(response.Page.([]SubmListEntry)), "total", response.Pagination.Total)
+	response, ok := result.(PaginatedResponse)
+	if !ok {
+		log.Error("submission list cache value has unexpected type")
+		jsonresp.InternalError(w)
+		return
+	}
+	log.Info("returning submission list", "count", len(response.Page), "total", response.Pagination.Total)
 	jsonresp.Success(w, response)
 }
 

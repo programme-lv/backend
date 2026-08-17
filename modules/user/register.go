@@ -50,20 +50,20 @@ func (s *userSrvc) CreateUser(ctx context.Context, p CreateUserParams) (res *Use
 	usernameExists, emailExists, selectErr := checkUserConflicts(ctx, s.postgres, p.Username, p.Email)
 	if selectErr != nil {
 		l.Error("check user conflicts", "error", selectErr)
-		return nil, newErrInternalSE()
+		return nil, srvcerror.InternalServerError()
 	}
 	if usernameExists {
-		return nil, newErrUsernameExists()
+		return nil, ErrUsernameExists
 	}
 	if emailExists {
-		return nil, newErrEmailExists()
+		return nil, ErrEmailAlreadyExists
 	}
 
 	bcryptPwd, bcryptErr := bcrypt.GenerateFromPassword(
 		[]byte(p.Password), bcrypt.DefaultCost)
 	if bcryptErr != nil {
 		l.Error("generate bcrypt password", "error", bcryptErr)
-		return nil, newErrInternalSE()
+		return nil, srvcerror.InternalServerError()
 	}
 
 	firstname := ""
@@ -93,13 +93,13 @@ func (s *userSrvc) CreateUser(ctx context.Context, p CreateUserParams) (res *Use
 		if errors.As(insertErr, &pgErr) && pgErr.Code == "23505" {
 			switch pgErr.ConstraintName {
 			case "users_username_key":
-				return nil, newErrUsernameExists()
+				return nil, ErrUsernameExists
 			case "users_email_key":
-				return nil, newErrEmailExists()
+				return nil, ErrEmailAlreadyExists
 			}
 		}
 		l.Error("insert user", "error", insertErr)
-		return nil, newErrInternalSE()
+		return nil, srvcerror.InternalServerError()
 	}
 
 	if sendErr := s.sendEmailVerification(ctx, *row); sendErr != nil {
@@ -206,13 +206,13 @@ func validateUsername(username string) srvcerror.E {
 		"test":   {},
 	}
 	if len(username) < minUsernameLength {
-		return newErrUsernameTooShort(minUsernameLength)
+		return errUsernameTooShort(minUsernameLength)
 	}
 	if len(username) > maxUsernameLength {
-		return newErrUsernameTooLong()
+		return ErrUsernameTooLong
 	}
 	if _, reserved := reservedUsernames[strings.ToLower(username)]; reserved {
-		return newErrUsernameReserved()
+		return ErrUsernameReserved
 	}
 	return nil
 }
@@ -220,16 +220,16 @@ func validateUsername(username string) srvcerror.E {
 func validateEmail(email string) srvcerror.E {
 	const maxEmailLength = 320
 	if len(email) > maxEmailLength {
-		return newErrEmailTooLong()
+		return ErrEmailTooLong
 	}
 
 	if len(email) == 0 {
-		return newErrEmailEmpty()
+		return ErrEmailEmpty
 	}
 
 	_, err := mail.ParseAddress(email)
 	if err != nil {
-		return newErrEmailInvalid()
+		return ErrEmailInvalid
 	}
 
 	return nil
@@ -238,10 +238,10 @@ func validateEmail(email string) srvcerror.E {
 func validatePassword(password string) srvcerror.E {
 	const minPasswordLength = 8
 	if len(password) < minPasswordLength {
-		return newErrPasswordTooShort(minPasswordLength)
+		return errPasswordTooShort(minPasswordLength)
 	}
 	if len(password) > 1024 {
-		return newErrPasswordTooLong()
+		return ErrPasswordTooLong
 	}
 	return nil
 }
@@ -249,7 +249,7 @@ func validatePassword(password string) srvcerror.E {
 func validateFirstname(firstname string) srvcerror.E {
 	const maxFirstnameLength = 35
 	if len(firstname) > maxFirstnameLength {
-		return newErrFirstnameTooLong(maxFirstnameLength)
+		return errFirstnameTooLong(maxFirstnameLength)
 	}
 	return nil
 }
@@ -257,7 +257,7 @@ func validateFirstname(firstname string) srvcerror.E {
 func validateLastname(lastname string) srvcerror.E {
 	const maxLastnameLength = 35
 	if len(lastname) > maxLastnameLength {
-		return newErrLastnameTooLong(maxLastnameLength)
+		return errLastnameTooLong(maxLastnameLength)
 	}
 	return nil
 }

@@ -24,7 +24,7 @@ func (s *submSrvc) GetMaxScorePerTask(ctx context.Context, userUUID uuid.UUID) (
 			if exists, ok := taskExistsCache[taskShortID]; ok {
 				return exists, nil
 			}
-			_, err := s.taskSrvc.GetTaskFullNames(ctx, []string{taskShortID})
+			_, err := s.taskSrvc.ResolveNames(ctx, []string{taskShortID})
 			if err != nil {
 				if errors.Is(err, tasksrvc.ErrSomeTaskNotFound) {
 					taskExistsCache[taskShortID] = false
@@ -228,16 +228,14 @@ func (s *submSrvc) ListSubms(ctx context.Context, filter ListSubmsParams) ([]dom
 		var searchTasksByNameErr srvcerror.E
 		taskIds, searchTasksByNameErr = s.taskSrvc.SearchTasksByName(ctx, filter.Search)
 		if searchTasksByNameErr != nil {
-			log.Error("search tasks by name", "error", searchTasksByNameErr)
-			return nil, srvcerror.InternalServerError()
+			return nil, searchTasksByNameErr
 		}
 		taskIds = append(taskIds, filter.Search)
 
 		// get all possible user matches
 		authorId, err := s.userSrvc.GetUserByUsername(ctx, filter.Search)
-		if err != nil && !srvcerror.Is(err, usersrvc.ErrCodeUserNotFound) {
-			log.Error("get user by username", "error", err)
-			return nil, srvcerror.InternalServerError()
+		if err != nil && !errors.Is(err, usersrvc.ErrUserNotFound) {
+			return nil, err
 		}
 		if authorId.UUID != uuid.Nil {
 			authorIdStr := authorId.UUID.String()

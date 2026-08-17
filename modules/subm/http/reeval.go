@@ -17,7 +17,7 @@ func (h *SubmHttpHandler) ReevalSubms(w http.ResponseWriter, r *http.Request) {
 
 	var request reevalSubmsRequest
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-		jsonresp.BadRequest(w, "failed to decode json request body")
+		jsonresp.BadRequest(w, "nederīgs JSON")
 		return
 	}
 

@@ -1,3 +1,6 @@
+// Package srvc is the task service: use-case orchestration, persistence, and object-store I/O.
+//
+// Construct a service with [NewTaskSrvc].
 package srvc
 
 import (
@@ -23,7 +26,7 @@ type TaskService interface {
 	UploadIllustrationImg(ctx context.Context, mimeType string, body []byte) (string, srvcerror.E)
 	DeleteIllustrationImg(ctx context.Context, taskId string) srvcerror.E
 	UpdateIllustrationImg(ctx context.Context, taskId string, img IllustrationImage) srvcerror.E
-	GetHttpUrlForIllustrImg(ctx context.Context, illstrImgS3Key string) (string, srvcerror.E)
+	GetHttpUrlForIllustrImg(ctx context.Context, illustrImgObjectKey string) (string, srvcerror.E)
 
 	// markdown statement
 	UpdateStatementMd(ctx context.Context, taskId string, statement MarkdownStatement) srvcerror.E
@@ -31,7 +34,7 @@ type TaskService interface {
 	// markdown statement image
 	UploadStatementImage(ctx context.Context, taskId string, filename string, mimeType string, body []byte) (string, srvcerror.E)
 	DeleteStatementImage(ctx context.Context, taskId string, filename string) srvcerror.E
-	GetHttpUrlForStatementImage(ctx context.Context, statementImageS3Key string) (string, srvcerror.E)
+	GetHttpUrlForStatementImage(ctx context.Context, statementImageObjectKey string) (string, srvcerror.E)
 
 	// website
 	GetTaskPreview(ctx context.Context, shortId string) (TaskPreview, srvcerror.E)
@@ -41,8 +44,6 @@ type TaskService interface {
 	ImportTaskFromZip(ctx context.Context, zipBytes []byte, overrideId string) (string, srvcerror.E)
 	ExportTaskAsZip(ctx context.Context, taskId string) ([]byte, srvcerror.E)
 
-	// unorganized
-	GetTaskFullNames(ctx context.Context, shortIds []string) ([]string, srvcerror.E)
 	ResolveNames(ctx context.Context, shortIds []string) ([]string, srvcerror.E)
 	SearchTasksByName(ctx context.Context, name string) ([]string, srvcerror.E)
 }
@@ -81,18 +82,20 @@ type taskSrvc struct {
 	apiPublicBaseURL           string
 	testfileDownloadSigningKey []byte
 
-	// dlGroup deduplicates concurrent DownloadTestFile calls per key to prevent thundering herd
+	// dlGroup coalesces concurrent DownloadTestFile calls for the same key.
 	dlGroup singleflight.Group
 }
 
 type TaskSrvcOption func(*taskSrvc)
 
+// WithPublicAPIBaseURL sets the public API origin used to build asset URLs.
 func WithPublicAPIBaseURL(baseURL string) TaskSrvcOption {
 	return func(ts *taskSrvc) {
 		ts.apiPublicBaseURL = baseURL
 	}
 }
 
+// WithTestfileDownloadSigningKey sets the HMAC key used to sign test-file download URLs.
 func WithTestfileDownloadSigningKey(key []byte) TaskSrvcOption {
 	return func(ts *taskSrvc) {
 		ts.testfileDownloadSigningKey = key

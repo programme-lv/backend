@@ -1,0 +1,20 @@
+---
+description: Go style — Effective Go, doc comments, code review comments, and proverbs
+globs: "**/*.go"
+alwaysApply: false
+---
+
+# Go style
+
+Follow [docs/go.md](docs/go.md): [Effective Go](docs/go/effective.md), [doc comments](docs/go/comment.md), [code review comments](docs/go/review.md) (https://go.dev/wiki/CodeReviewComments), then [Go Proverbs](docs/go/proverbs.md) (https://go-proverbs.github.io/).
+
+Repo overrides (win over those guides):
+
+- Filenames: lowercase, no separators, one word when possible.
+- No `failed to` prefix on logs or errors.
+- Wrap with `fmt.Errorf("...: %w", err)` inside repo and other non-HTTP Go, not `pkg/errors`. Do not wrap `srvcerror.E` in `%w` before HTTP. See [docs/errors.md](docs/errors.md).
+- No Makefile for fmt/vet/test unless we add one on purpose.
+- Keep `cmd/` `modules/` `common/` `postgres/`. Do not adopt golang-standards/project-layout.
+- Do not add new `util` / `misc` / `types` packages.
+
+`gofmt` every Go file. `go vet ./...` before commit.

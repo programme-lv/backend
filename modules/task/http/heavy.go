@@ -16,13 +16,14 @@ import (
 	"github.com/programme-lv/backend/modules/task/srvc"
 )
 
+// UploadTaskResponse is the JSON body returned after importing a task ZIP.
 type UploadTaskResponse struct {
 	TaskId string `json:"task_id"`
 }
 
-// UploadTask handles task upload via multipart/form-data with field name "task_zip".
-// It calls the service to import a TaskZip v1 archive and returns the created task ID.
-// Optional query parameter ?override_id=<new_id> can be used to override the task's short ID.
+// UploadTask imports a TaskZip v1 archive from multipart field task_zip
+// and writes the created task ID as JSON.
+// Query parameter override_id, if set, replaces the archive's short ID.
 func (h *taskHttpHandler) UploadTask(w http.ResponseWriter, r *http.Request) {
 	logger := h.logger(r.Context()).With("handler", "UploadTask")
 
@@ -48,7 +49,6 @@ func (h *taskHttpHandler) UploadTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// check for optional ID override
 	overrideId := r.URL.Query().Get("override_id")
 
 	createdId, importTaskErr := h.taskSrvc.ImportTaskFromZip(r.Context(), zipBytes, overrideId)
@@ -60,20 +60,20 @@ func (h *taskHttpHandler) UploadTask(w http.ResponseWriter, r *http.Request) {
 	_ = jsonresp.Success(w, UploadTaskResponse{TaskId: createdId})
 }
 
+// UploadStatementImage stores a statement image from multipart field image.
 func (h *taskHttpHandler) UploadStatementImage(w http.ResponseWriter, r *http.Request) {
 	taskId := chi.URLParam(r, "taskId")
 
 	err := r.ParseMultipartForm(10 << 20) // max 10MB
 	if err != nil {
-		errMsg := fmt.Sprintf("failed to parse multipart form (maybe the image is too large?): %v", err)
+		errMsg := fmt.Sprintf("parse multipart form (image may be too large): %v", err)
 		jsonresp.BadRequest(w, errMsg)
 		return
 	}
 
-	// get image as byte array
 	image, header, err := r.FormFile("image")
 	if err != nil {
-		msg := fmt.Sprintf("failed to get image: %v", err)
+		msg := fmt.Sprintf("read image: %v", err)
 		jsonresp.BadRequest(w, msg)
 		return
 	}
@@ -90,16 +90,14 @@ func (h *taskHttpHandler) UploadStatementImage(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	// get specified and detected MIME types
 	_, imageMimeType, err := mimetype.GetUploadedFileMIMEs(image, header)
 	if err != nil {
-		errMsg := fmt.Sprintf("failed to get MIME types: %v", err)
+		errMsg := fmt.Sprintf("detect MIME type: %v", err)
 		errCode := "failed_to_get_mimes"
 		jsonresp.WriteCustom(w, errMsg, http.StatusBadRequest, errCode)
 		return
 	}
 
-	// can we somehow check that imageFilenameExt matches the mime type?
 	if !mimetype.IsExtensionValidForMIME(imageFilenameExt, imageMimeType) {
 		msg := fmt.Sprintf("file ext '%s' does not match detected MIME type '%s'", imageFilenameExt, imageMimeType)
 		jsonresp.BadRequest(w, msg)
@@ -108,7 +106,7 @@ func (h *taskHttpHandler) UploadStatementImage(w http.ResponseWriter, r *http.Re
 
 	imageBytes, err := io.ReadAll(image)
 	if err != nil {
-		msg := fmt.Sprintf("failed to read image: %v", err)
+		msg := fmt.Sprintf("read image: %v", err)
 		jsonresp.BadRequest(w, msg)
 		return
 	}
@@ -124,41 +122,40 @@ func (h *taskHttpHandler) UploadStatementImage(w http.ResponseWriter, r *http.Re
 
 	err = jsonresp.Success(w, uri)
 	if err != nil {
-		slog.Error("failed to write success json", "error", err)
+		slog.Error("write success json", "error", err)
 	}
 }
 
+// UploadIllustration stores the task list illustration from multipart field image.
+// The image must be between 1×1 and 2000×2000 pixels.
 func (h *taskHttpHandler) UploadIllustration(w http.ResponseWriter, r *http.Request) {
 	taskId := chi.URLParam(r, "taskId")
 
 	err := r.ParseMultipartForm(10 << 20) // max 10MB
 	if err != nil {
-		errMsg := fmt.Sprintf("failed to parse multipart form (maybe the image is too large?): %v", err)
+		errMsg := fmt.Sprintf("parse multipart form (image may be too large): %v", err)
 		errCode := "failed_to_parse_multipart_form"
 		jsonresp.WriteCustom(w, errMsg, http.StatusBadRequest, errCode)
 		return
 	}
 
-	// get image as byte array
 	image, header, err := r.FormFile("image")
 	if err != nil {
-		errMsg := fmt.Sprintf("failed to get image: %v", err)
+		errMsg := fmt.Sprintf("read image: %v", err)
 		errCode := "failed_to_get_image"
 		jsonresp.WriteCustom(w, errMsg, http.StatusBadRequest, errCode)
 		return
 	}
 	defer image.Close()
 
-	// get specified and detected MIME types
 	_, imageMimeType, err := mimetype.GetUploadedFileMIMEs(image, header)
 	if err != nil {
-		errMsg := fmt.Sprintf("failed to get MIME types: %v", err)
+		errMsg := fmt.Sprintf("detect MIME type: %v", err)
 		errCode := "failed_to_get_mimes"
 		jsonresp.WriteCustom(w, errMsg, http.StatusBadRequest, errCode)
 		return
 	}
 
-	// validate that this is an image MIME type
 	if !strings.HasPrefix(imageMimeType, "image/") {
 		errMsg := fmt.Sprintf("uploaded file is not an image (detected MIME type: %s)", imageMimeType)
 		errCode := "invalid_mime_type"
@@ -168,22 +165,20 @@ func (h *taskHttpHandler) UploadIllustration(w http.ResponseWriter, r *http.Requ
 
 	imageBytes, err := io.ReadAll(image)
 	if err != nil {
-		errMsg := fmt.Sprintf("failed to read image: %v", err)
+		errMsg := fmt.Sprintf("read image: %v", err)
 		errCode := "failed_to_read_image"
 		jsonresp.WriteCustom(w, errMsg, http.StatusBadRequest, errCode)
 		return
 	}
 
-	// Get image dimensions
 	width, height, err := img.GetImageDimensions(imageBytes, imageMimeType)
 	if err != nil {
-		errMsg := fmt.Sprintf("failed to get image dimensions: %v", err)
+		errMsg := fmt.Sprintf("image dimensions: %v", err)
 		errCode := "failed_to_get_image_dimensions"
 		jsonresp.WriteCustom(w, errMsg, http.StatusBadRequest, errCode)
 		return
 	}
 
-	// Verify reasonable dimensions
 	if width > 2000 || height > 2000 || width == 0 || height == 0 {
 		errMsg := "image dimensions are inadequate (must be between 1x1 and 2000x2000 pixels)"
 		errCode := "inadequate_image_dimensions"
@@ -191,17 +186,15 @@ func (h *taskHttpHandler) UploadIllustration(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	// Upload the illustration image to S3
-	s3Key, uploadIllustrationErr := h.taskSrvc.UploadIllustrationImg(r.Context(), imageMimeType, imageBytes)
+	objectKey, uploadIllustrationErr := h.taskSrvc.UploadIllustrationImg(r.Context(), imageMimeType, imageBytes)
 	if uploadIllustrationErr != nil {
-		jsonresp.HandleSrvcError(slog.Default(), w, err)
+		jsonresp.WriteError(w, uploadIllustrationErr)
 		return
 	}
 
-	// Update the task with the illustration image information
 	sizeInBytes := len(imageBytes)
 	illustrationImg := srvc.IllustrationImage{
-		S3Key:     s3Key,
+		ObjectKey: objectKey,
 		WidthPx:   width,
 		HeightPx:  height,
 		SzInBytes: sizeInBytes,
@@ -209,20 +202,20 @@ func (h *taskHttpHandler) UploadIllustration(w http.ResponseWriter, r *http.Requ
 
 	updateIllustrationErr := h.taskSrvc.UpdateIllustrationImg(r.Context(), taskId, illustrationImg)
 	if updateIllustrationErr != nil {
-		jsonresp.HandleSrvcError(slog.Default(), w, err)
+		jsonresp.WriteError(w, updateIllustrationErr)
 		return
 	}
 
 	h.getTaskViewCache.Delete(taskId)
 	h.getTaskListCache.Delete("")
 
-	err = jsonresp.Success(w, map[string]string{"s3_key": s3Key})
+	err = jsonresp.Success(w, map[string]string{"object_key": objectKey})
 	if err != nil {
-		slog.Error("failed to write success json", "error", err)
+		slog.Error("write success json", "error", err)
 	}
 }
 
-// ExportTask exports a task as a ZIP file and streams it directly to the client.
+// ExportTask writes the task as a ZIP attachment named {taskId}.zip.
 func (h *taskHttpHandler) ExportTask(w http.ResponseWriter, r *http.Request) {
 	startTime := time.Now()
 	taskId := chi.URLParam(r, "taskId")
@@ -232,7 +225,7 @@ func (h *taskHttpHandler) ExportTask(w http.ResponseWriter, r *http.Request) {
 		"task_id", taskId,
 	)
 
-	// if client is already gone, stop immediately to avoid doing any work.
+	// Skip the zip if the client already hung up.
 	select {
 	case <-r.Context().Done():
 		l.Warn("client disconnected before export started")
@@ -240,7 +233,6 @@ func (h *taskHttpHandler) ExportTask(w http.ResponseWriter, r *http.Request) {
 	default:
 	}
 
-	// Call service to get ZIP bytes
 	zipBytes, exportTaskAsZipErr := h.taskSrvc.ExportTaskAsZip(r.Context(), taskId)
 	if exportTaskAsZipErr != nil {
 		jsonresp.WriteError(w, exportTaskAsZipErr)
@@ -253,12 +245,10 @@ func (h *taskHttpHandler) ExportTask(w http.ResponseWriter, r *http.Request) {
 		"duration_ms", duration.Milliseconds(),
 	)
 
-	// Set response headers for file download
 	filename := fmt.Sprintf("%s.zip", taskId)
 	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", filename))
 	w.Header().Set("Content-Length", fmt.Sprintf("%d", len(zipBytes)))
 
-	// Stream ZIP data directly to client
 	_, err := w.Write(zipBytes)
 	if err != nil {
 		l.Warn("write ZIP to response", "error", err)

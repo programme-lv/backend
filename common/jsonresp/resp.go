@@ -24,7 +24,11 @@ func Success(w http.ResponseWriter, data any) error {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	return json.NewEncoder(w).Encode(resp)
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		slog.Error("write json success response", "error", err)
+		return err
+	}
+	return nil
 }
 
 func WriteCustom(w http.ResponseWriter, errMsg string, statusCode int, errCode string) error {
@@ -35,7 +39,11 @@ func WriteCustom(w http.ResponseWriter, errMsg string, statusCode int, errCode s
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
-	return json.NewEncoder(w).Encode(resp)
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		slog.Error("write json error response", "error", err)
+		return err
+	}
+	return nil
 }
 
 type HttpStatusCoder interface {
@@ -81,20 +89,18 @@ func Unauthorized(w http.ResponseWriter, errMsg string) {
 	WriteError(w, ErrHttpUnauthorized.WithMsg(errMsg))
 }
 
-// HandleSrvcError handles service errors and writes appropriate HTTP responses
+// HandleSrvcError writes a service error as JSON.
+// It does not log srvcerror values; the service already logged unexpected failures.
+// logger is used only when err is not a srvcerror.E (a programming mistake at the HTTP boundary).
 func HandleSrvcError(logger *slog.Logger, w http.ResponseWriter, err error) {
-	srvcErr, ok := err.(srvcerror.E)
-	if ok {
-		logger.Warn("service error", "error", err)
-		// if srvcErr.HttpStatusCode() == http.StatusInternalServerError {
-		// 	logger.Error("internal server error", "error", err)
-		// }
-		WriteCustom(w, srvcErr.Error(), srvcErr.HttpStatusCode(), srvcErr.ErrorCode())
+	if _, ok := err.(srvcerror.E); ok {
+		WriteError(w, err)
 		return
-	} else {
-		logger.Error("internal server error", "error", err)
-		InternalError(w)
 	}
+	if logger != nil {
+		logger.Error("internal server error", "error", err)
+	}
+	InternalError(w)
 }
 
 // HandleErrorWithContext is a convenience function that extracts the logger from the context
