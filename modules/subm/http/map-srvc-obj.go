@@ -56,6 +56,7 @@ func mapSubmListEntry(
 	}
 
 	return SubmListEntry{
+		ID:         s.ShortID,
 		SubmUuid:   s.UUID.String(),
 		Username:   username,
 		TaskId:     s.TaskShortID,
@@ -118,6 +119,7 @@ func mapSubm(
 		currEval = &mapped
 	}
 	return &DetailedSubmView{
+		ID:        subm.ShortID,
 		SubmUUID:  subm.UUID.String(),
 		Content:   subm.Content,
 		Username:  username,

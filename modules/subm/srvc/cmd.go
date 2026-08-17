@@ -45,7 +45,7 @@ func (s *submSrvc) SubmitSol(ctx context.Context, p SubmitSolParams) srvcerror.E
 type submitSolCmdHandler struct {
 	DoesUserExist    func(ctx context.Context, uuid uuid.UUID) (bool, srvcerror.E)
 	GetTask          func(ctx context.Context, shortId string) (tasksrvc.Task, srvcerror.E)
-	StoreSubm        func(ctx context.Context, subm domain.Subm) error
+	StoreSubm        func(ctx context.Context, subm *domain.Subm) error
 	StoreEval        func(ctx context.Context, eval domain.Eval) error
 	BcastSubmCreated func(subm domain.Subm)
 	EnqueueExec      func(ctx context.Context, eval domain.Eval, srcCode string, prLangId string) srvcerror.E
@@ -107,7 +107,7 @@ func (h submitSolCmdHandler) Handle(ctx context.Context, p SubmitSolParams) srvc
 		return srvcerror.InternalServerError()
 	}
 
-	storeSubmErr := h.StoreSubm(ctx, submEntity)
+	storeSubmErr := h.StoreSubm(ctx, &submEntity)
 	if storeSubmErr != nil {
 		action := "store submission"
 		log.Error(action, "subm_uuid", p.UUID, "error", storeSubmErr)

@@ -7,36 +7,63 @@ import (
 	"github.com/google/uuid"
 	"github.com/programme-lv/backend/common/ctxlog"
 	"github.com/programme-lv/backend/common/jsonresp"
+	"github.com/programme-lv/backend/modules/subm/domain"
 )
+
+type submPathID struct {
+	UUID    uuid.UUID
+	ShortID string
+}
+
+func parseSubmPathID(s string) (submPathID, bool) {
+	if u, err := uuid.Parse(s); err == nil {
+		return submPathID{UUID: u}, true
+	}
+	if domain.ValidShortID(s) {
+		return submPathID{ShortID: s}, true
+	}
+	return submPathID{}, false
+}
 
 func (h *SubmHttpHandler) GetFullSubm(w http.ResponseWriter, r *http.Request) {
 	log := ctxlog.FromContext(r.Context())
 
-	submUuidStr := chi.URLParam(r, "subm-uuid")
-	log.Info("getting full submission", "subm_uuid", submUuidStr)
+	id := chi.URLParam(r, "subm-id")
+	log.Info("getting full submission", "subm_id", id)
 
-	submUuid, err := uuid.Parse(submUuidStr)
-	if err != nil {
-		log.Warn("invalid submission UUID", "subm_uuid", submUuidStr, "error", err)
+	parsed, ok := parseSubmPathID(id)
+	if !ok {
+		log.Warn("invalid submission id", "subm_id", id)
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
 
-	subm, err := h.submSrvc.ViewSubm(r.Context(), submUuid)
-	if err != nil {
-		log.Error("failed to get submission", "subm_uuid", submUuid, "error", err)
-		jsonresp.HandleErrorWithContext(r.Context(), w, err)
+	var subm domain.Subm
+	if parsed.UUID != uuid.Nil {
+		viewed, err := h.submSrvc.ViewSubm(r.Context(), parsed.UUID)
+		if err != nil {
+			log.Error("failed to get submission", "subm_id", id, "error", err)
+			jsonresp.HandleErrorWithContext(r.Context(), w, err)
+			return
+		}
+		subm = viewed
+	} else {
+		viewed, err := h.submSrvc.ViewSubmByShortID(r.Context(), parsed.ShortID)
+		if err != nil {
+			log.Error("failed to get submission", "subm_id", id, "error", err)
+			jsonresp.HandleErrorWithContext(r.Context(), w, err)
+			return
+		}
+		subm = viewed
+	}
+
+	response, mapErr := h.mapSubm(r.Context(), subm)
+	if mapErr != nil {
+		log.Error("failed to map submission", "subm_id", id, "error", mapErr)
+		jsonresp.HandleErrorWithContext(r.Context(), w, mapErr)
 		return
 	}
 
-	var response *DetailedSubmView
-	response, err = h.mapSubm(r.Context(), subm)
-	if err != nil {
-		log.Error("failed to map submission", "subm_uuid", submUuid, "error", err)
-		jsonresp.HandleErrorWithContext(r.Context(), w, err)
-		return
-	}
-
-	log.Info("returning full submission", "subm_uuid", submUuid)
+	log.Info("returning full submission", "subm_uuid", subm.UUID, "short_id", subm.ShortID)
 	jsonresp.Success(w, response)
 }

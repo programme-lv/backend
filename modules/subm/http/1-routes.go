@@ -14,7 +14,7 @@ func (h *SubmHttpHandler) RegisterRoutes(r *chi.Mux, jwtKey, adminAPIKey []byte,
 		))
 		r.Post("/subm", h.PostSubm)
 		r.Get("/subm", h.GetSubmList)
-		r.Get("/subm/{subm-uuid}", h.GetFullSubm)
+		r.Get("/subm/{subm-id}", h.GetFullSubm)
 		r.Get("/subm/scores/{username}", h.GetMaxScorePerTask)
 		r.Get("/subm-updates", h.ListenToSubmListUpdates)
 

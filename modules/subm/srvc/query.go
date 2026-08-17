@@ -3,6 +3,7 @@ package srvc
 import (
 	"context"
 	"errors"
+	"log/slog"
 
 	"github.com/google/uuid"
 	"github.com/programme-lv/backend/common/ctxlog"
@@ -155,9 +156,34 @@ func (s *submSrvc) ViewSubm(ctx context.Context, submUuid uuid.UUID) (domain.Sub
 
 	subm, err := s.submRepo.GetSubm(ctx, submUuid)
 	if err != nil {
-		log.Error("get submission", "error", err)
-		return domain.Subm{}, srvcerror.InternalServerError()
+		return mapGetSubmErr(log, err, "subm_uuid", submUuid.String())
 	}
+
+	return s.redactSubmContent(ctx, subm)
+}
+
+func (s *submSrvc) ViewSubmByShortID(ctx context.Context, shortID string) (domain.Subm, srvcerror.E) {
+	log := ctxlog.FromContext(ctx).With("query", "view submission")
+
+	subm, err := s.submRepo.GetSubmByShortID(ctx, shortID)
+	if err != nil {
+		return mapGetSubmErr(log, err, "short_id", shortID)
+	}
+
+	return s.redactSubmContent(ctx, subm)
+}
+
+func mapGetSubmErr(log *slog.Logger, err error, idKey, idVal string) (domain.Subm, srvcerror.E) {
+	if errors.Is(err, domain.ErrNotFound) {
+		log.Warn("submission not found", idKey, idVal)
+		return domain.Subm{}, ErrSubmissionNotFound
+	}
+	log.Error("get submission", "error", err, idKey, idVal)
+	return domain.Subm{}, srvcerror.InternalServerError()
+}
+
+func (s *submSrvc) redactSubmContent(ctx context.Context, subm domain.Subm) (domain.Subm, srvcerror.E) {
+	log := ctxlog.FromContext(ctx).With("query", "view submission")
 
 	userHasSolvedTheTask := false
 	userUUID, authErr := auth.GetUserUuidFromCtx(ctx)

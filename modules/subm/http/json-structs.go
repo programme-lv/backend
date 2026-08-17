@@ -5,6 +5,7 @@ import (
 )
 
 type DetailedSubmView struct {
+	ID        string `json:"id"`
 	SubmUUID  string `json:"subm_uuid"`
 	Content   string `json:"content,omitempty"`
 	Username  string `json:"username"`
@@ -22,6 +23,7 @@ type PrLang struct {
 }
 
 type SubmListEntry struct {
+	ID         string    `json:"id"`
 	SubmUuid   string    `json:"subm_uuid"`
 	Username   string    `json:"username"`
 	TaskId     string    `json:"task_id"`

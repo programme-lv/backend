@@ -8,6 +8,7 @@ import (
 
 type Subm struct {
 	UUID         uuid.UUID
+	ShortID      string
 	Content      string
 	AuthorUUID   uuid.UUID
 	TaskShortID  string
