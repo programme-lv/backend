@@ -6,7 +6,7 @@ alwaysApply: false
 
 # Go style
 
-Follow [docs/go.md](docs/go.md): [Effective Go](docs/go/effective.md), [doc comments](docs/go/comment.md), then [code review comments](docs/go/review.md).
+Follow [docs/go.md](docs/go.md): [Effective Go](docs/go/effective.md), [doc comments](docs/go/comment.md), then [code review comments](docs/go/review.md) (https://go.dev/wiki/CodeReviewComments).
 
 Repo overrides (win over those guides):
 

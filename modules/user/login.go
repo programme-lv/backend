@@ -17,14 +17,14 @@ func (s *userSrvc) Login(ctx context.Context, username string, password string) 
 	user, selectErr := selectUserByUsername(ctx, s.postgres, username)
 	if selectErr != nil {
 		if errors.Is(selectErr, pgx.ErrNoRows) {
-			return nil, newErrUsernameOrPasswordIncorrect()
+			return nil, ErrUsernameOrPasswordIncorrect
 		}
 		l.Error("get user by username", "error", selectErr)
-		return nil, newErrInternalSE()
+		return nil, srvcerror.InternalServerError()
 	}
 
 	if bcrypt.CompareHashAndPassword([]byte(user.BcryptPwd), []byte(password)) != nil {
-		return nil, newErrUsernameOrPasswordIncorrect()
+		return nil, ErrUsernameOrPasswordIncorrect
 	}
 
 	return &User{

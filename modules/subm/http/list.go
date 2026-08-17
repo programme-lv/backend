@@ -71,7 +71,7 @@ func (h *SubmHttpHandler) GetSubmList(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if err != nil {
-			log.Error("failed to get user uuid from context", "error", err)
+			log.Error("get user uuid from context", "error", err)
 			jsonresp.HandleErrorWithContext(r.Context(), w, err)
 			return
 		}
@@ -112,7 +112,6 @@ func (h *SubmHttpHandler) GetSubmList(w http.ResponseWriter, r *http.Request) {
 		// Get total count of submissions
 		totalCount, countSubmsErr := h.submSrvc.CountSubms(r.Context(), search, authorUuid, includeAdmin)
 		if countSubmsErr != nil {
-			log.Error("failed to count submissions", "error", countSubmsErr)
 			return nil, countSubmsErr
 		}
 
@@ -125,7 +124,6 @@ func (h *SubmHttpHandler) GetSubmList(w http.ResponseWriter, r *http.Request) {
 			IncludeAdmin: includeAdmin,
 		})
 		if err != nil {
-			log.Error("failed to list submissions", "error", err)
 			return nil, err
 		}
 
@@ -136,7 +134,7 @@ func (h *SubmHttpHandler) GetSubmList(w http.ResponseWriter, r *http.Request) {
 			for _, subm := range subms {
 				entry, err := h.mapSubmListEntry(r.Context(), subm)
 				if err != nil {
-					log.Warn("failed to map subm list entry", "error", err)
+					log.Warn("map subm list entry", "error", err)
 					continue
 				}
 				response = append(response, entry)

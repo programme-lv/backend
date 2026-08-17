@@ -321,8 +321,8 @@ func (h procExecEvCmdHandler) Handle(ctx context.Context, p procExecEvParams) er
 	if final {
 		err := h.StoreEval(ctx, eval)
 		if err != nil {
-			slog.Error("failed to store evaluation", "error", err)
-			return err
+			log.Error("store evaluation", "error", err)
+			return srvcerror.InternalServerError()
 		}
 		delete(h.InProgrEval, p.Eval.UUID)
 	} else {

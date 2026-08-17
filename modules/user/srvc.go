@@ -123,7 +123,6 @@ func (s *userSrvc) GetUserByUUID(ctx context.Context, uuid uuid.UUID) (res User,
 		}
 	}
 	if len(resSlice) == 0 {
-		l.Warn("user with UUID not found", "uuid", uuid)
 		return User{}, ErrUserNotFound
 	}
 
