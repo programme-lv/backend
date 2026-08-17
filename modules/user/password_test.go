@@ -3,6 +3,9 @@
 package user_test
 
 import (
+	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -79,6 +82,50 @@ func TestChangePasswordHttpShortNew(t *testing.T) {
 		"password":         "short",
 	}, token)
 	assertErrorInHttpResponse(t, w, "password_too_short")
+}
+
+func TestChangePasswordHttpInvalidatesResetTokens(t *testing.T) {
+	handler, pg := newUserHttpHandlerWithPool(t)
+	authToken := registerAndLogin(t, handler, "pwdresettok")
+
+	w := whoami(t, handler, authToken)
+	require.Equal(t, http.StatusOK, w.Code)
+	var whoamiResp struct {
+		Data struct {
+			UUID string `json:"uuid"`
+		} `json:"data"`
+	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &whoamiResp))
+	require.NotEmpty(t, whoamiResp.Data.UUID)
+
+	rawReset := "outstanding-reset-token"
+	sum := sha256.Sum256([]byte(rawReset))
+	tokenHash := hex.EncodeToString(sum[:])
+	_, err := pg.Exec(context.Background(), `
+		INSERT INTO user_email_tokens (uuid, user_uuid, purpose, token_hash, expires_at)
+		VALUES (gen_random_uuid(), $1, 'password_reset', $2, NOW() + interval '1 hour')
+	`, whoamiResp.Data.UUID, tokenHash)
+	require.NoError(t, err)
+
+	time.Sleep(time.Second)
+
+	w = jsonAuthed(t, handler, http.MethodPost, "/password", map[string]interface{}{
+		"current_password": "password123",
+		"password":         "newpassword1",
+	}, authToken)
+	require.Equal(t, http.StatusNoContent, w.Code, "Response body: %s", w.Body.String())
+
+	w = jsonAuthed(t, handler, http.MethodPost, "/password-reset/confirm", map[string]interface{}{
+		"token":    rawReset,
+		"password": "hijackedpassword1",
+	}, "")
+	assertErrorInHttpResponse(t, w, "email_token_invalid")
+
+	w = login(t, handler, map[string]interface{}{
+		"username": "pwdresettok",
+		"password": "newpassword1",
+	})
+	assert.Equal(t, http.StatusOK, w.Code, "Response body: %s", w.Body.String())
 }
 
 func assertWhoAmIUsername(t *testing.T, w *httptest.ResponseRecorder, username string) {

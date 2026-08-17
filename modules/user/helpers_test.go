@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/programme-lv/backend/common/testutil"
 	"github.com/programme-lv/backend/modules/user"
 	userhttp "github.com/programme-lv/backend/modules/user/http"
@@ -20,6 +21,12 @@ import (
 )
 
 func newUserHttpHandler(t *testing.T) http.Handler {
+	t.Helper()
+	handler, _ := newUserHttpHandlerWithPool(t)
+	return handler
+}
+
+func newUserHttpHandlerWithPool(t *testing.T) (http.Handler, *pgxpool.Pool) {
 	t.Helper()
 	pg := testutil.MustGetMigratedTestPostgresDb(t)
 	userSrvc := user.NewUserService(pg, mail.NewNoopMailer(), user.EmailFlowConfig{
@@ -35,7 +42,7 @@ func newUserHttpHandler(t *testing.T) http.Handler {
 	)
 	r := chi.NewRouter()
 	userHandler.RegisterRoutes(r)
-	return r
+	return r, pg
 }
 
 func newJsonReq(method, path string, body map[string]interface{}) (*http.Request, error) {
