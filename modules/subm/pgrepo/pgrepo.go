@@ -10,6 +10,7 @@ import (
 	"github.com/lib/pq"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/programme-lv/backend/common/ctxlog"
 	"github.com/programme-lv/backend/modules/subm/domain"
@@ -374,22 +375,77 @@ func nullableString(s string) *string {
 }
 
 type pgSubmRepo struct {
-	pool *pgxpool.Pool
+	pool            *pgxpool.Pool
+	generateShortID func() (string, error)
 }
 
 func NewPgSubmRepo(pool *pgxpool.Pool) *pgSubmRepo {
-	return &pgSubmRepo{pool: pool}
+	return &pgSubmRepo{pool: pool, generateShortID: domain.RandomShortID}
 }
 
-// StoreSubm inserts a new SubmissionEntity into the database.
-func (r *pgSubmRepo) StoreSubm(ctx context.Context, subm domain.Subm) error {
+const maxShortIDAttempts = 8
+
+const submSelectCols = `uuid, short_id, content, author_uuid, task_shortid, lang_shortid, curr_eval_uuid, created_at`
+
+func scanSubm(row interface{ Scan(dest ...any) error }) (domain.Subm, error) {
+	var s domain.Subm
+	err := row.Scan(
+		&s.UUID,
+		&s.ShortID,
+		&s.Content,
+		&s.AuthorUUID,
+		&s.TaskShortID,
+		&s.LangShortID,
+		&s.CurrEvalUUID,
+		&s.CreatedAt,
+	)
+	return s, err
+}
+
+func isShortIDTaken(err error) bool {
+	var pgErr *pgconn.PgError
+	return errors.As(err, &pgErr) && pgErr.Code == "23505" && pgErr.ConstraintName == "submissions_short_id_key"
+}
+
+// StoreSubm inserts a new submission. If ShortID is empty, a random one is generated
+// and written back onto subm. Unique short_id collisions are retried.
+func (r *pgSubmRepo) StoreSubm(ctx context.Context, subm *domain.Subm) error {
 	log := ctxlog.FromContext(ctx)
 	log.Debug("storing submission", "subm_uuid", subm.UUID, "author_uuid", subm.AuthorUUID, "task_id", subm.TaskShortID)
 
+	provided := subm.ShortID != ""
+	for attempt := 0; attempt < maxShortIDAttempts; attempt++ {
+		if !provided {
+			id, genErr := r.generateShortID()
+			if genErr != nil {
+				return fmt.Errorf("generate short id: %w", genErr)
+			}
+			subm.ShortID = id
+		}
+
+		err := r.insertSubm(ctx, *subm)
+		if err == nil {
+			log.Debug("submission stored successfully", "subm_uuid", subm.UUID, "short_id", subm.ShortID)
+			return nil
+		}
+		if isShortIDTaken(err) {
+			if provided {
+				return domain.ErrShortIDTaken
+			}
+			continue
+		}
+		log.Debug("failed to insert submission", "error", err)
+		return fmt.Errorf("insert submission: %w", err)
+	}
+
+	return fmt.Errorf("insert submission: short id collisions")
+}
+
+func (r *pgSubmRepo) insertSubm(ctx context.Context, subm domain.Subm) error {
 	submissionInsertQuery := `
 		INSERT INTO submissions (
-			uuid, content, author_uuid, task_shortid, lang_shortid, curr_eval_uuid, created_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7)
+			uuid, short_id, content, author_uuid, task_shortid, lang_shortid, curr_eval_uuid, created_at
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 	`
 
 	var currEvalId *uuid.UUID
@@ -397,9 +453,9 @@ func (r *pgSubmRepo) StoreSubm(ctx context.Context, subm domain.Subm) error {
 		currEvalId = &subm.CurrEvalUUID
 	}
 
-	log.Debug("executing insert query", "query", submissionInsertQuery)
 	_, err := r.pool.Exec(ctx, submissionInsertQuery,
 		subm.UUID,
+		subm.ShortID,
 		subm.Content,
 		subm.AuthorUUID,
 		subm.TaskShortID,
@@ -407,13 +463,7 @@ func (r *pgSubmRepo) StoreSubm(ctx context.Context, subm domain.Subm) error {
 		currEvalId,
 		subm.CreatedAt,
 	)
-	if err != nil {
-		log.Debug("failed to insert submission", "error", err)
-		return fmt.Errorf("failed to insert submission: %w", err)
-	}
-
-	log.Debug("submission stored successfully", "subm_uuid", subm.UUID)
-	return nil
+	return err
 }
 
 func (r *pgSubmRepo) AssignEval(ctx context.Context, submUuid uuid.UUID, evalUuid uuid.UUID) error {
@@ -442,33 +492,46 @@ func (r *pgSubmRepo) GetSubm(ctx context.Context, id uuid.UUID) (domain.Subm, er
 	log := ctxlog.FromContext(ctx)
 	log.Debug("getting submission", "subm_uuid", id)
 
-	submissionQuery := `
-		SELECT uuid, content, author_uuid, task_shortid, lang_shortid, curr_eval_uuid, created_at
+	submissionQuery := `SELECT ` + submSelectCols + `
 		FROM submissions
 		WHERE uuid = $1
 	`
 	log.Debug("executing query", "query", submissionQuery)
 
-	var s domain.Subm
-	err := r.pool.QueryRow(ctx, submissionQuery, id).Scan(
-		&s.UUID,
-		&s.Content,
-		&s.AuthorUUID,
-		&s.TaskShortID,
-		&s.LangShortID,
-		&s.CurrEvalUUID,
-		&s.CreatedAt,
-	)
+	s, err := scanSubm(r.pool.QueryRow(ctx, submissionQuery, id))
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			log.Debug("submission not found", "subm_uuid", id)
-			return domain.Subm{}, fmt.Errorf("submission not found: %w", err)
+			return domain.Subm{}, domain.ErrNotFound
 		}
 		log.Debug("failed to query submission", "error", err)
-		return domain.Subm{}, fmt.Errorf("failed to query submission: %w", err)
+		return domain.Subm{}, fmt.Errorf("query submission: %w", err)
 	}
 
-	log.Debug("submission retrieved successfully", "subm_uuid", id)
+	log.Debug("submission retrieved successfully", "subm_uuid", id, "short_id", s.ShortID)
+	return s, nil
+}
+
+func (r *pgSubmRepo) GetSubmByShortID(ctx context.Context, shortID string) (domain.Subm, error) {
+	log := ctxlog.FromContext(ctx)
+	log.Debug("getting submission", "short_id", shortID)
+
+	submissionQuery := `SELECT ` + submSelectCols + `
+		FROM submissions
+		WHERE short_id = $1
+	`
+
+	s, err := scanSubm(r.pool.QueryRow(ctx, submissionQuery, shortID))
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			log.Debug("submission not found", "short_id", shortID)
+			return domain.Subm{}, domain.ErrNotFound
+		}
+		log.Debug("failed to query submission", "error", err)
+		return domain.Subm{}, fmt.Errorf("query submission: %w", err)
+	}
+
+	log.Debug("submission retrieved successfully", "short_id", shortID, "subm_uuid", s.UUID)
 	return s, nil
 }
 
@@ -523,7 +586,7 @@ func (r *pgSubmRepo) ListSubms(ctx context.Context, limit int, offset int, searc
 
 		whereClause := strings.Join(conditions, " AND ")
 
-		submissionsQuery := fmt.Sprintf(`SELECT s.uuid, s.content, s.author_uuid, s.task_shortid, s.lang_shortid, s.curr_eval_uuid, s.created_at
+		submissionsQuery := fmt.Sprintf(`SELECT s.uuid, s.short_id, s.content, s.author_uuid, s.task_shortid, s.lang_shortid, s.curr_eval_uuid, s.created_at
 			FROM submissions s
 			INNER JOIN users u ON s.author_uuid = u.uuid
 			WHERE %s
@@ -538,7 +601,7 @@ func (r *pgSubmRepo) ListSubms(ctx context.Context, limit int, offset int, searc
 		}
 		defer rows.Close()
 	} else {
-		submissionsQuery := `SELECT uuid, content, author_uuid, task_shortid, lang_shortid, curr_eval_uuid, created_at
+		submissionsQuery := `SELECT ` + submSelectCols + `
 			FROM submissions
 			ORDER BY created_at DESC
 			LIMIT $1 OFFSET $2`
@@ -553,19 +616,10 @@ func (r *pgSubmRepo) ListSubms(ctx context.Context, limit int, offset int, searc
 
 	var submissions []domain.Subm
 	for rows.Next() {
-		var subm domain.Subm
-		err := rows.Scan(
-			&subm.UUID,
-			&subm.Content,
-			&subm.AuthorUUID,
-			&subm.TaskShortID,
-			&subm.LangShortID,
-			&subm.CurrEvalUUID,
-			&subm.CreatedAt,
-		)
-		if err != nil {
-			log.Debug("failed to scan submission", "error", err)
-			return nil, fmt.Errorf("failed to scan submission: %w", err)
+		subm, scanErr := scanSubm(rows)
+		if scanErr != nil {
+			log.Debug("failed to scan submission", "error", scanErr)
+			return nil, fmt.Errorf("failed to scan submission: %w", scanErr)
 		}
 		submissions = append(submissions, subm)
 	}
@@ -657,7 +711,7 @@ func (r *pgSubmRepo) ListShallowSubmsJoinEval(ctx context.Context, authorUuid *u
 
 	query := `
 		SELECT 
-			s.uuid, s.author_uuid, s.task_shortid, s.lang_shortid, s.curr_eval_uuid, s.created_at,
+			s.uuid, s.short_id, s.author_uuid, s.task_shortid, s.lang_shortid, s.curr_eval_uuid, s.created_at,
 			e.uuid, e.subm_uuid, e.stage, e.score_unit, e.error_type, e.error_message, 
 			e.checker, e.interactor, e.cpu_lim_ms, e.mem_lim_kib, e.created_at,
 			e.received_score, e.possible_score, e.scorebar_green, e.scorebar_red, e.scorebar_gray, 
@@ -700,6 +754,7 @@ func (r *pgSubmRepo) ListShallowSubmsJoinEval(ctx context.Context, authorUuid *u
 		err := rows.Scan(
 			// Submission fields
 			&dto.Subm.UUID,
+			&dto.Subm.ShortID,
 			&dto.Subm.AuthorUUID,
 			&dto.Subm.TaskShortID,
 			&dto.Subm.LangShortID,

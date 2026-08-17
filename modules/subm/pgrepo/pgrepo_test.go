@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
+	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/programme-lv/backend/common/testutil"
 	"github.com/programme-lv/backend/modules/subm/domain"
 	"github.com/stretchr/testify/assert"
@@ -99,7 +99,7 @@ func TestSubmRepo_StoreWithEval_Success(t *testing.T) {
 	sample := sampleSubmWithoutEval()
 	sample.CurrEvalUUID = existingEvalUuid
 
-	require.NoError(t, repo.StoreSubm(context.Background(), sample))
+	require.NoError(t, repo.StoreSubm(context.Background(), &sample))
 	stored, err := repo.GetSubm(context.Background(), sample.UUID)
 	require.NoError(t, err)
 	require.WithinDuration(t, sample.CreatedAt, stored.CreatedAt, time.Millisecond)
@@ -113,7 +113,7 @@ func TestSubmRepo_Get_ValidUUID(t *testing.T) {
 	repo := NewPgSubmRepo(newSampleDB(t))
 
 	sample := sampleSubmWithoutEval()
-	require.NoError(t, repo.StoreSubm(context.Background(), sample))
+	require.NoError(t, repo.StoreSubm(context.Background(), &sample))
 
 	got, err := repo.GetSubm(context.Background(), sample.UUID)
 	require.NoError(t, err)
@@ -133,7 +133,7 @@ func TestSubmRepo_List_MultipleEntries(t *testing.T) {
 		return entities[i].CreatedAt.After(entities[j].CreatedAt)
 	})
 	for _, e := range entities {
-		require.NoError(t, repo.StoreSubm(context.Background(), e))
+		require.NoError(t, repo.StoreSubm(context.Background(), &e))
 	}
 
 	listed, err := repo.ListSubms(context.Background(), 3, 1, "", nil, []string{}, []string{}, []string{}, true)
@@ -186,7 +186,7 @@ func TestSubmRepo_ListShallowSubmsJoinEval_WithCompleteScoreInfo(t *testing.T) {
 	ctx := context.Background()
 
 	subm := sampleSubmWithoutEval()
-	require.NoError(t, submRepo.StoreSubm(ctx, subm))
+	require.NoError(t, submRepo.StoreSubm(ctx, &subm))
 
 	eval := sampleEval()
 	eval.SubmUUID = subm.UUID
@@ -211,4 +211,64 @@ func TestSubmRepo_ListShallowSubmsJoinEval_WithCompleteScoreInfo(t *testing.T) {
 	require.Equal(t, 50, result[0].Eval.ScoreInfo.ReceivedScore)
 	require.Equal(t, 100, result[0].Eval.ScoreInfo.PossibleScore)
 	require.Equal(t, 50, result[0].Eval.ScoreInfo.ScoreBar.Green)
+}
+
+func TestSubmRepo_GetByShortID(t *testing.T) {
+	t.Parallel()
+	repo := NewPgSubmRepo(newSampleDB(t))
+	ctx := context.Background()
+
+	sample := sampleSubmWithoutEval()
+	require.NoError(t, repo.StoreSubm(ctx, &sample))
+	require.True(t, domain.ValidShortID(sample.ShortID))
+
+	got, err := repo.GetSubmByShortID(ctx, sample.ShortID)
+	require.NoError(t, err)
+	assert.Equal(t, sample.UUID, got.UUID)
+	assert.Equal(t, sample.ShortID, got.ShortID)
+
+	_, err = repo.GetSubmByShortID(ctx, "zzzzzz")
+	require.ErrorIs(t, err, domain.ErrNotFound)
+}
+
+func TestSubmRepo_StoreSubm_DuplicateShortID(t *testing.T) {
+	t.Parallel()
+	repo := NewPgSubmRepo(newSampleDB(t))
+	ctx := context.Background()
+
+	first := sampleSubmWithoutEval()
+	first.ShortID = "cccccc"
+	require.NoError(t, repo.StoreSubm(ctx, &first))
+
+	second := sampleSubmWithoutEval()
+	second.ShortID = "cccccc"
+	err := repo.StoreSubm(ctx, &second)
+	require.ErrorIs(t, err, domain.ErrShortIDTaken)
+}
+
+func TestSubmRepo_StoreSubm_RetriesGeneratedShortID(t *testing.T) {
+	t.Parallel()
+	repo := NewPgSubmRepo(newSampleDB(t))
+	ctx := context.Background()
+
+	first := sampleSubmWithoutEval()
+	first.ShortID = "dddddd"
+	require.NoError(t, repo.StoreSubm(ctx, &first))
+
+	orig := repo.generateShortID
+	t.Cleanup(func() { repo.generateShortID = orig })
+	calls := 0
+	repo.generateShortID = func() (string, error) {
+		calls++
+		if calls == 1 {
+			return "dddddd", nil
+		}
+		return "eeeeee", nil
+	}
+
+	second := sampleSubmWithoutEval()
+	second.ShortID = ""
+	require.NoError(t, repo.StoreSubm(ctx, &second))
+	assert.Equal(t, "eeeeee", second.ShortID)
+	assert.Equal(t, 2, calls)
 }

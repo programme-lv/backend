@@ -18,6 +18,7 @@ type SubmissionService interface {
 	SubmitSol(ctx context.Context, p SubmitSolParams) srvcerror.E
 	ReEvalSubm(ctx context.Context, submUuid uuid.UUID) srvcerror.E
 	ViewSubm(ctx context.Context, uuid uuid.UUID) (domain.Subm, srvcerror.E)
+	ViewSubmByShortID(ctx context.Context, shortID string) (domain.Subm, srvcerror.E)
 	ListSubms(ctx context.Context, filter ListSubmsParams) ([]domain.Subm, srvcerror.E)
 	GetEval(ctx context.Context, uuid uuid.UUID) (domain.Eval, srvcerror.E)
 	SubscribeNewSubms(ctx context.Context) (<-chan domain.Subm, srvcerror.E)
@@ -48,9 +49,10 @@ type submSrvc struct {
 type SubmRepo interface {
 	AssignEval(ctx context.Context, submUuid uuid.UUID, evalUuid uuid.UUID) error
 	GetSubm(ctx context.Context, id uuid.UUID) (domain.Subm, error)
+	GetSubmByShortID(ctx context.Context, shortID string) (domain.Subm, error)
 	ListSubms(ctx context.Context, limit int, offset int, search string, authorUuid *uuid.UUID, authorIds []string, taskIds []string, langIds []string, includeAdmin bool) ([]domain.Subm, error)
 	// ListSubmsJoinEval(ctx context.Context, authorUuid *uuid.UUID) ([]domain.SubmJoinEval, error)
-	StoreSubm(ctx context.Context, subm domain.Subm) error
+	StoreSubm(ctx context.Context, subm *domain.Subm) error
 	CountSubms(ctx context.Context, authorUuid *uuid.UUID, authorIds []string, taskIds []string, langIds []string, includeAdmin bool) (int, error)
 
 	// ListShallowSubmsJoinEval does not return submissions without a corresponding evaluation

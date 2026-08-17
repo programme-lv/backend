@@ -43,6 +43,7 @@ type ShallowEvalDto struct {
 // and there may be many submissions such as for a single user
 type ShallowSubmDto struct {
 	UUID         uuid.UUID
+	ShortID      string
 	AuthorUUID   uuid.UUID
 	TaskShortID  string
 	LangShortID  string
