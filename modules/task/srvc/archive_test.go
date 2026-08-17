@@ -48,7 +48,7 @@ func TestImportExportTaskZip(t *testing.T) {
 	require.Len(t, imported.MdImages, 1)
 	require.Contains(t, imported.MdStatements[0].Story, "veģetāra čūska")
 	require.NotEmpty(t, imported.Checker)
-	require.Empty(t, imported.OgFilesZipS3Key)
+	require.Empty(t, imported.OgFilesZipObjectKey)
 	imported.OriginDivisions = []string{"junior", "senior"}
 
 	repo.EXPECT().Exists(ctx, id).Return(true, nil).Once()

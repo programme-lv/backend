@@ -3,7 +3,7 @@
   "Readme": "some markdown content",
   "FullName": {"lv": "A+B=C"},
   "IllustrImg": {
-    "S3Key": "task-md-images/nekoks.png",
+    "ObjectKey": "task-md-images/nekoks.png",
     "WidthPx": 101,
     "HeightPx": 102,
     "SzInBytes": 103
@@ -16,7 +16,7 @@
   "OriginYear": "2024/2025",
   "OriginDivisions": ["junior"],
   "ProblemTags": ["two-sum","arrays"],
-  "OgFilesZipS3Key": "task-archives/aplusbirc.zip",
+  "OgFilesZipObjectKey": "task-archives/aplusbirc.zip",
   "DifficultyRating": 3,
   "OriginNotes": [
     {
@@ -131,13 +131,13 @@
   ],
   "MdImages": [
     {
-      "S3Key": "task-images/aplusbirc/1.png",
+      "ObjectKey": "task-images/aplusbirc/1.png",
       "Filename": "1.png",
       "WidthPx": 100,
       "HeightPx": 100
     },
     {
-      "S3Key": "task-images/aplusbirc/2.png",
+      "ObjectKey": "task-images/aplusbirc/2.png",
       "Filename": "2.png",
       "WidthPx": 100,
       "HeightPx": 100

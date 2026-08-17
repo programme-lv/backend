@@ -64,8 +64,8 @@ func prepareTaskZipImages(archive taskzipv1.Task, task *Task) error {
 			}
 		}
 		task.MdImages = append(task.MdImages, StatementImage{
-			S3Key:    fmt.Sprintf("%s/%s%s", task.ShortId, Sha2Hex(data)[:12], filepath.Ext(name)),
-			Filename: name, WidthPx: width, HeightPx: height, SzInBytes: len(data),
+			ObjectKey: fmt.Sprintf("%s/%s%s", task.ShortId, Sha2Hex(data)[:12], filepath.Ext(name)),
+			Filename:  name, WidthPx: width, HeightPx: height, SzInBytes: len(data),
 		})
 	}
 	return nil
@@ -78,7 +78,7 @@ func (ts *taskSrvc) uploadTaskZipAssets(
 		data := archive.StatementImages[image.Filename]
 		mimeType, _ := taskZipImageMime(image.Filename)
 		if _, err := ts.publicStore.Upload(
-			data, taskStatementImageObjectKey(image.S3Key), mimeType,
+			data, taskStatementImageObjectKey(image.ObjectKey), mimeType,
 		); err != nil {
 			ts.logger(ctx).Error("upload statement image", "error", err)
 			return NewErrorInternalServerError()
@@ -150,7 +150,7 @@ func (ts *taskSrvc) downloadTaskZipAssets(
 	ctx context.Context, task Task, archive *taskzipv1.Task,
 ) error {
 	for _, image := range task.MdImages {
-		data, err := ts.publicStore.Download(taskStatementImageObjectKey(image.S3Key))
+		data, err := ts.publicStore.Download(taskStatementImageObjectKey(image.ObjectKey))
 		if err != nil {
 			ts.logger(ctx).Error("download statement image", "error", err)
 			return err

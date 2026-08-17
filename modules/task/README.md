@@ -15,7 +15,7 @@ Additionally, there are integration tests in the `test/` directory.
 
 Integration tests require:
 - PostgreSQL database
-- S3 bucket access
+- local file stores for public assets and test files
 
 ```bash
 go test ./task/...

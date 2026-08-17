@@ -91,8 +91,8 @@ func (ts *taskSrvc) GetTaskFullNames(ctx context.Context, shortIDs []string) ([]
 	return fullNames, nil
 }
 
-func (ts *taskSrvc) GetHttpUrlForIllustrImg(ctx context.Context, s3Key string) (string, srvcerror.E) {
-	url, err := filestore.AssetURL(ts.apiPublicBaseURL, taskIllustrationObjectKey(s3Key))
+func (ts *taskSrvc) GetHttpUrlForIllustrImg(ctx context.Context, objectKey string) (string, srvcerror.E) {
+	url, err := filestore.AssetURL(ts.apiPublicBaseURL, taskIllustrationObjectKey(objectKey))
 	if err != nil {
 		ts.logger(ctx).Error("build illustration image URL", "error", err)
 		return "", NewErrorInternalServerError()
@@ -100,8 +100,8 @@ func (ts *taskSrvc) GetHttpUrlForIllustrImg(ctx context.Context, s3Key string) (
 	return url, nil
 }
 
-func (ts *taskSrvc) GetHttpUrlForStatementImage(ctx context.Context, s3Key string) (string, srvcerror.E) {
-	url, err := filestore.AssetURL(ts.apiPublicBaseURL, taskStatementImageObjectKey(s3Key))
+func (ts *taskSrvc) GetHttpUrlForStatementImage(ctx context.Context, objectKey string) (string, srvcerror.E) {
+	url, err := filestore.AssetURL(ts.apiPublicBaseURL, taskStatementImageObjectKey(objectKey))
 	if err != nil {
 		ts.logger(ctx).Error("build statement image URL", "error", err)
 		return "", NewErrorInternalServerError()

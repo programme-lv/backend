@@ -186,7 +186,7 @@ func (h *taskHttpHandler) UploadIllustration(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	s3Key, uploadIllustrationErr := h.taskSrvc.UploadIllustrationImg(r.Context(), imageMimeType, imageBytes)
+	objectKey, uploadIllustrationErr := h.taskSrvc.UploadIllustrationImg(r.Context(), imageMimeType, imageBytes)
 	if uploadIllustrationErr != nil {
 		jsonresp.HandleSrvcError(slog.Default(), w, err)
 		return
@@ -194,7 +194,7 @@ func (h *taskHttpHandler) UploadIllustration(w http.ResponseWriter, r *http.Requ
 
 	sizeInBytes := len(imageBytes)
 	illustrationImg := srvc.IllustrationImage{
-		S3Key:     s3Key,
+		ObjectKey: objectKey,
 		WidthPx:   width,
 		HeightPx:  height,
 		SzInBytes: sizeInBytes,
@@ -209,7 +209,7 @@ func (h *taskHttpHandler) UploadIllustration(w http.ResponseWriter, r *http.Requ
 	h.getTaskViewCache.Delete(taskId)
 	h.getTaskListCache.Delete("")
 
-	err = jsonresp.Success(w, map[string]string{"s3_key": s3Key})
+	err = jsonresp.Success(w, map[string]string{"object_key": objectKey})
 	if err != nil {
 		slog.Error("write success json", "error", err)
 	}

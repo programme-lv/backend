@@ -75,8 +75,8 @@ type Task struct {
 	// metadata: problem tags (free-form short labels)
 	ProblemTags []string
 
-	// original full archive S3 key (optional)
-	OgFilesZipS3Key string
+	// original full archive object key (optional)
+	OgFilesZipObjectKey string
 
 	Solutions []Solution
 }
@@ -152,18 +152,18 @@ type MarkdownStatement struct {
 }
 
 type IllustrationImage struct {
-	S3Key     string
+	ObjectKey string
 	WidthPx   int
 	HeightPx  int
 	SzInBytes int
 }
 
 type StatementImage struct {
-	S3Key     string // e.g. <task_id>/<sha256-prefix>.png; md-images/ is implicit
+	ObjectKey string // e.g. <task_id>/<sha256-prefix>.png; md-images/ is implicit
 	Filename  string // filename of the image, e.g., nekoks.png
-	WidthPx   int    // og width [px] stored in s3
-	HeightPx  int    // og height [px] stored in s3
-	SzInBytes int    // size in bytes
+	WidthPx   int    // original width in pixels
+	HeightPx  int    // original height in pixels
+	SzInBytes int
 }
 
 type Subtask struct {

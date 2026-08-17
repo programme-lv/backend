@@ -44,7 +44,7 @@ func (ts *taskSrvc) UpdateStatementMd(ctx context.Context, taskId string, statem
 
 func (ts *taskSrvc) CreateTask(ctx context.Context, task Task) srvcerror.E {
 	for i := range task.MdImages {
-		task.MdImages[i].S3Key = taskStatementImageStoredKey(task.MdImages[i].S3Key)
+		task.MdImages[i].ObjectKey = taskStatementImageStoredKey(task.MdImages[i].ObjectKey)
 	}
 	err := ts.repo.CreateTask(ctx, task)
 	if err != nil {
@@ -56,7 +56,7 @@ func (ts *taskSrvc) CreateTask(ctx context.Context, task Task) srvcerror.E {
 }
 
 // DeleteTask deletes a task and all its related data.
-// Note: This only deletes data from the database. S3 cleanup should be handled separately.
+// Object-store files are not deleted here.
 func (ts *taskSrvc) DeleteTask(ctx context.Context, shortId string) srvcerror.E {
 	l := ts.logger(ctx)
 	err := ts.repo.DeleteTask(ctx, shortId)
@@ -128,15 +128,15 @@ func (ts *taskSrvc) UploadStatementImage(ctx context.Context, taskId string, img
 	}
 
 	storedKey := fmt.Sprintf("%s/%s%s", taskId, Sha2Hex(body)[:12], ext)
-	s3Uri, err := ts.publicStore.Upload(body, taskStatementImageObjectKey(storedKey), imageMimeType)
+	objectURI, err := ts.publicStore.Upload(body, taskStatementImageObjectKey(storedKey), imageMimeType)
 	if err != nil {
-		l.Error("failed to upload to S3", "error", err)
+		l.Error("upload statement image", "error", err)
 		return "", NewErrorInternalServerError()
 	}
 
 	// update the task with the new image
 	err = ts.repo.AddStatementImg(ctx, taskId, StatementImage{
-		S3Key:     storedKey,
+		ObjectKey: storedKey,
 		Filename:  imgFilename,
 		WidthPx:   width,
 		HeightPx:  height,
@@ -146,7 +146,7 @@ func (ts *taskSrvc) UploadStatementImage(ctx context.Context, taskId string, img
 		l.Error("failed to add statement image to db", "error", err)
 		return "", NewErrorInternalServerError()
 	}
-	return s3Uri, nil
+	return objectURI, nil
 }
 
 func MimeToFileExt(mimeType string) (string, error) {
@@ -195,23 +195,23 @@ func getImgWidthHeighPx(body []byte, mimeType string) (int, int, error) {
 	}
 }
 
-func GetTestfileS3Key(body []byte) string {
+func GetTestfileObjectKey(body []byte) string {
 	shaHex := Sha2Hex(body)
 	return fmt.Sprintf("%s.zst", shaHex)
 }
 
-// UploadTestFile uploads a test input or output to S3 after compressing it with Zstandard.
-// If The test already exists, it returns no error and does nothing.
+// UploadTestFile stores a test input or output after compressing it with Zstandard.
+// If the object already exists, it returns no error and does nothing.
 //
-// The S3 key is the SHA256 hash of the uncompressed body with a .zst extension.
+// The object key is the SHA256 hash of the uncompressed body with a .zst extension.
 func (ts *taskSrvc) UploadTestFile(ctx context.Context, body []byte) srvcerror.E {
 	l := ts.logger(ctx)
-	s3Key := GetTestfileS3Key(body)
+	objectKey := GetTestfileObjectKey(body)
 	mediaType := "application/zstd"
 
-	exists, err := ts.testfileStore.Exists(s3Key)
+	exists, err := ts.testfileStore.Exists(objectKey)
 	if err != nil {
-		l.Error("failed to check if object exists in S3", "error", err)
+		l.Error("check if test file exists", "error", err)
 		return NewErrorInternalServerError()
 	}
 
@@ -225,9 +225,9 @@ func (ts *taskSrvc) UploadTestFile(ctx context.Context, body []byte) srvcerror.E
 		return NewErrorInternalServerError()
 	}
 
-	_, err = ts.testfileStore.Upload(zstdCompressed, s3Key, mediaType)
+	_, err = ts.testfileStore.Upload(zstdCompressed, objectKey, mediaType)
 	if err != nil {
-		l.Error("failed to upload to S3", "error", err)
+		l.Error("upload test file", "error", err)
 		return NewErrorInternalServerError()
 	}
 
@@ -269,8 +269,7 @@ func Sha2Hex(body []byte) (sha2 string) {
 	return
 }
 
-// DeleteStatementImage implements TaskSrvcClient.
-// It deletes an image from both S3 and the database.
+// DeleteStatementImage deletes a statement image from the object store and the database.
 func (ts *taskSrvc) DeleteStatementImage(ctx context.Context, taskId string, filename string) srvcerror.E {
 	l := ts.logger(ctx)
 
@@ -295,16 +294,15 @@ func (ts *taskSrvc) DeleteStatementImage(ctx context.Context, taskId string, fil
 		return NewErrorImageNotFound(filename)
 	}
 
-	s3Key := taskStatementImageObjectKey(targetImage.S3Key)
+	objectKey := taskStatementImageObjectKey(targetImage.ObjectKey)
 
-	// Check if the image exists in S3
-	exists, err := ts.publicStore.Exists(s3Key)
+	exists, err := ts.publicStore.Exists(objectKey)
 	if err != nil {
-		l.Error("check if image exists in S3", "error", err)
+		l.Error("check if statement image exists", "error", err)
 		return NewErrorInternalServerError()
 	}
 	if !exists {
-		l.Error("image does not exist in S3", "s3_key", s3Key)
+		l.Error("statement image missing from store", "object_key", objectKey)
 		return NewErrorInternalServerError()
 	}
 
@@ -315,22 +313,19 @@ func (ts *taskSrvc) DeleteStatementImage(ctx context.Context, taskId string, fil
 		return NewErrorInternalServerError()
 	}
 
-	// Delete the image from S3
-	err = ts.publicStore.Delete(s3Key)
+	err = ts.publicStore.Delete(objectKey)
 	if err != nil {
-		l.Error("delete image from S3", "error", err)
+		l.Error("delete statement image from store", "error", err)
 		return NewErrorInternalServerError()
 	}
 
 	return nil
 }
 
-// DeleteIllustrationImg implements TaskSrvcClient.
-// It deletes an illustration image from both S3 and the database.
+// DeleteIllustrationImg deletes the task illustration from the object store and the database.
 func (ts *taskSrvc) DeleteIllustrationImg(ctx context.Context, taskId string) srvcerror.E {
 	l := ts.logger(ctx)
 
-	// First, get the task to find the illustration image S3 key
 	t, err := ts.repo.GetTask(ctx, taskId)
 	if err != nil {
 		l.Error("get task", "error", err)
@@ -338,27 +333,26 @@ func (ts *taskSrvc) DeleteIllustrationImg(ctx context.Context, taskId string) sr
 	}
 
 	// Check if there's an illustration image to delete
-	if t.IllustrImg.S3Key == "" {
+	if t.IllustrImg.ObjectKey == "" {
 		l.Error("no illustration image found for task", "task_id", taskId)
 		return NewErrorImageNotFound(taskId)
 	}
 
-	s3Key := taskIllustrationObjectKey(t.IllustrImg.S3Key)
+	objectKey := taskIllustrationObjectKey(t.IllustrImg.ObjectKey)
 
-	// Check if the image exists in S3
-	exists, err := ts.publicStore.Exists(s3Key)
+	exists, err := ts.publicStore.Exists(objectKey)
 	if err != nil {
-		l.Error("failed to check if image exists in S3", "error", err)
+		l.Error("check if illustration exists", "error", err)
 		return NewErrorInternalServerError()
 	}
 	if !exists {
-		l.Error("image does not exist in S3", "s3_key", s3Key)
+		l.Error("illustration missing from store", "object_key", objectKey)
 		return NewErrorInternalServerError()
 	}
 
 	// Update the database to remove illustration image fields
 	emptyImg := IllustrationImage{
-		S3Key:     "",
+		ObjectKey: "",
 		WidthPx:   0,
 		HeightPx:  0,
 		SzInBytes: 0,
@@ -369,10 +363,9 @@ func (ts *taskSrvc) DeleteIllustrationImg(ctx context.Context, taskId string) sr
 		return NewErrorInternalServerError()
 	}
 
-	// Delete the image from S3
-	err = ts.publicStore.Delete(s3Key)
+	err = ts.publicStore.Delete(objectKey)
 	if err != nil {
-		l.Error("failed to delete image from S3", "error", err)
+		l.Error("delete illustration from store", "error", err)
 		return NewErrorInternalServerError()
 	}
 
@@ -383,7 +376,7 @@ func (ts *taskSrvc) DeleteIllustrationImg(ctx context.Context, taskId string) sr
 // It updates the illustration image information in the database.
 func (ts *taskSrvc) UpdateIllustrationImg(ctx context.Context, taskId string, img IllustrationImage) srvcerror.E {
 	l := ts.logger(ctx)
-	img.S3Key = taskIllustrationStoredKey(img.S3Key)
+	img.ObjectKey = taskIllustrationStoredKey(img.ObjectKey)
 
 	err := ts.repo.UpdateIllustrationImg(ctx, taskId, img)
 	if err != nil {
@@ -410,11 +403,10 @@ func (ts *taskSrvc) DownloadTestFile(ctx context.Context, testFileSha256 string)
 			return content, nil
 		}
 
-		// Download compressed from S3 by key <sha>.zst
-		s3Key := fmt.Sprintf("%s.zst", testFileSha256)
-		compressed, err := ts.testfileStore.Download(s3Key)
+		objectKey := fmt.Sprintf("%s.zst", testFileSha256)
+		compressed, err := ts.testfileStore.Download(objectKey)
 		if err != nil {
-			logger.Error("failed to download test file from S3", "sha256", testFileSha256, "s3_key", s3Key, "error", err)
+			logger.Error("download test file", "sha256", testFileSha256, "object_key", objectKey, "error", err)
 			return nil, NewErrorInternalServerError()
 		}
 

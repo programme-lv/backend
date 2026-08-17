@@ -73,7 +73,7 @@ func (r *taskPgRepo) ListTaskPreviews(ctx context.Context, limit int, offset int
 		SELECT t.short_id,
 		       t.full_name_dict,
 		       t.orig_lang,
-		       t.illustr_img_s3_key, t.width_px, t.height_px, t.filesize_bytes, 
+		       t.illustr_img_object_key, t.width_px, t.height_px, t.filesize_bytes, 
 		       t.origin_olympiad, COALESCE(t.origin_org,''), COALESCE(t.origin_year,''), COALESCE(t.olymp_stage,''), COALESCE(t.origin_divisions,'[]'::jsonb), t.difficulty_rating,
 		       COALESCE(
 			       (SELECT ton.info 
@@ -122,7 +122,7 @@ func (r *taskPgRepo) ListTaskPreviews(ctx context.Context, limit int, offset int
 			&p.ShortId,
 			&fullNameBytes,
 			&p.OrigLang,
-			&illustrImg.S3Key,
+			&illustrImg.ObjectKey,
 			&widthPx,
 			&heightPx,
 			&szInBytes,
@@ -161,7 +161,7 @@ func (r *taskPgRepo) ListTaskPreviews(ctx context.Context, limit int, offset int
 			p.MdStatementStory = *story
 		}
 
-		if illustrImg.S3Key != "" &&
+		if illustrImg.ObjectKey != "" &&
 			widthPx != nil && heightPx != nil && szInBytes != nil &&
 			*widthPx > 0 && *heightPx > 0 && *szInBytes > 0 {
 			illustrImg.WidthPx = *widthPx
@@ -183,7 +183,7 @@ func (r *taskPgRepo) ListTaskPreviews(ctx context.Context, limit int, offset int
 // PatchStatementImg implements srvc.TaskPgRepo.
 // 1. It starts a transaction to ensure database consistency
 // 2. Checks if the task exists first
-// 3. Checks if the image already exists for this task and S3 URI
+// 3. Checks if the image already exists for this task and object key
 // 4. Either updates the existing image or inserts a new one
 // 5. Commits the transaction if everything succeeds
 func (r *taskPgRepo) AddStatementImg(ctx context.Context, taskId string, img srvc.StatementImage) error {
@@ -211,8 +211,8 @@ func (r *taskPgRepo) AddStatementImg(ctx context.Context, taskId string, img srv
 	// Check if the image already exists for this task
 	var imageExists bool
 	err = tx.QueryRow(ctx, `
-		SELECT EXISTS(SELECT 1 FROM task_images WHERE task_short_id = $1 AND s3_key = $2)
-	`, taskId, img.S3Key).Scan(&imageExists)
+		SELECT EXISTS(SELECT 1 FROM task_images WHERE task_short_id = $1 AND object_key = $2)
+	`, taskId, img.ObjectKey).Scan(&imageExists)
 	if err != nil {
 		return fmt.Errorf("failed to check if image exists: %w", err)
 	}
@@ -222,17 +222,17 @@ func (r *taskPgRepo) AddStatementImg(ctx context.Context, taskId string, img srv
 		_, err = tx.Exec(ctx, `
 			UPDATE task_images
 			SET file_name = $3, width_px = $4, height_px = $5, filesize_bytes = $6
-			WHERE task_short_id = $1 AND s3_key = $2
-		`, taskId, img.S3Key, img.Filename, img.WidthPx, img.HeightPx, img.SzInBytes)
+			WHERE task_short_id = $1 AND object_key = $2
+		`, taskId, img.ObjectKey, img.Filename, img.WidthPx, img.HeightPx, img.SzInBytes)
 		if err != nil {
 			return fmt.Errorf("failed to update statement image: %w", err)
 		}
 	} else {
 		// Insert new image
 		_, err = tx.Exec(ctx, `
-			INSERT INTO task_images (task_short_id, s3_key, file_name, width_px, height_px, filesize_bytes)
+			INSERT INTO task_images (task_short_id, object_key, file_name, width_px, height_px, filesize_bytes)
 			VALUES ($1, $2, $3, $4, $5, $6)
-		`, taskId, img.S3Key, img.Filename, img.WidthPx, img.HeightPx, img.SzInBytes)
+		`, taskId, img.ObjectKey, img.Filename, img.WidthPx, img.HeightPx, img.SzInBytes)
 		if err != nil {
 			return fmt.Errorf("failed to insert statement image: %w", err)
 		}
@@ -376,9 +376,9 @@ func (r *taskPgRepo) UpdateIllustrationImg(ctx context.Context, taskId string, i
 	// Update the illustration image fields
 	_, err = tx.Exec(ctx, `
 		UPDATE tasks 
-		SET illustr_img_s3_key = $2, width_px = $3, height_px = $4, filesize_bytes = $5
+		SET illustr_img_object_key = $2, width_px = $3, height_px = $4, filesize_bytes = $5
 		WHERE short_id = $1
-	`, taskId, img.S3Key, img.WidthPx, img.HeightPx, img.SzInBytes)
+	`, taskId, img.ObjectKey, img.WidthPx, img.HeightPx, img.SzInBytes)
 	if err != nil {
 		return fmt.Errorf("failed to update illustration image: %w", err)
 	}
@@ -407,7 +407,7 @@ func (r *taskPgRepo) GetTaskPreview(ctx context.Context, shortId string) (srvc.T
 	// Load main task row.
 	var fullNameBytes, divisionsBytes []byte
 	err := r.pool.QueryRow(ctx, `
-		SELECT short_id, full_name_dict, orig_lang, illustr_img_s3_key, width_px, height_px, filesize_bytes,
+		SELECT short_id, full_name_dict, orig_lang, illustr_img_object_key, width_px, height_px, filesize_bytes,
 		       origin_olympiad, COALESCE(origin_org,''), COALESCE(origin_year,''),
 		       COALESCE(olymp_stage,''), COALESCE(origin_divisions,'[]'::jsonb), difficulty_rating
 		FROM tasks
@@ -416,7 +416,7 @@ func (r *taskPgRepo) GetTaskPreview(ctx context.Context, shortId string) (srvc.T
 		&t.ShortId,
 		&fullNameBytes,
 		&t.OrigLang,
-		&illustrImg.S3Key,
+		&illustrImg.ObjectKey,
 		&widthPx,
 		&heightPx,
 		&szInBytes,
@@ -441,7 +441,7 @@ func (r *taskPgRepo) GetTaskPreview(ctx context.Context, shortId string) (srvc.T
 	}
 
 	// Set illustration image only if it has valid data
-	if illustrImg.S3Key != "" &&
+	if illustrImg.ObjectKey != "" &&
 		widthPx != nil && heightPx != nil && szInBytes != nil &&
 		*widthPx > 0 && *heightPx > 0 && *szInBytes > 0 {
 		illustrImg.WidthPx = *widthPx
@@ -490,7 +490,7 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 	var divisionsBytes []byte
 	var problemTagsBytes []byte
 	err := r.pool.QueryRow(ctx, `
-		SELECT short_id, full_name_dict, orig_lang, readme, illustr_img_s3_key, width_px, height_px, filesize_bytes, mem_lim_megabytes, cpu_time_lim_secs, origin_olympiad, COALESCE(origin_org,''), COALESCE(origin_year,''), COALESCE(olymp_stage,''), COALESCE(origin_divisions,'[]'::jsonb), COALESCE(authors,'[]'::jsonb), COALESCE(problem_tags,'[]'::jsonb), COALESCE(archive_s3_key,''), difficulty_rating, checker, interactor
+		SELECT short_id, full_name_dict, orig_lang, readme, illustr_img_object_key, width_px, height_px, filesize_bytes, mem_lim_megabytes, cpu_time_lim_secs, origin_olympiad, COALESCE(origin_org,''), COALESCE(origin_year,''), COALESCE(olymp_stage,''), COALESCE(origin_divisions,'[]'::jsonb), COALESCE(authors,'[]'::jsonb), COALESCE(problem_tags,'[]'::jsonb), COALESCE(archive_object_key,''), difficulty_rating, checker, interactor
 		FROM tasks
 		WHERE short_id = $1
 	`, shortId).Scan(
@@ -498,7 +498,7 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 		&fullNameBytes,
 		&t.OrigLang,
 		&t.Readme,
-		&illustrImg.S3Key,
+		&illustrImg.ObjectKey,
 		&widthPx,
 		&heightPx,
 		&szInBytes,
@@ -511,7 +511,7 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 		&divisionsBytes,
 		&authorsBytes,
 		&problemTagsBytes,
-		&t.OgFilesZipS3Key,
+		&t.OgFilesZipObjectKey,
 		&t.DifficultyRating,
 		&t.Checker,
 		&t.Interactor,
@@ -541,7 +541,7 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 		return t, fmt.Errorf("failed to load task: %w", err)
 	}
 
-	if illustrImg.S3Key != "" &&
+	if illustrImg.ObjectKey != "" &&
 		widthPx != nil && heightPx != nil && szInBytes != nil &&
 		*widthPx > 0 && *heightPx > 0 && *szInBytes > 0 {
 		illustrImg.WidthPx = *widthPx
@@ -591,7 +591,7 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 	mdStmtRows.Close()
 	t.MdStatements = mdStatements
 	taskImgsRows, err := r.pool.Query(ctx, `
-		SELECT s3_key, file_name, width_px, height_px, filesize_bytes 
+		SELECT object_key, file_name, width_px, height_px, filesize_bytes 
 		FROM task_images 
 		WHERE task_short_id = $1
 	`, shortId)
@@ -601,7 +601,7 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 	var taskImgs []srvc.StatementImage
 	for taskImgsRows.Next() {
 		var img srvc.StatementImage
-		if err := taskImgsRows.Scan(&img.S3Key, &img.Filename, &img.WidthPx, &img.HeightPx, &img.SzInBytes); err != nil {
+		if err := taskImgsRows.Scan(&img.ObjectKey, &img.Filename, &img.WidthPx, &img.HeightPx, &img.SzInBytes); err != nil {
 			taskImgsRows.Close()
 			return t, fmt.Errorf("failed to load task image: %w", err)
 		}
@@ -920,19 +920,19 @@ func (r *taskPgRepo) CreateTask(ctx context.Context, t srvc.Task) error {
 	}()
 
 	// Insert main task.
-	var illustrS3Key string
+	var illustrObjectKey string
 	var illustrWidthPx, illustrHeightPx, illustrSzInBytes int
 	if t.IllustrImg != nil {
-		illustrS3Key = t.IllustrImg.S3Key // gitleaks:allow -- storage path, not a credential
+		illustrObjectKey = t.IllustrImg.ObjectKey // gitleaks:allow -- storage path, not a credential
 		illustrWidthPx = t.IllustrImg.WidthPx
 		illustrHeightPx = t.IllustrImg.HeightPx
 		illustrSzInBytes = t.IllustrImg.SzInBytes
 	}
 
 	_, err = tx.Exec(ctx, `
-		INSERT INTO tasks (short_id, full_name_dict, orig_lang, readme, illustr_img_s3_key, width_px, height_px, filesize_bytes, mem_lim_megabytes, cpu_time_lim_secs, origin_olympiad, origin_org, origin_year, olymp_stage, origin_divisions, authors, problem_tags, archive_s3_key, difficulty_rating, checker, interactor)
+		INSERT INTO tasks (short_id, full_name_dict, orig_lang, readme, illustr_img_object_key, width_px, height_px, filesize_bytes, mem_lim_megabytes, cpu_time_lim_secs, origin_olympiad, origin_org, origin_year, olymp_stage, origin_divisions, authors, problem_tags, archive_object_key, difficulty_rating, checker, interactor)
 		VALUES ($1, $2::jsonb, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15::jsonb, $16::jsonb, $17::jsonb, $18, $19, $20, $21)
-	`, t.ShortId, mustMarshalMapToJSONB(t.FullName), t.OrigLang, t.Readme, illustrS3Key, illustrWidthPx, illustrHeightPx, illustrSzInBytes, t.MemLimMegabytes, t.CpuTimeLimSecs, t.OriginOlympiad, t.OriginOrg, t.OriginYear, t.OlympStage, mustMarshalSliceToJSONB(t.OriginDivisions), mustMarshalSliceToJSONB(t.Authors), mustMarshalSliceToJSONB(t.ProblemTags), t.OgFilesZipS3Key, t.DifficultyRating, t.Checker, t.Interactor)
+	`, t.ShortId, mustMarshalMapToJSONB(t.FullName), t.OrigLang, t.Readme, illustrObjectKey, illustrWidthPx, illustrHeightPx, illustrSzInBytes, t.MemLimMegabytes, t.CpuTimeLimSecs, t.OriginOlympiad, t.OriginOrg, t.OriginYear, t.OlympStage, mustMarshalSliceToJSONB(t.OriginDivisions), mustMarshalSliceToJSONB(t.Authors), mustMarshalSliceToJSONB(t.ProblemTags), t.OgFilesZipObjectKey, t.DifficultyRating, t.Checker, t.Interactor)
 	if err != nil {
 		return fmt.Errorf("failed to insert main task: %w", err)
 	}
@@ -962,9 +962,9 @@ func (r *taskPgRepo) CreateTask(ctx context.Context, t srvc.Task) error {
 	}
 	for _, img := range t.MdImages {
 		_, err = tx.Exec(ctx, `
-			INSERT INTO task_images (task_short_id, s3_key, file_name, width_px, height_px, filesize_bytes)
+			INSERT INTO task_images (task_short_id, object_key, file_name, width_px, height_px, filesize_bytes)
 			VALUES ($1, $2, $3, $4, $5, $6)
-		`, t.ShortId, img.S3Key, img.Filename, img.WidthPx, img.HeightPx, img.SzInBytes)
+		`, t.ShortId, img.ObjectKey, img.Filename, img.WidthPx, img.HeightPx, img.SzInBytes)
 		if err != nil {
 			return fmt.Errorf("failed to insert markdown image: %w", err)
 		}

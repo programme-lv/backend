@@ -51,7 +51,7 @@ type TestWithOnlyInput struct {
 
 // StatementImage is an image embedded in the markdown statement.
 type StatementImage struct {
-	S3Key     string `json:"s3_key"`
+	ObjectKey string `json:"object_key"`
 	Filename  string `json:"filename"`
 	HttpUrl   string `json:"http_url"`
 	WidthPx   int    `json:"width_px"`
@@ -221,11 +221,11 @@ func (h *taskHttpHandler) mapTaskResponse(task srvc.Task) Task {
 }
 
 func (h *taskHttpHandler) mapTaskIllustrImg(illustrImg *srvc.IllustrationImage) *IllustrationImage {
-	if illustrImg == nil || illustrImg.S3Key == "" {
+	if illustrImg == nil || illustrImg.ObjectKey == "" {
 		return nil
 	}
 
-	httpUrl, err := h.taskSrvc.GetHttpUrlForIllustrImg(context.TODO(), illustrImg.S3Key)
+	httpUrl, err := h.taskSrvc.GetHttpUrlForIllustrImg(context.TODO(), illustrImg.ObjectKey)
 	if err != nil {
 		slog.Error("get public url for illustration image", "error", err)
 		return nil
@@ -255,13 +255,13 @@ func (h *taskHttpHandler) mapTaskPreview(preview srvc.TaskPreview) TaskPreview {
 func (h *taskHttpHandler) mapTaskStatementImages(images []srvc.StatementImage) []StatementImage {
 	response := make([]StatementImage, len(images))
 	for i, image := range images {
-		httpUrl, err := h.taskSrvc.GetHttpUrlForStatementImage(context.TODO(), image.S3Key)
+		httpUrl, err := h.taskSrvc.GetHttpUrlForStatementImage(context.TODO(), image.ObjectKey)
 		if err != nil {
 			slog.Error("get public url for statement image", "error", err)
 			httpUrl = ""
 		}
 		response[i] = StatementImage{
-			S3Key:     image.S3Key,
+			ObjectKey: image.ObjectKey,
 			Filename:  image.Filename,
 			HttpUrl:   httpUrl,
 			WidthPx:   image.WidthPx,
