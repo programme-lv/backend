@@ -8,6 +8,8 @@ import (
 	"github.com/programme-lv/backend/common/jsonresp"
 )
 
+// GetTaskView returns the JSON task for {taskId}.
+// The response is cached for 20 seconds.
 func (h *taskHttpHandler) GetTaskView(ctx context.Context) (Task, jsonresp.HttpStatusCoder) {
 	taskId := chi.URLParamFromCtx(ctx, "taskId")
 
@@ -22,6 +24,7 @@ func (h *taskHttpHandler) GetTaskView(ctx context.Context) (Task, jsonresp.HttpS
 
 	response := h.mapTaskResponse(t)
 	if response.TaskFullName == "" {
+		// Empty name is a mapper or data bug, not a client error.
 		panic("task full name is empty")
 	}
 
@@ -29,6 +32,8 @@ func (h *taskHttpHandler) GetTaskView(ctx context.Context) (Task, jsonresp.HttpS
 	return response, nil
 }
 
+// GetTaskList returns JSON previews of all tasks.
+// The response is cached for 20 seconds.
 func (h *taskHttpHandler) GetTaskList(ctx context.Context) ([]TaskPreview, jsonresp.HttpStatusCoder) {
 	if previews, ok := h.getTaskListCache.Get(""); ok {
 		return previews, nil

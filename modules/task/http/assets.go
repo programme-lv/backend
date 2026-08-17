@@ -13,6 +13,7 @@ import (
 	"github.com/programme-lv/backend/common/jsonresp"
 )
 
+// ServePublicAsset serves a file from the public asset store.
 func (h *taskHttpHandler) ServePublicAsset(w http.ResponseWriter, r *http.Request) {
 	key := chi.URLParam(r, "*")
 	if err := h.publicAssetStore.ServeHTTP(w, r, key); err != nil {
@@ -21,6 +22,7 @@ func (h *taskHttpHandler) ServePublicAsset(w http.ResponseWriter, r *http.Reques
 	}
 }
 
+// ServeTestfile serves a .zst test file after checking the HMAC query signature.
 func (h *taskHttpHandler) ServeTestfile(w http.ResponseWriter, r *http.Request) {
 	filename := chi.URLParam(r, "filename")
 	if !strings.HasSuffix(filename, ".zst") {

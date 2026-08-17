@@ -8,6 +8,7 @@ import (
 	"github.com/programme-lv/backend/modules/task/srvc"
 )
 
+// PutStatementReq is the JSON body for PATCH /tasks/{taskId}/statements/{langIso639}.
 type PutStatementReq struct {
 	Story   string `json:"story"`
 	Input   string `json:"input"`
@@ -18,6 +19,7 @@ type PutStatementReq struct {
 	Example string `json:"example"`
 }
 
+// PutStatement replaces the markdown statement for language langIso639.
 func (h *taskHttpHandler) PutStatement(ctx context.Context, req PutStatementReq) jsonresp.HttpStatusCoder {
 	taskId := chi.URLParamFromCtx(ctx, "taskId")
 	lang := chi.URLParamFromCtx(ctx, "langIso639")
@@ -38,6 +40,7 @@ func (h *taskHttpHandler) PutStatement(ctx context.Context, req PutStatementReq)
 	return nil
 }
 
+// DeleteStatementImage deletes the statement image named {filename} and invalidates cached views.
 func (h *taskHttpHandler) DeleteStatementImage(ctx context.Context) jsonresp.HttpStatusCoder {
 	taskId := chi.URLParamFromCtx(ctx, "taskId")
 	filename := chi.URLParamFromCtx(ctx, "filename")
@@ -52,6 +55,7 @@ func (h *taskHttpHandler) DeleteStatementImage(ctx context.Context) jsonresp.Htt
 	return nil
 }
 
+// DeleteIllustration removes the task list illustration and invalidates cached views.
 func (h *taskHttpHandler) DeleteIllustration(ctx context.Context) jsonresp.HttpStatusCoder {
 	taskId := chi.URLParamFromCtx(ctx, "taskId")
 
@@ -66,6 +70,7 @@ func (h *taskHttpHandler) DeleteIllustration(ctx context.Context) jsonresp.HttpS
 	return nil
 }
 
+// DeleteTask deletes the task identified by {taskId} and invalidates cached views.
 func (h *taskHttpHandler) DeleteTask(ctx context.Context) jsonresp.HttpStatusCoder {
 	logger := h.logger(ctx)
 	taskId := chi.URLParamFromCtx(ctx, "taskId")
