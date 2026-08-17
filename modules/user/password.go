@@ -45,6 +45,15 @@ func (s *userSrvc) ChangePassword(ctx context.Context, userUUID uuid.UUID, curre
 	}
 	defer tx.Rollback(ctx)
 
+	if _, invErr := tx.Exec(ctx, `
+		UPDATE user_email_tokens
+		SET used_at = NOW()
+		WHERE user_uuid = $1 AND purpose = $2 AND used_at IS NULL
+	`, userUUID, purposePasswordReset); invErr != nil {
+		l.Error("invalidate password reset tokens", "error", invErr)
+		return srvcerror.InternalServerError()
+	}
+
 	tag, updErr := tx.Exec(ctx, `
 		UPDATE users SET bcrypt_pwd = $1, pwd_changed_at = $2 WHERE uuid = $3
 	`, string(bcryptPwd), time.Now(), userUUID)
@@ -54,15 +63,6 @@ func (s *userSrvc) ChangePassword(ctx context.Context, userUUID uuid.UUID, curre
 	}
 	if tag.RowsAffected() != 1 {
 		return ErrUserNotFound
-	}
-
-	if _, invErr := tx.Exec(ctx, `
-		UPDATE user_email_tokens
-		SET used_at = NOW()
-		WHERE user_uuid = $1 AND purpose = $2 AND used_at IS NULL
-	`, userUUID, purposePasswordReset); invErr != nil {
-		l.Error("invalidate password reset tokens", "error", invErr)
-		return srvcerror.InternalServerError()
 	}
 
 	if commitErr := tx.Commit(ctx); commitErr != nil {
