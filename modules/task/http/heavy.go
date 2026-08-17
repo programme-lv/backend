@@ -66,14 +66,14 @@ func (h *taskHttpHandler) UploadStatementImage(w http.ResponseWriter, r *http.Re
 
 	err := r.ParseMultipartForm(10 << 20) // max 10MB
 	if err != nil {
-		errMsg := fmt.Sprintf("failed to parse multipart form (maybe the image is too large?): %v", err)
+		errMsg := fmt.Sprintf("parse multipart form (image may be too large): %v", err)
 		jsonresp.BadRequest(w, errMsg)
 		return
 	}
 
 	image, header, err := r.FormFile("image")
 	if err != nil {
-		msg := fmt.Sprintf("failed to get image: %v", err)
+		msg := fmt.Sprintf("read image: %v", err)
 		jsonresp.BadRequest(w, msg)
 		return
 	}
@@ -92,7 +92,7 @@ func (h *taskHttpHandler) UploadStatementImage(w http.ResponseWriter, r *http.Re
 
 	_, imageMimeType, err := mimetype.GetUploadedFileMIMEs(image, header)
 	if err != nil {
-		errMsg := fmt.Sprintf("failed to get MIME types: %v", err)
+		errMsg := fmt.Sprintf("detect MIME type: %v", err)
 		errCode := "failed_to_get_mimes"
 		jsonresp.WriteCustom(w, errMsg, http.StatusBadRequest, errCode)
 		return
@@ -106,7 +106,7 @@ func (h *taskHttpHandler) UploadStatementImage(w http.ResponseWriter, r *http.Re
 
 	imageBytes, err := io.ReadAll(image)
 	if err != nil {
-		msg := fmt.Sprintf("failed to read image: %v", err)
+		msg := fmt.Sprintf("read image: %v", err)
 		jsonresp.BadRequest(w, msg)
 		return
 	}
@@ -122,7 +122,7 @@ func (h *taskHttpHandler) UploadStatementImage(w http.ResponseWriter, r *http.Re
 
 	err = jsonresp.Success(w, uri)
 	if err != nil {
-		slog.Error("failed to write success json", "error", err)
+		slog.Error("write success json", "error", err)
 	}
 }
 
@@ -133,7 +133,7 @@ func (h *taskHttpHandler) UploadIllustration(w http.ResponseWriter, r *http.Requ
 
 	err := r.ParseMultipartForm(10 << 20) // max 10MB
 	if err != nil {
-		errMsg := fmt.Sprintf("failed to parse multipart form (maybe the image is too large?): %v", err)
+		errMsg := fmt.Sprintf("parse multipart form (image may be too large): %v", err)
 		errCode := "failed_to_parse_multipart_form"
 		jsonresp.WriteCustom(w, errMsg, http.StatusBadRequest, errCode)
 		return
@@ -141,7 +141,7 @@ func (h *taskHttpHandler) UploadIllustration(w http.ResponseWriter, r *http.Requ
 
 	image, header, err := r.FormFile("image")
 	if err != nil {
-		errMsg := fmt.Sprintf("failed to get image: %v", err)
+		errMsg := fmt.Sprintf("read image: %v", err)
 		errCode := "failed_to_get_image"
 		jsonresp.WriteCustom(w, errMsg, http.StatusBadRequest, errCode)
 		return
@@ -150,7 +150,7 @@ func (h *taskHttpHandler) UploadIllustration(w http.ResponseWriter, r *http.Requ
 
 	_, imageMimeType, err := mimetype.GetUploadedFileMIMEs(image, header)
 	if err != nil {
-		errMsg := fmt.Sprintf("failed to get MIME types: %v", err)
+		errMsg := fmt.Sprintf("detect MIME type: %v", err)
 		errCode := "failed_to_get_mimes"
 		jsonresp.WriteCustom(w, errMsg, http.StatusBadRequest, errCode)
 		return
@@ -165,7 +165,7 @@ func (h *taskHttpHandler) UploadIllustration(w http.ResponseWriter, r *http.Requ
 
 	imageBytes, err := io.ReadAll(image)
 	if err != nil {
-		errMsg := fmt.Sprintf("failed to read image: %v", err)
+		errMsg := fmt.Sprintf("read image: %v", err)
 		errCode := "failed_to_read_image"
 		jsonresp.WriteCustom(w, errMsg, http.StatusBadRequest, errCode)
 		return
@@ -173,7 +173,7 @@ func (h *taskHttpHandler) UploadIllustration(w http.ResponseWriter, r *http.Requ
 
 	width, height, err := img.GetImageDimensions(imageBytes, imageMimeType)
 	if err != nil {
-		errMsg := fmt.Sprintf("failed to get image dimensions: %v", err)
+		errMsg := fmt.Sprintf("image dimensions: %v", err)
 		errCode := "failed_to_get_image_dimensions"
 		jsonresp.WriteCustom(w, errMsg, http.StatusBadRequest, errCode)
 		return
@@ -211,7 +211,7 @@ func (h *taskHttpHandler) UploadIllustration(w http.ResponseWriter, r *http.Requ
 
 	err = jsonresp.Success(w, map[string]string{"s3_key": s3Key})
 	if err != nil {
-		slog.Error("failed to write success json", "error", err)
+		slog.Error("write success json", "error", err)
 	}
 }
 

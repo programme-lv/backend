@@ -227,7 +227,7 @@ func (h *taskHttpHandler) mapTaskIllustrImg(illustrImg *srvc.IllustrationImage) 
 
 	httpUrl, err := h.taskSrvc.GetHttpUrlForIllustrImg(context.TODO(), illustrImg.S3Key)
 	if err != nil {
-		slog.Error("failed to get public url for illustration image", "error", err)
+		slog.Error("get public url for illustration image", "error", err)
 		return nil
 	}
 
@@ -257,7 +257,7 @@ func (h *taskHttpHandler) mapTaskStatementImages(images []srvc.StatementImage) [
 	for i, image := range images {
 		httpUrl, err := h.taskSrvc.GetHttpUrlForStatementImage(context.TODO(), image.S3Key)
 		if err != nil {
-			slog.Error("failed to get public url for statement image", "error", err)
+			slog.Error("get public url for statement image", "error", err)
 			httpUrl = ""
 		}
 		response[i] = StatementImage{

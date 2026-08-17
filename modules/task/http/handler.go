@@ -12,7 +12,6 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	oldCache "github.com/patrickmn/go-cache"
 	"github.com/programme-lv/backend/common/cache"
 	"github.com/programme-lv/backend/common/ctxlog"
 	"github.com/programme-lv/backend/common/filestore"
@@ -24,7 +23,6 @@ import (
 // taskHttpHandler serves the task HTTP API.
 type taskHttpHandler struct {
 	taskSrvc srvc.TaskService
-	cache    *oldCache.Cache
 
 	getTaskViewCache *cache.LruCache[string, Task]
 	getTaskListCache *cache.LruCache[string, []TaskPreview]
@@ -49,10 +47,8 @@ func WithFileStores(publicAssetStore, testfileStore *filestore.Store, testfileDo
 
 // NewTaskHttpHandler returns a task HTTP handler that uses taskSrvc.
 func NewTaskHttpHandler(taskSrvc srvc.TaskService, opts ...HandlerOption) *taskHttpHandler {
-	c := oldCache.New(5*time.Second, 10*time.Second)
 	h := &taskHttpHandler{
 		taskSrvc:         taskSrvc,
-		cache:            c,
 		getTaskViewCache: cache.NewLruCache[string, Task](1000),
 		getTaskListCache: cache.NewLruCache[string, []TaskPreview](1000),
 	}
