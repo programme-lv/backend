@@ -81,6 +81,40 @@ func login(t *testing.T, handler http.Handler, loginData map[string]interface{})
 	return w
 }
 
+func jsonAuthed(t *testing.T, handler http.Handler, method, path string, body map[string]interface{}, token string) *httptest.ResponseRecorder {
+	t.Helper()
+	var req *http.Request
+	var err error
+	if body == nil {
+		req = httptest.NewRequest(method, path, nil)
+	} else {
+		req, err = newJsonReq(method, path, body)
+		require.NoError(t, err)
+	}
+	if token != "" {
+		req.AddCookie(&http.Cookie{Name: "auth_token", Value: token})
+	}
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+	return w
+}
+
+func authCookieValue(t *testing.T, w *httptest.ResponseRecorder) string {
+	t.Helper()
+	for _, cookie := range w.Result().Cookies() {
+		if cookie.Name == "auth_token" && cookie.Value != "" {
+			return cookie.Value
+		}
+	}
+	t.Fatal("No auth_token cookie found in response")
+	return ""
+}
+
+func whoami(t *testing.T, handler http.Handler, token string) *httptest.ResponseRecorder {
+	t.Helper()
+	return jsonAuthed(t, handler, http.MethodGet, "/whoami", nil, token)
+}
+
 func registerAndLogin(t *testing.T, userHttpHandler http.Handler, username string) string {
 	t.Helper()
 	userData := map[string]interface{}{
