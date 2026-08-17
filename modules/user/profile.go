@@ -39,7 +39,7 @@ func (s *userSrvc) UpdateProfile(ctx context.Context, userUUID uuid.UUID, firstn
 			return nil, ErrUserNotFound
 		}
 		l.Error("update profile", "error", scanErr)
-		return nil, newErrInternalSE()
+		return nil, srvcerror.InternalServerError()
 	}
 
 	return &User{

@@ -25,17 +25,17 @@ func (s *userSrvc) ChangePassword(ctx context.Context, userUUID uuid.UUID, curre
 			return ErrUserNotFound
 		}
 		l.Error("get user by uuid", "error", selectErr)
-		return newErrInternalSE()
+		return srvcerror.InternalServerError()
 	}
 
 	if bcrypt.CompareHashAndPassword([]byte(user.BcryptPwd), []byte(current)) != nil {
-		return newErrUsernameOrPasswordIncorrect()
+		return ErrUsernameOrPasswordIncorrect
 	}
 
 	bcryptPwd, bcryptErr := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
 	if bcryptErr != nil {
 		l.Error("hash new password", "error", bcryptErr)
-		return newErrInternalSE()
+		return srvcerror.InternalServerError()
 	}
 
 	tag, updErr := s.postgres.Exec(ctx, `
@@ -43,7 +43,7 @@ func (s *userSrvc) ChangePassword(ctx context.Context, userUUID uuid.UUID, curre
 	`, string(bcryptPwd), time.Now(), userUUID)
 	if updErr != nil {
 		l.Error("update password", "error", updErr)
-		return newErrInternalSE()
+		return srvcerror.InternalServerError()
 	}
 	if tag.RowsAffected() != 1 {
 		return ErrUserNotFound
