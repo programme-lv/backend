@@ -312,6 +312,7 @@ func (e *execSrvc) Enqueue(
 		MemKiB:     params.MemKiB,
 		Checker:    params.Checker,
 		Interactor: params.Interactor,
+		Groups:     params.Groups,
 	}
 	lang, err := getPrLangById(langId)
 	if err != nil {

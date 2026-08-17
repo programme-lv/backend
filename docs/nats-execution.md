@@ -18,6 +18,10 @@ Each backend process owns two random inbox subjects:
 The backend puts the result inbox in the job's NATS reply field and the file-service subject in the `Proglv-File-Subject` header.
 Execution UUIDs correlate messages that share a process inbox.
 
+The job JSON is `tester/api.ExecReq`. Optional `groups` is a list of scoring units (each a list of 1-based test IDs).
+When present, the tester skips later tests in a unit after a failure and emits `test_ignore`.
+Omitted `groups` runs every test. Old testers ignore the unknown field.
+
 For every missing file, the tester creates a short-lived reply inbox and sends a request containing `eval_uuid` and `sha256` to the file-service subject.
 The backend only serves hashes registered for that execution.
 

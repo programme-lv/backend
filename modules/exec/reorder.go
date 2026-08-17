@@ -320,21 +320,8 @@ func (o *ExecResStreamOrganizer) reachTest(
 	}
 
 	// Check previous test completion
-	if id > 1 {
-		prevReachedKey := fmt.Sprintf(
-			"%s-%d",
-			ReachedTestType,
-			id-1,
-		)
-		prevFinishedKey := fmt.Sprintf(
-			"%s-%d",
-			FinishedTestType,
-			id-1,
-		)
-		if !o.retKeys[prevReachedKey] ||
-			!o.retKeys[prevFinishedKey] {
-			return nil, nil
-		}
+	if id > 1 && !o.testComplete(id-1) {
+		return nil, nil
 	}
 
 	e, err := o.getReachedTestEvent(id)
@@ -371,15 +358,8 @@ func (o *ExecResStreamOrganizer) ignoreTest(
 		return nil, nil
 	}
 
-	if id > 1 {
-		prevReachedKey := fmt.Sprintf(
-			"%s-%d",
-			ReachedTestType,
-			id-1,
-		)
-		if !o.retKeys[prevReachedKey] {
-			return nil, nil
-		}
+	if id > 1 && !o.testComplete(id-1) {
+		return nil, nil
 	}
 
 	e, err := o.getIgnoredTestEvent(id)
@@ -446,7 +426,13 @@ func (o *ExecResStreamOrganizer) finishTest(
 	res := []Event{e}
 
 	if id < o.expNumOfTests {
-		nxt, err := o.reachTest(id + 1)
+		nxt, err := o.ignoreTest(id + 1)
+		if err != nil {
+			return append(res, nxt...), err
+		}
+		res = append(res, nxt...)
+
+		nxt, err = o.reachTest(id + 1)
 		if err != nil {
 			return append(res, nxt...), err
 		}
@@ -602,6 +588,12 @@ func (o *ExecResStreamOrganizer) getSingleEvent(
 		)
 	}
 	return events[0], nil
+}
+
+func (o *ExecResStreamOrganizer) testComplete(id int) bool {
+	finishedKey := fmt.Sprintf("%s-%d", FinishedTestType, id)
+	ignoredKey := fmt.Sprintf("%s-%d", IgnoredTestType, id)
+	return o.retKeys[finishedKey] || o.retKeys[ignoredKey]
 }
 
 // eventKey generates unique identifier.

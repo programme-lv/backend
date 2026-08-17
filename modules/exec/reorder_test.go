@@ -128,6 +128,46 @@ func TestProcessResultsInternalServerError(
 	shuffleAndCmp(t, events, true, 2)
 }
 
+func TestProcessResultsIgnoreAfterFailure(t *testing.T) {
+	in := getExampleStrPtr()
+	ans := getExampleStrPtr()
+	rd := getExampleRunData()
+	events := []Event{
+		ReceivedSubmission{
+			SysInfo:   "some sys info",
+			StartedAt: time.Now(),
+		},
+		ReachedTest{TestId: 1, In: in, Ans: ans},
+		FinishedTest{TestID: 1, Subm: rd, Checker: rd},
+		IgnoredTest{TestId: 2},
+		IgnoredTest{TestId: 3},
+		ReachedTest{TestId: 4, In: in, Ans: ans},
+		FinishedTest{TestID: 4, Subm: rd, Checker: rd},
+		FinishedTesting{},
+	}
+	shuffleAndCmp(t, events, false, 4)
+}
+
+func TestProcessResultsIgnoreAfterFailureWithCompilation(t *testing.T) {
+	in := getExampleStrPtr()
+	ans := getExampleStrPtr()
+	rd := getExampleRunData()
+	events := []Event{
+		ReceivedSubmission{
+			SysInfo:   "some sys info",
+			StartedAt: time.Now(),
+		},
+		StartedCompiling{},
+		FinishedCompiling{RuntimeData: rd},
+		ReachedTest{TestId: 1, In: in, Ans: ans},
+		FinishedTest{TestID: 1, Subm: rd, Checker: rd},
+		IgnoredTest{TestId: 2},
+		IgnoredTest{TestId: 3},
+		FinishedTesting{},
+	}
+	shuffleAndCmp(t, events, true, 3)
+}
+
 // Helper function that tests event processing by:
 // 1. Creating multiple random permutations of events
 // 2. Processing each permutation
