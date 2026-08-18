@@ -24,8 +24,9 @@ import (
 type taskHttpHandler struct {
 	taskSrvc srvc.TaskService
 
-	getTaskViewCache *cache.LruCache[string, Task]
-	getTaskListCache *cache.LruCache[string, []TaskPreview]
+	getTaskViewCache    *cache.LruCache[string, Task]
+	getTaskListCache    *cache.LruCache[string, []TaskPreview]
+	getTaskFiltersCache *cache.LruCache[string, TaskFilterTree]
 
 	publicAssetStore           *filestore.Store
 	testfileStore              *filestore.Store
@@ -48,9 +49,10 @@ func WithFileStores(publicAssetStore, testfileStore *filestore.Store, testfileDo
 // NewTaskHttpHandler returns a task HTTP handler that uses taskSrvc.
 func NewTaskHttpHandler(taskSrvc srvc.TaskService, opts ...HandlerOption) *taskHttpHandler {
 	h := &taskHttpHandler{
-		taskSrvc:         taskSrvc,
-		getTaskViewCache: cache.NewLruCache[string, Task](1000),
-		getTaskListCache: cache.NewLruCache[string, []TaskPreview](1000),
+		taskSrvc:            taskSrvc,
+		getTaskViewCache:    cache.NewLruCache[string, Task](1000),
+		getTaskListCache:    cache.NewLruCache[string, []TaskPreview](1000),
+		getTaskFiltersCache: cache.NewLruCache[string, TaskFilterTree](8),
 	}
 	for _, opt := range opts {
 		opt(h)
@@ -59,8 +61,8 @@ func NewTaskHttpHandler(taskSrvc srvc.TaskService, opts ...HandlerOption) *taskH
 }
 
 // RegisterRoutes mounts task HTTP routes on r.
-// GET /tasks and GET /tasks/{taskId} require a JWT and are throttled
-// to one in-flight request to avoid a cache stampede.
+// GET /task-filters, GET /tasks, and GET /tasks/{taskId} require a JWT and
+// are throttled to one in-flight request to avoid a cache stampede.
 // Admin routes require an admin API key.
 // Upload and export are throttled separately because they are expensive.
 func (h *taskHttpHandler) RegisterRoutes(r *chi.Mux, jwtKey, adminAPIKey []byte, cookieSecure bool, pwdChangedAt auth.PasswordChangedAtLookup) {
@@ -80,6 +82,7 @@ func (h *taskHttpHandler) RegisterRoutes(r *chi.Mux, jwtKey, adminAPIKey []byte,
 
 		r.Group(func(r chi.Router) {
 			r.Use(middleware.ThrottleBacklog(1, 100, 30*time.Second))
+			r.Get("/task-filters", hf.NoReqJsonResp(h.GetTaskFilters))
 			r.Get("/tasks/{taskId}", hf.NoReqJsonResp(h.GetTaskView))
 			r.Get("/tasks", hf.NoReqJsonResp(h.GetTaskList))
 		})

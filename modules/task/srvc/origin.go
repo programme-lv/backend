@@ -50,10 +50,24 @@ func lioOriginNotes(
 }
 
 func lioEditionYear(raw string) (int, bool) {
+	year, ok := editionYear(raw)
+	if !ok || year < 1988 {
+		return 0, false
+	}
+	return year, true
+}
+
+// editionYear maps "2025" or "2024/2025" to the calendar year. Empty or
+// malformed values return false.
+func editionYear(raw string) (int, bool) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return 0, false
+	}
 	parts := strings.Split(raw, "/")
 	value := parts[len(parts)-1]
 	year, err := strconv.Atoi(value)
-	if err != nil || year < 1988 {
+	if err != nil {
 		return 0, false
 	}
 	if len(parts) == 2 {
@@ -65,6 +79,28 @@ func lioEditionYear(raw string) (int, bool) {
 		return 0, false
 	}
 	return year, true
+}
+
+// NormalizeOlympiad maps a stored origin_olympiad to a filter id.
+// Empty values become the UI bucket "other"; that id is never written to the column.
+func NormalizeOlympiad(raw string) string {
+	if strings.TrimSpace(raw) == "" {
+		return "other"
+	}
+	return raw
+}
+
+// NormalizeYear maps a stored origin_year to a filter id ("2024/2025" → "2025").
+// Unparseable non-empty values are returned trimmed; empty is "".
+func NormalizeYear(raw string) string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return ""
+	}
+	if year, ok := editionYear(raw); ok {
+		return strconv.Itoa(year)
+	}
+	return raw
 }
 
 func lioStageName(stage string) (string, bool) {

@@ -155,6 +155,46 @@ func (r *taskPgRepo) ListTaskPreviews(ctx context.Context, limit int, offset int
 	return previews, nil
 }
 
+// ListOriginCounts returns distinct stored origin tuples and how many tasks share each.
+func (r *taskPgRepo) ListOriginCounts(ctx context.Context) ([]srvc.OriginCount, error) {
+	rows, err := r.pool.Query(ctx, `
+		SELECT COALESCE(origin_olympiad, ''),
+		       COALESCE(origin_year, ''),
+		       COALESCE(olymp_stage, ''),
+		       COALESCE(origin_divisions, '[]'::jsonb),
+		       COUNT(*)
+		FROM tasks
+		GROUP BY 1, 2, 3, 4
+	`)
+	if err != nil {
+		return nil, fmt.Errorf("list origin counts: %w", err)
+	}
+	defer rows.Close()
+
+	var out []srvc.OriginCount
+	for rows.Next() {
+		var row srvc.OriginCount
+		var divisionsBytes []byte
+		if err := rows.Scan(
+			&row.Olympiad,
+			&row.Year,
+			&row.Stage,
+			&divisionsBytes,
+			&row.Count,
+		); err != nil {
+			return nil, fmt.Errorf("scan origin count: %w", err)
+		}
+		if len(divisionsBytes) > 0 {
+			_ = json.Unmarshal(divisionsBytes, &row.Divisions)
+		}
+		out = append(out, row)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate origin counts: %w", err)
+	}
+	return out, nil
+}
+
 func (r *taskPgRepo) ListTasks(ctx context.Context, limit int, offset int) ([]srvc.Task, error) {
 	// For simplicity, first load the short_ids and then call GetTask for each.
 	rows, err := r.pool.Query(ctx, `

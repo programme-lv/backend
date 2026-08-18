@@ -39,6 +39,7 @@ type TaskService interface {
 	// website
 	GetTaskPreview(ctx context.Context, shortId string) (TaskPreview, srvcerror.E)
 	ListTaskPreviews(ctx context.Context) ([]TaskPreview, srvcerror.E)
+	ListTaskFilters(ctx context.Context) (FilterTree, srvcerror.E)
 
 	// taskzip archive format
 	ImportTaskFromZip(ctx context.Context, zipBytes []byte, overrideId string) (string, srvcerror.E)
@@ -61,6 +62,7 @@ type TaskPgRepo interface {
 	SearchTasksByName(ctx context.Context, name string) ([]string, error)
 	ListTasks(ctx context.Context, limit int, offset int) ([]Task, error)
 	ListTaskPreviews(ctx context.Context, limit int, offset int) ([]TaskPreview, error)
+	ListOriginCounts(ctx context.Context) ([]OriginCount, error)
 	ResolveNames(ctx context.Context, shortIds []string) ([]string, error)
 	Exists(ctx context.Context, shortId string) (bool, error)
 	CreateTask(ctx context.Context, task Task) error
