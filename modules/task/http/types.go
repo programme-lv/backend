@@ -13,9 +13,44 @@ type TaskPreview struct {
 	IllustrImg       *IllustrationImage `json:"illustr_img"`
 	DifficultyRating int                `json:"difficulty_rating"`
 	OriginOlympiad   string             `json:"origin_olympiad"`
+	OriginYear       string             `json:"origin_year"`
+	OlympStage       string             `json:"olymp_stage"`
+	OriginDivisions  []string           `json:"origin_divisions"`
 	OriginNote       string             `json:"origin_note"`
 	OriginNoteShort  string             `json:"origin_note_short"`
 	MdStatementStory string             `json:"md_statement_story"`
+}
+
+// TaskFilterTree is the JSON body of GET /task-filters.
+type TaskFilterTree struct {
+	Olympiads []TaskFilterOlympiad `json:"olympiads"`
+}
+
+// TaskFilterOlympiad is one origin olympiad in the filter catalog.
+type TaskFilterOlympiad struct {
+	ID    string           `json:"id"`
+	Count int              `json:"count"`
+	Years []TaskFilterYear `json:"years"`
+}
+
+// TaskFilterYear is one edition year under an olympiad.
+type TaskFilterYear struct {
+	ID     string            `json:"id"`
+	Count  int               `json:"count"`
+	Stages []TaskFilterStage `json:"stages"`
+}
+
+// TaskFilterStage is one olympiad stage under a year.
+type TaskFilterStage struct {
+	ID        string               `json:"id"`
+	Count     int                  `json:"count"`
+	Divisions []TaskFilterDivision `json:"divisions"`
+}
+
+// TaskFilterDivision is one age-group bucket under a stage.
+type TaskFilterDivision struct {
+	ID    string `json:"id"`
+	Count int    `json:"count"`
 }
 
 // Example is a sample input/output pair shown in the task statement.
@@ -238,16 +273,58 @@ func (h *taskHttpHandler) mapTaskIllustrImg(illustrImg *srvc.IllustrationImage) 
 }
 
 func (h *taskHttpHandler) mapTaskPreview(preview srvc.TaskPreview) TaskPreview {
+	divisions := preview.OriginDivisions
+	if divisions == nil {
+		divisions = []string{}
+	}
 	return TaskPreview{
 		ShortId:          preview.ShortId,
 		FullName:         preview.DefaultFullName(),
 		IllustrImg:       h.mapTaskIllustrImg(preview.IllustrImg),
 		DifficultyRating: preview.DifficultyRating,
-		OriginOlympiad:   preview.OriginOlympiad,
+		OriginOlympiad:   srvc.NormalizeOlympiad(preview.OriginOlympiad),
+		OriginYear:       srvc.NormalizeYear(preview.OriginYear),
+		OlympStage:       preview.OlympStage,
+		OriginDivisions:  divisions,
 		OriginNote:       preview.OriginNote,
 		OriginNoteShort:  preview.OriginNoteShort,
 		MdStatementStory: preview.MdStatementStory,
 	}
+}
+
+func mapFilterTree(tree srvc.FilterTree) TaskFilterTree {
+	olympiads := make([]TaskFilterOlympiad, 0, len(tree.Olympiads))
+	for _, olympiad := range tree.Olympiads {
+		years := make([]TaskFilterYear, 0, len(olympiad.Years))
+		for _, year := range olympiad.Years {
+			stages := make([]TaskFilterStage, 0, len(year.Stages))
+			for _, stage := range year.Stages {
+				divisions := make([]TaskFilterDivision, 0, len(stage.Divisions))
+				for _, division := range stage.Divisions {
+					divisions = append(divisions, TaskFilterDivision{
+						ID:    division.ID,
+						Count: division.Count,
+					})
+				}
+				stages = append(stages, TaskFilterStage{
+					ID:        stage.ID,
+					Count:     stage.Count,
+					Divisions: divisions,
+				})
+			}
+			years = append(years, TaskFilterYear{
+				ID:     year.ID,
+				Count:  year.Count,
+				Stages: stages,
+			})
+		}
+		olympiads = append(olympiads, TaskFilterOlympiad{
+			ID:    olympiad.ID,
+			Count: olympiad.Count,
+			Years: years,
+		})
+	}
+	return TaskFilterTree{Olympiads: olympiads}
 }
 
 func (h *taskHttpHandler) mapTaskStatementImages(images []srvc.StatementImage) []StatementImage {

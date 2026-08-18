@@ -51,3 +51,19 @@ func (h *taskHttpHandler) GetTaskList(ctx context.Context) ([]TaskPreview, jsonr
 	h.getTaskListCache.Set("", previews, 20*time.Second)
 	return previews, nil
 }
+
+// GetTaskFilters returns the origin catalog for the task-list sidebar.
+// The response is cached for 20 seconds.
+func (h *taskHttpHandler) GetTaskFilters(ctx context.Context) (TaskFilterTree, jsonresp.HttpStatusCoder) {
+	if tree, ok := h.getTaskFiltersCache.Get(""); ok {
+		return tree, nil
+	}
+
+	tree, err := h.taskSrvc.ListTaskFilters(ctx)
+	if err != nil {
+		return TaskFilterTree{}, err
+	}
+	response := mapFilterTree(tree)
+	h.getTaskFiltersCache.Set("", response, 20*time.Second)
+	return response, nil
+}

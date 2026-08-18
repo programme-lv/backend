@@ -47,6 +47,17 @@ func (ts *taskSrvc) ListTaskPreviews(ctx context.Context) ([]TaskPreview, srvcer
 	return taskPreviews, nil
 }
 
+// ListTaskFilters returns the origin catalog for the public task list.
+// The tree is built from every task row, not the 100-preview list cap.
+func (ts *taskSrvc) ListTaskFilters(ctx context.Context) (FilterTree, srvcerror.E) {
+	rows, err := ts.repo.ListOriginCounts(ctx)
+	if err != nil {
+		ts.logger(ctx).Error("list origin counts", "error", err)
+		return FilterTree{}, srvcerror.InternalServerError()
+	}
+	return BuildFilterTree(rows), nil
+}
+
 //go:embed embedded/it-task-note.md
 var itTaskNote string
 
