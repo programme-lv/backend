@@ -71,10 +71,8 @@ func (r *taskPgRepo) ListTaskPreviews(ctx context.Context, limit int, offset int
 				FROM task_origin_notes ton
 				WHERE ton.task_short_id = t.short_id
 				LIMIT 1)
-		       ) as origin_note_short,
-		       ms.story
+		       ) as origin_note_short
 		FROM tasks t
-		LEFT JOIN task_md_statements ms ON t.short_id = ms.task_short_id
 		ORDER BY t.short_id
 		LIMIT $1 OFFSET $2
 	`, limit, offset)
@@ -90,7 +88,7 @@ func (r *taskPgRepo) ListTaskPreviews(ctx context.Context, limit int, offset int
 		var widthPx *int = nil
 		var heightPx *int = nil
 		var szInBytes *int = nil
-		var story, originNote, originNoteShort *string // Use pointers to handle NULL values
+		var originNote, originNoteShort *string
 		var fullNameBytes []byte
 		var divisionsBytes []byte
 		err := rows.Scan(
@@ -109,7 +107,6 @@ func (r *taskPgRepo) ListTaskPreviews(ctx context.Context, limit int, offset int
 			&p.DifficultyRating,
 			&originNote,
 			&originNoteShort,
-			&story,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("scan task preview: %w", err)
@@ -131,9 +128,6 @@ func (r *taskPgRepo) ListTaskPreviews(ctx context.Context, limit int, offset int
 		}
 		if originNoteShort != nil {
 			p.OriginNoteShort = *originNoteShort
-		}
-		if story != nil {
-			p.MdStatementStory = *story
 		}
 
 		if illustrImg.ObjectKey != "" &&

@@ -72,21 +72,6 @@ func (r *taskPgRepo) GetTaskPreview(ctx context.Context, shortId string) (srvc.T
 		return t, fmt.Errorf("load origin note: %w", err)
 	}
 
-	// Load the first markdown statement story (for preview)
-	var story string
-	err = r.pool.QueryRow(ctx, `
-		SELECT story 
-		FROM task_md_statements 
-		WHERE task_short_id = $1
-		LIMIT 1
-	`, shortId).Scan(&story)
-	if err != nil {
-		// If no markdown statement exists, story will remain empty
-		// This is not an error for preview
-	} else {
-		t.MdStatementStory = story
-	}
-
 	return t, nil
 }
 

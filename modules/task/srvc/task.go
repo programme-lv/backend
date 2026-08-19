@@ -21,8 +21,6 @@ type TaskPreview struct {
 	OriginYear      string
 	OlympStage      string
 	OriginDivisions []string
-
-	MdStatementStory string
 }
 
 type Task struct {

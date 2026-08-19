@@ -93,5 +93,4 @@ type TaskPreview struct {
 	DifficultyRating int                        `json:"difficulty_rating"`
 	OriginOlympiad   string                     `json:"origin_olympiad"`
 	OriginNotes      []tasksrvc.OriginNote      `json:"origin_notes"`
-	MdStatementStory string                     `json:"md_statement_story"`
 }
