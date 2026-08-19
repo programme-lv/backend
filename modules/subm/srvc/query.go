@@ -98,51 +98,15 @@ func (h getMaxScorePerTaskHandler) Handle(ctx context.Context, userUUID uuid.UUI
 
 }
 
-// CountSubms returns the total number of submissions
-func (s *submSrvc) CountSubms(ctx context.Context, search string, author *uuid.UUID, includeAdmin bool) (int, srvcerror.E) {
+// CountSubms returns the total number of submissions matching filter.
+func (s *submSrvc) CountSubms(ctx context.Context, filter ListSubmsParams) (int, srvcerror.E) {
 	log := ctxlog.FromContext(ctx).With("query", "count submissions")
 
-	authorIds := make([]string, 0)
-	taskIds := make([]string, 0)
-	langIds := make([]string, 0)
-
-	if search != "" {
-		var err srvcerror.E
-
-		// get all possible task matches
-		taskIds, err = s.taskSrvc.SearchTasksByName(ctx, search)
-		if err != nil {
-			log.Error("search tasks by name", "error", err)
-			return 0, ErrInternal
-		}
-		taskIds = append(taskIds, search)
-
-		// get all possible user matches
-		var authorId usersrvc.User
-		authorId, err = s.userSrvc.GetUserByUsername(ctx, search)
-		if err != nil && !errors.Is(err, usersrvc.ErrUserNotFound) {
-			log.Error("get user by username", "error", err)
-			return 0, ErrInternal
-		}
-
-		if authorId.UUID != uuid.Nil {
-			authorIdStr := authorId.UUID.String()
-			authorIds = append(authorIds, authorIdStr)
-		}
-		if _, err := uuid.Parse(search); err == nil {
-			authorIds = append(authorIds, search)
-		}
-
-		// get all programming languages
-		var pLangSearchErr error
-		langIds, pLangSearchErr = plang.SearchProgrLangByName(search)
-		if pLangSearchErr != nil {
-			log.Error("search progr langs by name", "error", pLangSearchErr)
-			return 0, ErrInternal
-		}
-		langIds = append(langIds, search)
+	authorIds, taskIds, langIds, resolveErr := s.resolveSearchIDs(ctx, filter.Search)
+	if resolveErr != nil {
+		return 0, resolveErr
 	}
-	count, countErr := s.submRepo.CountSubms(ctx, author, authorIds, taskIds, langIds, includeAdmin)
+	count, countErr := s.submRepo.CountSubms(ctx, filter.Author, filter.TaskShortID, authorIds, taskIds, langIds, filter.IncludeAdmin)
 	if countErr != nil {
 		log.Error("count submissions", "error", countErr)
 		return 0, ErrInternal
@@ -210,52 +174,62 @@ type ListSubmsParams struct {
 	Limit  int
 	Offset int
 	Search string
-	Author *uuid.UUID // Optional author UUID to filter by
+	Author *uuid.UUID // optional; AND with other filters
+	// TaskShortID is an exact task short id AND filter. Distinct from Search,
+	// which ORs fuzzy matches across task, user, and language.
+	TaskShortID string
 
 	IncludeAdmin bool // whether to include admin submissions
+}
+
+func (s *submSrvc) resolveSearchIDs(ctx context.Context, search string) (authorIds, taskIds, langIds []string, err srvcerror.E) {
+	authorIds = make([]string, 0)
+	taskIds = make([]string, 0)
+	langIds = make([]string, 0)
+	if search == "" {
+		return authorIds, taskIds, langIds, nil
+	}
+
+	log := ctxlog.FromContext(ctx)
+
+	var searchTasksByNameErr srvcerror.E
+	taskIds, searchTasksByNameErr = s.taskSrvc.SearchTasksByName(ctx, search)
+	if searchTasksByNameErr != nil {
+		return nil, nil, nil, searchTasksByNameErr
+	}
+	taskIds = append(taskIds, search)
+
+	authorId, userErr := s.userSrvc.GetUserByUsername(ctx, search)
+	if userErr != nil && !errors.Is(userErr, usersrvc.ErrUserNotFound) {
+		return nil, nil, nil, userErr
+	}
+	if authorId.UUID != uuid.Nil {
+		authorIds = append(authorIds, authorId.UUID.String())
+	}
+	if _, parseErr := uuid.Parse(search); parseErr == nil {
+		authorIds = append(authorIds, search)
+	}
+
+	var searchProgrLangByNameErr error
+	langIds, searchProgrLangByNameErr = plang.SearchProgrLangByName(search)
+	if searchProgrLangByNameErr != nil {
+		log.Error("search programming languages by name", "error", searchProgrLangByNameErr)
+		return nil, nil, nil, srvcerror.InternalServerError()
+	}
+	langIds = append(langIds, search)
+	return authorIds, taskIds, langIds, nil
 }
 
 func (s *submSrvc) ListSubms(ctx context.Context, filter ListSubmsParams) ([]domain.Subm, srvcerror.E) {
 	log := ctxlog.FromContext(ctx).With("query", "list submissions")
 	log.Debug("listing submissions", "limit", filter.Limit, "offset", filter.Offset)
 
-	authorIds := make([]string, 0)
-	taskIds := make([]string, 0)
-	langIds := make([]string, 0)
-
-	if filter.Search != "" {
-		// get all possible task matches
-		var searchTasksByNameErr srvcerror.E
-		taskIds, searchTasksByNameErr = s.taskSrvc.SearchTasksByName(ctx, filter.Search)
-		if searchTasksByNameErr != nil {
-			return nil, searchTasksByNameErr
-		}
-		taskIds = append(taskIds, filter.Search)
-
-		// get all possible user matches
-		authorId, err := s.userSrvc.GetUserByUsername(ctx, filter.Search)
-		if err != nil && !errors.Is(err, usersrvc.ErrUserNotFound) {
-			return nil, err
-		}
-		if authorId.UUID != uuid.Nil {
-			authorIdStr := authorId.UUID.String()
-			authorIds = append(authorIds, authorIdStr)
-		}
-		if _, err := uuid.Parse(filter.Search); err == nil {
-			authorIds = append(authorIds, filter.Search)
-		}
-
-		// get all programming languages
-		var searchProgrLangByNameErr error
-		langIds, searchProgrLangByNameErr = plang.SearchProgrLangByName(filter.Search)
-		if searchProgrLangByNameErr != nil {
-			log.Error("search programming languages by name", "error", searchProgrLangByNameErr)
-			return nil, srvcerror.InternalServerError()
-		}
-		langIds = append(langIds, filter.Search)
+	authorIds, taskIds, langIds, resolveErr := s.resolveSearchIDs(ctx, filter.Search)
+	if resolveErr != nil {
+		return nil, resolveErr
 	}
 
-	subms, listErr := s.submRepo.ListSubms(ctx, filter.Limit, filter.Offset, filter.Search, filter.Author, authorIds, taskIds, langIds, filter.IncludeAdmin)
+	subms, listErr := s.submRepo.ListSubms(ctx, filter.Limit, filter.Offset, filter.Search, filter.Author, filter.TaskShortID, authorIds, taskIds, langIds, filter.IncludeAdmin)
 	if listErr != nil {
 		log.Error("list submissions from repo", "error", listErr)
 		return nil, srvcerror.InternalServerError()

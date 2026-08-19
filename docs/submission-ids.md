@@ -8,3 +8,4 @@ Public URLs use `submissions.short_id` (6-character base62), not `uuid`.
 - Eval/exec IDs stay UUIDs.
 
 Project-wide note: `../docs/github/submission-ids.md`.
+List query params (`search`, `task_id`, `mine`): [submlist.md](submlist.md).

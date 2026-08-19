@@ -136,7 +136,7 @@ func TestSubmRepo_List_MultipleEntries(t *testing.T) {
 		require.NoError(t, repo.StoreSubm(context.Background(), &e))
 	}
 
-	listed, err := repo.ListSubms(context.Background(), 3, 1, "", nil, []string{}, []string{}, []string{}, true)
+	listed, err := repo.ListSubms(context.Background(), 3, 1, "", nil, "", []string{}, []string{}, []string{}, true)
 	require.NoError(t, err)
 	require.Len(t, listed, 3)
 
@@ -149,6 +149,50 @@ func TestSubmRepo_List_MultipleEntries(t *testing.T) {
 			require.True(t, equal || before)
 		}
 	}
+}
+
+func TestSubmRepo_List_AuthorAndTask(t *testing.T) {
+	t.Parallel()
+	db := newSampleDB(t)
+	repo := NewPgSubmRepo(db)
+	ctx := context.Background()
+
+	otherAuthor := uuid.New()
+	_, err := db.Exec(ctx, `
+		INSERT INTO users (
+			uuid, firstname, lastname, username, email, bcrypt_pwd
+		) VALUES (
+			$1, 'Other', 'User', 'otheruser', 'other@example.com', '$2a$10$XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
+		)
+	`, otherAuthor)
+	require.NoError(t, err)
+
+	base := time.Now().Add(-time.Hour).UTC()
+	want := sampleSubmWithoutEval()
+	want.TaskShortID = "alpha"
+	want.CreatedAt = base.Add(3 * time.Minute)
+
+	sameAuthorOtherTask := sampleSubmWithoutEval()
+	sameAuthorOtherTask.TaskShortID = "beta"
+	sameAuthorOtherTask.CreatedAt = base.Add(2 * time.Minute)
+
+	otherAuthorSameTask := sampleSubmWithoutEval()
+	otherAuthorSameTask.AuthorUUID = otherAuthor
+	otherAuthorSameTask.TaskShortID = "alpha"
+	otherAuthorSameTask.CreatedAt = base.Add(time.Minute)
+
+	for _, e := range []domain.Subm{want, sameAuthorOtherTask, otherAuthorSameTask} {
+		require.NoError(t, repo.StoreSubm(ctx, &e))
+	}
+
+	listed, err := repo.ListSubms(ctx, 10, 0, "", &existingAuthorUuid, "alpha", []string{}, []string{}, []string{}, true)
+	require.NoError(t, err)
+	require.Len(t, listed, 1)
+	require.Equal(t, want.UUID, listed[0].UUID)
+
+	count, err := repo.CountSubms(ctx, &existingAuthorUuid, "alpha", []string{}, []string{}, []string{}, true)
+	require.NoError(t, err)
+	require.Equal(t, 1, count)
 }
 
 func TestEvalRepo_Store_Success(t *testing.T) {
