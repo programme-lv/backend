@@ -155,9 +155,6 @@ func TestTaskPgRepo(t *testing.T) {
 		assert.Contains(t, taskPreview.OriginNote, "Uzdevums no Latvijas 38.", "Preview OriginNote mismatch")
 		assert.Equal(t, "LIO 38. atlases kārta", taskPreview.OriginNoteShort, "Preview OriginNoteShort mismatch")
 
-		// Verify markdown statement story
-		assert.Contains(t, taskPreview.MdStatementStory, "Dotas $N$ kartītes", "Preview MdStatementStory mismatch")
-
 		// Test getting preview for non-existent task
 		_, err = repo.GetTaskPreview(ctx, "non-existent-task")
 		assert.Error(t, err, "Getting preview for non-existent task should fail")

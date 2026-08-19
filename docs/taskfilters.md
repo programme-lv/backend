@@ -4,7 +4,7 @@
 
 It is a separate path from `GET /tasks` on purpose:
 
-- The list is task previews (names, stories, images), capped at 100.
+- The list is task previews (names, images, origin), capped at 100.
 - The tree is every distinct origin tuple in `tasks`, including rows beyond that cap.
 - Chi would treat `GET /tasks/filters` as `{taskId}=filters`.
 

@@ -18,7 +18,6 @@ type TaskPreview struct {
 	OriginDivisions  []string           `json:"origin_divisions"`
 	OriginNote       string             `json:"origin_note"`
 	OriginNoteShort  string             `json:"origin_note_short"`
-	MdStatementStory string             `json:"md_statement_story"`
 }
 
 // TaskFilterTree is the JSON body of GET /task-filters.
@@ -288,7 +287,6 @@ func (h *taskHttpHandler) mapTaskPreview(preview srvc.TaskPreview) TaskPreview {
 		OriginDivisions:  divisions,
 		OriginNote:       preview.OriginNote,
 		OriginNoteShort:  preview.OriginNoteShort,
-		MdStatementStory: preview.MdStatementStory,
 	}
 }
 
