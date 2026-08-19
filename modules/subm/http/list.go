@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/google/uuid"
 	"github.com/programme-lv/backend/common/ctxlog"
 	"github.com/programme-lv/backend/common/jsonresp"
 	"github.com/programme-lv/backend/modules/subm/domain"
@@ -29,17 +30,15 @@ type Pagination struct {
 const (
 	defaultSubmListLimit = 30
 	maxSubmListLimit     = 100
+	maxTaskIDQueryLen    = 50
 )
 
 func (h *SubmHttpHandler) GetSubmList(w http.ResponseWriter, r *http.Request) {
 	log := ctxlog.FromContext(r.Context())
 	w.Header().Set("Cache-Control", "no-store")
 
-	// Parse pagination parameters from query string
-	limit := defaultSubmListLimit
-	offset := 0 // Default offset
-
-	limit = parseSubmListLimit(r.URL.Query().Get("limit"))
+	limit := parseSubmListLimit(r.URL.Query().Get("limit"))
+	offset := 0
 
 	offsetStr := r.URL.Query().Get("offset")
 	if offsetStr != "" {
@@ -55,14 +54,42 @@ func (h *SubmHttpHandler) GetSubmList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	taskID := r.URL.Query().Get("task_id")
+	if len(taskID) > maxTaskIDQueryLen {
+		jsonresp.BadRequest(w, "task_id too long")
+		return
+	}
+
+	var author *uuid.UUID
+	if parseMineQuery(r.URL.Query().Get("mine")) {
+		userUUID, err := auth.GetUserUuidFromCtx(r.Context())
+		if err != nil {
+			jsonresp.HandleErrorWithContext(r.Context(), w, ErrJwtTokenMissing)
+			return
+		}
+		author = &userUUID
+	}
+
 	includeAdmin := false
 	if auth.IsAdmin(r.Context()) {
 		includeAdmin = true
 	}
 
-	cacheKey := fmt.Sprintf("subm_list:%d:%d:%s:%t", limit, offset, search, includeAdmin)
+	authorKey := ""
+	if author != nil {
+		authorKey = author.String()
+	}
+	cacheKey := fmt.Sprintf("subm_list:%d:%d:%s:%t:%s:%s", limit, offset, search, includeAdmin, authorKey, taskID)
 
-	// Try to get from cache first
+	filter := srvc.ListSubmsParams{
+		Limit:        limit,
+		Offset:       offset,
+		Search:       search,
+		Author:       author,
+		TaskShortID:  taskID,
+		IncludeAdmin: includeAdmin,
+	}
+
 	if cachedResponse, found := h.submCache.Get(cacheKey); found {
 		if response, ok := cachedResponse.(PaginatedResponse); ok {
 			jsonresp.Success(w, response)
@@ -70,29 +97,19 @@ func (h *SubmHttpHandler) GetSubmList(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// If not in cache or invalid cache, use singleflight to prevent multiple concurrent requests
-	// from all hitting the database at the same time
 	result, err, _ := h.sfGroup.Do(cacheKey, func() (interface{}, error) {
-		// Check cache again in case another request already populated it while we were waiting
 		if cachedResponse, found := h.submCache.Get(cacheKey); found {
 			if response, ok := cachedResponse.(PaginatedResponse); ok {
 				return response, nil
 			}
 		}
 
-		// Get total count of submissions
-		totalCount, countSubmsErr := h.submSrvc.CountSubms(r.Context(), search, nil, includeAdmin)
+		totalCount, countSubmsErr := h.submSrvc.CountSubms(r.Context(), filter)
 		if countSubmsErr != nil {
 			return nil, countSubmsErr
 		}
 
-		// Get paginated submissions
-		subms, err := h.submSrvc.ListSubms(r.Context(), srvc.ListSubmsParams{
-			Limit:        limit,
-			Offset:       offset,
-			Search:       search,
-			IncludeAdmin: includeAdmin,
-		})
+		subms, err := h.submSrvc.ListSubms(r.Context(), filter)
 		if err != nil {
 			return nil, err
 		}
@@ -112,7 +129,6 @@ func (h *SubmHttpHandler) GetSubmList(w http.ResponseWriter, r *http.Request) {
 
 		submEntries := mapSubmList(subms)
 
-		// Create paginated response
 		hasMore := offset+len(submEntries) < totalCount
 		paginatedResponse := PaginatedResponse{
 			Page: submEntries,
@@ -124,8 +140,7 @@ func (h *SubmHttpHandler) GetSubmList(w http.ResponseWriter, r *http.Request) {
 			},
 		}
 
-		// Store in cache for future requests
-		h.submCache.Set(cacheKey, paginatedResponse, 0) // Use default expiration time
+		h.submCache.Set(cacheKey, paginatedResponse, 0)
 
 		return paginatedResponse, nil
 	})
@@ -142,6 +157,10 @@ func (h *SubmHttpHandler) GetSubmList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	jsonresp.Success(w, response)
+}
+
+func parseMineQuery(raw string) bool {
+	return raw == "1" || raw == "true"
 }
 
 func parseSubmListLimit(raw string) int {

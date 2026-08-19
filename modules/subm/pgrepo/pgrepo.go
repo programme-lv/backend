@@ -478,13 +478,13 @@ func (r *pgSubmRepo) GetSubmByShortID(ctx context.Context, shortID string) (doma
 }
 
 // ListSubms retrieves all SubmissionEntities from the database
-func (r *pgSubmRepo) ListSubms(ctx context.Context, limit int, offset int, search string, authorUuid *uuid.UUID, authorIds []string, taskIds []string, langIds []string, includeAdmin bool) ([]domain.Subm, error) {
+func (r *pgSubmRepo) ListSubms(ctx context.Context, limit int, offset int, search string, authorUuid *uuid.UUID, taskShortID string, authorIds []string, taskIds []string, langIds []string, includeAdmin bool) ([]domain.Subm, error) {
 
 	var rows pgx.Rows
 	var err error
 
 	// Build WHERE conditions based on filters
-	hasFilters := authorUuid != nil || len(authorIds) > 0 || len(taskIds) > 0 || len(langIds) > 0 || !includeAdmin
+	hasFilters := authorUuid != nil || taskShortID != "" || len(authorIds) > 0 || len(taskIds) > 0 || len(langIds) > 0 || !includeAdmin
 
 	if hasFilters {
 		var conditions []string
@@ -516,6 +516,12 @@ func (r *pgSubmRepo) ListSubms(ctx context.Context, limit int, offset int, searc
 		if authorUuid != nil {
 			conditions = append(conditions, fmt.Sprintf("s.author_uuid = $%d", argIndex))
 			args = append(args, *authorUuid)
+			argIndex++
+		}
+
+		if taskShortID != "" {
+			conditions = append(conditions, fmt.Sprintf("s.task_shortid = $%d", argIndex))
+			args = append(args, taskShortID)
 			argIndex++
 		}
 
@@ -569,12 +575,12 @@ func (r *pgSubmRepo) ListSubms(ctx context.Context, limit int, offset int, searc
 }
 
 // CountSubms returns the total number of submissions in the database
-func (r *pgSubmRepo) CountSubms(ctx context.Context, authorUuid *uuid.UUID, authorIds []string, taskIds []string, langIds []string, includeAdmin bool) (int, error) {
+func (r *pgSubmRepo) CountSubms(ctx context.Context, authorUuid *uuid.UUID, taskShortID string, authorIds []string, taskIds []string, langIds []string, includeAdmin bool) (int, error) {
 
 	var count int
 
 	// Build WHERE conditions based on filters
-	hasFilters := authorUuid != nil || len(authorIds) > 0 || len(taskIds) > 0 || len(langIds) > 0 || !includeAdmin
+	hasFilters := authorUuid != nil || taskShortID != "" || len(authorIds) > 0 || len(taskIds) > 0 || len(langIds) > 0 || !includeAdmin
 
 	if hasFilters {
 		var conditions []string
@@ -585,6 +591,12 @@ func (r *pgSubmRepo) CountSubms(ctx context.Context, authorUuid *uuid.UUID, auth
 		if authorUuid != nil {
 			conditions = append(conditions, fmt.Sprintf("s.author_uuid = $%d", argIndex))
 			args = append(args, *authorUuid)
+			argIndex++
+		}
+
+		if taskShortID != "" {
+			conditions = append(conditions, fmt.Sprintf("s.task_shortid = $%d", argIndex))
+			args = append(args, taskShortID)
 			argIndex++
 		}
 
