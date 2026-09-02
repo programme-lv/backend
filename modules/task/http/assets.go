@@ -10,13 +10,28 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/programme-lv/backend/common/filestore"
+	"github.com/programme-lv/backend/common/img"
 	"github.com/programme-lv/backend/common/jsonresp"
 )
 
 // ServePublicAsset serves a file from the public asset store.
+// Allowlisted illustration variants are generated on first request and cached.
 func (h *taskHttpHandler) ServePublicAsset(w http.ResponseWriter, r *http.Request) {
 	key := chi.URLParam(r, "*")
+	if orig, variant, ok := img.ParseDerivedKey(key); ok {
+		serveKey, err := img.EnsureVariant(r.Context(), h.publicAssetStore, orig, variant)
+		if err != nil {
+			if !errors.Is(err, os.ErrNotExist) {
+				h.logger(r.Context()).Error("derive illustration variant", "key", key, "error", err)
+			}
+			writeAssetError(w, err)
+			return
+		}
+		w.Header().Set("Cache-Control", img.DerivedCacheControl())
+		key = serveKey
+	}
 	if err := h.publicAssetStore.ServeHTTP(w, r, key); err != nil {
+		w.Header().Del("Cache-Control")
 		writeAssetError(w, err)
 		return
 	}

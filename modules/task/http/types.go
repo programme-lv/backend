@@ -94,10 +94,12 @@ type StatementImage struct {
 
 // IllustrationImage is the image shown next to the task in lists and the task view.
 type IllustrationImage struct {
-	HttpUrl   string `json:"http_url"`
-	WidthPx   int    `json:"width_px"`
-	HeightPx  int    `json:"height_px"`
-	SzInBytes int    `json:"sz_in_bytes"`
+	HttpUrl     string `json:"http_url"`
+	ListHttpUrl string `json:"list_http_url"`
+	ViewHttpUrl string `json:"view_http_url"`
+	WidthPx     int    `json:"width_px"`
+	HeightPx    int    `json:"height_px"`
+	SzInBytes   int    `json:"sz_in_bytes"`
 }
 
 // Task is the JSON body for GET /tasks/{taskId}.
@@ -258,16 +260,18 @@ func (h *taskHttpHandler) mapTaskIllustrImg(illustrImg *srvc.IllustrationImage) 
 		return nil
 	}
 
-	httpUrl, err := h.taskSrvc.GetHttpUrlForIllustrImg(context.TODO(), illustrImg.ObjectKey)
+	listURL, viewURL, fullURL, err := h.taskSrvc.GetIllustrationAssetURLs(context.TODO(), illustrImg.ObjectKey)
 	if err != nil {
 		return nil
 	}
 
 	return &IllustrationImage{
-		HttpUrl:   httpUrl,
-		WidthPx:   illustrImg.WidthPx,
-		HeightPx:  illustrImg.HeightPx,
-		SzInBytes: illustrImg.SzInBytes,
+		HttpUrl:     fullURL,
+		ListHttpUrl: listURL,
+		ViewHttpUrl: viewURL,
+		WidthPx:     illustrImg.WidthPx,
+		HeightPx:    illustrImg.HeightPx,
+		SzInBytes:   illustrImg.SzInBytes,
 	}
 }
 

@@ -3,6 +3,7 @@ module github.com/programme-lv/backend
 go 1.25.0
 
 require (
+	github.com/KarpelesLab/gowebp v0.1.1
 	github.com/felixge/httpsnoop v1.0.4
 	github.com/go-chi/chi/v5 v5.2.4
 	github.com/go-chi/cors v1.2.2
@@ -25,6 +26,7 @@ require (
 	github.com/stretchr/testify v1.11.1
 	github.com/thoas/go-funk v0.9.3
 	golang.org/x/crypto v0.54.0
+	golang.org/x/image v0.45.0
 	golang.org/x/sync v0.22.0
 )
 
@@ -49,7 +51,7 @@ require (
 	github.com/stretchr/objx v0.5.3 // indirect
 	golang.org/x/sys v0.47.0 // indirect
 	golang.org/x/term v0.45.0 // indirect
-	golang.org/x/text v0.40.0 // indirect
+	golang.org/x/text v0.41.0 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

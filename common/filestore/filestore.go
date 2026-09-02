@@ -14,6 +14,10 @@ import (
 	"time"
 )
 
+func init() {
+	_ = mime.AddExtensionType(".webp", "image/webp")
+}
+
 type Store struct {
 	root string
 }
@@ -41,12 +45,32 @@ func (s *Store) Upload(content []byte, key string, mediaType string) (string, er
 	if err != nil {
 		return "", err
 	}
-	if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
+	dir := filepath.Dir(fullPath)
+	if err := os.MkdirAll(dir, 0755); err != nil {
 		return "", fmt.Errorf("create object directory: %w", err)
 	}
-	if err := os.WriteFile(fullPath, content, 0644); err != nil {
+	tmp, err := os.CreateTemp(dir, ".upload-*")
+	if err != nil {
+		return "", fmt.Errorf("create temp object: %w", err)
+	}
+	tmpName := tmp.Name()
+	committed := false
+	defer func() {
+		if !committed {
+			_ = os.Remove(tmpName)
+		}
+	}()
+	if _, err := tmp.Write(content); err != nil {
+		_ = tmp.Close()
 		return "", fmt.Errorf("write object: %w", err)
 	}
+	if err := tmp.Close(); err != nil {
+		return "", fmt.Errorf("close temp object: %w", err)
+	}
+	if err := os.Rename(tmpName, fullPath); err != nil {
+		return "", fmt.Errorf("commit object: %w", err)
+	}
+	committed = true
 	return "file://" + key, nil
 }
 
