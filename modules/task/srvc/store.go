@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/programme-lv/backend/common/filestore"
+	"github.com/programme-lv/backend/common/img"
 	"github.com/programme-lv/backend/common/srvcerror"
 )
 
@@ -50,7 +51,8 @@ func taskStatementImageStoredKey(objectKey string) string {
 	return strings.TrimPrefix(objectKey, taskStatementImageDir+"/")
 }
 
-// UploadIllustrationImg stores an illustration and returns the stored key without the illustrations/ prefix.
+// UploadIllustrationImg stores an illustration original and warms list, view, and full WebP variants.
+// It returns the stored key without the illustrations/ prefix.
 // The object key is illustrations/<sha256>.<ext>.
 func (ts *taskSrvc) UploadIllustrationImg(ctx context.Context, mimeType string, body []byte) (string, srvcerror.E) {
 	l := ts.logger(ctx)
@@ -64,10 +66,17 @@ func (ts *taskSrvc) UploadIllustrationImg(ctx context.Context, mimeType string, 
 	}
 	ext := exts[0]
 	storedKey := fmt.Sprintf("%s%s", sha2, ext)
-	_, err = ts.publicStore.Upload(body, taskIllustrationObjectKey(storedKey), mimeType)
+	origKey := taskIllustrationObjectKey(storedKey)
+	_, err = ts.publicStore.Upload(body, origKey, mimeType)
 	if err != nil {
 		l.Error("upload illustration", "error", err)
 		return "", srvcerror.InternalServerError()
+	}
+	for _, variant := range img.Variants() {
+		if _, err := img.EnsureVariant(ctx, ts.publicStore, origKey, variant); err != nil {
+			l.Error("warm illustration variant", "variant", string(variant), "error", err)
+			return "", srvcerror.InternalServerError()
+		}
 	}
 	return storedKey, nil
 }
@@ -232,13 +241,26 @@ func (ts *taskSrvc) UpdateIllustrationImg(ctx context.Context, taskId string, im
 	return nil
 }
 
-func (ts *taskSrvc) GetHttpUrlForIllustrImg(ctx context.Context, objectKey string) (string, srvcerror.E) {
-	url, err := filestore.AssetURL(ts.apiPublicBaseURL, taskIllustrationObjectKey(objectKey))
-	if err != nil {
-		ts.logger(ctx).Error("build illustration image URL", "error", err)
-		return "", srvcerror.InternalServerError()
+// GetIllustrationAssetURLs returns public URLs for the list, view, and full WebP variants.
+// objectKey is the stored key without the illustrations/ prefix.
+func (ts *taskSrvc) GetIllustrationAssetURLs(ctx context.Context, objectKey string) (listURL, viewURL, fullURL string, err srvcerror.E) {
+	orig := taskIllustrationObjectKey(objectKey)
+	listURL, e := filestore.AssetURL(ts.apiPublicBaseURL, img.ServeKey(orig, img.VariantList))
+	if e != nil {
+		ts.logger(ctx).Error("build illustration list URL", "error", e)
+		return "", "", "", srvcerror.InternalServerError()
 	}
-	return url, nil
+	viewURL, e = filestore.AssetURL(ts.apiPublicBaseURL, img.ServeKey(orig, img.VariantView))
+	if e != nil {
+		ts.logger(ctx).Error("build illustration view URL", "error", e)
+		return "", "", "", srvcerror.InternalServerError()
+	}
+	fullURL, e = filestore.AssetURL(ts.apiPublicBaseURL, img.ServeKey(orig, img.VariantFull))
+	if e != nil {
+		ts.logger(ctx).Error("build illustration full URL", "error", e)
+		return "", "", "", srvcerror.InternalServerError()
+	}
+	return listURL, viewURL, fullURL, nil
 }
 
 func (ts *taskSrvc) GetHttpUrlForStatementImage(ctx context.Context, objectKey string) (string, srvcerror.E) {

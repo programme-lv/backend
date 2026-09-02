@@ -26,7 +26,7 @@ type TaskService interface {
 	UploadIllustrationImg(ctx context.Context, mimeType string, body []byte) (string, srvcerror.E)
 	DeleteIllustrationImg(ctx context.Context, taskId string) srvcerror.E
 	UpdateIllustrationImg(ctx context.Context, taskId string, img IllustrationImage) srvcerror.E
-	GetHttpUrlForIllustrImg(ctx context.Context, illustrImgObjectKey string) (string, srvcerror.E)
+	GetIllustrationAssetURLs(ctx context.Context, illustrImgObjectKey string) (listURL, viewURL, fullURL string, err srvcerror.E)
 
 	// markdown statement
 	UpdateStatementMd(ctx context.Context, taskId string, statement MarkdownStatement) srvcerror.E

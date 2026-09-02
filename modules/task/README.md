@@ -4,7 +4,7 @@ The task module handles programming task management:
 - creation
 - retrieval
 - statement updates
-- image uploads
+- image uploads (illustration originals; WebP variants are derived, see [docs/illustration.md](../../docs/illustration.md))
 
 Following the modular monolith architecture with these layers:
 - `http/`: HTTP handlers for REST API endpoints
