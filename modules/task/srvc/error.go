@@ -90,3 +90,41 @@ var ErrIllustrationNotFound = srvcerror.New(
 	"illustration_not_found",
 	"uzdevumam nav ilustrācijas",
 ).SetHttpStatusCode(http.StatusNotFound)
+
+var ErrArchiveFileAlreadyExists = srvcerror.New(
+	"archive_file_already_exists",
+	"arhīva fails ar šādu ceļu jau eksistē",
+).SetHttpStatusCode(http.StatusConflict)
+
+func errArchiveFileAlreadyExists(relPath string) srvcerror.E {
+	return ErrArchiveFileAlreadyExists.WithMsg(fmt.Sprintf("arhīva fails '%s' jau eksistē", relPath))
+}
+
+var ErrArchiveFileNotFound = srvcerror.New(
+	"archive_file_not_found",
+	"arhīva fails netika atrasts",
+).SetHttpStatusCode(http.StatusNotFound)
+
+func errArchiveFileNotFound(relPath string) srvcerror.E {
+	return ErrArchiveFileNotFound.WithMsg(fmt.Sprintf("arhīva fails '%s' netika atrasts", relPath))
+}
+
+var ErrInvalidArchivePath = srvcerror.New(
+	"invalid_archive_path",
+	"nederīgs arhīva ceļš",
+).SetHttpStatusCode(http.StatusBadRequest)
+
+var ErrArchiveFileTooLarge = srvcerror.New(
+	"archive_file_too_large",
+	"arhīva fails ir pārāk liels",
+).SetHttpStatusCode(http.StatusBadRequest)
+
+var ErrArchiveTooManyFiles = srvcerror.New(
+	"archive_too_many_files",
+	fmt.Sprintf("pārāk daudz arhīva failu (maksimums %d)", maxArchiveFiles),
+).SetHttpStatusCode(http.StatusBadRequest)
+
+var ErrArchiveTotalTooLarge = srvcerror.New(
+	"archive_total_too_large",
+	fmt.Sprintf("arhīva kopējais izmērs ir pārāk liels (maksimums %d MiB)", maxArchiveTotalBytes>>20),
+).SetHttpStatusCode(http.StatusBadRequest)

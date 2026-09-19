@@ -104,6 +104,11 @@ func (h *taskHttpHandler) RegisterRoutes(r *chi.Mux, jwtKey, adminAPIKey []byte,
 
 			r.Post("/tasks/{taskId}/illustration", h.UploadIllustration)
 			r.Delete("/tasks/{taskId}/illustration", hf.NoReqNoResp(h.DeleteIllustration))
+
+			r.Get("/tasks/{taskId}/archive", h.ListTaskArchive)
+			r.Post("/tasks/{taskId}/archive", h.UploadTaskArchiveFile)
+			r.Get("/tasks/{taskId}/archive/*", h.DownloadTaskArchiveFile)
+			r.Delete("/tasks/{taskId}/archive/*", h.DeleteTaskArchiveFile)
 		})
 	})
 }

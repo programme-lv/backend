@@ -31,6 +31,7 @@ func TestRoundTrip(t *testing.T) {
 		Solutions:  []Solution{{Filename: "full.cpp", Subtasks: []uint32{1}, Score: &score, Data: []byte("int main() {}\n")}},
 		Origin:     &Origin{Olymp: "LIO", Divisions: []string{"junior", "senior"}},
 		Extensions: map[string]any{"site": map[string]any{"key": "value"}},
+		Archive:    map[string][]byte{"source.pdf": []byte("%PDF")},
 	}
 
 	first, err := Write(task)
@@ -42,7 +43,8 @@ func TestRoundTrip(t *testing.T) {
 		t.Fatal(err)
 	}
 	if got.ID != task.ID || len(got.Origin.Divisions) != 2 ||
-		string(got.Examples[0].Notes["lv"]) != "Saskaitīšana.\n" {
+		string(got.Examples[0].Notes["lv"]) != "Saskaitīšana.\n" ||
+		string(got.Archive["source.pdf"]) != "%PDF" {
 		t.Fatalf("unexpected round trip: %#v", got)
 	}
 	second, err := Write(got)

@@ -55,6 +55,9 @@ func (ts *taskSrvc) ImportTaskFromZip(
 	if err := ts.uploadTaskZipAssets(ctx, archive, &task); err != nil {
 		return "", err
 	}
+	if err := ts.uploadTaskZipArchive(ctx, &task, archive.Archive); err != nil {
+		return "", err
+	}
 	if err := ts.repo.CreateTask(ctx, task); err != nil {
 		ts.logger(ctx).Error("create task", "error", err)
 		return "", srvcerror.InternalServerError()
@@ -187,7 +190,13 @@ func (ts *taskSrvc) downloadTaskZipAssets(
 		}
 		archive.Tests = append(archive.Tests, taskzipv1.Test{Input: input, Output: output})
 	}
-	return nil
+	if archive.Archive == nil {
+		archive.Archive = map[string][]byte{}
+	}
+	if err := ts.downloadTaskZipArchive(ctx, task, archive.Archive); err != nil {
+		return err
+	}
+	return ts.exportIllustrationToArchive(ctx, task, archive.Archive)
 }
 
 func mapFromTaskZip(t taskzipv1.Task, overrideID string) (Task, error) {

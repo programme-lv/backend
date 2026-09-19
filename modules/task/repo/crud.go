@@ -189,6 +189,16 @@ func (r *taskPgRepo) CreateTask(ctx context.Context, t srvc.Task) error {
 		}
 	}
 
+	for _, file := range t.Archive {
+		_, err = tx.Exec(ctx, `
+			INSERT INTO task_archive_files (task_short_id, path, object_key, filesize_bytes)
+			VALUES ($1, $2, $3, $4)
+		`, t.ShortId, file.Path, file.ObjectKey, file.SzInBytes)
+		if err != nil {
+			return fmt.Errorf("insert archive file: %w", err)
+		}
+	}
+
 	// Insert solutions.
 	for _, sol := range t.Solutions {
 		subtasksBytes, err := json.Marshal(sol.Subtasks)

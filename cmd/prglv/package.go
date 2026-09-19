@@ -14,13 +14,13 @@ import (
 )
 
 // packageDirNames lists top-level directories that never belong to the stored
-// task. The backend ignores archive/ and testspec/, .taskzip/ holds locally
+// task. The backend ignores testspec/, .taskzip/ holds locally
 // generated caches, and .git/ plus OS metadata fail its ZIP path validation.
+// archive/ is packaged; the backend stores those leftover files.
 // Skipping them keeps uploads small and avoids predictable server errors.
 var packageDirNames = map[string]bool{
 	".git":     true,
 	".taskzip": true,
-	"archive":  true,
 	"testspec": true,
 	"target":   true,
 	"__MACOSX": true,

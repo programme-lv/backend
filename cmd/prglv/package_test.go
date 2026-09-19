@@ -86,7 +86,13 @@ func TestReadTaskPackageFromDirSkipsNonTaskPaths(t *testing.T) {
 			t.Errorf("archive is missing %s", want)
 		}
 	}
+	if !names["archive/old.txt"] {
+		t.Error("archive is missing archive/old.txt")
+	}
 	for name := range names {
+		if name == "archive/old.txt" {
+			continue
+		}
 		if _, skipped := noise[name]; skipped {
 			t.Errorf("archive contains skipped path %s", name)
 		}
