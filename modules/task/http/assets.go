@@ -16,8 +16,19 @@ import (
 
 // ServePublicAsset serves a file from the public asset store.
 // Allowlisted illustration variants are generated on first request and cached.
+func publicAssetAllowed(key string) bool {
+	return strings.HasPrefix(key, "illustrations/") ||
+		strings.HasPrefix(key, "md-images/") ||
+		strings.HasPrefix(key, "task-md-images/") ||
+		strings.HasPrefix(key, "task/")
+}
+
 func (h *taskHttpHandler) ServePublicAsset(w http.ResponseWriter, r *http.Request) {
 	key := chi.URLParam(r, "*")
+	if !publicAssetAllowed(key) {
+		writeNotFound(w, "asset not found")
+		return
+	}
 	if orig, variant, ok := img.ParseDerivedKey(key); ok {
 		serveKey, err := img.EnsureVariant(r.Context(), h.publicAssetStore, orig, variant)
 		if err != nil {

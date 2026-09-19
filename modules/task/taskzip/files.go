@@ -32,7 +32,16 @@ func consumeFiles(task *Task, files map[string][]byte) error {
 				return err
 			}
 			task.TestGroups = groups
-		case strings.HasPrefix(name, "archive/"), strings.HasPrefix(name, "testspec/"):
+		case strings.HasPrefix(name, "testspec/"):
+		case strings.HasPrefix(name, "archive/"):
+			rel := strings.TrimPrefix(name, "archive/")
+			if rel == "" {
+				continue
+			}
+			if task.Archive == nil {
+				task.Archive = map[string][]byte{}
+			}
+			task.Archive[rel] = data
 		case strings.HasPrefix(name, "attached/"):
 			return ErrAttached
 		case testRE.MatchString(name):
@@ -268,6 +277,9 @@ func taskFiles(task Task, meta []byte) (map[string][]byte, error) {
 	}
 	if len(task.TestGroups) != 0 {
 		files["tgroups.txt"] = renderGroups(task.TestGroups)
+	}
+	for rel, data := range task.Archive {
+		files[path.Join("archive", rel)] = data
 	}
 	return files, nil
 }

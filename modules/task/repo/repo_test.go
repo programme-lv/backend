@@ -68,6 +68,7 @@ func TestTaskPgRepo(t *testing.T) {
 	assert.Contains(t, retrievedTask.Checker, "#include", "Checker mismatch")
 	assert.Equal(t, "", retrievedTask.Interactor, "Interactor mismatch")
 	assert.Equal(t, "some markdown content", retrievedTask.Readme, "Readme mismatch")
+	assert.False(t, retrievedTask.CreatedAt.IsZero(), "CreatedAt should be set on insert")
 
 	// Verify nested structures
 	assert.Len(t, retrievedTask.OriginNotes, 1, "OriginNotes length mismatch")

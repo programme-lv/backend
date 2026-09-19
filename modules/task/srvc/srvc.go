@@ -41,6 +41,13 @@ type TaskService interface {
 	ListTaskPreviews(ctx context.Context) ([]TaskPreview, srvcerror.E)
 	ListTaskFilters(ctx context.Context) (FilterTree, srvcerror.E)
 
+	// leftover archive/ files
+	ListArchiveFiles(ctx context.Context, taskId string) ([]ArchiveFile, srvcerror.E)
+	DownloadArchiveFile(ctx context.Context, taskId, relPath string) ([]byte, string, srvcerror.E)
+	UploadArchiveFile(ctx context.Context, taskId, relPath string, body []byte) srvcerror.E
+	DeleteArchiveFile(ctx context.Context, taskId, relPath string) srvcerror.E
+	MigrateLegacyArchiveZips(ctx context.Context)
+
 	// taskzip archive format
 	ImportTaskFromZip(ctx context.Context, zipBytes []byte, overrideId string) (string, srvcerror.E)
 	ExportTaskAsZip(ctx context.Context, taskId string) ([]byte, srvcerror.E)
@@ -71,6 +78,16 @@ type TaskPgRepo interface {
 	AddStatementImg(ctx context.Context, taskId string, img StatementImage) error
 	DeleteStatementImg(ctx context.Context, taskId string, filename string) error
 	UpdateIllustrationImg(ctx context.Context, taskId string, img IllustrationImage) error
+	ListArchiveFiles(ctx context.Context, taskId string) ([]ArchiveFile, error)
+	AddArchiveFile(ctx context.Context, taskId string, file ArchiveFile) error
+	DeleteArchiveFile(ctx context.Context, taskId, relPath string) error
+	ListLegacyArchiveZips(ctx context.Context) ([]LegacyArchiveZip, error)
+	ClearArchiveObjectKey(ctx context.Context, taskId string) error
+}
+
+type LegacyArchiveZip struct {
+	TaskID    string
+	ObjectKey string
 }
 
 type taskSrvc struct {

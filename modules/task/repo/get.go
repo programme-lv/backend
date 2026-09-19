@@ -88,7 +88,7 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 	var divisionsBytes []byte
 	var problemTagsBytes []byte
 	err := r.pool.QueryRow(ctx, `
-		SELECT short_id, full_name_dict, orig_lang, readme, illustr_img_object_key, width_px, height_px, filesize_bytes, mem_lim_megabytes, cpu_time_lim_secs, origin_olympiad, COALESCE(origin_org,''), COALESCE(origin_year,''), COALESCE(olymp_stage,''), COALESCE(origin_divisions,'[]'::jsonb), COALESCE(authors,'[]'::jsonb), COALESCE(problem_tags,'[]'::jsonb), COALESCE(archive_object_key,''), difficulty_rating, checker, interactor
+		SELECT short_id, full_name_dict, orig_lang, readme, illustr_img_object_key, width_px, height_px, filesize_bytes, mem_lim_megabytes, cpu_time_lim_secs, origin_olympiad, COALESCE(origin_org,''), COALESCE(origin_year,''), COALESCE(olymp_stage,''), COALESCE(origin_divisions,'[]'::jsonb), COALESCE(authors,'[]'::jsonb), COALESCE(problem_tags,'[]'::jsonb), COALESCE(archive_object_key,''), difficulty_rating, checker, interactor, created_at
 		FROM tasks
 		WHERE short_id = $1
 	`, shortId).Scan(
@@ -113,6 +113,7 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 		&t.DifficultyRating,
 		&t.Checker,
 		&t.Interactor,
+		&t.CreatedAt,
 	)
 	if err == nil && len(fullNameBytes) > 0 {
 		var nameMap map[string]string
@@ -207,6 +208,28 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 	}
 	taskImgsRows.Close()
 	t.MdImages = taskImgs
+
+	archiveRows, err := r.pool.Query(ctx, `
+		SELECT path, object_key, filesize_bytes
+		FROM task_archive_files
+		WHERE task_short_id = $1
+		ORDER BY path
+	`, shortId)
+	if err != nil {
+		return t, fmt.Errorf("load archive files: %w", err)
+	}
+	for archiveRows.Next() {
+		var file srvc.ArchiveFile
+		if err := archiveRows.Scan(&file.Path, &file.ObjectKey, &file.SzInBytes); err != nil {
+			archiveRows.Close()
+			return t, fmt.Errorf("scan archive file: %w", err)
+		}
+		t.Archive = append(t.Archive, file)
+	}
+	archiveRows.Close()
+	if err := archiveRows.Err(); err != nil {
+		return t, fmt.Errorf("iterate archive files: %w", err)
+	}
 
 	// Load Visible Input Subtasks and their tests.
 	visRows, err := r.pool.Query(ctx, `

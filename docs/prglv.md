@@ -57,9 +57,13 @@ The archive may be flat or wrapped in a single directory named after the task
 ID; both are accepted. The following top-level entries are never packaged
 because the backend ignores them or rejects them outright:
 
-- `archive/`, `testspec/` — accepted but ignored during import;
+- `testspec/` — accepted but ignored during import;
 - `.taskzip/` — locally generated caches;
 - `.git/`, `target/`, `__MACOSX/`, and `.DS_Store` — repository or OS noise.
+
+`archive/` is packaged. The backend stores those leftover files individually
+and shows them on the admin Arhīvs tab. Official `tests/` stay out of `archive/`.
+Import rejects the zip if `archive/` exceeds 256 files, 64 MiB per file, or 128 MiB total.
 
 Everything else is included, so a directory that already holds `task.toml`,
 `tests/`, `statement/`, and `solutions/` at its root uploads as-is.

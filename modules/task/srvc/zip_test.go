@@ -89,6 +89,6 @@ func assertIgnoredDirectoriesOmitted(t *testing.T, data []byte) {
 	reader, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
 	require.NoError(t, err)
 	for _, file := range reader.File {
-		require.NotRegexp(t, `^(archive|testspec)/`, file.Name)
+		require.NotRegexp(t, `^testspec/`, file.Name)
 	}
 }

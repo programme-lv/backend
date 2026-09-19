@@ -24,6 +24,8 @@ type Task struct {
 	Origin          *Origin
 	Metadata        *Metadata
 	Extensions      map[string]any
+	// Archive is leftover files stored under archive/ (relative path → bytes).
+	Archive map[string][]byte
 }
 
 type Testing struct {

@@ -1,6 +1,8 @@
 package srvc
 
 import (
+	"time"
+
 	"github.com/thoas/go-funk"
 )
 
@@ -26,6 +28,9 @@ type TaskPreview struct {
 type Task struct {
 	// url slug friendly identifier
 	ShortId string
+
+	// first insert time; set by the database
+	CreatedAt time.Time
 
 	// full name of the task in multiple languages (key: ISO 639 code)
 	FullName map[string]string
@@ -73,10 +78,19 @@ type Task struct {
 	// metadata: problem tags (free-form short labels)
 	ProblemTags []string
 
-	// original full archive object key (optional)
+	// original full archive object key (optional, leftover zips)
 	OgFilesZipObjectKey string
 
+	// leftover files under TaskZip archive/
+	Archive []ArchiveFile
+
 	Solutions []Solution
+}
+
+type ArchiveFile struct {
+	Path      string
+	ObjectKey string
+	SzInBytes int
 }
 
 func (t *Task) CpuMillis() int {

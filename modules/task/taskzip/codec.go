@@ -218,7 +218,12 @@ func rootRelativePath(name string, flat bool) string {
 }
 
 func ignoredPath(name string) bool {
-	return strings.HasPrefix(name, "archive/") || strings.HasPrefix(name, "testspec/")
+	return strings.HasPrefix(name, "testspec/")
+}
+
+// SafeRelPath rejects zip-slip and leftover OS/git paths.
+func SafeRelPath(name string) (string, error) {
+	return safePath(name)
 }
 
 func safePath(name string) (string, error) {

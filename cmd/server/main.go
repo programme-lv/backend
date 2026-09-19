@@ -99,6 +99,7 @@ func main() {
 		tasksrvc.WithPublicAPIBaseURL(apiPublicBaseURL),
 		tasksrvc.WithTestfileDownloadSigningKey(testfileSigningKey),
 	)
+	taskSrvc.MigrateLegacyArchiveZips(context.Background())
 
 	// Initialize HTTP handlers
 	submHttpHandler := newSubmHttpHandler(userSrvc, taskSrvc, execSrvc)

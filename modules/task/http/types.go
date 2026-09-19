@@ -2,6 +2,7 @@ package http
 
 import (
 	"context"
+	"time"
 
 	"github.com/programme-lv/backend/modules/task/srvc"
 )
@@ -121,6 +122,7 @@ type Task struct {
 	VisibleInputSubtasks []VisInputSubtask  `json:"visible_input_subtasks"`
 	StatementSubtasks    []SubtaskOverview  `json:"statement_subtasks"`
 	TestingType          string             `json:"testing_type"`
+	CreatedAt            string             `json:"created_at"`
 }
 
 // SubtaskOverview is a scoring group shown in the statement.
@@ -251,6 +253,7 @@ func (h *taskHttpHandler) mapTaskResponse(task srvc.Task) Task {
 		VisibleInputSubtasks: visInputSubtasks,
 		StatementSubtasks:    subtasks,
 		TestingType:          testingType,
+		CreatedAt:            task.CreatedAt.Format(time.RFC3339),
 	}
 	return response
 }
