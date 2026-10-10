@@ -147,6 +147,36 @@ func MustGetCookieSecureFromEnv() bool {
 	return secure
 }
 
+// GetListenAddrFromEnv returns the HTTP listen address from LISTEN_ADDR.
+// Unset defaults to ":8080".
+func GetListenAddrFromEnv() string {
+	if addr := os.Getenv("LISTEN_ADDR"); addr != "" {
+		return addr
+	}
+	return ":8080"
+}
+
+// GetCorsAllowedOriginsFromEnv returns the allowed CORS origins from
+// CORS_ALLOWED_ORIGINS (comma-separated). Unset defaults to the known
+// first-party origins.
+func GetCorsAllowedOriginsFromEnv() []string {
+	const defaultOrigins = "http://localhost:3000,https://programme.lv,https://www.programme.lv"
+
+	raw := strings.TrimSpace(os.Getenv("CORS_ALLOWED_ORIGINS"))
+	if raw == "" {
+		raw = defaultOrigins
+	}
+
+	parts := strings.Split(raw, ",")
+	origins := make([]string, 0, len(parts))
+	for _, part := range parts {
+		if origin := strings.TrimSpace(part); origin != "" {
+			origins = append(origins, origin)
+		}
+	}
+	return origins
+}
+
 func MustGetPgxPoolFromEnv() *pgxpool.Pool {
 	pgxPool, err := GetPgxPoolFromEnv()
 	if err != nil {
