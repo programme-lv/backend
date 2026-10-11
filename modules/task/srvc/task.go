@@ -221,8 +221,9 @@ func (t *Task) FindTestgroupSubtasks(testGroupId int) []int {
 }
 
 type OriginNote struct {
-	Lang string
-	Info string
+	Lang      string
+	Info      string
+	InfoShort string
 }
 
 // DefaultFullName prefers OrigLang, then lv, then any remaining name.
