@@ -53,6 +53,12 @@ POSTGRES_PW=...
 COOKIE_DOMAIN=...
 COOKIE_SECURE=false
 
+# HTTP bind address. Unset: :8080.
+# LISTEN_ADDR=:8081
+# Comma-separated CORS allowlist; replaces the default first-party origins.
+# Unset/blank: http://localhost:3000,https://programme.lv,https://www.programme.lv
+# CORS_ALLOWED_ORIGINS=https://<development-hostname>
+
 # debug, info, warn, error. Unset: info with a .env file, warn without.
 # LOG_LEVEL=info
 

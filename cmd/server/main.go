@@ -28,15 +28,13 @@ import (
 	"github.com/schollz/progressbar/v3"
 )
 
-const (
-	address = ":8080"
-)
-
 func main() {
 	setupLogger()
 
 	listenResults := flag.Bool("listen-sqs", true, "Whether to listen for NATS execution results")
 	flag.Parse()
+
+	address := conf.GetListenAddrFromEnv()
 
 	jwtKey := conf.MustGetJwtKeyFromEnv()
 	adminAPIKey := conf.MustGetAdminAPIKeyFromEnv()

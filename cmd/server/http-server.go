@@ -5,6 +5,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
+	"github.com/programme-lv/backend/conf"
 	"github.com/programme-lv/backend/modules/user/auth"
 )
 
@@ -71,7 +72,7 @@ func newHTTPServer(
 
 func corsHandler() func(http.Handler) http.Handler {
 	return cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:3000", "https://programme.lv", "https://www.programme.lv"},
+		AllowedOrigins:   conf.GetCorsAllowedOriginsFromEnv(),
 		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"*"},
 		ExposedHeaders:   []string{"Link"},

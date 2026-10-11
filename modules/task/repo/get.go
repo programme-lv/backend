@@ -151,7 +151,7 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 
 	// Load OriginNotes.
 	originRows, err := r.pool.Query(ctx, `
-		SELECT lang, info 
+		SELECT lang, info, COALESCE(info_short, '')
 		FROM task_origin_notes 
 		WHERE task_short_id = $1
 	`, shortId)
@@ -160,7 +160,7 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 	}
 	for originRows.Next() {
 		var note srvc.OriginNote
-		if err := originRows.Scan(&note.Lang, &note.Info); err != nil {
+		if err := originRows.Scan(&note.Lang, &note.Info, &note.InfoShort); err != nil {
 			originRows.Close()
 			return t, fmt.Errorf("load origin note: %w", err)
 		}

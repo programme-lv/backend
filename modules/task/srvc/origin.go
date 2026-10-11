@@ -7,7 +7,7 @@ import (
 )
 
 func applyOriginNotes(task *Task) {
-	long, _, ok := lioOriginNotes(
+	long, short, ok := lioOriginNotes(
 		task.OriginOlympiad, task.OriginYear, task.OlympStage, task.OriginDivisions,
 	)
 	if !ok {
@@ -19,7 +19,7 @@ func applyOriginNotes(task *Task) {
 			notes = append(notes, note)
 		}
 	}
-	task.OriginNotes = append(notes, OriginNote{Lang: "lv", Info: long})
+	task.OriginNotes = append(notes, OriginNote{Lang: "lv", Info: long, InfoShort: short})
 }
 
 func applyPreviewOriginNotes(preview *TaskPreview) {

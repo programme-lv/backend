@@ -119,6 +119,7 @@ type Task struct {
 	StatementImages      []StatementImage   `json:"statement_images"`
 	Examples             []Example          `json:"examples"`
 	OriginNotes          map[string]string  `json:"origin_notes"`
+	OriginNotesShort     map[string]string  `json:"origin_notes_short"`
 	VisibleInputSubtasks []VisInputSubtask  `json:"visible_input_subtasks"`
 	StatementSubtasks    []SubtaskOverview  `json:"statement_subtasks"`
 	TestingType          string             `json:"testing_type"`
@@ -182,8 +183,10 @@ func (h *taskHttpHandler) mapTaskResponse(task srvc.Task) Task {
 
 	originNotes := task.OriginNotes
 	originNotesAsAMap := make(map[string]string)
+	originNotesShort := make(map[string]string)
 	for _, originNote := range originNotes {
 		originNotesAsAMap[originNote.Lang] = originNote.Info
+		originNotesShort[originNote.Lang] = originNote.InfoShort
 	}
 
 	mdStatements := task.MdStatements
@@ -250,6 +253,7 @@ func (h *taskHttpHandler) mapTaskResponse(task srvc.Task) Task {
 		StatementImages:      h.mapTaskStatementImages(task.MdImages),
 		Examples:             mapTaskExamples(task.Examples),
 		OriginNotes:          originNotesAsAMap,
+		OriginNotesShort:     originNotesShort,
 		VisibleInputSubtasks: visInputSubtasks,
 		StatementSubtasks:    subtasks,
 		TestingType:          testingType,
