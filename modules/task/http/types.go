@@ -53,10 +53,11 @@ type TaskFilterDivision struct {
 	Count int    `json:"count"`
 }
 
-// Example is a sample input/output pair shown in the task statement.
+// Example is a sample input/output pair or an interactive trace shown in the task statement.
 type Example struct {
 	Input  string `json:"input"`
 	Output string `json:"output"`
+	Trace  string `json:"trace,omitempty"`
 	MdNote string `json:"md_note,omitempty"`
 }
 
@@ -168,6 +169,7 @@ func mapTaskExamples(examples []srvc.Example) []Example {
 		response[i] = Example{
 			Input:  e.Input,
 			Output: e.Output,
+			Trace:  e.Trace,
 			MdNote: mdNote,
 		}
 	}

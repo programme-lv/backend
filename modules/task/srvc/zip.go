@@ -66,7 +66,7 @@ func (ts *taskSrvc) ImportTaskFromZip(
 }
 
 func taskZipReadError(err error) srvcerror.E {
-	if errors.Is(err, taskzipv1.ErrInteractive) || errors.Is(err, taskzipv1.ErrAttached) {
+	if errors.Is(err, taskzipv1.ErrAttached) {
 		return errUnsupportedTaskZip(err.Error())
 	}
 	return errInvalidTaskZip(err.Error())
@@ -251,10 +251,12 @@ func mapTaskZipContent(t taskzipv1.Task, res *Task) {
 			note[lang] = string(data)
 		}
 		res.Examples = append(res.Examples, Example{
-			Input: string(example.Input), Output: string(example.Output), MdNote: note,
+			Input: string(example.Input), Output: string(example.Output),
+			Trace: string(example.Trace), MdNote: note,
 		})
 	}
 	res.Checker = string(t.Checker)
+	res.Interactor = string(t.Interactor)
 	for _, solution := range t.Solutions {
 		res.Solutions = append(res.Solutions, Solution{
 			Fname: solution.Filename, Content: string(solution.Data),
@@ -354,6 +356,9 @@ func mapToTaskZip(t Task) (taskzipv1.Task, error) {
 	if t.Checker != "" {
 		res.Checker = []byte(t.Checker)
 	}
+	if t.Interactor != "" {
+		res.Interactor = []byte(t.Interactor)
+	}
 	mapServiceOrigin(t, &res)
 	mapServiceContent(t, &res)
 	if err := mapServiceScoring(t, &res); err != nil {
@@ -393,7 +398,8 @@ func mapServiceContent(t Task, res *taskzipv1.Task) {
 			notes[lang] = []byte(note)
 		}
 		res.Examples = append(res.Examples, taskzipv1.Example{
-			Input: []byte(example.Input), Output: []byte(example.Output), Notes: notes,
+			Input: []byte(example.Input), Output: []byte(example.Output),
+			Trace: []byte(example.Trace), Notes: notes,
 		})
 	}
 	for _, solution := range t.Solutions {

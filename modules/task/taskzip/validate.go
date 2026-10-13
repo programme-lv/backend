@@ -18,9 +18,6 @@ var (
 )
 
 func validate(task *Task) error {
-	if task.Testing.Type == "interactor" {
-		return ErrInteractive
-	}
 	if task.Version != 1 {
 		return errors.New("taskzip must be 1")
 	}
@@ -50,15 +47,23 @@ func validateMetadata(task *Task) error {
 	}
 	switch task.Testing.Type {
 	case "simple":
-		if task.Checker != nil {
-			return errors.New("checker.cpp present for simple task")
+		if task.Checker != nil || task.Interactor != nil {
+			return errors.New("checker/interactor present for simple task")
 		}
 	case "checker":
 		if task.Checker == nil {
 			return errors.New("checker.cpp missing")
 		}
+		if task.Interactor != nil {
+			return errors.New("interactor.cpp present for checker task")
+		}
 	case "interactor":
-		return ErrInteractive
+		if task.Interactor == nil {
+			return errors.New("interactor.cpp missing")
+		}
+		if task.Checker != nil {
+			return errors.New("checker.cpp present for interactor task")
+		}
 	default:
 		return fmt.Errorf("unknown testing type %q", task.Testing.Type)
 	}
@@ -169,22 +174,43 @@ func validateContent(task *Task) error {
 			return err
 		}
 	}
-	return validateExamples(task.Examples)
+	return validateExamples(task.Testing.Type, task.Examples)
 }
 
-func validateExamples(examples []Example) error {
+func validateExamples(taskType string, examples []Example) error {
 	if len(examples) > 20 {
 		return errors.New("too many examples")
 	}
 	for i, example := range examples {
-		if len(example.Input) == 0 || len(example.Output) == 0 {
-			return fmt.Errorf("example %03d needs non-empty input and output", i+1)
-		}
-		if err := checkText(fmt.Sprintf("examples/%03di.txt", i+1), example.Input, true); err != nil {
-			return err
-		}
-		if err := checkText(fmt.Sprintf("examples/%03do.txt", i+1), example.Output, false); err != nil {
-			return err
+		if taskType == "interactor" {
+			if len(example.Trace) == 0 {
+				return fmt.Errorf("example %03d needs a trace", i+1)
+			}
+			if len(example.Input) != 0 || len(example.Output) != 0 {
+				return fmt.Errorf("example %03d: trace replaces input and output", i+1)
+			}
+			if !hasTraceDelimiter(example.Trace) {
+				return fmt.Errorf("example %03d trace needs --- delimiter", i+1)
+			}
+			if len(example.Trace) > 64<<10 {
+				return fmt.Errorf("example %03d trace is too long", i+1)
+			}
+			if err := checkText(fmt.Sprintf("examples/%03d.txt", i+1), example.Trace, false); err != nil {
+				return err
+			}
+		} else {
+			if len(example.Input) == 0 || len(example.Output) == 0 {
+				return fmt.Errorf("example %03d needs non-empty input and output", i+1)
+			}
+			if len(example.Trace) != 0 {
+				return fmt.Errorf("example %03d has a trace for a non-interactive task", i+1)
+			}
+			if err := checkText(fmt.Sprintf("examples/%03di.txt", i+1), example.Input, true); err != nil {
+				return err
+			}
+			if err := checkText(fmt.Sprintf("examples/%03do.txt", i+1), example.Output, false); err != nil {
+				return err
+			}
 		}
 		for lang, note := range example.Notes {
 			if lang != "" && !langRE.MatchString(lang) {
@@ -196,6 +222,15 @@ func validateExamples(examples []Example) error {
 		}
 	}
 	return nil
+}
+
+func hasTraceDelimiter(trace []byte) bool {
+	for _, line := range strings.Split(string(trace), "\n") {
+		if line == "---" {
+			return true
+		}
+	}
+	return false
 }
 
 func validateScoring(task *Task) error {

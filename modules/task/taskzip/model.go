@@ -3,8 +3,7 @@ package taskzip
 import "errors"
 
 var (
-	ErrInteractive = errors.New("interactive TaskZip is unsupported")
-	ErrAttached    = errors.New("attached TaskZip files are unsupported")
+	ErrAttached = errors.New("attached TaskZip files are unsupported")
 )
 
 type Task struct {
@@ -18,6 +17,7 @@ type Task struct {
 	Examples        []Example
 	Tests           []Test
 	Checker         []byte
+	Interactor      []byte
 	Solutions       []Solution
 	Subtasks        []Subtask
 	TestGroups      []TestGroup
@@ -42,6 +42,7 @@ type Test struct {
 type Example struct {
 	Input  []byte
 	Output []byte
+	Trace  []byte
 	Notes  map[string][]byte
 }
 

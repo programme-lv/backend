@@ -25,7 +25,7 @@ func consumeFiles(task *Task, files map[string][]byte) error {
 		case name == "checker.cpp":
 			task.Checker = data
 		case name == "interactor.cpp":
-			return ErrInteractive
+			task.Interactor = data
 		case name == "tgroups.txt":
 			groups, err := parseGroups(data)
 			if err != nil {
@@ -86,6 +86,16 @@ func consumeFiles(task *Task, files map[string][]byte) error {
 				return fmt.Errorf("%s: %w", name, err)
 			}
 			examples[n].Notes = notes
+		case traceRE.MatchString(name):
+			m := traceRE.FindStringSubmatch(name)
+			n, err := number(m)
+			if err != nil {
+				return fmt.Errorf("%s: %w", name, err)
+			}
+			if examples[n] == nil {
+				examples[n] = &Example{}
+			}
+			examples[n].Trace = data
 		case strings.HasPrefix(name, "statement/"):
 			base := strings.TrimPrefix(name, "statement/")
 			if strings.Contains(base, "/") {
@@ -259,8 +269,12 @@ func taskFiles(task Task, meta []byte) (map[string][]byte, error) {
 		files[fmt.Sprintf("tests/%03do.txt", i+1)] = test.Output
 	}
 	for i, example := range task.Examples {
-		files[fmt.Sprintf("examples/%03di.txt", i+1)] = example.Input
-		files[fmt.Sprintf("examples/%03do.txt", i+1)] = example.Output
+		if len(example.Trace) != 0 {
+			files[fmt.Sprintf("examples/%03d.txt", i+1)] = example.Trace
+		} else {
+			files[fmt.Sprintf("examples/%03di.txt", i+1)] = example.Input
+			files[fmt.Sprintf("examples/%03do.txt", i+1)] = example.Output
+		}
 		note, err := renderNotes(example.Notes)
 		if err != nil {
 			return nil, fmt.Errorf("example %03d: %w", i+1, err)
@@ -271,6 +285,9 @@ func taskFiles(task Task, meta []byte) (map[string][]byte, error) {
 	}
 	if task.Checker != nil {
 		files["checker.cpp"] = task.Checker
+	}
+	if task.Interactor != nil {
+		files["interactor.cpp"] = task.Interactor
 	}
 	for _, solution := range task.Solutions {
 		files[path.Join("solutions", solution.Filename)] = solution.Data

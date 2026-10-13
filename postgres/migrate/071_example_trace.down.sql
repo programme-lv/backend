@@ -1,0 +1,2 @@
+ALTER TABLE task_examples
+DROP COLUMN IF EXISTS trace;
