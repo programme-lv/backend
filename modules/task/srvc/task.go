@@ -138,6 +138,7 @@ func (t *Task) DefaultFullName() string {
 type Example struct {
 	Input  string
 	Output string
+	Trace  string
 	MdNote map[string]string
 }
 

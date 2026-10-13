@@ -21,6 +21,7 @@ var (
 	langRE    = regexp.MustCompile(`^[a-z]{2,3}(?:-[a-z0-9]{2,8})*$`)
 	testRE    = regexp.MustCompile(`^tests/(\d{3})([io])\.txt$`)
 	exampleRE = regexp.MustCompile(`^examples/(\d{3})([io])\.txt$`)
+	traceRE   = regexp.MustCompile(`^examples/(\d{3})\.txt$`)
 	noteRE    = regexp.MustCompile(`^examples/(\d{3})\.md$`)
 	groupRE   = regexp.MustCompile(`^(\d{2}): (\d{3})-(\d{3}) (\d+)p( \*)?$`)
 )
@@ -97,9 +98,6 @@ func Read(data []byte) (Task, error) {
 	}
 	if len(meta.Attached) != 0 || hasPrefix(files, "attached/") {
 		return Task{}, ErrAttached
-	}
-	if meta.Testing.Type == "interactor" {
-		return Task{}, ErrInteractive
 	}
 	task := fromTOML(meta)
 	if err := consumeFiles(&task, files); err != nil {
@@ -306,6 +304,8 @@ func maxFileSize(name string) uint64 {
 		return 512 << 10
 	case name == "checker.cpp", name == "interactor.cpp":
 		return 2 << 20
+	case traceRE.MatchString(name):
+		return 64 << 10
 	case strings.HasPrefix(name, "tests/"):
 		return 256 << 20
 	case strings.HasPrefix(name, "examples/"):

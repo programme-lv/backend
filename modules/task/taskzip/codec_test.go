@@ -101,16 +101,61 @@ func TestWrapperAndIgnoredDirectories(t *testing.T) {
 }
 
 func TestClassifiedUnsupportedFeatures(t *testing.T) {
-	task := minimalTask()
-	task.Testing.Type = "interactor"
-	if _, err := Write(task); !errors.Is(err, ErrInteractive) {
-		t.Fatalf("got %v", err)
-	}
-
 	files := archiveFiles(t, minimalTask())
 	files["attached/grader.h"] = []byte("x")
 	if _, err := Read(zipForTest(t, files)); !errors.Is(err, ErrAttached) {
 		t.Fatalf("got %v", err)
+	}
+}
+
+func TestInteractiveRoundTrip(t *testing.T) {
+	task := minimalTask()
+	task.Testing.Type = "interactor"
+	task.Interactor = []byte("int main() {}\n")
+	task.Tests = []Test{{Input: []byte("10\n"), Output: []byte{}}}
+	trace := []byte("10\n---\n? 5\n---\nhigher\n---\n! 7\n")
+	task.Examples = []Example{{
+		Trace: trace,
+		Notes: map[string][]byte{"lv": []byte("Piemērs.\n")},
+	}}
+
+	data, err := Write(task)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := Read(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got.Interactor) != "int main() {}\n" ||
+		string(got.Examples[0].Trace) != string(trace) ||
+		got.Examples[0].Input != nil || got.Examples[0].Output != nil ||
+		len(got.Tests) != 1 || len(got.Tests[0].Output) != 0 {
+		t.Fatalf("unexpected round trip: %#v", got)
+	}
+}
+
+func TestRejectsMismatchedExampleForms(t *testing.T) {
+	task := minimalTask()
+	task.Testing.Type = "interactor"
+	task.Interactor = []byte("int main() {}\n")
+	task.Examples = []Example{{Input: []byte("1\n"), Output: []byte("1\n")}}
+	if _, err := Write(task); err == nil {
+		t.Fatal("accepted input/output example for interactive task")
+	}
+
+	task = minimalTask()
+	task.Examples = []Example{{Trace: []byte("1\n---\n2\n")}}
+	if _, err := Write(task); err == nil {
+		t.Fatal("accepted trace example for simple task")
+	}
+
+	task = minimalTask()
+	task.Testing.Type = "interactor"
+	task.Interactor = []byte("int main() {}\n")
+	task.Examples = []Example{{Trace: []byte("1\n2\n")}}
+	if _, err := Write(task); err == nil {
+		t.Fatal("accepted trace without delimiter")
 	}
 }
 

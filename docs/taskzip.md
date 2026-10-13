@@ -7,9 +7,14 @@ The backend accepts flat ZIP files and ZIP files with one top-level directory
 whose name matches the task ID.
 Core uncompressed content is limited to 512 MiB to keep the in-memory upload
 path bounded.
-It imports simple and checker tasks.
-Interactive tasks are rejected because submission evaluation does not support
-them yet.
+It imports simple, checker, and interactive tasks.
+Interactive packages provide `interactor.cpp`; every official test needs an
+input and an answer file, but interactive answers may be empty when the
+interactor ignores `ans`.
+Interactive examples are interaction traces stored as `examples/NNN.txt`
+(alternating message blocks separated by lines containing exactly `---`),
+with optional translated notes in `examples/NNN.md`; simple and checker tasks
+keep input/output examples.
 Contestant attachments are also rejected because the backend has no storage or
 delivery model for them.
 Origin divisions are preserved as an ordered array during import and export.
