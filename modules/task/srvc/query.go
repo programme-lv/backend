@@ -2,7 +2,6 @@ package srvc
 
 import (
 	"context"
-	_ "embed"
 
 	"github.com/programme-lv/backend/common/srvcerror"
 )
@@ -58,9 +57,6 @@ func (ts *taskSrvc) ListTaskFilters(ctx context.Context) (FilterTree, srvcerror.
 	return BuildFilterTree(rows), nil
 }
 
-//go:embed embedded/it-task-note.md
-var itTaskNote string
-
 func (ts *taskSrvc) GetTask(ctx context.Context, id string) (Task, srvcerror.E) {
 	exists, err := ts.repo.Exists(ctx, id)
 	if err != nil {
@@ -76,13 +72,6 @@ func (ts *taskSrvc) GetTask(ctx context.Context, id string) (Task, srvcerror.E) 
 		return Task{}, srvcerror.InternalServerError()
 	}
 	applyOriginNotes(&task)
-	if task.Interactor != "" {
-		for i := range task.MdStatements {
-			if task.MdStatements[i].Notes == "" {
-				task.MdStatements[i].Notes = itTaskNote
-			}
-		}
-	}
 	return task, nil
 }
 
