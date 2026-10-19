@@ -278,7 +278,7 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 
 	// Load Examples.
 	exRows, err := r.pool.Query(ctx, `
-		SELECT input, output, md_note 
+		SELECT COALESCE(input, ''), COALESCE(output, ''), md_note, COALESCE(trace, '')
 		FROM task_examples 
 		WHERE task_short_id = $1
 	`, shortId)
@@ -289,7 +289,7 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 	for exRows.Next() {
 		var ex srvc.Example
 		var noteBytes []byte
-		if err := exRows.Scan(&ex.Input, &ex.Output, &noteBytes); err != nil {
+		if err := exRows.Scan(&ex.Input, &ex.Output, &noteBytes, &ex.Trace); err != nil {
 			exRows.Close()
 			return t, fmt.Errorf("load example: %w", err)
 		}

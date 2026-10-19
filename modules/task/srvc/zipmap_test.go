@@ -26,3 +26,27 @@ func TestMapTaskZipMetadataDropsInvalidSlugs(t *testing.T) {
 	require.Equal(t, []string{"junior", "senior"}, task.OriginDivisions)
 	require.Equal(t, 3, task.DifficultyRating)
 }
+
+func TestMapTaskZipInteractiveExamplesKeepTraces(t *testing.T) {
+	archive := taskzipv1.Task{
+		Interactor: []byte("int main() {}\n"),
+		Examples: []taskzipv1.Example{{
+			Trace: []byte("1\n---\n2\n"),
+			Notes: map[string][]byte{"lv": []byte("Piemērs.\n")},
+		}},
+	}
+	var task Task
+
+	mapTaskZipContent(archive, &task)
+
+	require.Equal(t, "int main() {}\n", task.Interactor)
+	require.Equal(t, "1\n---\n2\n", task.Examples[0].Trace)
+	require.Equal(t, "Piemērs.\n", task.Examples[0].MdNote["lv"])
+
+	var back taskzipv1.Task
+
+	mapServiceContent(task, &back)
+
+	require.Equal(t, []byte("1\n---\n2\n"), back.Examples[0].Trace)
+	require.Equal(t, []byte("Piemērs.\n"), back.Examples[0].Notes["lv"])
+}

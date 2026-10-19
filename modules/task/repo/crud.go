@@ -122,9 +122,9 @@ func (r *taskPgRepo) CreateTask(ctx context.Context, t srvc.Task) error {
 			return marshalErr
 		}
 		_, err = tx.Exec(ctx, `
-			INSERT INTO task_examples (task_short_id, input, output, md_note)
-			VALUES ($1, $2, $3, $4::jsonb)
-		`, t.ShortId, ex.Input, ex.Output, noteJSON)
+			INSERT INTO task_examples (task_short_id, input, output, md_note, trace)
+			VALUES ($1, $2, $3, $4::jsonb, $5)
+		`, t.ShortId, ex.Input, ex.Output, noteJSON, ex.Trace)
 		if err != nil {
 			return fmt.Errorf("insert example: %w", err)
 		}
