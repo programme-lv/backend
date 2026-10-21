@@ -294,7 +294,7 @@ func validateSolutions(task *Task) error {
 			return fmt.Errorf("invalid solution %q", solution.Filename)
 		}
 		seen[solution.Filename] = true
-		if solution.Score != nil && *solution.Score > total {
+		if solution.Score != nil && *solution.Score > float64(total)+0.001 {
 			return fmt.Errorf("solution %s score out of range", solution.Filename)
 		}
 		if len(task.Subtasks) == 0 && len(solution.Subtasks) != 0 {

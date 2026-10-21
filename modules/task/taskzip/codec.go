@@ -47,7 +47,7 @@ type taskTOML struct {
 type solutionTOML struct {
 	Filename string   `toml:"fname"`
 	Subtasks []uint32 `toml:"subtasks,omitempty"`
-	Score    *uint32  `toml:"score,omitempty"`
+	Score    *float64 `toml:"score,omitempty"`
 }
 
 type attachedTOML struct {

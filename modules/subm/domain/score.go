@@ -14,15 +14,18 @@ type ScoreInfo struct {
 	ScoreBar      ScoreBarInfo
 	ReceivedScore int
 	PossibleScore int
-	MaxCpuMs      int
-	MaxMemKiB     int
-	ExceededCpu   bool
-	ExceededMem   bool
+	// Tenths preserve one decimal of precision for partial interactive tests.
+	ReceivedScoreTenths int
+	PossibleScoreTenths int
+	MaxCpuMs            int
+	MaxMemKiB           int
+	ExceededCpu         bool
+	ExceededMem         bool
 }
 
 // CalculateScore calculates scoring information from an evaluation
 func (e *Eval) CalculateScore() ScoreInfo {
-	gotScore := 0
+	gotCenti := 0
 	maxScore := 0
 	green := 0
 	red := 0
@@ -34,56 +37,64 @@ func (e *Eval) CalculateScore() ScoreInfo {
 	case ScoreUnitTestGroup:
 		for _, testGroup := range e.Groups {
 			maxScore += testGroup.Points
-		}
-		if e.Error == nil {
-			for _, testGroup := range e.Groups {
-				allUncreached := true
-				allAccepted := true
-				hasWrong := false
-				for _, testIdx := range testGroup.TgTests {
-					test := e.Tests[testIdx-1]
-					if test.Reached {
-						allUncreached = false
-					}
-					if !test.Ac {
-						allAccepted = false
-					}
-					if test.Wa || test.Tle || test.Mle || test.Re {
-						hasWrong = true
-					}
-				}
-				if allUncreached {
-					gray += testGroup.Points
-				} else if allAccepted {
-					green += testGroup.Points
-					gotScore += testGroup.Points
-				} else if hasWrong {
-					red += testGroup.Points
-				} else {
-					yellow += testGroup.Points
-				}
+			if e.Error != nil {
+				continue
 			}
-		} else {
-			purple = 100
+			centi := unitCenti(testGroup.Points, testGroup.TgTests, e.Tests, e.Interactor != nil)
+			gotCenti += centi
+			switch {
+			case allUnreached(testGroup.TgTests, e.Tests):
+				gray += testGroup.Points
+			case centi == testGroup.Points*100:
+				green += testGroup.Points
+			case centi == 0:
+				red += testGroup.Points
+			default:
+				yellow += testGroup.Points
+			}
+		}
+	case ScoreUnitSubtask:
+		for _, subtask := range e.Subtasks {
+			maxScore += subtask.Points
+			if e.Error != nil {
+				continue
+			}
+			centi := unitCenti(subtask.Points, subtask.StTests, e.Tests, e.Interactor != nil)
+			gotCenti += centi
+			switch {
+			case allUnreached(subtask.StTests, e.Tests):
+				gray += subtask.Points
+			case centi == subtask.Points*100:
+				green += subtask.Points
+			case centi == 0:
+				red += subtask.Points
+			default:
+				yellow += subtask.Points
+			}
 		}
 	case ScoreUnitTest:
-		maxScore += len(e.Tests)
+		maxScore = len(e.Tests)
 		if e.Error == nil {
 			for _, test := range e.Tests {
-				if test.Ac {
-					green += 1
-					gotScore += 1
-				} else if test.Wa || test.Tle || test.Mle || test.Re {
-					red += 1
-				} else if test.Reached {
-					yellow += 1
-				} else {
-					gray += 1
+				centi := testPercent(test)
+				gotCenti += centi
+				switch {
+				case test.Ac:
+					green++
+				case centi > 0:
+					yellow++
+				case test.Wa || test.Tle || test.Mle || test.Re:
+					red++
+				case test.Reached:
+					yellow++
+				default:
+					gray++
 				}
 			}
-		} else {
-			purple = 100
 		}
+	}
+	if e.Error != nil {
+		purple = 100
 	}
 
 	normalizeColors(&green, &red, &gray, &yellow, &purple)
@@ -125,13 +136,70 @@ func (e *Eval) CalculateScore() ScoreInfo {
 			Yellow: yellow,
 			Purple: purple,
 		},
-		ReceivedScore: gotScore,
-		PossibleScore: maxScore,
-		MaxCpuMs:      maxCpuMs,
-		MaxMemKiB:     maxMemKiB,
-		ExceededCpu:   exceededCpu,
-		ExceededMem:   exceededMem,
+		ReceivedScore:       (gotCenti + 50) / 100,
+		PossibleScore:       maxScore,
+		ReceivedScoreTenths: (gotCenti + 5) / 10,
+		PossibleScoreTenths: maxScore * 10,
+		MaxCpuMs:            maxCpuMs,
+		MaxMemKiB:           maxMemKiB,
+		ExceededCpu:         exceededCpu,
+		ExceededMem:         exceededMem,
 	}
+}
+
+func testPercent(test Test) int {
+	if test.Ac {
+		return 100
+	}
+	if test.Score < 0 {
+		return 0
+	}
+	if test.Score > 100 {
+		return 100
+	}
+	return test.Score
+}
+
+// Percent returns the test score percentage from 0 to 100.
+func (test Test) Percent() int {
+	return testPercent(test)
+}
+
+// UnitTenths returns the score of a subtask or group in tenths of a point.
+func (e *Eval) UnitTenths(points int, testIDs []int) int {
+	return (unitCenti(points, testIDs, e.Tests, e.Interactor != nil) + 5) / 10
+}
+
+// unitCenti returns the unit score in hundredths of a point. Interactive
+// tests may earn a fraction of the unit; simple and checker tests are
+// all-or-nothing.
+func unitCenti(points int, testIDs []int, tests []Test, partial bool) int {
+	if len(testIDs) == 0 {
+		return 0
+	}
+	sum := 0
+	for _, id := range testIDs {
+		if id >= 1 && id <= len(tests) {
+			percent := testPercent(tests[id-1])
+			if !partial && percent != 100 {
+				return 0
+			}
+			sum += percent
+		}
+	}
+	return (points*sum + len(testIDs)/2) / len(testIDs)
+}
+
+func allUnreached(testIDs []int, tests []Test) bool {
+	if len(testIDs) == 0 {
+		return false
+	}
+	for _, id := range testIDs {
+		if id >= 1 && id <= len(tests) && tests[id-1].Reached {
+			return false
+		}
+	}
+	return true
 }
 
 func normalizeColors(green *int, red *int, gray *int, yellow *int, purple *int) {

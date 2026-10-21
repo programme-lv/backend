@@ -65,6 +65,10 @@ type Test struct {
 	Re  bool // runtime error
 	Ig  bool // ignored
 
+	// Score is the test percentage from 0 to 100. Accepted tests are 100;
+	// interactive tests may be partially correct.
+	Score int
+
 	Reached  bool // reached by tester
 	Finished bool // has finished
 
