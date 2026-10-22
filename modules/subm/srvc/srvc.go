@@ -3,12 +3,14 @@ package srvc
 import (
 	"context"
 	"sync"
+	"time"
 
 	"github.com/google/uuid"
 	_ "github.com/lib/pq"
 	"github.com/programme-lv/backend/common/srvcerror"
 	"github.com/programme-lv/backend/modules/exec"
 	"github.com/programme-lv/backend/modules/subm/domain"
+	"github.com/programme-lv/backend/modules/subm/notify"
 	tasksrvc "github.com/programme-lv/backend/modules/task/srvc"
 	usersrvc "github.com/programme-lv/backend/modules/user"
 )
@@ -44,6 +46,11 @@ type submSrvc struct {
 	newEvalUpdListeners    map[chan domain.Eval]struct{}
 
 	inProgrEval map[uuid.UUID]domain.Eval
+
+	notifier       notify.SubmissionNotifier
+	quietPeriod    time.Duration
+	notifyMu       sync.Mutex
+	lastNotifiedAt time.Time
 }
 
 type SubmRepo interface {
@@ -54,6 +61,7 @@ type SubmRepo interface {
 	// ListSubmsJoinEval(ctx context.Context, authorUuid *uuid.UUID) ([]domain.SubmJoinEval, error)
 	StoreSubm(ctx context.Context, subm *domain.Subm) error
 	CountSubms(ctx context.Context, authorUuid *uuid.UUID, taskShortID string, authorIds []string, taskIds []string, langIds []string, includeAdmin bool) (int, error)
+	LastSubmAt(ctx context.Context) (time.Time, error)
 
 	// ListShallowSubmsJoinEval does not return submissions without a corresponding evaluation
 	ListShallowSubmsJoinEval(ctx context.Context, authorUuid *uuid.UUID) ([]ShallowSubmJoinEvalDto, error)
@@ -69,14 +77,30 @@ type ExecSrvcFacade interface {
 	Listen(ctx context.Context, execUuid uuid.UUID) (<-chan exec.Event, srvcerror.E)
 }
 
+// SrvcOption configures the submission service.
+type SrvcOption func(*submSrvc)
+
+// WithSubmissionNotifier enables best-effort notifications when a submission
+// arrives after at least quietPeriod without non-admin submissions.
+func WithSubmissionNotifier(notifier notify.SubmissionNotifier, quietPeriod time.Duration) SrvcOption {
+	return func(s *submSrvc) {
+		if quietPeriod <= 0 {
+			quietPeriod = 6 * time.Hour
+		}
+		s.notifier = notifier
+		s.quietPeriod = quietPeriod
+	}
+}
+
 func NewSubmSrvc(
 	userSrvc usersrvc.UserService,
 	taskSrvc tasksrvc.TaskService,
 	execSrvc ExecSrvcFacade,
 	submRepo SubmRepo,
 	evalRepo EvalRepo,
+	opts ...SrvcOption,
 ) *submSrvc {
-	return &submSrvc{
+	s := &submSrvc{
 		userSrvc: userSrvc,
 		taskSrvc: taskSrvc,
 		execSrvc: execSrvc,
@@ -88,4 +112,8 @@ func NewSubmSrvc(
 
 		inProgrEval: make(map[uuid.UUID]domain.Eval),
 	}
+	for _, opt := range opts {
+		opt(s)
+	}
+	return s
 }

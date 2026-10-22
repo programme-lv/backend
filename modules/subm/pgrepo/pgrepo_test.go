@@ -121,6 +121,48 @@ func TestSubmRepo_Get_ValidUUID(t *testing.T) {
 	assert.Equal(t, sample.Content, got.Content)
 }
 
+func TestSubmRepo_LastSubmAt(t *testing.T) {
+	t.Parallel()
+	db := newSampleDB(t)
+	repo := NewPgSubmRepo(db)
+	ctx := context.Background()
+
+	last, err := repo.LastSubmAt(ctx)
+	require.NoError(t, err)
+	assert.True(t, last.IsZero())
+
+	older := sampleSubmWithoutEval()
+	older.CreatedAt = time.Now().Add(-2 * time.Hour)
+	require.NoError(t, repo.StoreSubm(ctx, &older))
+
+	newer := sampleSubmWithoutEval()
+	newer.CreatedAt = time.Now().Add(-time.Hour)
+	require.NoError(t, repo.StoreSubm(ctx, &newer))
+
+	last, err = repo.LastSubmAt(ctx)
+	require.NoError(t, err)
+	assert.WithinDuration(t, newer.CreatedAt, last, time.Millisecond)
+
+	adminUUID := uuid.New()
+	_, err = db.Exec(ctx, `
+		INSERT INTO users (
+			uuid, firstname, lastname, username, email, bcrypt_pwd
+		) VALUES (
+			$1, 'Admin', 'User', 'admin', 'admin@example.com', '$2a$10$XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
+		)
+	`, adminUUID)
+	require.NoError(t, err)
+
+	adminSubm := sampleSubmWithoutEval()
+	adminSubm.AuthorUUID = adminUUID
+	adminSubm.CreatedAt = time.Now()
+	require.NoError(t, repo.StoreSubm(ctx, &adminSubm))
+
+	last, err = repo.LastSubmAt(ctx)
+	require.NoError(t, err)
+	assert.WithinDuration(t, newer.CreatedAt, last, time.Millisecond)
+}
+
 func TestSubmRepo_List_MultipleEntries(t *testing.T) {
 	t.Parallel()
 	repo := NewPgSubmRepo(newSampleDB(t))

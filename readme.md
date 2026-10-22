@@ -7,6 +7,7 @@ Errors by layer (HTTP / srvc / repo): [docs/errors.md](docs/errors.md).
 Log levels: [docs/logging.md](docs/logging.md).
 Submission public IDs vs UUIDs: [docs/submission-ids.md](docs/submission-ids.md).
 Admin CLI for task upload and export: [docs/prglv.md](docs/prglv.md).
+Submission activity notifications: [docs/submission-notifications.md](docs/submission-notifications.md).
 
 To start the server without processing tester results from NATS:
 ```
@@ -80,6 +81,16 @@ WEBSITE_PUBLIC_BASE_URL=https://programme.lv
 # EMAIL_VERIFY_TOKEN_TTL=24h
 # EMAIL_PER_USER_COOLDOWN=5m
 # EMAIL_GLOBAL_HOURLY_LIMIT=60
+
+# Phone notifications for submission activity. Default disabled.
+# When enabled, the backend publishes to NTFY_TOPIC on NTFY_SERVER_URL only
+# when a non-admin submission arrives after NTFY_QUIET_PERIOD without one.
+# NTFY_TOPIC is a secret: anyone who knows it can read the notifications.
+NTFY_ENABLED=false
+NTFY_SERVER_URL=https://ntfy.sh
+NTFY_TOPIC=replace-with-a-random-topic
+# NTFY_TOKEN=replace-with-an-ntfy-access-token
+# NTFY_QUIET_PERIOD=6h
 ```
 
 Local email preview: point SMTP at [Mailpit](https://github.com/axllent/mailpit) (`SMTP_HOST=localhost`, `SMTP_PORT=1025`, empty username/password, `SMTP_ENABLED=true`) and open its UI.

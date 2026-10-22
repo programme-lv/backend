@@ -17,6 +17,7 @@ import (
 	planghttp "github.com/programme-lv/backend/modules/plang/http"
 	"github.com/programme-lv/backend/modules/subm/domain"
 	submhttp "github.com/programme-lv/backend/modules/subm/http"
+	"github.com/programme-lv/backend/modules/subm/notify"
 	submpgrepo "github.com/programme-lv/backend/modules/subm/pgrepo"
 	"github.com/programme-lv/backend/modules/subm/srvc"
 	taskhttp "github.com/programme-lv/backend/modules/task/http"
@@ -100,7 +101,22 @@ func main() {
 	taskSrvc.MigrateLegacyArchiveZips(context.Background())
 
 	// Initialize HTTP handlers
-	submHttpHandler := newSubmHttpHandler(userSrvc, taskSrvc, execSrvc)
+	ntfyCfg := conf.MustGetNtfyConfigFromEnv()
+	var submNotifier notify.SubmissionNotifier
+	if ntfyCfg.Enabled {
+		submNotifier = notify.NewNtfyNotifier(notify.NtfyConfig{
+			ServerURL:  ntfyCfg.ServerURL,
+			Topic:      ntfyCfg.Topic,
+			Token:      ntfyCfg.Token,
+			WebsiteURL: ntfyCfg.WebsiteURL,
+		})
+		slog.Info("submission notifications enabled",
+			"server", ntfyCfg.ServerURL,
+			"quiet_period", ntfyCfg.QuietPeriod,
+		)
+	}
+
+	submHttpHandler := newSubmHttpHandler(userSrvc, taskSrvc, execSrvc, submNotifier, ntfyCfg.QuietPeriod)
 	taskHttpHandler := taskhttp.NewTaskHttpHandler(
 		taskSrvc,
 		taskhttp.WithFileStores(publicStore, testfileStore, testfileSigningKey),
@@ -142,7 +158,13 @@ func setupLogger() {
 	))
 }
 
-func newSubmHttpHandler(userSrvc usersrvc.UserService, taskSrvc tasksrvc.TaskService, execSrvc exec.CodeExecutionService) *submhttp.SubmHttpHandler {
+func newSubmHttpHandler(
+	userSrvc usersrvc.UserService,
+	taskSrvc tasksrvc.TaskService,
+	execSrvc exec.CodeExecutionService,
+	notifier notify.SubmissionNotifier,
+	quietPeriod time.Duration,
+) *submhttp.SubmHttpHandler {
 	pgPool, err := conf.GetPgxPoolFromEnv()
 	if err != nil {
 		slog.Error("create pg pool", "error", err)
@@ -151,7 +173,14 @@ func newSubmHttpHandler(userSrvc usersrvc.UserService, taskSrvc tasksrvc.TaskSer
 
 	submPgRepo := submpgrepo.NewPgSubmRepo(pgPool)
 	evalPgRepo := submpgrepo.NewPgEvalRepo(pgPool)
-	submSrvc := srvc.NewSubmSrvc(userSrvc, taskSrvc, execSrvc, submPgRepo, evalPgRepo)
+	submSrvc := srvc.NewSubmSrvc(
+		userSrvc,
+		taskSrvc,
+		execSrvc,
+		submPgRepo,
+		evalPgRepo,
+		srvc.WithSubmissionNotifier(notifier, quietPeriod),
+	)
 
 	// Check if migration is needed and run it
 	runScoreMigrationIfNeeded(pgPool, submSrvc, evalPgRepo)
