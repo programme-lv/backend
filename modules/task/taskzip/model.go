@@ -49,7 +49,7 @@ type Example struct {
 type Solution struct {
 	Filename string
 	Subtasks []uint32
-	Score    *uint32
+	Score    *float64
 	Data     []byte
 }
 

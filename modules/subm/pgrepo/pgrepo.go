@@ -43,8 +43,9 @@ func (r *pgEvalRepo) StoreEval(ctx context.Context, eval domain.Eval) error {
 			cpu_lim_ms, mem_lim_kib, error_type, error_message, created_at,
 			received_score, possible_score, scorebar_green, scorebar_red,
 			scorebar_gray, scorebar_yellow, scorebar_purple,
-			cpu_max_ms, mem_max_kib, exceeded_cpu, exceeded_mem
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)
+			cpu_max_ms, mem_max_kib, exceeded_cpu, exceeded_mem,
+			received_score_tenths, possible_score_tenths
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24)
 		ON CONFLICT (uuid) DO UPDATE SET
 			subm_uuid = EXCLUDED.subm_uuid,
 			stage = EXCLUDED.stage,
@@ -66,7 +67,9 @@ func (r *pgEvalRepo) StoreEval(ctx context.Context, eval domain.Eval) error {
 			cpu_max_ms = EXCLUDED.cpu_max_ms,
 			mem_max_kib = EXCLUDED.mem_max_kib,
 			exceeded_cpu = EXCLUDED.exceeded_cpu,
-			exceeded_mem = EXCLUDED.exceeded_mem
+			exceeded_mem = EXCLUDED.exceeded_mem,
+			received_score_tenths = EXCLUDED.received_score_tenths,
+			possible_score_tenths = EXCLUDED.possible_score_tenths
 	`
 	var errorType *string
 	var errorMessage *string
@@ -99,6 +102,8 @@ func (r *pgEvalRepo) StoreEval(ctx context.Context, eval domain.Eval) error {
 		scoreInfo.MaxMemKiB,
 		scoreInfo.ExceededCpu,
 		scoreInfo.ExceededMem,
+		scoreInfo.ReceivedScoreTenths,
+		scoreInfo.PossibleScoreTenths,
 	)
 	if err != nil {
 		return fmt.Errorf("upsert evaluation: %w", err)
@@ -158,8 +163,8 @@ func (r *pgEvalRepo) StoreEval(ctx context.Context, eval domain.Eval) error {
 		testInsertQuery := `
 			INSERT INTO eval_test_results (
 				evaluation_uuid, test_id, ac, wa, tle, mle, re, ig, reached, finished,
-				inp_sha256, ans_sha256, cpu_ms, mem_kib
-			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+				inp_sha256, ans_sha256, cpu_ms, mem_kib, score
+			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
 		`
 		_, err = tx.Exec(ctx, testInsertQuery,
 			eval.UUID,
@@ -176,6 +181,7 @@ func (r *pgEvalRepo) StoreEval(ctx context.Context, eval domain.Eval) error {
 			nullableString(test.AnsSha256),
 			test.CpuMs,
 			test.MemKiB,
+			test.Score,
 		)
 		if err != nil {
 			return fmt.Errorf("insert test: %w", err)
@@ -282,7 +288,7 @@ func (r *pgEvalRepo) GetEval(ctx context.Context, evalUUID uuid.UUID) (domain.Ev
 
 	// Fetch Tests
 	testsQuery := `
-		SELECT ac, wa, tle, mle, re, ig, reached, finished, inp_sha256, ans_sha256, cpu_ms, mem_kib
+		SELECT ac, wa, tle, mle, re, ig, reached, finished, inp_sha256, ans_sha256, cpu_ms, mem_kib, score
 		FROM eval_test_results
 		WHERE evaluation_uuid = $1
 		ORDER BY id ASC
@@ -309,6 +315,7 @@ func (r *pgEvalRepo) GetEval(ctx context.Context, evalUUID uuid.UUID) (domain.Ev
 			&ansSha256,
 			&test.CpuMs,
 			&test.MemKiB,
+			&test.Score,
 		)
 		if err != nil {
 			return domain.Eval{}, fmt.Errorf("scan test: %w", err)
@@ -654,7 +661,8 @@ func (r *pgSubmRepo) ListShallowSubmsJoinEval(ctx context.Context, authorUuid *u
 			e.uuid, e.subm_uuid, e.stage, e.score_unit, e.error_type, e.error_message, 
 			e.checker, e.interactor, e.cpu_lim_ms, e.mem_lim_kib, e.created_at,
 			e.received_score, e.possible_score, e.scorebar_green, e.scorebar_red, e.scorebar_gray, 
-			e.scorebar_yellow, e.scorebar_purple, e.cpu_max_ms, e.mem_max_kib, e.exceeded_cpu, e.exceeded_mem
+			e.scorebar_yellow, e.scorebar_purple, e.cpu_max_ms, e.mem_max_kib, e.exceeded_cpu, e.exceeded_mem,
+			e.received_score_tenths, e.possible_score_tenths
 		FROM submissions s
 		INNER JOIN evaluations e ON s.curr_eval_uuid = e.uuid
 		WHERE s.author_uuid = $1
@@ -687,6 +695,8 @@ func (r *pgSubmRepo) ListShallowSubmsJoinEval(ctx context.Context, authorUuid *u
 		var memMaxKiB *int
 		var exceededCpu *bool
 		var exceededMem *bool
+		var receivedScoreTenths *int
+		var possibleScoreTenths *int
 
 		err := rows.Scan(
 			// Submission fields
@@ -721,6 +731,8 @@ func (r *pgSubmRepo) ListShallowSubmsJoinEval(ctx context.Context, authorUuid *u
 			&memMaxKiB,
 			&exceededCpu,
 			&exceededMem,
+			&receivedScoreTenths,
+			&possibleScoreTenths,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("scan submission and evaluation: %w", err)
@@ -742,6 +754,14 @@ func (r *pgSubmRepo) ListShallowSubmsJoinEval(ctx context.Context, authorUuid *u
 		if receivedScore != nil && possibleScore != nil && scorebarGreen != nil && scorebarRed != nil &&
 			scorebarGray != nil && scorebarYellow != nil && scorebarPurple != nil &&
 			cpuMaxMs != nil && memMaxKiB != nil && exceededCpu != nil && exceededMem != nil {
+			receivedTenths := *receivedScore * 10
+			if receivedScoreTenths != nil {
+				receivedTenths = *receivedScoreTenths
+			}
+			possibleTenths := *possibleScore * 10
+			if possibleScoreTenths != nil {
+				possibleTenths = *possibleScoreTenths
+			}
 			dto.Eval.ScoreInfo = &domain.ScoreInfo{
 				ScoreBar: domain.ScoreBarInfo{
 					Green:  *scorebarGreen,
@@ -750,12 +770,14 @@ func (r *pgSubmRepo) ListShallowSubmsJoinEval(ctx context.Context, authorUuid *u
 					Yellow: *scorebarYellow,
 					Purple: *scorebarPurple,
 				},
-				ReceivedScore: *receivedScore,
-				PossibleScore: *possibleScore,
-				MaxCpuMs:      *cpuMaxMs,
-				MaxMemKiB:     *memMaxKiB,
-				ExceededCpu:   *exceededCpu,
-				ExceededMem:   *exceededMem,
+				ReceivedScore:       *receivedScore,
+				PossibleScore:       *possibleScore,
+				ReceivedScoreTenths: receivedTenths,
+				PossibleScoreTenths: possibleTenths,
+				MaxCpuMs:            *cpuMaxMs,
+				MaxMemKiB:           *memMaxKiB,
+				ExceededCpu:         *exceededCpu,
+				ExceededMem:         *exceededMem,
 			}
 		}
 

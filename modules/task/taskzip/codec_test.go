@@ -10,7 +10,7 @@ import (
 
 func TestRoundTrip(t *testing.T) {
 	points := uint32(40)
-	score := uint32(40)
+	score := 40.0
 	task := Task{
 		Version: 1,
 		ID:      "sum",

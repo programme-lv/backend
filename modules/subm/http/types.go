@@ -44,7 +44,8 @@ type Eval struct {
 	// ErrorMsg   string      `json:"error_msg"`
 	Subtasks   []Subtask   `json:"subtasks"`
 	TestGroups []TestGroup `json:"test_groups"`
-	Verdicts   string      `json:"verdicts"` // q,ac,wa,tle,mle,re,ig -> "QAWTMRI"
+	Verdicts   string      `json:"verdicts"`              // q,ac,wa,tle,mle,re,ig,p -> "QAWTMRI"
+	TestScores []int       `json:"test_scores,omitempty"` // percentage per test
 	ScoreInfo  ScoreInfo   `json:"score_info"`
 }
 
@@ -56,34 +57,41 @@ type ScoreInfo struct {
 		Yellow int `json:"yellow"`
 		Purple int `json:"purple"`
 	} `json:"score_bar"`
-	ReceivedScore int  `json:"received"`
-	PossibleScore int  `json:"possible"`
-	MaxCpuMs      int  `json:"max_cpu_ms"`  // milliseconds
-	MaxMemKiB     int  `json:"max_mem_kib"` // kibibytes
-	ExceededCpu   bool `json:"exceeded_cpu"`
-	ExceededMem   bool `json:"exceeded_mem"`
+	ReceivedScore int `json:"received"`
+	PossibleScore int `json:"possible"`
+	// Tenths preserve one decimal for partial interactive scores.
+	ReceivedScoreTenths int  `json:"received_tenths,omitempty"`
+	PossibleScoreTenths int  `json:"possible_tenths,omitempty"`
+	MaxCpuMs            int  `json:"max_cpu_ms"`  // milliseconds
+	MaxMemKiB           int  `json:"max_mem_kib"` // kibibytes
+	ExceededCpu         bool `json:"exceeded_cpu"`
+	ExceededMem         bool `json:"exceeded_mem"`
 }
 
 type Subtask struct {
 	Points      int    `json:"points"`
 	Description string `json:"description"`
 	// StTests     []int  `json:"st_tests"`
-	StTests [][]int `json:"st_tests"`
+	StTests        [][]int `json:"st_tests"`
+	ReceivedTenths int     `json:"received_tenths,omitempty"`
 }
 
 type TestGroup struct {
 	Points   int   `json:"points"`
 	Subtasks []int `json:"subtasks"`
 	// TgTests  []int `json:"tg_tests"`
-	TgTests [][]int `json:"tg_tests"`
+	TgTests        [][]int `json:"tg_tests"`
+	ReceivedTenths int     `json:"received_tenths,omitempty"`
 }
 
 type MaxScore struct {
-	SubmUuid     string `json:"subm_uuid"`
-	Received     int    `json:"received"`
-	Possible     int    `json:"possible"`
-	CreatedAt    string `json:"created_at"`
-	TaskFullName string `json:"task_full_name"`
+	SubmUuid       string `json:"subm_uuid"`
+	Received       int    `json:"received"`
+	Possible       int    `json:"possible"`
+	ReceivedTenths int    `json:"received_tenths,omitempty"`
+	PossibleTenths int    `json:"possible_tenths,omitempty"`
+	CreatedAt      string `json:"created_at"`
+	TaskFullName   string `json:"task_full_name"`
 }
 
 type TaskPreview struct {

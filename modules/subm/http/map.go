@@ -77,12 +77,14 @@ func mapSubmListEntry(
 				Yellow: scoreInfo.ScoreBar.Yellow,
 				Purple: scoreInfo.ScoreBar.Purple,
 			},
-			ReceivedScore: scoreInfo.ReceivedScore,
-			PossibleScore: scoreInfo.PossibleScore,
-			MaxCpuMs:      scoreInfo.MaxCpuMs,
-			MaxMemKiB:     scoreInfo.MaxMemKiB,
-			ExceededCpu:   scoreInfo.ExceededCpu,
-			ExceededMem:   scoreInfo.ExceededMem,
+			ReceivedScore:       scoreInfo.ReceivedScore,
+			PossibleScore:       scoreInfo.PossibleScore,
+			ReceivedScoreTenths: scoreInfo.ReceivedScoreTenths,
+			PossibleScoreTenths: scoreInfo.PossibleScoreTenths,
+			MaxCpuMs:            scoreInfo.MaxCpuMs,
+			MaxMemKiB:           scoreInfo.MaxMemKiB,
+			ExceededCpu:         scoreInfo.ExceededCpu,
+			ExceededMem:         scoreInfo.ExceededMem,
 		},
 		Status:    status,
 		CreatedAt: s.CreatedAt.Format(time.RFC3339),
@@ -154,9 +156,10 @@ func mapSubmEval(eval domain.Eval) Eval {
 			testRanges = append(testRanges, []int{start, prev})
 		}
 		subtasks = append(subtasks, Subtask{
-			Points:      subtask.Points,
-			Description: subtask.Description,
-			StTests:     testRanges,
+			Points:         subtask.Points,
+			Description:    subtask.Description,
+			StTests:        testRanges,
+			ReceivedTenths: eval.UnitTenths(subtask.Points, subtask.StTests),
 		})
 	}
 
@@ -176,14 +179,17 @@ func mapSubmEval(eval domain.Eval) Eval {
 			testRanges = append(testRanges, []int{start, prev})
 		}
 		testGroups = append(testGroups, TestGroup{
-			Points:   testGroup.Points,
-			Subtasks: testGroup.Subtasks,
-			TgTests:  testRanges,
+			Points:         testGroup.Points,
+			Subtasks:       testGroup.Subtasks,
+			TgTests:        testRanges,
+			ReceivedTenths: eval.UnitTenths(testGroup.Points, testGroup.TgTests),
 		})
 	}
 
 	verdicts := ""
+	testScores := make([]int, 0, len(eval.Tests))
 	for _, test := range eval.Tests {
+		testScores = append(testScores, test.Percent())
 		if test.Ig {
 			verdicts += "I" // ignored
 		} else if test.Finished {
@@ -197,6 +203,8 @@ func mapSubmEval(eval domain.Eval) Eval {
 				verdicts += "M" // memory limit exceeded
 			} else if test.Re {
 				verdicts += "R" // runtime error
+			} else if test.Percent() > 0 {
+				verdicts += "P" // partially correct
 			} else {
 				verdicts += "U" // unknown
 			}
@@ -218,6 +226,7 @@ func mapSubmEval(eval domain.Eval) Eval {
 		Subtasks:   subtasks,
 		TestGroups: testGroups,
 		Verdicts:   verdicts,
+		TestScores: testScores,
 		ScoreInfo: ScoreInfo{
 			ScoreBar: struct {
 				Green  int `json:"green"`
@@ -232,12 +241,14 @@ func mapSubmEval(eval domain.Eval) Eval {
 				Yellow: scoreInfo.ScoreBar.Yellow,
 				Purple: scoreInfo.ScoreBar.Purple,
 			},
-			ReceivedScore: scoreInfo.ReceivedScore,
-			PossibleScore: scoreInfo.PossibleScore,
-			MaxCpuMs:      scoreInfo.MaxCpuMs,
-			MaxMemKiB:     scoreInfo.MaxMemKiB,
-			ExceededCpu:   scoreInfo.ExceededCpu,
-			ExceededMem:   scoreInfo.ExceededMem,
+			ReceivedScore:       scoreInfo.ReceivedScore,
+			PossibleScore:       scoreInfo.PossibleScore,
+			ReceivedScoreTenths: scoreInfo.ReceivedScoreTenths,
+			PossibleScoreTenths: scoreInfo.PossibleScoreTenths,
+			MaxCpuMs:            scoreInfo.MaxCpuMs,
+			MaxMemKiB:           scoreInfo.MaxMemKiB,
+			ExceededCpu:         scoreInfo.ExceededCpu,
+			ExceededMem:         scoreInfo.ExceededMem,
 		},
 	}
 }
@@ -252,10 +263,12 @@ func (h *SubmHttpHandler) mapMaxScore(ctx context.Context, taskShortID string, m
 		taskFullName = taskShortID
 	}
 	return MaxScore{
-		SubmUuid:     m.SubmUuid.String(),
-		Received:     m.Received,
-		Possible:     m.Possible,
-		CreatedAt:    m.FirstTime.Format(time.RFC3339),
-		TaskFullName: taskFullName,
+		SubmUuid:       m.SubmUuid.String(),
+		Received:       m.Received,
+		Possible:       m.Possible,
+		ReceivedTenths: m.ReceivedTenths,
+		PossibleTenths: m.PossibleTenths,
+		CreatedAt:      m.FirstTime.Format(time.RFC3339),
+		TaskFullName:   taskFullName,
 	}, nil
 }
