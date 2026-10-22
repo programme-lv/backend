@@ -24,16 +24,33 @@ type SubmitSolParams struct {
 }
 
 func (s *submSrvc) SubmitSol(ctx context.Context, p SubmitSolParams) srvcerror.E {
+	log := ctxlog.FromContext(ctx).With("module", "subm", "layer", "srvc")
+
+	now := time.Now()
+	quietFor := time.Duration(0)
+	notifyAfterQuiet := false
+	if s.notifier != nil {
+		lastSubmAt, lastSubmErr := s.submRepo.LastSubmAt(ctx)
+		if lastSubmErr != nil {
+			log.Warn("get last submission time", "error", lastSubmErr)
+		} else if shouldNotify(lastSubmAt, now, s.quietPeriod) {
+			notifyAfterQuiet = true
+			if !lastSubmAt.IsZero() {
+				quietFor = now.Sub(lastSubmAt)
+			}
+		}
+	}
+
 	submitSolCmd := submitSolCmdHandler{
-		DoesUserExist: func(ctx context.Context, uuid uuid.UUID) (bool, srvcerror.E) {
+		GetAuthorUsername: func(ctx context.Context, uuid uuid.UUID) (string, srvcerror.E) {
 			user, err := s.userSrvc.GetUserByUUID(ctx, uuid)
 			if err != nil {
 				if errors.Is(err, usersrvc.ErrUserNotFound) {
-					return false, nil
+					return "", nil
 				}
-				return false, err
+				return "", err
 			}
-			return user.UUID == uuid, nil
+			return user.Username, nil
 		},
 		GetTask:          s.taskSrvc.GetTask,
 		StoreSubm:        s.submRepo.StoreSubm,
@@ -41,17 +58,26 @@ func (s *submSrvc) SubmitSol(ctx context.Context, p SubmitSolParams) srvcerror.E
 		BcastSubmCreated: s.broadcastSubmCreated,
 		EnqueueExec:      s.enqueueExecAndListen,
 	}
+	if notifyAfterQuiet {
+		submitSolCmd.NotifyActivity = func(subm domain.Subm, username string) {
+			s.notifySubmission(ctx, subm, username, quietFor)
+		}
+	}
 
 	return submitSolCmd.Handle(ctx, p)
 }
 
 type submitSolCmdHandler struct {
-	DoesUserExist    func(ctx context.Context, uuid uuid.UUID) (bool, srvcerror.E)
-	GetTask          func(ctx context.Context, shortId string) (tasksrvc.Task, srvcerror.E)
-	StoreSubm        func(ctx context.Context, subm *domain.Subm) error
-	StoreEval        func(ctx context.Context, eval domain.Eval) error
-	BcastSubmCreated func(subm domain.Subm)
-	EnqueueExec      func(ctx context.Context, eval domain.Eval, srcCode string, prLangId string) srvcerror.E
+	GetAuthorUsername func(ctx context.Context, uuid uuid.UUID) (string, srvcerror.E)
+	GetTask           func(ctx context.Context, shortId string) (tasksrvc.Task, srvcerror.E)
+	StoreSubm         func(ctx context.Context, subm *domain.Subm) error
+	StoreEval         func(ctx context.Context, eval domain.Eval) error
+	BcastSubmCreated  func(subm domain.Subm)
+	EnqueueExec       func(ctx context.Context, eval domain.Eval, srcCode string, prLangId string) srvcerror.E
+
+	// NotifyActivity is called after a submission is stored. It must not
+	// affect submission handling.
+	NotifyActivity func(subm domain.Subm, username string)
 }
 
 const MaxSubmLengthKB = 64
@@ -65,14 +91,14 @@ func (h submitSolCmdHandler) Handle(ctx context.Context, p SubmitSolParams) srvc
 		return ErrSubmTooLong
 	}
 
-	exists, err := h.DoesUserExist(ctx, p.AuthorUUID)
+	username, err := h.GetAuthorUsername(ctx, p.AuthorUUID)
 	if err != nil {
-		action := "check if user exists"
+		action := "get submission author"
 		log.Error(action, "author_uuid", p.AuthorUUID, "error", err)
 		return srvcerror.InternalServerError()
 	}
 
-	if !exists {
+	if username == "" {
 		log.Warn("user not found", "author_uuid", p.AuthorUUID)
 		return ErrUserNotFound
 	}
@@ -115,6 +141,10 @@ func (h submitSolCmdHandler) Handle(ctx context.Context, p SubmitSolParams) srvc
 		action := "store submission"
 		log.Error(action, "subm_uuid", p.UUID, "error", storeSubmErr)
 		return srvcerror.InternalServerError()
+	}
+
+	if h.NotifyActivity != nil {
+		h.NotifyActivity(submEntity, username)
 	}
 
 	h.BcastSubmCreated(submEntity)

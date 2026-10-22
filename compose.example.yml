@@ -41,6 +41,14 @@ services:
       # EMAIL_VERIFY_TOKEN_TTL: "24h"
       # EMAIL_PER_USER_COOLDOWN: "5m"
       # EMAIL_GLOBAL_HOURLY_LIMIT: "60"
+
+      # Phone notifications via ntfy. Disabled by default.
+      # NTFY_TOPIC is a secret: anyone who knows it can read the notifications.
+      NTFY_ENABLED: "false"
+      NTFY_SERVER_URL: "https://ntfy.sh"
+      NTFY_TOPIC: "replace-with-a-random-topic"
+      # NTFY_TOKEN: "replace-with-an-ntfy-access-token"
+      # NTFY_QUIET_PERIOD: "6h"
     volumes:
       - /mnt/programme-lv-storage:/mnt/programme-lv-storage
     ports:

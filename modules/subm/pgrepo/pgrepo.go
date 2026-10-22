@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/lib/pq"
@@ -482,6 +483,29 @@ func (r *pgSubmRepo) GetSubmByShortID(ctx context.Context, shortID string) (doma
 	}
 
 	return s, nil
+}
+
+// LastSubmAt returns the creation time of the most recent submission from a
+// non-admin user. The zero time means no such submission exists yet.
+func (r *pgSubmRepo) LastSubmAt(ctx context.Context) (time.Time, error) {
+	query := `
+		SELECT s.created_at
+		FROM submissions s
+		INNER JOIN users u ON s.author_uuid = u.uuid
+		WHERE u.username != 'admin'
+		ORDER BY s.created_at DESC
+		LIMIT 1
+	`
+
+	var createdAt time.Time
+	err := r.pool.QueryRow(ctx, query).Scan(&createdAt)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return time.Time{}, nil
+		}
+		return time.Time{}, fmt.Errorf("get last submission time: %w", err)
+	}
+	return createdAt, nil
 }
 
 // ListSubms retrieves all SubmissionEntities from the database

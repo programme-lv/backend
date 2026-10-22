@@ -278,6 +278,65 @@ func getRequiredEnv(name string) string {
 	return value
 }
 
+// NtfyConfig holds phone-notification settings for submission activity.
+type NtfyConfig struct {
+	Enabled     bool
+	ServerURL   string
+	Topic       string
+	Token       string
+	WebsiteURL  string
+	QuietPeriod time.Duration
+}
+
+// ntfyTopicPattern matches the topic names accepted by ntfy.
+var ntfyTopicPattern = regexp.MustCompile(`^[-_A-Za-z0-9]{1,64}$`)
+
+// MustGetNtfyConfigFromEnv reads optional ntfy notification settings.
+// NTFY_ENABLED defaults to false; when enabled, NTFY_TOPIC is required.
+func MustGetNtfyConfigFromEnv() NtfyConfig {
+	enabled := false
+	if raw := os.Getenv("NTFY_ENABLED"); raw != "" {
+		parsed, err := strconv.ParseBool(raw)
+		if err != nil {
+			slog.Error("NTFY_ENABLED must be true or false", "value", raw)
+			os.Exit(1)
+		}
+		enabled = parsed
+	}
+
+	cfg := NtfyConfig{
+		Enabled:     enabled,
+		ServerURL:   strings.TrimSpace(os.Getenv("NTFY_SERVER_URL")),
+		Topic:       strings.TrimSpace(os.Getenv("NTFY_TOPIC")),
+		Token:       strings.TrimSpace(os.Getenv("NTFY_TOKEN")),
+		WebsiteURL:  strings.TrimRight(os.Getenv("WEBSITE_PUBLIC_BASE_URL"), "/"),
+		QuietPeriod: durationFromEnv("NTFY_QUIET_PERIOD", 6*time.Hour),
+	}
+	if cfg.ServerURL == "" {
+		cfg.ServerURL = "https://ntfy.sh"
+	}
+
+	if !enabled {
+		return cfg
+	}
+
+	if cfg.Topic == "" {
+		slog.Error("NTFY_TOPIC env var is not set")
+		os.Exit(1)
+	}
+	if !ntfyTopicPattern.MatchString(cfg.Topic) {
+		slog.Error("NTFY_TOPIC must be 1-64 characters of A-Z, a-z, 0-9, '-' or '_'", "value", cfg.Topic)
+		os.Exit(1)
+	}
+	parsed, err := url.Parse(cfg.ServerURL)
+	if err != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.Host == "" {
+		slog.Error("NTFY_SERVER_URL is invalid", "value", cfg.ServerURL, "error", err)
+		os.Exit(1)
+	}
+
+	return cfg
+}
+
 // EmailConfig holds SMTP + transactional-email rate/TTL settings.
 type EmailConfig struct {
 	Enabled           bool
