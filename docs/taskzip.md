@@ -69,3 +69,21 @@ with:
 ```sh
 taskzip check path/to/task.zip
 ```
+
+## Task readme and archive fidelity
+
+The task package's `readme.md` is also the deviation ledger for the archive.
+Whenever an edit changes the task's meaning, difficulty, tests, scoring,
+statement, checker/interactor, reference solutions, limits, or historical
+metadata, update `readme.md` in the same update with the original value or
+archived bytes, the replacement, the reason, and how to reconstruct the
+original olympiad version.
+
+Do not silently fix a weak test, an ambiguous statement, or an incorrect
+reference solution. Preserve replaced or deleted original artifacts in the
+task's `archive/` or an immutable source such as an SVN revision, and record a
+checksum. Test/scoring/checker/interactor changes bump `tests_version`, so rerun
+reference solutions and calibration before finalizing limits.
+
+Canonical policy and template:
+[`task-archive-fidelity.md`](https://github.com/programme-lv/docs/blob/main/task-archive-fidelity.md).
