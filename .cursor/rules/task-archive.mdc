@@ -1,0 +1,23 @@
+---
+description: Record semantic task deviations in the task readme
+globs: "modules/task/**/*.go, cmd/**/*.go, docs/**/*.md"
+alwaysApply: true
+---
+
+# Task archive fidelity
+
+Before changing task content, read the canonical policy at
+[`../../../docs/task-archive-fidelity.md`](../../../docs/task-archive-fidelity.md).
+
+A task is historical olympiad material. If an edit deviates from the original
+task, update the task's `readme.md` in the same update with the original
+value/bytes, the change, the reason, verification, and how to reconstruct the
+original, including its original insufficiencies. This applies to tests,
+statement/examples/images, checker/interactor, scoring/groups/subtasks,
+reference solutions, limits, and metadata.
+
+Do not silently fix weak tests or original errors. Preserve replaced or deleted
+artifacts in `archive/` or an immutable source such as an SVN revision, with a
+checksum. Never modify the original SVN/contest working copy. Test/scoring/
+checker/interactor changes bump `tests_version`; re-profile and recalibrate
+before finalizing limits.
