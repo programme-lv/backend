@@ -24,6 +24,11 @@ the solution for every chart point.
 `GET /tasks/{taskId}/solutions` lists stored solutions with their current
 expected points and latest profile.
 
+`POST /tasks/{taskId}/solutions/profile` enqueues a profile for every solution
+in the task. Solutions whose latest profile is already running are skipped and
+returned in `skipped`; per-solution failures are returned in `failed`. The
+service semaphore still runs them one at a time.
+
 `GET /tasks/{taskId}/solutions/calibration` intersects the per-solution viable
 intervals and checks the current limits. All endpoints are admin-only.
 
