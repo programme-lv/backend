@@ -837,3 +837,55 @@ func NewMockTaskPgRepo(t interface {
 
 	return mock
 }
+
+// UpdateTaskLimits provides a mock function with given fields: ctx, taskID, cpuSecs, memMiB
+func (_m *MockTaskPgRepo) UpdateTaskLimits(ctx context.Context, taskID string, cpuSecs float64, memMiB int) (int, error) {
+	ret := _m.Called(ctx, taskID, cpuSecs, memMiB)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpdateTaskLimits")
+	}
+
+	var r0 int
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, float64, int) (int, error)); ok {
+		return rf(ctx, taskID, cpuSecs, memMiB)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, float64, int) int); ok {
+		r0 = rf(ctx, taskID, cpuSecs, memMiB)
+	} else {
+		r0 = ret.Int(0)
+	}
+	if rf, ok := ret.Get(1).(func(context.Context, string, float64, int) error); ok {
+		r1 = rf(ctx, taskID, cpuSecs, memMiB)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// UpdateTaskSolution provides a mock function with given fields: ctx, taskID, fname, content, subtasks
+func (_m *MockTaskPgRepo) UpdateTaskSolution(ctx context.Context, taskID string, fname string, content string, subtasks []int) (int, error) {
+	ret := _m.Called(ctx, taskID, fname, content, subtasks)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpdateTaskSolution")
+	}
+
+	var r0 int
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, string, []int) (int, error)); ok {
+		return rf(ctx, taskID, fname, content, subtasks)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, string, []int) int); ok {
+		r0 = rf(ctx, taskID, fname, content, subtasks)
+	} else {
+		r0 = ret.Int(0)
+	}
+	if rf, ok := ret.Get(1).(func(context.Context, string, string, string, []int) error); ok {
+		r1 = rf(ctx, taskID, fname, content, subtasks)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}

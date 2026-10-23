@@ -55,6 +55,7 @@ var commandSpecs = []commandSpec{
 			{name: "out", kind: "string", value: "PATH", desc: "Output path, or - for stdout", files: true},
 			{name: "force", kind: "bool", desc: "Overwrite an existing output file"},
 			{name: "json", kind: "bool", desc: "Print the result as JSON"},
+			{name: "partial", kind: "bool", desc: "Allow a package without tests (for sparse updates)"},
 		},
 	},
 	{
@@ -76,6 +77,7 @@ var commandSpecs = []commandSpec{
 			{name: "api-url", kind: "string", value: "URL", desc: "Backend base URL"},
 			{name: "api-key", kind: "string", value: "KEY", desc: "Admin API key"},
 			{name: "allow-test-changes", kind: "bool", desc: "Also replace official tests and scoring"},
+			{name: "tests-unchanged", kind: "bool", desc: "Do not read or send tests; use the remote test manifest"},
 			{name: "yes", kind: "bool", desc: "Skip the confirmation prompt"},
 			{name: "dry-run", kind: "bool", desc: "Show the negotiated patch plan without sending it"},
 			{name: "json", kind: "bool", desc: "Print the result as JSON"},
@@ -100,6 +102,7 @@ var commandSpecs = []commandSpec{
 			{name: "api-key", kind: "string", value: "KEY", desc: "Admin API key"},
 			{name: "out", kind: "string", value: "PATH", desc: "Output path, or - for stdout", files: true},
 			{name: "force", kind: "bool", desc: "Overwrite an existing output file"},
+			{name: "no-tests", kind: "bool", desc: "Omit tests/ for quick inspection and sparse edits"},
 		},
 	},
 	{

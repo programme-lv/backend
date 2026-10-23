@@ -99,6 +99,9 @@ func (h *taskHttpHandler) RegisterRoutes(r *chi.Mux, jwtKey, adminAPIKey []byte,
 
 			r.Delete("/tasks/{taskId}", hf.NoReqNoResp(h.DeleteTask))
 			r.Get("/tasks/{taskId}/manifest", hf.NoReqJsonResp(h.GetTaskManifest))
+			r.Patch("/tasks/{taskId}/limits", hf.JsonReqJsonResp(h.UpdateTaskLimits))
+			r.Patch("/tasks/{taskId}/solutions/{fname}", hf.JsonReqJsonResp(h.UpdateTaskSolution))
+			r.Get("/tasks/{taskId}/solutions/{fname}", hf.NoReqJsonResp(h.GetTaskSolution))
 
 			r.Patch("/tasks/{taskId}/statements/{langIso639}", hf.JsonReqNoResp(h.PutStatement))
 			r.Post("/tasks/{taskId}/images", h.UploadStatementImage)

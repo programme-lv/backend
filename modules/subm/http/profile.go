@@ -40,6 +40,11 @@ type StartSolutionProfileReq struct {
 	LangID string `json:"lang_id"`
 }
 
+type StartAllSolutionProfilesReq struct {
+	Runs int    `json:"runs"`
+	Only string `json:"only"` // "", "stale", "mismatched"
+}
+
 type StartSolutionProfileResp struct {
 	ProfileID uuid.UUID `json:"profile_id"`
 }
@@ -123,9 +128,9 @@ func (h *SubmHttpHandler) StartSolutionProfile(ctx context.Context, req StartSol
 	return StartSolutionProfileResp{ProfileID: profileID}, nil
 }
 
-func (h *SubmHttpHandler) StartAllSolutionProfiles(ctx context.Context, req StartSolutionProfileReq) (submsrvc.StartAllProfilesResult, jsonresp.HttpStatusCoder) {
+func (h *SubmHttpHandler) StartAllSolutionProfiles(ctx context.Context, req StartAllSolutionProfilesReq) (submsrvc.StartAllProfilesResult, jsonresp.HttpStatusCoder) {
 	taskID := chi.URLParamFromCtx(ctx, "taskId")
-	result, err := h.profileSrvc.StartAllSolutionProfiles(ctx, taskID, req.Runs)
+	result, err := h.profileSrvc.StartAllSolutionProfiles(ctx, taskID, req.Runs, req.Only)
 	if err != nil {
 		return submsrvc.StartAllProfilesResult{}, err
 	}

@@ -46,11 +46,16 @@ prglv package path/to/task
 prglv package path/to/task --out /tmp/task.zip
 prglv package path/to/task --out - > task.zip
 prglv package path/to/task --force
+prglv package path/to/task --partial
 ```
 
 `package` validates the TaskZip with the same reader as the backend and writes
 the archive without using the network. The default output is `<task-id>.zip`;
 an existing file is not overwritten without `--force`.
+
+`--partial` reads the package with the sparse-update reader, which allows an
+export without `tests/`. Use it only for an existing task and together with
+`update --tests-unchanged`.
 
 ## Upload
 
@@ -90,6 +95,7 @@ Everything else is included, so a directory that already holds `task.toml`,
 prglv update path/to/task
 prglv update path/to/task --dry-run
 prglv update path/to/task --allow-test-changes
+prglv update path/to/task --tests-unchanged
 prglv update path/to/task --yes --json
 ```
 
@@ -120,6 +126,16 @@ the test/scoring rows and increments the task's `tests_version`; previous
 evaluations remain as historical snapshots. The `tests_version` and `revision`
 are returned in the task view.
 
+`--tests-unchanged` reads the package with the partial reader and assumes the
+remote tests are still correct: it neither hashes nor sends `tests/`, and it
+takes the remote test count and section hash from the manifest. This allows an
+edit package produced by `export --no-tests` to update a task without
+downloading 10–50 MB of tests. The flag requires an existing task and cannot
+bring new tests; use a normal update with `--allow-test-changes` for that.
+Changing only execution limits is better done through
+`PATCH /tasks/{taskId}/limits`, which does not bump `tests_version` or make
+solution profiles stale.
+
 ## Manifest
 
 ```bash
@@ -138,11 +154,16 @@ sparse update. It is also a cheap existence check; a missing task returns
 prglv export lio2026cuska
 prglv export lio2026cuska --out /tmp/task.zip
 prglv export lio2026cuska --out - > task.zip
+prglv export lio2026cuska --no-tests
 prglv export lio2026cuska --force
 ```
 
 The default output is `<task-id>.zip` in the current directory. Use `-` to
 write to stdout. An existing file is not overwritten without `--force`.
+
+`--no-tests` omits `tests/` and writes `<task-id>-no-tests.zip` by default. It
+is a partial TaskZip: use it for inspection or as the input to
+`update --tests-unchanged`, not for `upload`.
 
 ## Shell completions
 

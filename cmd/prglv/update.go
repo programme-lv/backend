@@ -18,6 +18,7 @@ type updatePlan struct {
 	RemoteTests     int      `json:"remote_tests"`
 	LocalTests      int      `json:"local_tests"`
 	TestsChanged    bool     `json:"tests_changed"`
+	TestsUnchanged  bool     `json:"tests_unchanged"`
 	TaskChanged     bool     `json:"task_changed"`
 	SkippedTestSize uint64   `json:"skipped_tests_bytes"`
 	Sections        []string `json:"sections"`
@@ -44,7 +45,8 @@ func runUpdate(args []string) error {
 	if apiKey == "" {
 		return errors.New("missing admin API key; set PRGLV_API_KEY or ADMIN_API_KEY, or pass --api-key")
 	}
-	_, task, err := readTaskPackageWithTask(positional[0])
+	testsUnchanged := flags.bools["tests-unchanged"]
+	_, task, err := readTaskPackageWithTaskMode(positional[0], testsUnchanged)
 	if err != nil {
 		return err
 	}
@@ -59,21 +61,34 @@ func runUpdate(args []string) error {
 	if err != nil {
 		return err
 	}
+	if testsUnchanged {
+		localSections["tests"] = manifest.Sections["tests"]
+		localCount = manifest.TestsCount
+		testBytes = 0
+	}
 	added, modified, deleted := diffFiles(manifest.Files, localFiles)
+	if testsUnchanged {
+		added = withoutTestFiles(added)
+		modified = withoutTestFiles(modified)
+		deleted = withoutTestFiles(deleted)
+	}
 	var sections []string
 	for _, section := range []string{
 		"statement", "examples", "solutions", "tests", "readme", "checker", "interactor",
 	} {
+		if section == "tests" && testsUnchanged {
+			continue
+		}
 		if len(manifest.Sections) == 0 || manifest.Sections[section] != localSections[section] {
 			sections = append(sections, section)
 		}
 	}
-	testsChanged := len(manifest.Sections) == 0 ||
-		localSections["tests"] != manifest.Sections["tests"]
+	testsChanged := !testsUnchanged && (len(manifest.Sections) == 0 ||
+		localSections["tests"] != manifest.Sections["tests"])
 	plan := updatePlan{
 		TaskID: taskID, TestsVersion: manifest.TestsVersion,
 		RemoteTests: manifest.TestsCount, LocalTests: localCount,
-		TestsChanged: testsChanged, Sections: sections,
+		TestsChanged: testsChanged, TestsUnchanged: testsUnchanged, Sections: sections,
 		TaskChanged: len(manifest.Sections) == 0 ||
 			localSections["task"] != manifest.Sections["task"],
 		AddedFiles: added, ModifiedFiles: modified, DeletedFiles: deleted,
@@ -146,7 +161,9 @@ func printUpdatePlan(plan updatePlan) {
 	}
 	fmt.Printf("task %s: tests version %d, remote %d tests\n",
 		plan.TaskID, plan.TestsVersion, plan.RemoteTests)
-	if plan.TestsChanged {
+	if plan.TestsUnchanged {
+		fmt.Printf("official tests: assumed unchanged; not read (%d remote tests)\n", plan.RemoteTests)
+	} else if plan.TestsChanged {
 		fmt.Printf("official tests: %s; sending %d local tests\n", testState, plan.LocalTests)
 	} else {
 		fmt.Printf("official tests: identical; skipping %d files (%s)\n",
@@ -163,6 +180,19 @@ func printUpdatePlan(plan updatePlan) {
 		fmt.Printf("sending sections: %s\n", strings.Join(plan.Sections, ", "))
 	}
 	printFileChanges(plan)
+}
+
+func withoutTestFiles(files []string) []string {
+	if len(files) == 0 {
+		return files
+	}
+	filtered := make([]string, 0, len(files))
+	for _, name := range files {
+		if !strings.HasPrefix(name, "tests/") && name != "tgroups.txt" {
+			filtered = append(filtered, name)
+		}
+	}
+	return filtered
 }
 
 func diffFiles(remote, local map[string]string) (added, modified, deleted []string) {

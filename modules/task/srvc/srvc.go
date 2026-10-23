@@ -15,6 +15,9 @@ import (
 type TaskService interface {
 	GetTask(ctx context.Context, shortId string) (Task, srvcerror.E)
 	CreateTask(ctx context.Context, task Task) srvcerror.E
+	UpdateTaskLimits(ctx context.Context, taskID string, cpuMs, memMiB int) (int, srvcerror.E)
+	UpdateTaskSolution(ctx context.Context, taskID, fname, content string, subtasks []int) (int, srvcerror.E)
+	GetTaskSolution(ctx context.Context, taskID, fname string) (Solution, srvcerror.E)
 	DeleteTask(ctx context.Context, shortId string) srvcerror.E
 
 	// test files
@@ -54,6 +57,7 @@ type TaskService interface {
 	PatchTaskFromZip(ctx context.Context, taskId string, patchBytes []byte, meta PatchMeta) (UpdateResult, srvcerror.E)
 	GetTaskManifest(ctx context.Context, taskId string) (TaskManifest, srvcerror.E)
 	ExportTaskAsZip(ctx context.Context, taskId string) ([]byte, srvcerror.E)
+	ExportTaskAsZipWithoutTests(ctx context.Context, taskId string) ([]byte, srvcerror.E)
 
 	ResolveNames(ctx context.Context, shortIds []string) ([]string, srvcerror.E)
 	SearchTasksByName(ctx context.Context, name string) ([]string, srvcerror.E)
@@ -77,6 +81,8 @@ type TaskPgRepo interface {
 	Exists(ctx context.Context, shortId string) (bool, error)
 	CreateTask(ctx context.Context, task Task) error
 	UpdateTask(ctx context.Context, task Task, replaceTests bool, expectedRevision int) error
+	UpdateTaskLimits(ctx context.Context, taskID string, cpuSecs float64, memMiB int) (int, error)
+	UpdateTaskSolution(ctx context.Context, taskID, fname, content string, subtasks []int) (int, error)
 	DeleteTask(ctx context.Context, shortId string) error
 	UpdateStatement(ctx context.Context, taskId string, statement MarkdownStatement) error
 	AddStatementImg(ctx context.Context, taskId string, img StatementImage) error

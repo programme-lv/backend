@@ -22,7 +22,7 @@ func runPackage(args []string) error {
 		return fmt.Errorf("%w: package needs exactly one <task> path", errUsage)
 	}
 
-	zipBytes, taskID, err := readTaskPackage(positional[0])
+	zipBytes, taskID, err := readTaskPackageMode(positional[0], flags.bools["partial"])
 	if err != nil {
 		return err
 	}

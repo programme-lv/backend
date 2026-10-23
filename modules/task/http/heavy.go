@@ -277,7 +277,15 @@ func (h *taskHttpHandler) ExportTask(w http.ResponseWriter, r *http.Request) {
 	default:
 	}
 
-	zipBytes, exportTaskAsZipErr := h.taskSrvc.ExportTaskAsZip(r.Context(), taskId)
+	includeTests := r.URL.Query().Get("tests") != "false" &&
+		r.URL.Query().Get("include_tests") != "false"
+	var zipBytes []byte
+	var exportTaskAsZipErr error
+	if includeTests {
+		zipBytes, exportTaskAsZipErr = h.taskSrvc.ExportTaskAsZip(r.Context(), taskId)
+	} else {
+		zipBytes, exportTaskAsZipErr = h.taskSrvc.ExportTaskAsZipWithoutTests(r.Context(), taskId)
+	}
 	if exportTaskAsZipErr != nil {
 		jsonresp.WriteError(w, exportTaskAsZipErr)
 		return
@@ -290,6 +298,9 @@ func (h *taskHttpHandler) ExportTask(w http.ResponseWriter, r *http.Request) {
 	)
 
 	filename := fmt.Sprintf("%s.zip", taskId)
+	if !includeTests {
+		filename = fmt.Sprintf("%s-no-tests.zip", taskId)
+	}
 	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", filename))
 	w.Header().Set("Content-Length", fmt.Sprintf("%d", len(zipBytes)))
 

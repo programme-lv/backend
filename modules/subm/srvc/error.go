@@ -37,4 +37,9 @@ var ErrProfileNotFound = srvcerror.New(
 	"Risinājuma profils netika atrasts",
 ).SetHttpStatusCode(http.StatusNotFound)
 
+var ErrInvalidProfileFilter = srvcerror.New(
+	"invalid_profile_filter",
+	"Nederīgs profilu atlases filtrs",
+).SetHttpStatusCode(http.StatusBadRequest)
+
 var ErrInternal = srvcerror.ErrInternal

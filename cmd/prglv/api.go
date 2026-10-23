@@ -271,10 +271,13 @@ func updateTask(ctx context.Context, base, apiKey, taskID string, zipBytes []byt
 }
 
 // exportTask downloads the TaskZip archive of taskID.
-func exportTask(ctx context.Context, base, apiKey, taskID string) ([]byte, error) {
+func exportTask(ctx context.Context, base, apiKey, taskID string, noTests ...bool) ([]byte, error) {
 	endpoint, err := apiEndpoint(base, "tasks", taskID, "export")
 	if err != nil {
 		return nil, err
+	}
+	if len(noTests) > 0 && noTests[0] {
+		endpoint += "?tests=false"
 	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)

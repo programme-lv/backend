@@ -1,14 +1,18 @@
 package srvc
 
 import (
+	"archive/zip"
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"math"
 	"path/filepath"
 	"reflect"
+	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/programme-lv/backend/common/srvcerror"
 	taskzipv1 "github.com/programme-lv/backend/modules/task/taskzip"
@@ -269,6 +273,17 @@ func (ts *taskSrvc) uploadTaskZipTest(
 }
 
 func (ts *taskSrvc) ExportTaskAsZip(ctx context.Context, taskID string) ([]byte, srvcerror.E) {
+	return ts.exportTaskAsZip(ctx, taskID, true)
+}
+
+// ExportTaskAsZipWithoutTests returns a partial TaskZip for inspection and
+// sparse edits. It omits tests/ so large test sets do not need downloading;
+// the result is readable by taskzip.ReadPatch, not by a full import.
+func (ts *taskSrvc) ExportTaskAsZipWithoutTests(ctx context.Context, taskID string) ([]byte, srvcerror.E) {
+	return ts.exportTaskAsZip(ctx, taskID, false)
+}
+
+func (ts *taskSrvc) exportTaskAsZip(ctx context.Context, taskID string, includeTests bool) ([]byte, srvcerror.E) {
 	task, getErr := ts.GetTask(ctx, taskID)
 	if getErr != nil {
 		return nil, getErr
@@ -278,20 +293,34 @@ func (ts *taskSrvc) ExportTaskAsZip(ctx context.Context, taskID string) ([]byte,
 		ts.logger(ctx).Error("map TaskZip", "task_id", taskID, "error", err)
 		return nil, srvcerror.InternalServerError()
 	}
-	if err := ts.downloadTaskZipAssets(ctx, task, &archive); err != nil {
+	if err := ts.downloadTaskZipAssets(ctx, task, &archive, includeTests); err != nil {
 		ts.logger(ctx).Error("download TaskZip assets", "task_id", taskID, "error", err)
 		return nil, srvcerror.InternalServerError()
 	}
-	data, err := taskzipv1.Write(archive)
+	if includeTests {
+		data, err := taskzipv1.Write(archive)
+		if err != nil {
+			ts.logger(ctx).Error("write TaskZip", "task_id", taskID, "error", err)
+			return nil, srvcerror.InternalServerError()
+		}
+		return data, nil
+	}
+
+	files, err := taskzipv1.FileMap(archive)
 	if err != nil {
-		ts.logger(ctx).Error("write TaskZip", "task_id", taskID, "error", err)
+		ts.logger(ctx).Error("map TaskZip files", "task_id", taskID, "error", err)
+		return nil, srvcerror.InternalServerError()
+	}
+	data, err := zipFiles(files)
+	if err != nil {
+		ts.logger(ctx).Error("write partial TaskZip", "task_id", taskID, "error", err)
 		return nil, srvcerror.InternalServerError()
 	}
 	return data, nil
 }
 
 func (ts *taskSrvc) downloadTaskZipAssets(
-	ctx context.Context, task Task, archive *taskzipv1.Task,
+	ctx context.Context, task Task, archive *taskzipv1.Task, includeTests bool,
 ) error {
 	for _, image := range task.MdImages {
 		data, err := ts.publicStore.Download(taskStatementImageObjectKey(image.ObjectKey))
@@ -301,16 +330,18 @@ func (ts *taskSrvc) downloadTaskZipAssets(
 		}
 		archive.StatementImages[image.Filename] = data
 	}
-	for _, test := range task.Tests {
-		input, err := ts.DownloadTestFile(ctx, test.InpSha2)
-		if err != nil {
-			return fmt.Errorf("download test input: %w", err)
+	if includeTests {
+		for _, test := range task.Tests {
+			input, err := ts.DownloadTestFile(ctx, test.InpSha2)
+			if err != nil {
+				return fmt.Errorf("download test input: %w", err)
+			}
+			output, err := ts.DownloadTestFile(ctx, test.AnsSha2)
+			if err != nil {
+				return fmt.Errorf("download test output: %w", err)
+			}
+			archive.Tests = append(archive.Tests, taskzipv1.Test{Input: input, Output: output})
 		}
-		output, err := ts.DownloadTestFile(ctx, test.AnsSha2)
-		if err != nil {
-			return fmt.Errorf("download test output: %w", err)
-		}
-		archive.Tests = append(archive.Tests, taskzipv1.Test{Input: input, Output: output})
 	}
 	if archive.Archive == nil {
 		archive.Archive = map[string][]byte{}
@@ -319,6 +350,34 @@ func (ts *taskSrvc) downloadTaskZipAssets(
 		return err
 	}
 	return ts.exportIllustrationToArchive(ctx, task, archive.Archive)
+}
+
+func zipFiles(files map[string][]byte) ([]byte, error) {
+	var buf bytes.Buffer
+	zw := zip.NewWriter(&buf)
+	names := make([]string, 0, len(files))
+	for name := range files {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	for _, name := range names {
+		header := &zip.FileHeader{Name: name, Method: zip.Deflate}
+		header.SetModTime(time.Unix(0, 0).UTC())
+		header.SetMode(0o644)
+		writer, err := zw.CreateHeader(header)
+		if err != nil {
+			_ = zw.Close()
+			return nil, fmt.Errorf("write %s: %w", name, err)
+		}
+		if _, err := writer.Write(files[name]); err != nil {
+			_ = zw.Close()
+			return nil, fmt.Errorf("write %s: %w", name, err)
+		}
+	}
+	if err := zw.Close(); err != nil {
+		return nil, fmt.Errorf("close zip: %w", err)
+	}
+	return buf.Bytes(), nil
 }
 
 func mapFromTaskZip(t taskzipv1.Task, overrideID string) (Task, error) {

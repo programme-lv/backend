@@ -52,9 +52,10 @@ type ProfileFailure struct {
 }
 
 type StartAllProfilesResult struct {
-	Started int              `json:"started"`
-	Skipped []string         `json:"skipped"`
-	Failed  []ProfileFailure `json:"failed"`
+	Started  int              `json:"started"`
+	Skipped  []string         `json:"skipped"`
+	Filtered []string         `json:"filtered"`
+	Failed   []ProfileFailure `json:"failed"`
 }
 
 type ProfileRepo interface {
@@ -70,7 +71,7 @@ type ProfileService interface {
 	ListSolutionProfiles(ctx context.Context, taskID, fname string) ([]domain.SolutionProfile, srvcerror.E)
 	ListTaskSolutions(ctx context.Context, taskID string) ([]SolutionSummary, srvcerror.E)
 	GetTaskCalibration(ctx context.Context, taskID string) (domain.Calibration, srvcerror.E)
-	StartAllSolutionProfiles(ctx context.Context, taskID string, runs int) (StartAllProfilesResult, srvcerror.E)
+	StartAllSolutionProfiles(ctx context.Context, taskID string, runs int, only string) (StartAllProfilesResult, srvcerror.E)
 }
 
 var _ ProfileService = &profileSrvc{}
@@ -122,8 +123,17 @@ func (s *profileSrvc) StartSolutionProfile(ctx context.Context, p StartProfilePa
 // StartAllSolutionProfiles enqueues one profile per solution. Solutions that
 // already have a running profile are skipped; the service semaphore makes the
 // queued profiles execute one at a time.
-func (s *profileSrvc) StartAllSolutionProfiles(ctx context.Context, taskID string, runs int) (StartAllProfilesResult, srvcerror.E) {
+func (s *profileSrvc) StartAllSolutionProfiles(
+	ctx context.Context, taskID string, runs int, only string,
+) (StartAllProfilesResult, srvcerror.E) {
 	log := ctxlog.FromContext(ctx).With("module", "subm", "layer", "srvc", "cmd", "start all solution profiles")
+
+	if only != "" && only != "stale" && only != "mismatched" {
+		return StartAllProfilesResult{}, ErrInvalidProfileFilter
+	}
+	if runs <= 0 {
+		runs = 1
+	}
 
 	task, err := s.taskSrvc.GetTask(ctx, taskID)
 	if err != nil {
@@ -132,8 +142,9 @@ func (s *profileSrvc) StartAllSolutionProfiles(ctx context.Context, taskID strin
 	}
 
 	result := StartAllProfilesResult{
-		Skipped: []string{},
-		Failed:  []ProfileFailure{},
+		Skipped:  []string{},
+		Filtered: []string{},
+		Failed:   []ProfileFailure{},
 	}
 	for _, solution := range task.Solutions {
 		profiles, listErr := s.repo.ListProfiles(ctx, taskID, solution.Fname, 1)
@@ -146,6 +157,18 @@ func (s *profileSrvc) StartAllSolutionProfiles(ctx context.Context, taskID strin
 			continue
 		}
 
+		if only != "" {
+			include, filterErr := s.shouldProfile(ctx, task, solution, only)
+			if filterErr != nil {
+				log.Error("check profile filter", "fname", solution.Fname, "error", filterErr)
+				return StartAllProfilesResult{}, srvcerror.InternalServerError()
+			}
+			if !include {
+				result.Filtered = append(result.Filtered, solution.Fname)
+				continue
+			}
+		}
+
 		if _, startErr := s.startProfile(ctx, task, solution, "", runs); startErr != nil {
 			result.Failed = append(result.Failed, ProfileFailure{
 				Fname: solution.Fname,
@@ -156,6 +179,35 @@ func (s *profileSrvc) StartAllSolutionProfiles(ctx context.Context, taskID strin
 		result.Started++
 	}
 	return result, nil
+}
+
+func (s *profileSrvc) shouldProfile(
+	ctx context.Context, task tasksrvc.Task, solution tasksrvc.Solution, only string,
+) (bool, error) {
+	profile, err := s.repo.LatestFinishedProfile(ctx, task.ShortId, solution.Fname)
+	if err != nil {
+		if errors.Is(err, ErrProfileNotFoundInRepo) {
+			return true, nil
+		}
+		return false, err
+	}
+	if profileStale(task, solution, profile) {
+		return true, nil
+	}
+	if only == "stale" {
+		return false, nil
+	}
+	verdict := domain.BuildVerdict(task, profile.Runs, solution.Subtasks, task.CpuMillis(), task.MemoryKiB())
+	if !verdict.Applicable {
+		return false, nil
+	}
+	return !verdict.Matches, nil
+}
+
+func profileStale(task tasksrvc.Task, solution tasksrvc.Solution, profile domain.SolutionProfile) bool {
+	sum := sha256.Sum256([]byte(solution.Content))
+	return profile.TestsVersion != task.TestsVersion ||
+		profile.SolutionSha256 != hex.EncodeToString(sum[:])
 }
 
 func (s *profileSrvc) startProfile(
@@ -303,10 +355,8 @@ func (s *profileSrvc) GetTaskCalibration(ctx context.Context, taskID string) (do
 			return domain.Calibration{}, srvcerror.InternalServerError()
 		}
 
-		sum := sha256.Sum256([]byte(solution.Content))
 		entry.ProfileID = &profile.ID
-		entry.Stale = profile.TestsVersion != task.TestsVersion ||
-			profile.SolutionSha256 != hex.EncodeToString(sum[:])
+		entry.Stale = profileStale(task, solution, profile)
 		if entry.Stale {
 			staleProfiles = append(staleProfiles, solution.Fname)
 			solutions = append(solutions, entry)
