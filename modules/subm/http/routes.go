@@ -25,6 +25,7 @@ func (h *SubmHttpHandler) RegisterRoutes(r *chi.Mux, jwtKey, adminAPIKey []byte,
 			r.Post("/reeval", h.ReevalSubms)
 
 			r.Get("/tasks/{taskId}/solutions", hf.NoReqJsonResp(h.ListTaskSolutions))
+			r.Get("/tasks/{taskId}/solutions/calibration", hf.NoReqJsonResp(h.GetTaskCalibration))
 			r.Post("/tasks/{taskId}/solutions/{fname}/profile", hf.JsonReqJsonResp(h.StartSolutionProfile))
 			r.Get("/tasks/{taskId}/solutions/{fname}/profiles", hf.NoReqJsonResp(h.ListSolutionProfiles))
 			r.Get("/solution-profiles/{profileId}", hf.NoReqJsonResp(h.GetSolutionProfile))

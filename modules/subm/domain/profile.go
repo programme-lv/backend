@@ -47,6 +47,15 @@ func (r ProfileRun) Test(testID int) (ProfileTest, bool) {
 	return ProfileTest{}, false
 }
 
+// ProfileProgress is the in-memory progress of a running profile. It is not
+// persisted: after a restart the profile is interrupted anyway.
+type ProfileProgress struct {
+	Run        int `json:"run"` // 1-based
+	Runs       int `json:"runs"`
+	TestsDone  int `json:"tests_done"`
+	TestsTotal int `json:"tests_total"`
+}
+
 // SolutionProfile is a persisted calibration run for one task solution.
 type SolutionProfile struct {
 	ID             uuid.UUID
@@ -57,11 +66,15 @@ type SolutionProfile struct {
 	Error          *string
 	ExpectedPoints int
 	PossiblePoints int
+	RequestedRuns  int
 	TestsVersion   int
 	SolutionSha256 string
 	Runs           []ProfileRun
 	CreatedAt      time.Time
 	FinishedAt     *time.Time
+
+	// Progress is populated for running profiles only.
+	Progress *ProfileProgress
 }
 
 // Resource selects the axis of a profiling chart.
@@ -213,31 +226,6 @@ func BuildProfileChart(task tasksrvc.Task, runs []ProfileRun, resource Resource,
 // memKiB. Tests that scored zero at the profiling limits cannot recover at a
 // tighter limit; the rest pass while their measured use stays below the limit.
 func profileScoreAt(task tasksrvc.Task, run ProfileRun, cpuMs, memKiB int) int {
-	eval := NewEval(uuid.Nil, uuid.Nil, task)
-	eval.CpuLimMs = cpuMs
-	eval.MemLimKiB = memKiB
-
-	for i := range eval.Tests {
-		test := &eval.Tests[i]
-		test.Reached = true
-		test.Finished = true
-
-		measured, ok := run.Test(i + 1)
-		if !ok || measured.Percent == 0 {
-			test.Wa = true
-			continue
-		}
-		if measured.CpuMs >= cpuMs {
-			test.Tle = true
-			continue
-		}
-		if measured.MemKiB >= memKiB {
-			test.Mle = true
-			continue
-		}
-		test.Score = measured.Percent
-		test.Ac = measured.Percent == 100
-	}
-
+	eval := evalFromRun(task, run, cpuMs, memKiB)
 	return eval.CalculateScore().ReceivedScore
 }

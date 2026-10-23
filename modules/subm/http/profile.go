@@ -52,34 +52,33 @@ type ProfileRunView struct {
 	Tests     []domain.ProfileTest `json:"tests"`
 }
 
-type ScoreRange struct {
-	Min    int `json:"min"`
-	Median int `json:"median"`
-	Max    int `json:"max"`
-}
-
 type SolutionProfileView struct {
-	ID              uuid.UUID         `json:"id"`
-	TaskID          string            `json:"task_id"`
-	Fname           string            `json:"fname"`
-	LangID          string            `json:"lang_id"`
-	LangDisplay     string            `json:"lang_display"`
-	Status          string            `json:"status"`
-	Error           *string           `json:"error,omitempty"`
-	ExpectedPoints  int               `json:"expected_points"`
-	PossiblePoints  int               `json:"possible_points"`
-	TestsVersion    int               `json:"tests_version"`
-	SolutionStale   bool              `json:"solution_stale"`
-	CurrentCpuMs    int               `json:"current_cpu_ms"`
-	CurrentMemKiB   int               `json:"current_mem_kib"`
-	CurrentScore    ScoreRange        `json:"current_score"`
-	ProfilingCpuMs  int               `json:"profiling_cpu_ms"`
-	ProfilingMemKiB int               `json:"profiling_mem_kib"`
-	CreatedAt       string            `json:"created_at"`
-	FinishedAt      *string           `json:"finished_at,omitempty"`
-	Runs            []ProfileRunView  `json:"runs"`
-	Cpu             domain.LimitChart `json:"cpu"`
-	Mem             domain.LimitChart `json:"mem"`
+	ID              uuid.UUID                       `json:"id"`
+	TaskID          string                          `json:"task_id"`
+	Fname           string                          `json:"fname"`
+	LangID          string                          `json:"lang_id"`
+	LangDisplay     string                          `json:"lang_display"`
+	Status          string                          `json:"status"`
+	Error           *string                         `json:"error,omitempty"`
+	ExpectedPoints  int                             `json:"expected_points"`
+	PossiblePoints  int                             `json:"possible_points"`
+	RequestedRuns   int                             `json:"requested_runs"`
+	Progress        *domain.ProfileProgress         `json:"progress,omitempty"`
+	TestsVersion    int                             `json:"tests_version"`
+	SolutionStale   bool                            `json:"solution_stale"`
+	CurrentCpuMs    int                             `json:"current_cpu_ms"`
+	CurrentMemKiB   int                             `json:"current_mem_kib"`
+	CurrentScore    domain.ProfileScoreDistribution `json:"current_score"`
+	CPUViable       domain.ViableBounds             `json:"cpu_viable"`
+	MemViable       domain.ViableBounds             `json:"mem_viable"`
+	Verdict         domain.Verdict                  `json:"verdict"`
+	ProfilingCpuMs  int                             `json:"profiling_cpu_ms"`
+	ProfilingMemKiB int                             `json:"profiling_mem_kib"`
+	CreatedAt       string                          `json:"created_at"`
+	FinishedAt      *string                         `json:"finished_at,omitempty"`
+	Runs            []ProfileRunView                `json:"runs"`
+	Cpu             domain.LimitChart               `json:"cpu"`
+	Mem             domain.LimitChart               `json:"mem"`
 }
 
 func (h *SubmHttpHandler) ListTaskSolutions(ctx context.Context) ([]SolutionView, jsonresp.HttpStatusCoder) {
@@ -140,6 +139,15 @@ func (h *SubmHttpHandler) ListSolutionProfiles(ctx context.Context) ([]SolutionP
 	return views, nil
 }
 
+func (h *SubmHttpHandler) GetTaskCalibration(ctx context.Context) (domain.Calibration, jsonresp.HttpStatusCoder) {
+	taskID := chi.URLParamFromCtx(ctx, "taskId")
+	calibration, err := h.profileSrvc.GetTaskCalibration(ctx, taskID)
+	if err != nil {
+		return domain.Calibration{}, err
+	}
+	return calibration, nil
+}
+
 func (h *SubmHttpHandler) GetSolutionProfile(ctx context.Context) (SolutionProfileView, jsonresp.HttpStatusCoder) {
 	profileID, parseErr := uuid.Parse(chi.URLParamFromCtx(ctx, "profileId"))
 	if parseErr != nil {
@@ -165,6 +173,8 @@ func (h *SubmHttpHandler) GetSolutionProfile(ctx context.Context) (SolutionProfi
 		Error:           profile.Error,
 		ExpectedPoints:  profile.ExpectedPoints,
 		PossiblePoints:  profile.PossiblePoints,
+		RequestedRuns:   profile.RequestedRuns,
+		Progress:        profile.Progress,
 		TestsVersion:    profile.TestsVersion,
 		CurrentCpuMs:    task.CpuMillis(),
 		CurrentMemKiB:   task.MemoryKiB(),
@@ -181,6 +191,11 @@ func (h *SubmHttpHandler) GetSolutionProfile(ctx context.Context) (SolutionProfi
 	if solution, ok := findSolution(task, profile.Fname); ok {
 		sum := sha256.Sum256([]byte(solution.Content))
 		view.SolutionStale = hex.EncodeToString(sum[:]) != profile.SolutionSha256
+		view.CPUViable = domain.BuildViableBounds(task, profile.Runs, domain.ResourceCPU, solution.Subtasks)
+		view.MemViable = domain.BuildViableBounds(task, profile.Runs, domain.ResourceMemory, solution.Subtasks)
+		view.Verdict = domain.BuildVerdict(
+			task, profile.Runs, solution.Subtasks, task.CpuMillis(), task.MemoryKiB(),
+		)
 	}
 
 	if profile.FinishedAt != nil {
@@ -212,16 +227,16 @@ func (h *SubmHttpHandler) GetSolutionProfile(ctx context.Context) (SolutionProfi
 	return view, nil
 }
 
-func scoreRangeAt(task tasksrvc.Task, runs []domain.ProfileRun, cpuMs, memKiB int) ScoreRange {
+func scoreRangeAt(task tasksrvc.Task, runs []domain.ProfileRun, cpuMs, memKiB int) domain.ProfileScoreDistribution {
 	if len(runs) == 0 {
-		return ScoreRange{}
+		return domain.ProfileScoreDistribution{}
 	}
 	scores := make([]int, len(runs))
 	for i, run := range runs {
 		scores[i] = domain.ProfileScoreAt(task, run, cpuMs, memKiB)
 	}
 	sort.Ints(scores)
-	return ScoreRange{
+	return domain.ProfileScoreDistribution{
 		Min:    scores[0],
 		Median: scores[len(scores)/2],
 		Max:    scores[len(scores)-1],
