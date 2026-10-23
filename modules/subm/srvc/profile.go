@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -49,6 +50,7 @@ type ProfileRepo interface {
 	SaveProfile(ctx context.Context, profile domain.SolutionProfile) error
 	GetProfile(ctx context.Context, id uuid.UUID) (domain.SolutionProfile, error)
 	ListProfiles(ctx context.Context, taskID, fname string, limit int) ([]domain.SolutionProfile, error)
+	LatestFinishedProfile(ctx context.Context, taskID, fname string) (domain.SolutionProfile, error)
 }
 
 type ProfileService interface {
@@ -56,6 +58,7 @@ type ProfileService interface {
 	GetSolutionProfile(ctx context.Context, id uuid.UUID) (domain.SolutionProfile, srvcerror.E)
 	ListSolutionProfiles(ctx context.Context, taskID, fname string) ([]domain.SolutionProfile, srvcerror.E)
 	ListTaskSolutions(ctx context.Context, taskID string) ([]SolutionSummary, srvcerror.E)
+	GetTaskCalibration(ctx context.Context, taskID string) (domain.Calibration, srvcerror.E)
 }
 
 var _ ProfileService = &profileSrvc{}
@@ -72,6 +75,9 @@ type profileSrvc struct {
 	// Profiles compile and execute solutions for up to 10 s per test. Run one
 	// at a time so calibration cannot flood the tester queue.
 	sem chan struct{}
+
+	progressMu sync.Mutex
+	progress   map[uuid.UUID]domain.ProfileProgress
 }
 
 func NewProfileSrvc(taskSrvc tasksrvc.TaskService, execSrvc ExecSrvcFacade, repo ProfileRepo) *profileSrvc {
@@ -80,6 +86,7 @@ func NewProfileSrvc(taskSrvc tasksrvc.TaskService, execSrvc ExecSrvcFacade, repo
 		execSrvc: execSrvc,
 		repo:     repo,
 		sem:      make(chan struct{}, 1),
+		progress: make(map[uuid.UUID]domain.ProfileProgress),
 	}
 }
 
@@ -121,6 +128,7 @@ func (s *profileSrvc) StartSolutionProfile(ctx context.Context, p StartProfilePa
 		Status:         domain.ProfileRunning,
 		ExpectedPoints: domain.ProfileExpectedPoints(task, solution),
 		PossiblePoints: domain.ProfilePossiblePoints(task),
+		RequestedRuns:  runs,
 		TestsVersion:   task.TestsVersion,
 		SolutionSha256: hex.EncodeToString(sum[:]),
 		Runs:           []domain.ProfileRun{},
@@ -145,6 +153,13 @@ func (s *profileSrvc) GetSolutionProfile(ctx context.Context, id uuid.UUID) (dom
 		ctxlog.FromContext(ctx).Error("get solution profile", "profile_id", id, "error", err)
 		return domain.SolutionProfile{}, srvcerror.InternalServerError()
 	}
+
+	s.progressMu.Lock()
+	if progress, ok := s.progress[id]; ok {
+		profile.Progress = &progress
+	}
+	s.progressMu.Unlock()
+
 	return profile, nil
 }
 
@@ -189,11 +204,76 @@ func (s *profileSrvc) ListTaskSolutions(ctx context.Context, taskID string) ([]S
 	return summaries, nil
 }
 
+func (s *profileSrvc) GetTaskCalibration(ctx context.Context, taskID string) (domain.Calibration, srvcerror.E) {
+	task, err := s.taskSrvc.GetTask(ctx, taskID)
+	if err != nil {
+		return domain.Calibration{}, err
+	}
+
+	solutions := make([]domain.SolutionCalibration, 0, len(task.Solutions))
+	var unclassified, missingProfiles, staleProfiles []string
+
+	for _, solution := range task.Solutions {
+		entry := domain.SolutionCalibration{
+			Fname:            solution.Fname,
+			ExpectedSubtasks: solution.Subtasks,
+			ExpectedPoints:   domain.ProfileExpectedPoints(task, solution),
+			PossiblePoints:   domain.ProfilePossiblePoints(task),
+			CPU:              domain.ViableBounds{LowerKind: domain.BoundNone, UpperKind: domain.BoundNone},
+			Mem:              domain.ViableBounds{LowerKind: domain.BoundNone, UpperKind: domain.BoundNone},
+			Verdict:          domain.Verdict{Subtasks: []domain.SubtaskOutcome{}},
+		}
+		if len(solution.Subtasks) == 0 {
+			unclassified = append(unclassified, solution.Fname)
+			solutions = append(solutions, entry)
+			continue
+		}
+
+		profile, profileErr := s.repo.LatestFinishedProfile(ctx, taskID, solution.Fname)
+		if profileErr != nil {
+			if errors.Is(profileErr, ErrProfileNotFoundInRepo) {
+				missingProfiles = append(missingProfiles, solution.Fname)
+				solutions = append(solutions, entry)
+				continue
+			}
+			ctxlog.FromContext(ctx).Error("get latest finished profile",
+				"task_id", taskID, "fname", solution.Fname, "error", profileErr)
+			return domain.Calibration{}, srvcerror.InternalServerError()
+		}
+
+		sum := sha256.Sum256([]byte(solution.Content))
+		entry.ProfileID = &profile.ID
+		entry.Stale = profile.TestsVersion != task.TestsVersion ||
+			profile.SolutionSha256 != hex.EncodeToString(sum[:])
+		if entry.Stale {
+			staleProfiles = append(staleProfiles, solution.Fname)
+			solutions = append(solutions, entry)
+			continue
+		}
+
+		entry.CPU = domain.BuildViableBounds(task, profile.Runs, domain.ResourceCPU, solution.Subtasks)
+		entry.Mem = domain.BuildViableBounds(task, profile.Runs, domain.ResourceMemory, solution.Subtasks)
+		entry.Verdict = domain.BuildVerdict(task, profile.Runs, solution.Subtasks, task.CpuMillis(), task.MemoryKiB())
+		solutions = append(solutions, entry)
+	}
+
+	return domain.BuildCalibration(
+		task,
+		task.CpuMillis(),
+		task.MemoryKiB(),
+		solutions,
+		unclassified,
+		missingProfiles,
+		staleProfiles,
+	), nil
+}
+
 // runProfile executes the solution at the profiling limits, one repetition at
 // a time, and persists the measurements after each one.
 func (s *profileSrvc) runProfile(profile domain.SolutionProfile, task tasksrvc.Task, content string, runs int) {
 	s.sem <- struct{}{}
 	defer func() { <-s.sem }()
+	defer s.clearProgress(profile.ID)
 
 	ctx := context.Background()
 	log := slog.Default().With("module", "subm", "layer", "srvc", "cmd", "run solution profile")
@@ -204,6 +284,12 @@ func (s *profileSrvc) runProfile(profile domain.SolutionProfile, task tasksrvc.T
 	tests := constructExecEnqueueTests(ctx, eval, s.taskSrvc.GetTestDownlUrl)
 
 	for i := 0; i < runs; i++ {
+		s.setProgress(profile.ID, domain.ProfileProgress{
+			Run:        i + 1,
+			Runs:       runs,
+			TestsTotal: len(task.Tests),
+		})
+
 		execUUID := uuid.New()
 		enqueueErr := s.execSrvc.Enqueue(ctx, execUUID, content, profile.LangID, tests, exec.TestingParams{
 			CpuMs:      domain.ProfileCpuMs,
@@ -215,6 +301,14 @@ func (s *profileSrvc) runProfile(profile domain.SolutionProfile, task tasksrvc.T
 		if enqueueErr != nil {
 			s.fail(ctx, profile, fmt.Errorf("enqueue execution: %w", enqueueErr))
 			return
+		}
+
+		// The listener is best-effort: if the execution finished before we
+		// subscribed, Get below still returns the stored result.
+		if progressCh, listenErr := s.execSrvc.Listen(ctx, execUUID); listenErr == nil {
+			go s.trackProgress(profile.ID, i+1, progressCh)
+		} else {
+			log.Debug("listen for profile progress", "profile_id", profile.ID, "error", listenErr)
 		}
 
 		// Bound each repetition. Without this a missing tester leaves the
@@ -245,6 +339,34 @@ func (s *profileSrvc) runProfile(profile domain.SolutionProfile, task tasksrvc.T
 	profile.FinishedAt = &finishedAt
 	if saveErr := s.repo.SaveProfile(ctx, profile); saveErr != nil {
 		log.Error("finish profile", "profile_id", profile.ID, "error", saveErr)
+	}
+}
+
+func (s *profileSrvc) setProgress(id uuid.UUID, progress domain.ProfileProgress) {
+	s.progressMu.Lock()
+	s.progress[id] = progress
+	s.progressMu.Unlock()
+}
+
+func (s *profileSrvc) clearProgress(id uuid.UUID) {
+	s.progressMu.Lock()
+	delete(s.progress, id)
+	s.progressMu.Unlock()
+}
+
+func (s *profileSrvc) trackProgress(id uuid.UUID, run int, events <-chan exec.Event) {
+	for event := range events {
+		switch event.(type) {
+		case exec.FinishedTest, exec.IgnoredTest:
+			s.progressMu.Lock()
+			progress := s.progress[id]
+			// Ignore stragglers from the previous repetition.
+			if progress.Run == run {
+				progress.TestsDone++
+				s.progress[id] = progress
+			}
+			s.progressMu.Unlock()
+		}
 	}
 }
 

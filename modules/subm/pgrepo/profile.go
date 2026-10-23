@@ -30,14 +30,15 @@ func (r *pgProfileRepo) SaveProfile(ctx context.Context, profile domain.Solution
 	_, err = r.pool.Exec(ctx, `
 		INSERT INTO task_solution_profiles (
 			id, task_id, fname, lang_id, status, error,
-			expected_points, possible_points, tests_version, solution_sha256,
-			runs, created_at, finished_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+			expected_points, possible_points, requested_runs, tests_version,
+			solution_sha256, runs, created_at, finished_at
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
 		ON CONFLICT (id) DO UPDATE SET
 			status = EXCLUDED.status,
 			error = EXCLUDED.error,
 			expected_points = EXCLUDED.expected_points,
 			possible_points = EXCLUDED.possible_points,
+			requested_runs = EXCLUDED.requested_runs,
 			tests_version = EXCLUDED.tests_version,
 			solution_sha256 = EXCLUDED.solution_sha256,
 			runs = EXCLUDED.runs,
@@ -51,6 +52,7 @@ func (r *pgProfileRepo) SaveProfile(ctx context.Context, profile domain.Solution
 		profile.Error,
 		profile.ExpectedPoints,
 		profile.PossiblePoints,
+		profile.RequestedRuns,
 		profile.TestsVersion,
 		profile.SolutionSha256,
 		runs,
@@ -66,19 +68,32 @@ func (r *pgProfileRepo) SaveProfile(ctx context.Context, profile domain.Solution
 func (r *pgProfileRepo) GetProfile(ctx context.Context, id uuid.UUID) (domain.SolutionProfile, error) {
 	const query = `
 		SELECT id, task_id, fname, lang_id, status, error,
-			expected_points, possible_points, tests_version, solution_sha256,
-			runs, created_at, finished_at
+			expected_points, possible_points, requested_runs, tests_version,
+			solution_sha256, runs, created_at, finished_at
 		FROM task_solution_profiles
 		WHERE id = $1
 	`
 	return r.scanProfile(r.pool.QueryRow(ctx, query, id))
 }
 
+func (r *pgProfileRepo) LatestFinishedProfile(ctx context.Context, taskID, fname string) (domain.SolutionProfile, error) {
+	const query = `
+		SELECT id, task_id, fname, lang_id, status, error,
+			expected_points, possible_points, requested_runs, tests_version,
+			solution_sha256, runs, created_at, finished_at
+		FROM task_solution_profiles
+		WHERE task_id = $1 AND fname = $2 AND status = 'finished'
+		ORDER BY created_at DESC
+		LIMIT 1
+	`
+	return r.scanProfile(r.pool.QueryRow(ctx, query, taskID, fname))
+}
+
 func (r *pgProfileRepo) ListProfiles(ctx context.Context, taskID, fname string, limit int) ([]domain.SolutionProfile, error) {
 	const query = `
 		SELECT id, task_id, fname, lang_id, status, error,
-			expected_points, possible_points, tests_version, solution_sha256,
-			runs, created_at, finished_at
+			expected_points, possible_points, requested_runs, tests_version,
+			solution_sha256, runs, created_at, finished_at
 		FROM task_solution_profiles
 		WHERE task_id = $1 AND fname = $2
 		ORDER BY created_at DESC
@@ -122,6 +137,7 @@ func (r *pgProfileRepo) scanProfile(row rowScanner) (domain.SolutionProfile, err
 		&profile.Error,
 		&profile.ExpectedPoints,
 		&profile.PossiblePoints,
+		&profile.RequestedRuns,
 		&profile.TestsVersion,
 		&profile.SolutionSha256,
 		&runs,
