@@ -46,6 +46,17 @@ type SolutionSummary struct {
 	LatestProfile  *domain.SolutionProfile
 }
 
+type ProfileFailure struct {
+	Fname string `json:"fname"`
+	Error string `json:"error"`
+}
+
+type StartAllProfilesResult struct {
+	Started int              `json:"started"`
+	Skipped []string         `json:"skipped"`
+	Failed  []ProfileFailure `json:"failed"`
+}
+
 type ProfileRepo interface {
 	SaveProfile(ctx context.Context, profile domain.SolutionProfile) error
 	GetProfile(ctx context.Context, id uuid.UUID) (domain.SolutionProfile, error)
@@ -59,6 +70,7 @@ type ProfileService interface {
 	ListSolutionProfiles(ctx context.Context, taskID, fname string) ([]domain.SolutionProfile, srvcerror.E)
 	ListTaskSolutions(ctx context.Context, taskID string) ([]SolutionSummary, srvcerror.E)
 	GetTaskCalibration(ctx context.Context, taskID string) (domain.Calibration, srvcerror.E)
+	StartAllSolutionProfiles(ctx context.Context, taskID string, runs int) (StartAllProfilesResult, srvcerror.E)
 }
 
 var _ ProfileService = &profileSrvc{}
@@ -104,7 +116,57 @@ func (s *profileSrvc) StartSolutionProfile(ctx context.Context, p StartProfilePa
 		return uuid.Nil, ErrSolutionNotFound
 	}
 
-	langID := p.LangID
+	return s.startProfile(ctx, task, solution, p.LangID, p.Runs)
+}
+
+// StartAllSolutionProfiles enqueues one profile per solution. Solutions that
+// already have a running profile are skipped; the service semaphore makes the
+// queued profiles execute one at a time.
+func (s *profileSrvc) StartAllSolutionProfiles(ctx context.Context, taskID string, runs int) (StartAllProfilesResult, srvcerror.E) {
+	log := ctxlog.FromContext(ctx).With("module", "subm", "layer", "srvc", "cmd", "start all solution profiles")
+
+	task, err := s.taskSrvc.GetTask(ctx, taskID)
+	if err != nil {
+		log.Error("get task", "task_id", taskID, "error", err)
+		return StartAllProfilesResult{}, err
+	}
+
+	result := StartAllProfilesResult{
+		Skipped: []string{},
+		Failed:  []ProfileFailure{},
+	}
+	for _, solution := range task.Solutions {
+		profiles, listErr := s.repo.ListProfiles(ctx, taskID, solution.Fname, 1)
+		if listErr != nil {
+			log.Error("list profiles", "fname", solution.Fname, "error", listErr)
+			return StartAllProfilesResult{}, srvcerror.InternalServerError()
+		}
+		if len(profiles) > 0 && profiles[0].Status == domain.ProfileRunning {
+			result.Skipped = append(result.Skipped, solution.Fname)
+			continue
+		}
+
+		if _, startErr := s.startProfile(ctx, task, solution, "", runs); startErr != nil {
+			result.Failed = append(result.Failed, ProfileFailure{
+				Fname: solution.Fname,
+				Error: startErr.Error(),
+			})
+			continue
+		}
+		result.Started++
+	}
+	return result, nil
+}
+
+func (s *profileSrvc) startProfile(
+	ctx context.Context,
+	task tasksrvc.Task,
+	solution tasksrvc.Solution,
+	langID string,
+	runs int,
+) (uuid.UUID, srvcerror.E) {
+	log := ctxlog.FromContext(ctx).With("module", "subm", "layer", "srvc", "cmd", "start solution profile")
+
 	if langID == "" {
 		inferred, inferErr := plang.ProgrLangIDFromFilename(solution.Fname)
 		if inferErr != nil {
@@ -117,7 +179,7 @@ func (s *profileSrvc) StartSolutionProfile(ctx context.Context, p StartProfilePa
 		return uuid.Nil, langErr
 	}
 
-	runs := clampRuns(p.Runs)
+	runs = clampRuns(runs)
 	sum := sha256.Sum256([]byte(solution.Content))
 
 	profile := domain.SolutionProfile{

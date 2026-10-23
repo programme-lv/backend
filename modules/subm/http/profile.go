@@ -123,6 +123,15 @@ func (h *SubmHttpHandler) StartSolutionProfile(ctx context.Context, req StartSol
 	return StartSolutionProfileResp{ProfileID: profileID}, nil
 }
 
+func (h *SubmHttpHandler) StartAllSolutionProfiles(ctx context.Context, req StartSolutionProfileReq) (submsrvc.StartAllProfilesResult, jsonresp.HttpStatusCoder) {
+	taskID := chi.URLParamFromCtx(ctx, "taskId")
+	result, err := h.profileSrvc.StartAllSolutionProfiles(ctx, taskID, req.Runs)
+	if err != nil {
+		return submsrvc.StartAllProfilesResult{}, err
+	}
+	return result, nil
+}
+
 func (h *SubmHttpHandler) ListSolutionProfiles(ctx context.Context) ([]SolutionProfileBrief, jsonresp.HttpStatusCoder) {
 	taskID := chi.URLParamFromCtx(ctx, "taskId")
 	fname := chi.URLParamFromCtx(ctx, "fname")
