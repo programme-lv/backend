@@ -26,14 +26,51 @@ func TestParseDerivedKeyAllowlist(t *testing.T) {
 	require.True(t, ok)
 	require.Equal(t, VariantFull, v)
 
+	orig, v, ok = ParseDerivedKey("md-images/task/abc.png.full.webp")
+	require.True(t, ok)
+	require.Equal(t, "md-images/task/abc.png", orig)
+	require.Equal(t, VariantFull, v)
+
+	orig, v, ok = ParseDerivedKey("task-md-images/abc.png.full.webp")
+	require.True(t, ok)
+	require.Equal(t, "task-md-images/abc.png", orig)
+	require.Equal(t, VariantFull, v)
+
+	orig, v, ok = ParseDerivedKey("task/abc.png.full.webp")
+	require.True(t, ok)
+	require.Equal(t, "task/abc.png", orig)
+	require.Equal(t, VariantFull, v)
+
 	_, _, ok = ParseDerivedKey("illustrations/abc.png")
 	require.False(t, ok)
 	_, _, ok = ParseDerivedKey("illustrations/abc.png.w999.webp")
 	require.False(t, ok)
-	_, _, ok = ParseDerivedKey("md-images/abc.png.list.webp")
+	_, _, ok = ParseDerivedKey("testfiles/abc.png.full.webp")
 	require.False(t, ok)
 	_, _, ok = ParseDerivedKey("illustrations/nested/abc.png.list.webp")
 	require.False(t, ok)
+	_, _, ok = ParseDerivedKey("md-images/.full.webp")
+	require.False(t, ok)
+	_, _, ok = ParseDerivedKey("md-images/aplusb/abc.svg.full.webp")
+	require.False(t, ok)
+}
+
+func TestIsDerivable(t *testing.T) {
+	for _, key := range []string{
+		"md-images/task/abc.png",
+		"md-images/task/abc.JPG",
+		"md-images/task/abc.jpeg",
+		"md-images/task/abc.webp",
+	} {
+		require.True(t, IsDerivable(key), key)
+	}
+	for _, key := range []string{
+		"md-images/task/abc.svg",
+		"md-images/task/abc.gif",
+		"md-images/task/abc",
+	} {
+		require.False(t, IsDerivable(key), key)
+	}
 }
 
 func TestServeKeyAliasesWebPOriginalForFull(t *testing.T) {

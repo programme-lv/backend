@@ -1,9 +1,9 @@
-# Task illustrations
+# Task illustrations and statement images
 
 Uploaded illustration bytes are the original. Existing production files are originals.
 The public URL in task JSON is not that file.
 
-## Keys
+## Illustration keys
 
 DB stores `{sha256}{ext}` without a directory prefix.
 
@@ -24,11 +24,25 @@ JSON:
 
 `width_px`, `height_px`, `sz_in_bytes` are the original.
 
+## Statement image keys
+
+Statement images are stored at `md-images/<taskId>/<sha256-prefix>-<filename>`
+(older installs use `task-md-images/` or `task/`). They expose only the full
+variant: original pixels as WebP, with no resizing. The task JSON `http_url`
+points at `<key>.full.webp`.
+
+- PNG, JPEG, and WebP originals are transcoded.
+- SVG and other formats are not transcoded; `http_url` stays the original key.
+- The un-suffixed original URL still serves the original bytes.
+- Existing originals are derived on first GET; statement image uploads do not
+  wait for the variant (unlike illustration uploads, which warm all three).
+
 ## Allowlist
 
 `GET /assets/*` is unauthenticated. Variants are a closed suffix set (`list`, `view`, `full`).
-Unknown keys such as `.w999.webp` are 404 and never written.
-Query parameters are not a size API.
+Only asset roots `illustrations/` (flat), `md-images/`, `task-md-images/`, and `task/`
+are derivable, and only for PNG/JPEG/WebP originals. Unknown keys such as
+`.w999.webp` are 404 and never written. Query parameters are not a size API.
 
 ## Generation
 

@@ -78,6 +78,47 @@ func TestServeIllustrationVariants(t *testing.T) {
 	})
 }
 
+func TestServeStatementImageVariant(t *testing.T) {
+	store, err := filestore.NewStore(t.TempDir())
+	require.NoError(t, err)
+
+	origPNG := encodeSolidPNG(t, 80, 40)
+	_, err = store.Upload(origPNG, "md-images/aplusb/abc.png", "image/png")
+	require.NoError(t, err)
+
+	h := assetHandler(t, store)
+
+	rec := getAsset(h, "/assets/md-images/aplusb/abc.png.full.webp")
+	require.Equal(t, http.StatusOK, rec.Code)
+	require.Equal(t, "image/webp", rec.Header().Get("Content-Type"))
+	require.Equal(t, img.DerivedCacheControl(), rec.Header().Get("Cache-Control"))
+	cfg, err := webp.DecodeConfig(bytes.NewReader(rec.Body.Bytes()))
+	require.NoError(t, err)
+	require.Equal(t, 80, cfg.Width)
+	require.Equal(t, 40, cfg.Height)
+
+	rec = getAsset(h, "/assets/md-images/aplusb/abc.png")
+	require.Equal(t, http.StatusOK, rec.Code)
+	require.Equal(t, "image/png", rec.Header().Get("Content-Type"))
+	require.Equal(t, origPNG, rec.Body.Bytes())
+}
+
+func TestServeStatementImageDoesNotDeriveSVG(t *testing.T) {
+	store, err := filestore.NewStore(t.TempDir())
+	require.NoError(t, err)
+
+	svg := []byte(`<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"></svg>`)
+	_, err = store.Upload(svg, "md-images/aplusb/abc.svg", "image/svg+xml")
+	require.NoError(t, err)
+
+	h := assetHandler(t, store)
+	rec := getAsset(h, "/assets/md-images/aplusb/abc.svg.full.webp")
+	require.Equal(t, http.StatusNotFound, rec.Code)
+	exists, err := store.Exists("md-images/aplusb/abc.svg.full.webp")
+	require.NoError(t, err)
+	require.False(t, exists)
+}
+
 func TestServeIllustrationFullWebPOriginal(t *testing.T) {
 	store, err := filestore.NewStore(t.TempDir())
 	require.NoError(t, err)

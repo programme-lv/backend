@@ -1,4 +1,5 @@
-// Package img decodes raster uploads and derives allowlisted WebP illustration variants.
+// Package img decodes raster uploads and derives allowlisted WebP variants for
+// illustrations and statement images.
 package img
 
 import (
