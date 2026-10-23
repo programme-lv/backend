@@ -48,6 +48,16 @@ type commandSpec struct {
 
 var commandSpecs = []commandSpec{
 	{
+		name:    "package",
+		summary: "Build a TaskZip .zip without uploading",
+		args:    "<task>",
+		flags: []flagSpec{
+			{name: "out", kind: "string", value: "PATH", desc: "Output path, or - for stdout", files: true},
+			{name: "force", kind: "bool", desc: "Overwrite an existing output file"},
+			{name: "json", kind: "bool", desc: "Print the result as JSON"},
+		},
+	},
+	{
 		name:    "upload",
 		summary: "Package a TaskZip directory or .zip and upload it as a new task",
 		args:    "<task>",
@@ -55,6 +65,29 @@ var commandSpecs = []commandSpec{
 			{name: "api-url", kind: "string", value: "URL", desc: "Backend base URL"},
 			{name: "api-key", kind: "string", value: "KEY", desc: "Admin API key"},
 			{name: "override-id", kind: "string", value: "ID", desc: "Store the task under this ID instead of the archive ID"},
+			{name: "json", kind: "bool", desc: "Print the result as JSON"},
+		},
+	},
+	{
+		name:    "update",
+		summary: "Update statement, examples, images, solutions, or metadata in place",
+		args:    "<task>",
+		flags: []flagSpec{
+			{name: "api-url", kind: "string", value: "URL", desc: "Backend base URL"},
+			{name: "api-key", kind: "string", value: "KEY", desc: "Admin API key"},
+			{name: "allow-test-changes", kind: "bool", desc: "Also replace official tests and scoring"},
+			{name: "yes", kind: "bool", desc: "Skip the confirmation prompt"},
+			{name: "dry-run", kind: "bool", desc: "Show the negotiated patch plan without sending it"},
+			{name: "json", kind: "bool", desc: "Print the result as JSON"},
+		},
+	},
+	{
+		name:    "manifest",
+		summary: "Show the remote task manifest used for sparse updates",
+		args:    "<task-id>",
+		flags: []flagSpec{
+			{name: "api-url", kind: "string", value: "URL", desc: "Backend base URL"},
+			{name: "api-key", kind: "string", value: "KEY", desc: "Admin API key"},
 			{name: "json", kind: "bool", desc: "Print the result as JSON"},
 		},
 	},
@@ -101,8 +134,14 @@ func run(args []string) error {
 		return nil
 	}
 	switch args[0] {
+	case "package":
+		return runPackage(args[1:])
 	case "upload":
 		return runUpload(args[1:])
+	case "update":
+		return runUpdate(args[1:])
+	case "manifest":
+		return runManifest(args[1:])
 	case "export":
 		return runExport(args[1:])
 	case "completions":

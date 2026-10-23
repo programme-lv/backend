@@ -56,6 +56,48 @@ func zipNames(t *testing.T, data []byte) map[string]bool {
 	return names
 }
 
+func TestBuildPatchZipCanOmitTests(t *testing.T) {
+	root := t.TempDir()
+	writeMinimalTask(t, root)
+	_, task, err := readTaskPackageWithTask(root)
+	if err != nil {
+		t.Fatalf("readTaskPackageWithTask: %v", err)
+	}
+	sections, _, count, size, err := taskSectionDigests(task)
+	if err != nil || sections["tests"] == "" || count != 2 || size == 0 {
+		t.Fatalf("taskSectionDigests = %v, %d, %d, %v", sections, count, size, err)
+	}
+	patch, err := buildPatchZip(task, map[string]bool{"statement": true})
+	if err != nil {
+		t.Fatalf("buildPatchZip: %v", err)
+	}
+	names := zipNames(t, patch)
+	if names["tests/001i.txt"] || names["tests/001o.txt"] {
+		t.Fatal("patch still contains tests")
+	}
+	if !names["task.toml"] || !names["statement/en.md"] {
+		t.Fatal("patch lost content")
+	}
+}
+
+func TestRunPackageWritesZipAndRefusesOverwrite(t *testing.T) {
+	root := t.TempDir()
+	writeMinimalTask(t, root)
+	out := filepath.Join(t.TempDir(), "addtwo.zip")
+	if err := runPackage([]string{"--out", out, root}); err != nil {
+		t.Fatalf("runPackage: %v", err)
+	}
+	if _, err := os.Stat(out); err != nil {
+		t.Fatalf("output missing: %v", err)
+	}
+	if err := runPackage([]string{"--out", out, root}); err == nil {
+		t.Fatal("runPackage overwrote without --force")
+	}
+	if err := runPackage([]string{"--out", out, "--force", root}); err != nil {
+		t.Fatalf("runPackage --force: %v", err)
+	}
+}
+
 func TestReadTaskPackageFromDirSkipsNonTaskPaths(t *testing.T) {
 	root := t.TempDir()
 	writeMinimalTask(t, root)
@@ -136,6 +178,17 @@ func TestReadTaskPackageAcceptsWrapperDirectory(t *testing.T) {
 	}
 	if names := zipNames(t, data); !names["addtwo/task.toml"] {
 		t.Fatalf("archive = %v, want addtwo/task.toml", names)
+	}
+	_, task, err := readTaskPackageWithTask(parent)
+	if err != nil {
+		t.Fatalf("readTaskPackageWithTask: %v", err)
+	}
+	patch, err := buildPatchZip(task, map[string]bool{"statement": true})
+	if err != nil {
+		t.Fatalf("buildPatchZip: %v", err)
+	}
+	if names := zipNames(t, patch); !names["task.toml"] || names["addtwo/task.toml"] {
+		t.Fatalf("patch paths = %v, want flat paths", names)
 	}
 }
 

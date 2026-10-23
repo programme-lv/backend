@@ -75,6 +75,26 @@ func TestPostStatementImageHttpRequest(t *testing.T) {
 	require.Equal(t, 0, len(task.MdImages))
 }
 
+func TestIdenticalImageBytesUnderDifferentFilenames(t *testing.T) {
+	ts := newTaskSrvc(t)
+	require.NoError(t, ts.CreateTask(context.Background(), srvc.Task{ShortId: "samebytes"}))
+	data, err := os.ReadFile("./testdata/seifs.png")
+	require.NoError(t, err)
+
+	first, uploadErr := ts.UploadStatementImage(
+		context.Background(), "samebytes", "first.png", "image/png", data)
+	require.Nil(t, uploadErr)
+	second, uploadErr := ts.UploadStatementImage(
+		context.Background(), "samebytes", "second.png", "image/png", data)
+	require.Nil(t, uploadErr)
+	require.NotEqual(t, first, second)
+
+	task, getErr := ts.GetTask(context.Background(), "samebytes")
+	require.NoError(t, getErr)
+	require.Len(t, task.MdImages, 2)
+	require.NotEqual(t, task.MdImages[0].ObjectKey, task.MdImages[1].ObjectKey)
+}
+
 func UploadStatementImage(t *testing.T, h http.Handler, taskId string, imagePath string, token string) *httptest.ResponseRecorder {
 	// Prepare a multipart form with an image file
 	var b bytes.Buffer

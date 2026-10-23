@@ -101,6 +101,80 @@ func TestUploadTaskReportsServerError(t *testing.T) {
 	}
 }
 
+func TestUpdateTaskSendsSparsePatchManifest(t *testing.T) {
+	var gotMethod, gotPath, gotManifest string
+	var gotBytes []byte
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.Path
+		_ = r.ParseMultipartForm(1 << 20)
+		gotManifest = r.FormValue("manifest")
+		file, _, err := r.FormFile("task_zip")
+		if err != nil {
+			t.Errorf("form file: %v", err)
+			return
+		}
+		defer file.Close()
+		gotBytes, _ = io.ReadAll(file)
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"status": "success",
+			"data": map[string]any{
+				"task_id": "addtwo", "tests_changed": true, "tests_version": 3,
+			},
+		})
+	}))
+	defer server.Close()
+
+	version := 2
+	meta := taskPatchMeta{
+		BaseContentETag: "etag", BaseTestsVersion: &version,
+		Sections: []string{"statement", "tests"}, AllowTests: true,
+	}
+	result, err := updateTask(context.Background(), server.URL, "k", "addtwo", []byte("zip"), meta)
+	if err != nil {
+		t.Fatalf("updateTask: %v", err)
+	}
+	if gotMethod != http.MethodPatch || gotPath != "/tasks/addtwo" {
+		t.Fatalf("request = %s %s", gotMethod, gotPath)
+	}
+	if !strings.Contains(gotManifest, `"allow_test_changes":true`) ||
+		!strings.Contains(gotManifest, `"base_content_etag":"etag"`) {
+		t.Fatalf("manifest = %q", gotManifest)
+	}
+	if string(gotBytes) != "zip" {
+		t.Fatalf("bytes = %q", gotBytes)
+	}
+	if !result.TestsChanged || result.TestsVersion != 3 {
+		t.Fatalf("result = %+v", result)
+	}
+}
+
+func TestGetTaskManifestDecodesHashes(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/tasks/addtwo/manifest" {
+			t.Errorf("path = %q", r.URL.Path)
+		}
+		if r.Header.Get("Authorization") != "Bearer k" {
+			t.Errorf("auth = %q", r.Header.Get("Authorization"))
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"status": "success",
+			"data": map[string]any{
+				"task_id": "addtwo", "tests_version": 2,
+				"tests_sha256": "abc", "tests_count": 3, "content_etag": "etag",
+			},
+		})
+	}))
+	defer server.Close()
+
+	m, err := getTaskManifest(context.Background(), server.URL, "k", "addtwo")
+	if err != nil {
+		t.Fatalf("getTaskManifest: %v", err)
+	}
+	if m.TestsSHA256 != "abc" || m.TestsCount != 3 || m.TestsVersion != 2 || m.ContentETag != "etag" {
+		t.Fatalf("manifest = %+v", m)
+	}
+}
+
 func TestExportTaskReturnsArchive(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/tasks/addtwo/export" {

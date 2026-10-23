@@ -100,13 +100,56 @@ func Read(data []byte) (Task, error) {
 		return Task{}, ErrAttached
 	}
 	task := fromTOML(meta)
-	if err := consumeFiles(&task, files); err != nil {
+	if err := consumeFiles(&task, files, true); err != nil {
 		return Task{}, err
 	}
 	if err := validate(&task); err != nil {
 		return Task{}, err
 	}
 	return task, nil
+}
+
+// ReadPatch reads a sparse TaskZip update. Unlike Read, it does not require
+// tests or statement files to be present: omitted sections are left to the
+// caller to merge with the stored task. The task.toml and any included files
+// are still parsed with the normal TaskZip rules.
+func ReadPatch(data []byte) (Task, error) {
+	files, err := readZIP(data)
+	if err != nil {
+		return Task{}, err
+	}
+	raw, ok := files["task.toml"]
+	if !ok {
+		return Task{}, errors.New("task.toml missing")
+	}
+	var meta taskTOML
+	dec := toml.NewDecoder(bytes.NewReader(raw))
+	dec.DisallowUnknownFields()
+	if err := dec.Decode(&meta); err != nil {
+		return Task{}, fmt.Errorf("task.toml: %w", err)
+	}
+	if len(meta.Attached) != 0 || hasPrefix(files, "attached/") {
+		return Task{}, ErrAttached
+	}
+	task := fromTOML(meta)
+	if err := consumeFiles(&task, files, false); err != nil {
+		return Task{}, err
+	}
+	if err := validatePatch(&task); err != nil {
+		return Task{}, err
+	}
+	return task, nil
+}
+
+// FileMap renders TaskZip file names to contents without validating that the
+// task is complete. Tooling uses it to compare package sections.
+func FileMap(task Task) (map[string][]byte, error) {
+	meta := toTOML(task)
+	raw, err := toml.Marshal(meta)
+	if err != nil {
+		return nil, fmt.Errorf("task.toml: %w", err)
+	}
+	return taskFiles(task, raw)
 }
 
 func Write(task Task) ([]byte, error) {

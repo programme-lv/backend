@@ -4,7 +4,10 @@
 server over the admin HTTP API.
 
 ```text
+prglv package <task>     build a TaskZip .zip without uploading
 prglv upload <task>      package a TaskZip directory or .zip and import it
+prglv update <task>      update statement, examples, images, solutions, or metadata in place
+prglv manifest <task-id> show the remote manifest used for sparse updates
 prglv export <task-id>   download a task as a TaskZip .zip archive
 prglv completions fish   print a shell completion script (fish, bash, zsh)
 prglv version
@@ -25,8 +28,8 @@ go build -o prglv ./cmd/prglv
 
 ## Configuration
 
-`upload` and `export` need the backend base URL and the server-to-server admin
-key:
+`upload`, `update`, and `export` need the backend base URL and the
+server-to-server admin key:
 
 | Setting | Flag | Environment |
 | --- | --- | --- |
@@ -35,6 +38,19 @@ key:
 
 Flags win over the environment. The key is sent as
 `Authorization: Bearer <key>` and is never logged.
+
+## Package
+
+```bash
+prglv package path/to/task
+prglv package path/to/task --out /tmp/task.zip
+prglv package path/to/task --out - > task.zip
+prglv package path/to/task --force
+```
+
+`package` validates the TaskZip with the same reader as the backend and writes
+the archive without using the network. The default output is `<task-id>.zip`;
+an existing file is not overwritten without `--force`.
 
 ## Upload
 
@@ -67,6 +83,54 @@ Import rejects the zip if `archive/` exceeds 256 files, 64 MiB per file, or 128 
 
 Everything else is included, so a directory that already holds `task.toml`,
 `tests/`, `statement/`, and `solutions/` at its root uploads as-is.
+
+## Update
+
+```bash
+prglv update path/to/task
+prglv update path/to/task --dry-run
+prglv update path/to/task --allow-test-changes
+prglv update path/to/task --yes --json
+```
+
+`update` negotiates before uploading. It packages the local TaskZip, fetches
+`GET /tasks/{taskId}/manifest`, and compares section hashes for statements,
+examples, solutions, readme, checker/interactor, and official tests. Only
+changed sections plus `task.toml` are packed into the sparse patch sent to
+`PATCH /tasks/{taskId}`. Unchanged test files are never uploaded; the task
+manifest is small and contains no test payloads.
+
+The command prints the plan, including added/modified/deleted file paths, and
+asks for confirmation unless `--yes` is used. If tests or scoring change, the
+confirmation requires typing the task ID instead of `y`. `--dry-run` prints the
+plan and stops without sending anything. `--json` skips the prompt and prints
+the result for automation.
+
+The patch is applied in place: task ID, submissions, and past evaluations are
+preserved. The multipart field `manifest` carries the base content ETag, base
+`tests_version`, base task `revision`, the changed sections, and
+`allow_test_changes`. A stale base returns `409 task_conflict`, so a concurrent
+edit is not silently overwritten. The revision check is performed inside the
+write transaction.
+
+Official tests, scoring, execution limits, checker, and interactor are guarded:
+if the patch changes any of them, the request fails with `409
+task_tests_changed` unless `--allow-test-changes` is passed. That flag replaces
+the test/scoring rows and increments the task's `tests_version`; previous
+evaluations remain as historical snapshots. The `tests_version` and `revision`
+are returned in the task view.
+
+## Manifest
+
+```bash
+prglv manifest lio2026cuska
+prglv manifest lio2026cuska --json
+```
+
+`manifest` fetches `GET /tasks/{taskId}/manifest`: the base revision,
+`tests_version`, section digests, and the file hash map used to negotiate a
+sparse update. It is also a cheap existence check; a missing task returns
+`task_not_found` without downloading the archive.
 
 ## Export
 

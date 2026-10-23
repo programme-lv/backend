@@ -18,6 +18,18 @@ var (
 )
 
 func validate(task *Task) error {
+	return validateTask(task, true)
+}
+
+// ValidateMerged validates a complete task assembled from a sparse patch and
+// stored task data. Retained test payloads are represented by placeholders, so
+// per-test text checks are skipped; structure, scoring, metadata, and included
+// content are still checked.
+func ValidateMerged(task *Task) error {
+	return validateTask(task, false)
+}
+
+func validateTask(task *Task, withTestData bool) error {
 	if task.Version != 1 {
 		return errors.New("taskzip must be 1")
 	}
@@ -27,13 +39,127 @@ func validate(task *Task) error {
 	if err := validateMetadata(task); err != nil {
 		return err
 	}
-	if err := validateContent(task); err != nil {
+	if err := validateContent(task, withTestData); err != nil {
 		return err
 	}
 	if err := validateScoring(task); err != nil {
 		return err
 	}
 	return validateSolutions(task)
+}
+
+// validatePatch checks the parts present in a sparse archive without requiring
+// omitted tests, statements, or solution sources.
+func validatePatch(task *Task) error {
+	if task.Version != 1 {
+		return errors.New("taskzip must be 1")
+	}
+	if !idRE.MatchString(task.ID) {
+		return fmt.Errorf("invalid task id %q", task.ID)
+	}
+	if len(task.Name) == 0 {
+		return errors.New("name needs at least one language")
+	}
+	for lang, name := range task.Name {
+		if !langRE.MatchString(lang) || name == "" {
+			return fmt.Errorf("invalid name entry %q", lang)
+		}
+	}
+	if err := validatePatchTesting(task); err != nil {
+		return err
+	}
+	if task.Origin != nil {
+		if err := validateOrigin(task.Origin); err != nil {
+			return err
+		}
+	}
+	if task.Metadata != nil {
+		if task.Metadata.Difficulty == nil ||
+			*task.Metadata.Difficulty < 1 || *task.Metadata.Difficulty > 5 {
+			return errors.New("metadata.difficulty out of range")
+		}
+	}
+	if err := validatePatchContent(task); err != nil {
+		return err
+	}
+	return validatePatchSolutions(task)
+}
+
+func validatePatchTesting(task *Task) error {
+	switch task.Testing.Type {
+	case "simple":
+		if task.Checker != nil || task.Interactor != nil {
+			return errors.New("checker/interactor present for simple task")
+		}
+	case "checker":
+		if task.Interactor != nil {
+			return errors.New("interactor.cpp present for checker task")
+		}
+	case "interactor":
+		if task.Checker != nil {
+			return errors.New("checker.cpp present for interactor task")
+		}
+	default:
+		return fmt.Errorf("unknown testing type %q", task.Testing.Type)
+	}
+	if task.Testing.CPUMs < 100 || task.Testing.CPUMs > 15000 {
+		return errors.New("testing.cpu_ms out of range")
+	}
+	if task.Testing.MemMiB < 40 || task.Testing.MemMiB > 4096 {
+		return errors.New("testing.mem_mib out of range")
+	}
+	return nil
+}
+
+func validatePatchContent(task *Task) error {
+	for i, test := range task.Tests {
+		if test.Input == nil && test.Output == nil {
+			continue
+		}
+		if test.Input == nil || len(test.Input) == 0 || test.Output == nil {
+			return fmt.Errorf("test %03d needs input and output", i+1)
+		}
+		if err := checkText(fmt.Sprintf("tests/%03di.txt", i+1), test.Input, true); err != nil {
+			return err
+		}
+		if err := checkText(fmt.Sprintf("tests/%03do.txt", i+1), test.Output, false); err != nil {
+			return err
+		}
+	}
+	for lang, data := range task.Statements {
+		if !langRE.MatchString(lang) {
+			return fmt.Errorf("invalid statement language %q", lang)
+		}
+		if err := checkText("statement/"+lang+".md", data, false); err != nil {
+			return err
+		}
+	}
+	for name, data := range task.StatementImages {
+		if strings.Contains(name, "/") || !allowedImage(name) {
+			return fmt.Errorf("invalid statement image %q", name)
+		}
+		if strings.EqualFold(path.Ext(name), ".svg") && unsafeSVG(data) {
+			return fmt.Errorf("unsanitized svg %s", name)
+		}
+	}
+	if task.Readme != nil {
+		if err := checkText("readme.md", task.Readme, false); err != nil {
+			return err
+		}
+	}
+	return validateExamples(task.Testing.Type, task.Examples)
+}
+
+func validatePatchSolutions(task *Task) error {
+	seen := map[string]bool{}
+	for _, solution := range task.Solutions {
+		if solution.Filename == "" || path.Base(solution.Filename) != solution.Filename ||
+			seen[solution.Filename] {
+			return fmt.Errorf("invalid solution %q", solution.Filename)
+		}
+		seen[solution.Filename] = true
+	}
+	return nil
 }
 
 func validateMetadata(task *Task) error {
@@ -132,22 +258,24 @@ func validateDivisions(divisions []string) error {
 	return nil
 }
 
-func validateContent(task *Task) error {
+func validateContent(task *Task, withTestData bool) error {
 	if len(task.Tests) == 0 {
 		return errors.New("no official tests")
 	}
 	if len(task.Tests) > 999 {
 		return errors.New("too many official tests")
 	}
-	for i, test := range task.Tests {
-		if test.Input == nil || len(test.Input) == 0 || test.Output == nil {
-			return fmt.Errorf("test %03d needs input and output", i+1)
-		}
-		if err := checkText(fmt.Sprintf("tests/%03di.txt", i+1), test.Input, true); err != nil {
-			return err
-		}
-		if err := checkText(fmt.Sprintf("tests/%03do.txt", i+1), test.Output, false); err != nil {
-			return err
+	if withTestData {
+		for i, test := range task.Tests {
+			if test.Input == nil || len(test.Input) == 0 || test.Output == nil {
+				return fmt.Errorf("test %03d needs input and output", i+1)
+			}
+			if err := checkText(fmt.Sprintf("tests/%03di.txt", i+1), test.Input, true); err != nil {
+				return err
+			}
+			if err := checkText(fmt.Sprintf("tests/%03do.txt", i+1), test.Output, false); err != nil {
+				return err
+			}
 		}
 	}
 	if len(task.Statements) == 0 {

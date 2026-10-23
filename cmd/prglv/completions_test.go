@@ -10,7 +10,10 @@ func TestFishCompletionsCoverCommandsAndFlags(t *testing.T) {
 	script := fishCompletions()
 	for _, want := range []string{
 		"__fish_use_subcommand",
+		"-a package",
 		"-a upload",
+		"-a update",
+		"-a manifest",
 		"-a export",
 		"-a completions",
 		"-l api-url",
@@ -29,7 +32,7 @@ func TestBashCompletionsCoverCommandsAndFlags(t *testing.T) {
 	script := bashCompletions()
 	for _, want := range []string{
 		"complete -F _prglv prglv",
-		"upload export completions version help",
+		"package upload update manifest export completions version help",
 		"--api-url",
 		"--override-id",
 		"--out",

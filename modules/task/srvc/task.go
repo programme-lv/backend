@@ -65,9 +65,11 @@ type Task struct {
 	Subtasks       []Subtask
 
 	// testing
-	Tests      []Test
-	Checker    string
-	Interactor string
+	Tests        []Test
+	Checker      string
+	Interactor   string
+	TestsVersion int
+	Revision     int
 
 	// scoring
 	TestGroups []TestGroup

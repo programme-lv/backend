@@ -1,11 +1,16 @@
 package srvc
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 
 	"github.com/programme-lv/backend/common/srvcerror"
 )
+
+// ErrRevisionConflict is an internal sentinel used by the repository to
+// report an optimistic-concurrency failure.
+var ErrRevisionConflict = errors.New("task revision conflict")
 
 var ErrTaskNotFound = srvcerror.New(
 	"task_not_found",
@@ -67,6 +72,16 @@ var ErrUnsupportedTaskZip = srvcerror.New(
 func errUnsupportedTaskZip(reason string) srvcerror.E {
 	return ErrUnsupportedTaskZip.WithMsg(fmt.Sprintf("neatbalstīts TaskZip: %s", reason))
 }
+
+var ErrTaskConflict = srvcerror.New(
+	"task_conflict",
+	"uzdevums ir mainījies kopš manifesta nolasīšanas",
+).SetHttpStatusCode(http.StatusConflict)
+
+var ErrTaskTestsChanged = srvcerror.New(
+	"task_tests_changed",
+	"uzdevuma testi vai vērtēšana mainīti",
+).SetHttpStatusCode(http.StatusConflict)
 
 var ErrTaskAlreadyExists = srvcerror.New(
 	"task_already_exists",

@@ -50,7 +50,7 @@ func fishCompletions() string {
 		switch c.name {
 		case "completions":
 			fmt.Fprintf(&b, "complete -c prglv -n %s -a 'fish bash zsh' -d 'Shell'\n", cond)
-		case "upload":
+		case "package", "upload", "update":
 			fmt.Fprintf(&b, "complete -c prglv -n %s -F -d 'TaskZip directory or .zip'\n", cond)
 		case "export":
 			fmt.Fprintf(&b, "complete -c prglv -n %s -d 'Task ID'\n", cond)
@@ -112,7 +112,7 @@ func bashCompletions() string {
 			}
 			fmt.Fprintf(&b, "            COMPREPLY=( $(compgen -W '%s' -- \"$cur\") )\n",
 				strings.Join(flags, " "))
-			if c.name == "upload" {
+			if c.name == "package" || c.name == "upload" || c.name == "update" {
 				b.WriteString("            [[ \"$cur\" == -* ]] || COMPREPLY+=( $(compgen -f -- \"$cur\") )\n")
 			}
 		default:
@@ -150,7 +150,7 @@ func zshCompletions() string {
 		switch c.name {
 		case "completions":
 			b.WriteString("            _values 'shell' fish bash zsh\n")
-		case "upload", "export":
+		case "package", "upload", "update", "export":
 			fmt.Fprintf(&b, "            _arguments %s\n", zshArguments(c))
 		default:
 			b.WriteString("            _arguments\n")
@@ -176,7 +176,7 @@ func zshArguments(c commandSpec) string {
 			parts = append(parts, fmt.Sprintf("'--%s[%s]:%s:'", f.name, zshQuote(f.desc), f.value))
 		}
 	}
-	if c.name == "upload" {
+	if c.name == "package" || c.name == "upload" || c.name == "update" {
 		parts = append(parts, "'*:task:_files'")
 	} else {
 		parts = append(parts, "'*:task id:'")

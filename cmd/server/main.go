@@ -182,10 +182,13 @@ func newSubmHttpHandler(
 		srvc.WithSubmissionNotifier(notifier, quietPeriod),
 	)
 
+	profilePgRepo := submpgrepo.NewPgProfileRepo(pgPool)
+	profileSrvc := srvc.NewProfileSrvc(taskSrvc, execSrvc, profilePgRepo)
+
 	// Check if migration is needed and run it
 	runScoreMigrationIfNeeded(pgPool, submSrvc, evalPgRepo)
 
-	return submhttp.NewSubmHttpHandler(submSrvc, taskSrvc, userSrvc)
+	return submhttp.NewSubmHttpHandler(submSrvc, profileSrvc, taskSrvc, userSrvc)
 }
 
 // runScoreMigrationIfNeeded checks if there are evaluations without score info

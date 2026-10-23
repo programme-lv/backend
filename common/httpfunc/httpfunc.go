@@ -40,6 +40,25 @@ func JsonReqNoResp[Q any](handler HandlerNoResp[Q]) http.HandlerFunc {
 	}
 }
 
+type HandlerJsonReqJsonResp[Q any, R any] func(ctx context.Context, request Q) (response R, err jsonresp.HttpStatusCoder)
+
+func JsonReqJsonResp[Q any, R any](handler HandlerJsonReqJsonResp[Q, R]) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		var req Q
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			jsonresp.BadRequest(w, err.Error())
+			return
+		}
+		result, err := handler(ctx, req)
+		if err != nil {
+			jsonresp.WriteError(w, err)
+			return
+		}
+		jsonresp.Success(w, result)
+	}
+}
+
 type HandlerNoReqNoResp func(ctx context.Context) (err jsonresp.HttpStatusCoder)
 
 func NoReqNoResp(handler HandlerNoReqNoResp) http.HandlerFunc {

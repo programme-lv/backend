@@ -31,18 +31,31 @@ func (r *taskPgRepo) ListArchiveFiles(ctx context.Context, taskId string) ([]srv
 }
 
 func (r *taskPgRepo) AddArchiveFile(ctx context.Context, taskId string, file srvc.ArchiveFile) error {
-	_, err := r.pool.Exec(ctx, `
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("begin transaction: %w", err)
+	}
+	defer tx.Rollback(ctx)
+	_, err = tx.Exec(ctx, `
 		INSERT INTO task_archive_files (task_short_id, path, object_key, filesize_bytes)
 		VALUES ($1, $2, $3, $4)
 	`, taskId, file.Path, file.ObjectKey, file.SzInBytes)
 	if err != nil {
 		return fmt.Errorf("insert archive file: %w", err)
 	}
-	return nil
+	if err := bumpRevision(ctx, tx, taskId); err != nil {
+		return err
+	}
+	return tx.Commit(ctx)
 }
 
 func (r *taskPgRepo) DeleteArchiveFile(ctx context.Context, taskId, relPath string) error {
-	tag, err := r.pool.Exec(ctx, `
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("begin transaction: %w", err)
+	}
+	defer tx.Rollback(ctx)
+	tag, err := tx.Exec(ctx, `
 		DELETE FROM task_archive_files
 		WHERE task_short_id = $1 AND path = $2
 	`, taskId, relPath)
@@ -52,7 +65,10 @@ func (r *taskPgRepo) DeleteArchiveFile(ctx context.Context, taskId, relPath stri
 	if tag.RowsAffected() == 0 {
 		return fmt.Errorf("archive file %s not found", relPath)
 	}
-	return nil
+	if err := bumpRevision(ctx, tx, taskId); err != nil {
+		return err
+	}
+	return tx.Commit(ctx)
 }
 
 func (r *taskPgRepo) ListLegacyArchiveZips(ctx context.Context) ([]srvc.LegacyArchiveZip, error) {
@@ -80,7 +96,9 @@ func (r *taskPgRepo) ListLegacyArchiveZips(ctx context.Context) ([]srvc.LegacyAr
 
 func (r *taskPgRepo) ClearArchiveObjectKey(ctx context.Context, taskId string) error {
 	_, err := r.pool.Exec(ctx, `
-		UPDATE tasks SET archive_object_key = '' WHERE short_id = $1
+		UPDATE tasks
+		SET archive_object_key = '', revision = revision + 1
+		WHERE short_id = $1
 	`, taskId)
 	if err != nil {
 		return fmt.Errorf("clear archive object key: %w", err)
