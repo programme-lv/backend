@@ -22,6 +22,21 @@ func errTaskNotFound(taskId string) srvcerror.E {
 }
 
 // ErrSomeTaskNotFound means a batch name lookup missed at least one short ID.
+var ErrTaskSolutionNotFound = srvcerror.New(
+	"task_solution_not_found",
+	"Risinājums netika atrasts",
+).SetHttpStatusCode(http.StatusNotFound)
+
+var ErrInvalidTaskLimits = srvcerror.New(
+	"invalid_task_limits",
+	"Nederīgi uzdevuma izpildes ierobežojumi",
+).SetHttpStatusCode(http.StatusBadRequest)
+
+var ErrInvalidTaskSolution = srvcerror.New(
+	"invalid_task_solution",
+	"Nederīgs risinājums",
+).SetHttpStatusCode(http.StatusBadRequest)
+
 var ErrSomeTaskNotFound = srvcerror.New(
 	"some_task_not_found",
 	"kāds no uzdevumiem netika atrasts",

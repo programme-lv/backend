@@ -33,7 +33,11 @@ var packageDirNames = map[string]bool{
 // together with the archive task ID. It validates the package with the same
 // reader the backend uses, so invalid packages fail before any upload.
 func readTaskPackage(path string) ([]byte, string, error) {
-	zipBytes, task, err := readTaskPackageWithTask(path)
+	return readTaskPackageMode(path, false)
+}
+
+func readTaskPackageMode(path string, partial bool) ([]byte, string, error) {
+	zipBytes, task, err := readTaskPackageWithTaskMode(path, partial)
 	if err != nil {
 		return nil, "", err
 	}
@@ -41,6 +45,10 @@ func readTaskPackage(path string) ([]byte, string, error) {
 }
 
 func readTaskPackageWithTask(path string) ([]byte, taskzipv1.Task, error) {
+	return readTaskPackageWithTaskMode(path, false)
+}
+
+func readTaskPackageWithTaskMode(path string, partial bool) ([]byte, taskzipv1.Task, error) {
 	info, err := os.Stat(path)
 	if err != nil {
 		return nil, taskzipv1.Task{}, fmt.Errorf("stat %s: %w", path, err)
@@ -59,7 +67,12 @@ func readTaskPackageWithTask(path string) ([]byte, taskzipv1.Task, error) {
 		}
 	}
 
-	task, err := taskzipv1.Read(zipBytes)
+	var task taskzipv1.Task
+	if partial {
+		task, err = taskzipv1.ReadPatch(zipBytes)
+	} else {
+		task, err = taskzipv1.Read(zipBytes)
+	}
 	if err != nil {
 		return nil, taskzipv1.Task{}, fmt.Errorf("invalid TaskZip package %s: %w", path, err)
 	}

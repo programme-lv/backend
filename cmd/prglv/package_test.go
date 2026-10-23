@@ -199,3 +199,32 @@ func TestReadTaskPackageRejectsInvalid(t *testing.T) {
 		t.Fatal("readTaskPackage accepted a directory without task.toml")
 	}
 }
+
+func TestReadPartialPackageWithoutTests(t *testing.T) {
+	root := t.TempDir()
+	writeMinimalTask(t, root)
+	if err := os.RemoveAll(filepath.Join(root, "tests")); err != nil {
+		t.Fatal(err)
+	}
+
+	_, task, err := readTaskPackageWithTaskMode(root, true)
+	if err != nil {
+		t.Fatalf("readTaskPackageWithTaskMode(partial): %v", err)
+	}
+	if task.ID != "addtwo" {
+		t.Fatalf("task ID = %q, want addtwo", task.ID)
+	}
+	if len(task.Tests) != 0 {
+		t.Fatalf("partial task has %d tests", len(task.Tests))
+	}
+
+	files := withoutTestFiles([]string{
+		"tests/001i.txt",
+		"tests/001o.txt",
+		"tgroups.txt",
+		"statement/en.md",
+	})
+	if len(files) != 1 || files[0] != "statement/en.md" {
+		t.Fatalf("withoutTestFiles = %v", files)
+	}
+}

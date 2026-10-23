@@ -29,7 +29,8 @@ func runExport(args []string) error {
 
 	taskID := positional[0]
 	apiURL := resolveAPIURL(flags.strs["api-url"])
-	data, err := exportTask(context.Background(), apiURL, apiKey, taskID)
+	noTests := flags.bools["no-tests"]
+	data, err := exportTask(context.Background(), apiURL, apiKey, taskID, noTests)
 	if err != nil {
 		return err
 	}
@@ -37,6 +38,9 @@ func runExport(args []string) error {
 	out := flags.strs["out"]
 	if out == "" {
 		out = taskID + ".zip"
+		if noTests {
+			out = taskID + "-no-tests.zip"
+		}
 	}
 	if out == "-" {
 		_, err := os.Stdout.Write(data)

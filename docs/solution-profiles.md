@@ -22,15 +22,34 @@ the solution for every chart point.
 5. `GET /solution-profiles/{profileId}` derives both charts and caches nothing.
 
 `GET /tasks/{taskId}/solutions` lists stored solutions with their current
-expected points and latest profile.
+expected points and latest profile. `GET /tasks/{taskId}/solutions/{fname}`
+returns one solution's source and declared subtasks.
 
 `POST /tasks/{taskId}/solutions/profile` enqueues a profile for every solution
-in the task. Solutions whose latest profile is already running are skipped and
-returned in `skipped`; per-solution failures are returned in `failed`. The
+in the task. The body is `{"runs": 1, "only": ""}`; `runs` defaults to one for
+a batch, and `only` may be `stale` or `mismatched` to profile just the
+solutions that need attention. Solutions whose latest profile is already
+running are returned in `skipped`; solutions excluded by the filter are
+returned in `filtered`; per-solution failures are returned in `failed`. The
 service semaphore still runs them one at a time.
 
 `GET /tasks/{taskId}/solutions/calibration` intersects the per-solution viable
-intervals and checks the current limits. All endpoints are admin-only.
+intervals and checks the current limits.
+
+`PATCH /tasks/{taskId}/limits` with `{"cpu_ms": 4000, "mem_mib": 640}` changes
+only the execution limits. It does **not** bump `tests_version`, so existing
+profile measurements stay valid and the calibration is recomputed at the new
+limits. Use this instead of a task patch when only limits change.
+
+`PATCH /tasks/{taskId}/solutions/{fname}` with
+`{"content": "...", "subtasks": [1, 2]}` edits a reference solution in place.
+It also does not bump `tests_version`; the profile's `solution_sha256` no longer
+matches, so that solution's profile is reported as stale until it is rerun.
+Both PATCH endpoints bump the task `revision`. All endpoints are admin-only.
+
+The admin solutions page exposes the same operations: inline CPU/memory inputs
+on the calibration card, a source/subtask editor per solution, and a batch
+filter for missing, stale, or mismatched profiles.
 
 ## Calibration rule
 
