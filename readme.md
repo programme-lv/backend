@@ -6,7 +6,7 @@ Go style: [docs/go.md](docs/go.md).
 Errors by layer (HTTP / srvc / repo): [docs/errors.md](docs/errors.md).
 Log levels: [docs/logging.md](docs/logging.md).
 Submission public IDs vs UUIDs: [docs/submission-ids.md](docs/submission-ids.md).
-Admin CLI for task upload and export: [docs/prglv.md](docs/prglv.md).
+Admin CLI for task upload, in-place update, and export: [docs/prglv.md](docs/prglv.md).
 Submission activity notifications: [docs/submission-notifications.md](docs/submission-notifications.md).
 
 To start the server without processing tester results from NATS:

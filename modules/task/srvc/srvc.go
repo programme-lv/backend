@@ -50,6 +50,9 @@ type TaskService interface {
 
 	// taskzip archive format
 	ImportTaskFromZip(ctx context.Context, zipBytes []byte, overrideId string) (string, srvcerror.E)
+	UpdateTaskFromZip(ctx context.Context, taskId string, zipBytes []byte, allowTests bool) (UpdateResult, srvcerror.E)
+	PatchTaskFromZip(ctx context.Context, taskId string, patchBytes []byte, meta PatchMeta) (UpdateResult, srvcerror.E)
+	GetTaskManifest(ctx context.Context, taskId string) (TaskManifest, srvcerror.E)
 	ExportTaskAsZip(ctx context.Context, taskId string) ([]byte, srvcerror.E)
 
 	ResolveNames(ctx context.Context, shortIds []string) ([]string, srvcerror.E)
@@ -73,6 +76,7 @@ type TaskPgRepo interface {
 	ResolveNames(ctx context.Context, shortIds []string) ([]string, error)
 	Exists(ctx context.Context, shortId string) (bool, error)
 	CreateTask(ctx context.Context, task Task) error
+	UpdateTask(ctx context.Context, task Task, replaceTests bool, expectedRevision int) error
 	DeleteTask(ctx context.Context, shortId string) error
 	UpdateStatement(ctx context.Context, taskId string, statement MarkdownStatement) error
 	AddStatementImg(ctx context.Context, taskId string, img StatementImage) error

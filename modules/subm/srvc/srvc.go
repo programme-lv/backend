@@ -75,6 +75,7 @@ type EvalRepo interface {
 type ExecSrvcFacade interface {
 	Enqueue(ctx context.Context, execUuid uuid.UUID, srcCode string, prLangId string, tests []exec.TestFile, params exec.TestingParams) srvcerror.E
 	Listen(ctx context.Context, execUuid uuid.UUID) (<-chan exec.Event, srvcerror.E)
+	Get(ctx context.Context, execUuid uuid.UUID) (exec.Execution, srvcerror.E)
 }
 
 // SrvcOption configures the submission service.

@@ -6,12 +6,21 @@ import (
 	"fmt"
 	"math"
 	"path/filepath"
+	"reflect"
 	"strconv"
 	"strings"
 
 	"github.com/programme-lv/backend/common/srvcerror"
 	taskzipv1 "github.com/programme-lv/backend/modules/task/taskzip"
 )
+
+// UpdateResult describes a non-destructive TaskZip update.
+type UpdateResult struct {
+	TaskID       string `json:"task_id"`
+	TestsChanged bool   `json:"tests_changed"`
+	TestsVersion int    `json:"tests_version"`
+	Revision     int    `json:"revision"`
+}
 
 func validateTaskId(id string) error {
 	if len(id) == 0 {
@@ -65,6 +74,104 @@ func (ts *taskSrvc) ImportTaskFromZip(
 	return task.ShortId, nil
 }
 
+// UpdateTaskFromZip replaces statement, example, image, solution, and
+// metadata content without deleting the task. Official tests and scoring
+// are replaced only when allowTests is true; that path bumps tests_version.
+func (ts *taskSrvc) UpdateTaskFromZip(
+	ctx context.Context, taskID string, zipBytes []byte, allowTests bool,
+) (UpdateResult, srvcerror.E) {
+	archive, err := taskzipv1.Read(zipBytes)
+	if err != nil {
+		return UpdateResult{}, taskZipReadError(err)
+	}
+	if archive.ID != taskID {
+		return UpdateResult{}, errInvalidTaskZip("archive ID does not match task ID")
+	}
+	existing, getErr := ts.GetTask(ctx, taskID)
+	if getErr != nil {
+		return UpdateResult{}, getErr
+	}
+	task, err := mapFromTaskZip(archive, taskID)
+	if err != nil {
+		return UpdateResult{}, errInvalidTaskZip(err.Error())
+	}
+	task.IllustrImg = existing.IllustrImg
+	task.OgFilesZipObjectKey = existing.OgFilesZipObjectKey
+	task.Archive = existing.Archive
+	task.OriginNotes = existing.OriginNotes
+	task.TestsVersion = existing.TestsVersion
+	task.Tests = taskZipTests(archive)
+	if prepErr := prepareTaskZipImages(archive, &task); prepErr != nil {
+		return UpdateResult{}, errInvalidTaskZip(prepErr.Error())
+	}
+	testsChanged := taskTestsChanged(existing, task)
+	if testsChanged && !allowTests {
+		return UpdateResult{}, ErrTaskTestsChanged
+	}
+	if err := ts.uploadTaskZipImages(ctx, archive, &task); err != nil {
+		return UpdateResult{}, err
+	}
+	if testsChanged {
+		if err := ts.uploadTaskZipTests(ctx, archive, &task); err != nil {
+			return UpdateResult{}, err
+		}
+		task.TestsVersion++
+	}
+	if err := ts.repo.UpdateTask(ctx, task, testsChanged, existing.Revision); err != nil {
+		if errors.Is(err, ErrRevisionConflict) {
+			return UpdateResult{}, ErrTaskConflict.WithMsg("task changed while applying the update")
+		}
+		ts.logger(ctx).Error("update task", "task_id", taskID, "error", err)
+		return UpdateResult{}, srvcerror.InternalServerError()
+	}
+	return UpdateResult{
+		TaskID: task.ShortId, TestsChanged: testsChanged,
+		TestsVersion: task.TestsVersion, Revision: existing.Revision + 1,
+	}, nil
+}
+
+func taskZipTests(archive taskzipv1.Task) []Test {
+	tests := make([]Test, len(archive.Tests))
+	for i, test := range archive.Tests {
+		tests[i] = Test{InpSha2: sha2Hex(test.Input), AnsSha2: sha2Hex(test.Output)}
+	}
+	return tests
+}
+
+func taskTestsChanged(old, next Task) bool {
+	if old.Checker != next.Checker || old.Interactor != next.Interactor {
+		return true
+	}
+	if old.MemLimMegabytes != next.MemLimMegabytes ||
+		old.CpuMillis() != next.CpuMillis() {
+		return true
+	}
+	if !reflect.DeepEqual(old.Tests, next.Tests) {
+		return true
+	}
+	return !scoringEqual(old, next)
+}
+
+func scoringEqual(a, b Task) bool {
+	if len(a.TestGroups) != len(b.TestGroups) || len(a.Subtasks) != len(b.Subtasks) {
+		return false
+	}
+	for i := range a.TestGroups {
+		x, y := a.TestGroups[i], b.TestGroups[i]
+		if x.Points != y.Points || x.Public != y.Public ||
+			!reflect.DeepEqual(x.TestIDs, y.TestIDs) {
+			return false
+		}
+	}
+	for i := range a.Subtasks {
+		x, y := a.Subtasks[i], b.Subtasks[i]
+		if x.Score != y.Score || !reflect.DeepEqual(x.TestIDs, y.TestIDs) {
+			return false
+		}
+	}
+	return true
+}
+
 func taskZipReadError(err error) srvcerror.E {
 	if errors.Is(err, taskzipv1.ErrAttached) {
 		return errUnsupportedTaskZip(err.Error())
@@ -86,7 +193,7 @@ func prepareTaskZipImages(archive taskzipv1.Task, task *Task) error {
 			}
 		}
 		task.MdImages = append(task.MdImages, StatementImage{
-			ObjectKey: fmt.Sprintf("%s/%s%s", task.ShortId, sha2Hex(data)[:12], filepath.Ext(name)),
+			ObjectKey: statementImageStoredKey(task.ShortId, name, data, filepath.Ext(name)),
 			Filename:  name, WidthPx: width, HeightPx: height, SzInBytes: len(data),
 		})
 	}
@@ -94,6 +201,16 @@ func prepareTaskZipImages(archive taskzipv1.Task, task *Task) error {
 }
 
 func (ts *taskSrvc) uploadTaskZipAssets(
+	ctx context.Context, archive taskzipv1.Task, task *Task,
+) srvcerror.E {
+	if err := ts.uploadTaskZipImages(ctx, archive, task); err != nil {
+		return err
+	}
+	task.Tests = make([]Test, len(archive.Tests))
+	return ts.uploadTaskZipTests(ctx, archive, task)
+}
+
+func (ts *taskSrvc) uploadTaskZipImages(
 	ctx context.Context, archive taskzipv1.Task, task *Task,
 ) srvcerror.E {
 	for _, image := range task.MdImages {
@@ -106,7 +223,12 @@ func (ts *taskSrvc) uploadTaskZipAssets(
 			return srvcerror.InternalServerError()
 		}
 	}
-	task.Tests = make([]Test, len(archive.Tests))
+	return nil
+}
+
+func (ts *taskSrvc) uploadTaskZipTests(
+	ctx context.Context, archive taskzipv1.Task, task *Task,
+) srvcerror.E {
 	for i, test := range archive.Tests {
 		if err := ts.uploadTaskZipTest(ctx, i, test, task); err != nil {
 			return err

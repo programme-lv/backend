@@ -59,6 +59,9 @@ func (r *taskPgRepo) AddStatementImg(ctx context.Context, taskId string, img srv
 		}
 	}
 
+	if err = bumpRevision(ctx, tx, taskId); err != nil {
+		return err
+	}
 	// Commit the transaction
 	if err = tx.Commit(ctx); err != nil {
 		return fmt.Errorf("commit transaction: %w", err)
@@ -121,6 +124,9 @@ func (r *taskPgRepo) UpdateStatement(ctx context.Context, taskId string, stateme
 		}
 	}
 
+	if err = bumpRevision(ctx, tx, taskId); err != nil {
+		return err
+	}
 	// Commit the transaction
 	if err = tx.Commit(ctx); err != nil {
 		return fmt.Errorf("commit transaction: %w", err)
@@ -162,6 +168,9 @@ func (r *taskPgRepo) DeleteStatementImg(ctx context.Context, taskId string, file
 		return fmt.Errorf("delete statement image: %w", err)
 	}
 
+	if err = bumpRevision(ctx, tx, taskId); err != nil {
+		return err
+	}
 	// Commit the transaction
 	if err = tx.Commit(ctx); err != nil {
 		return fmt.Errorf("commit transaction: %w", err)
@@ -197,7 +206,8 @@ func (r *taskPgRepo) UpdateIllustrationImg(ctx context.Context, taskId string, i
 	// Update the illustration image fields
 	_, err = tx.Exec(ctx, `
 		UPDATE tasks 
-		SET illustr_img_object_key = $2, width_px = $3, height_px = $4, filesize_bytes = $5
+		SET illustr_img_object_key = $2, width_px = $3, height_px = $4, filesize_bytes = $5,
+			revision = revision + 1
 		WHERE short_id = $1
 	`, taskId, img.ObjectKey, img.WidthPx, img.HeightPx, img.SzInBytes)
 	if err != nil {

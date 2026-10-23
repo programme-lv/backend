@@ -124,6 +124,7 @@ type Task struct {
 	VisibleInputSubtasks []VisInputSubtask  `json:"visible_input_subtasks"`
 	StatementSubtasks    []SubtaskOverview  `json:"statement_subtasks"`
 	TestingType          string             `json:"testing_type"`
+	TestsVersion         int                `json:"tests_version"`
 	CreatedAt            string             `json:"created_at"`
 }
 
@@ -259,6 +260,7 @@ func (h *taskHttpHandler) mapTaskResponse(task srvc.Task) Task {
 		VisibleInputSubtasks: visInputSubtasks,
 		StatementSubtasks:    subtasks,
 		TestingType:          testingType,
+		TestsVersion:         task.TestsVersion,
 		CreatedAt:            task.CreatedAt.Format(time.RFC3339),
 	}
 	return response

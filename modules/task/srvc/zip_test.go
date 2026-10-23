@@ -84,6 +84,95 @@ func TestImportExportTaskZip(t *testing.T) {
 	require.Equal(t, imported.OriginDivisions, reimported.OriginDivisions)
 }
 
+func TestUpdateTaskFromZipKeepsTestsAndBumpsVersion(t *testing.T) {
+	ctx := context.Background()
+	repo := mocktasksrvc.NewMockTaskPgRepo(t)
+	publicStore, err := filestore.NewStore(t.TempDir())
+	require.NoError(t, err)
+	testStore, err := filestore.NewStore(t.TempDir())
+	require.NoError(t, err)
+	service := srvc.NewTaskSrvc(repo, publicStore, testStore)
+
+	data, err := os.ReadFile("testdata/lio2026cuska.zip")
+	require.NoError(t, err)
+	archive, err := taskzipv1.Read(data)
+	require.NoError(t, err)
+	existing, err := taskFromArchive(t, archive)
+	require.NoError(t, err)
+	existing.TestsVersion = 4
+
+	archive.Statements["lv"] = []byte("# Updated story\n")
+	updatedData, err := taskzipv1.Write(archive)
+	require.NoError(t, err)
+
+	var updated srvc.Task
+	var replacedTests bool
+	repo.EXPECT().Exists(ctx, "lio2026cuska").Return(true, nil).Once()
+	repo.EXPECT().GetTask(ctx, "lio2026cuska").Return(existing, nil).Once()
+	repo.EXPECT().UpdateTask(ctx, mock.Anything, false, mock.Anything).RunAndReturn(
+		func(_ context.Context, task srvc.Task, replace bool, _ int) error {
+			updated, replacedTests = task, replace
+			return nil
+		},
+	).Once()
+
+	result, updateErr := service.UpdateTaskFromZip(ctx, "lio2026cuska", updatedData, false)
+	require.NoError(t, updateErr)
+	require.False(t, replacedTests)
+	require.False(t, result.TestsChanged)
+	require.Equal(t, 4, result.TestsVersion)
+	require.Contains(t, updated.MdStatements[0].Story, "Updated story")
+	require.Equal(t, existing.Tests, updated.Tests)
+	require.Equal(t, existing.IllustrImg, updated.IllustrImg)
+}
+
+func TestUpdateTaskFromZipRejectsTestChangesByDefault(t *testing.T) {
+	ctx := context.Background()
+	repo := mocktasksrvc.NewMockTaskPgRepo(t)
+	publicStore, err := filestore.NewStore(t.TempDir())
+	require.NoError(t, err)
+	testStore, err := filestore.NewStore(t.TempDir())
+	require.NoError(t, err)
+	service := srvc.NewTaskSrvc(repo, publicStore, testStore)
+
+	data, err := os.ReadFile("testdata/lio2026cuska.zip")
+	require.NoError(t, err)
+	archive, err := taskzipv1.Read(data)
+	require.NoError(t, err)
+	existing, err := taskFromArchive(t, archive)
+	require.NoError(t, err)
+	archive.Testing.CPUMs++
+	updatedData, err := taskzipv1.Write(archive)
+	require.NoError(t, err)
+
+	repo.EXPECT().Exists(ctx, "lio2026cuska").Return(true, nil).Once()
+	repo.EXPECT().GetTask(ctx, "lio2026cuska").Return(existing, nil).Once()
+
+	_, updateErr := service.UpdateTaskFromZip(ctx, "lio2026cuska", updatedData, false)
+	require.ErrorIs(t, updateErr, srvc.ErrTaskTestsChanged)
+}
+
+func taskFromArchive(t *testing.T, archive taskzipv1.Task) (srvc.Task, error) {
+	t.Helper()
+	data, err := taskzipv1.Write(archive)
+	require.NoError(t, err)
+	repo := mocktasksrvc.NewMockTaskPgRepo(t)
+	publicStore, _ := filestore.NewStore(t.TempDir())
+	testStore, _ := filestore.NewStore(t.TempDir())
+	service := srvc.NewTaskSrvc(repo, publicStore, testStore)
+	var captured srvc.Task
+	repo.EXPECT().Exists(mock.Anything, "lio2026cuska").Return(false, nil).Once()
+	repo.EXPECT().CreateTask(mock.Anything, mock.Anything).RunAndReturn(
+		func(_ context.Context, task srvc.Task) error {
+			captured = task
+			return nil
+		},
+	).Once()
+	_, importErr := service.ImportTaskFromZip(context.Background(), data, "")
+	require.NoError(t, importErr)
+	return captured, nil
+}
+
 func assertIgnoredDirectoriesOmitted(t *testing.T, data []byte) {
 	t.Helper()
 	reader, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))

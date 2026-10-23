@@ -117,6 +117,55 @@ func (_c *MockTaskPgRepo_CreateTask_Call) RunAndReturn(run func(context.Context,
 	return _c
 }
 
+// UpdateTask provides a mock function with given fields: ctx, task, replaceTests, expectedRevision
+func (_m *MockTaskPgRepo) UpdateTask(ctx context.Context, task srvc.Task, replaceTests bool, expectedRevision int) error {
+	ret := _m.Called(ctx, task, replaceTests, expectedRevision)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpdateTask")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, srvc.Task, bool, int) error); ok {
+		r0 = rf(ctx, task, replaceTests, expectedRevision)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// MockTaskPgRepo_UpdateTask_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpdateTask'
+type MockTaskPgRepo_UpdateTask_Call struct {
+	*mock.Call
+}
+
+// UpdateTask is a helper method to define mock.On call
+//   - ctx context.Context
+//   - task srvc.Task
+//   - replaceTests bool
+//   - expectedRevision int
+func (_e *MockTaskPgRepo_Expecter) UpdateTask(ctx interface{}, task interface{}, replaceTests interface{}, expectedRevision interface{}) *MockTaskPgRepo_UpdateTask_Call {
+	return &MockTaskPgRepo_UpdateTask_Call{Call: _e.mock.On("UpdateTask", ctx, task, replaceTests, expectedRevision)}
+}
+
+func (_c *MockTaskPgRepo_UpdateTask_Call) Run(run func(ctx context.Context, task srvc.Task, replaceTests bool, expectedRevision int)) *MockTaskPgRepo_UpdateTask_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(srvc.Task), args[2].(bool), args[3].(int))
+	})
+	return _c
+}
+
+func (_c *MockTaskPgRepo_UpdateTask_Call) Return(_a0 error) *MockTaskPgRepo_UpdateTask_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *MockTaskPgRepo_UpdateTask_Call) RunAndReturn(run func(context.Context, srvc.Task, bool, int) error) *MockTaskPgRepo_UpdateTask_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // DeleteStatementImg provides a mock function with given fields: ctx, taskId, filename
 func (_m *MockTaskPgRepo) DeleteStatementImg(ctx context.Context, taskId string, filename string) error {
 	ret := _m.Called(ctx, taskId, filename)

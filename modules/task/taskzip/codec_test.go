@@ -321,3 +321,41 @@ func zipEntriesForTest(t *testing.T, entries []zipEntry) []byte {
 	}
 	return out.Bytes()
 }
+
+func TestReadPatchAllowsRetainedSolutions(t *testing.T) {
+	task := minimalTask()
+	task.Solutions = []Solution{{Filename: "ok.cpp", Data: []byte("int main() {}\n")}}
+	data, err := Write(task)
+	if err != nil {
+		t.Fatal(err)
+	}
+	files := unzipForTest(t, data)
+	delete(files, "solutions/ok.cpp")
+	sparse := zipForTest(t, files)
+	if _, err := Read(sparse); err == nil {
+		t.Fatal("full reader accepted a package without solution source")
+	}
+	patch, err := ReadPatch(sparse)
+	if err != nil {
+		t.Fatalf("ReadPatch: %v", err)
+	}
+	if len(patch.Solutions) != 1 || patch.Solutions[0].Data != nil {
+		t.Fatalf("solutions = %#v", patch.Solutions)
+	}
+}
+
+func TestReadPatchRejectsInvalidMetadata(t *testing.T) {
+	files := archiveFiles(t, minimalTask())
+	files["task.toml"] = []byte("taskzip = 999\nid = \"sum\"\n")
+	if _, err := ReadPatch(zipForTest(t, files)); err == nil {
+		t.Fatal("accepted invalid taskzip version")
+	}
+}
+
+func TestValidateMergedRejectsMissingStatement(t *testing.T) {
+	task := minimalTask()
+	task.Statements = nil
+	if err := ValidateMerged(&task); err == nil {
+		t.Fatal("accepted a merged task without statements")
+	}
+}

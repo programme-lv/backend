@@ -1,6 +1,7 @@
 package http
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"log/slog"
@@ -58,6 +59,49 @@ func (h *taskHttpHandler) UploadTask(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_ = jsonresp.Success(w, UploadTaskResponse{TaskId: createdId})
+}
+
+// UpdateTask replaces task content from multipart field task_zip without
+// deleting the task. Query parameter allow_test_changes=true permits official
+// test or scoring changes and bumps the task's tests_version.
+func (h *taskHttpHandler) UpdateTask(w http.ResponseWriter, r *http.Request) {
+	taskID := chi.URLParam(r, "taskId")
+	if err := r.ParseMultipartForm(512 << 20); err != nil {
+		jsonresp.BadRequest(w, fmt.Sprintf("parse multipart form: %v", err))
+		return
+	}
+	file, _, err := r.FormFile("task_zip")
+	if err != nil {
+		jsonresp.BadRequest(w, fmt.Sprintf("read task_zip: %v", err))
+		return
+	}
+	defer file.Close()
+	zipBytes, err := io.ReadAll(file)
+	if err != nil {
+		jsonresp.BadRequest(w, fmt.Sprintf("read all zip bytes: %v", err))
+		return
+	}
+	var result srvc.UpdateResult
+	var updateErr error
+	if manifest := r.FormValue("manifest"); manifest != "" {
+		var meta srvc.PatchMeta
+		if err := json.Unmarshal([]byte(manifest), &meta); err != nil {
+			jsonresp.BadRequest(w, fmt.Sprintf("parse manifest: %v", err))
+			return
+		}
+		result, updateErr = h.taskSrvc.PatchTaskFromZip(r.Context(), taskID, zipBytes, meta)
+	} else {
+		allowTests := r.URL.Query().Get("allow_test_changes") == "true"
+		result, updateErr = h.taskSrvc.UpdateTaskFromZip(r.Context(), taskID, zipBytes, allowTests)
+	}
+	if updateErr != nil {
+		jsonresp.WriteError(w, updateErr)
+		return
+	}
+	h.getTaskViewCache.Delete(taskID)
+	h.getTaskListCache.Delete("")
+	h.getTaskFiltersCache.Delete("")
+	_ = jsonresp.Success(w, result)
 }
 
 // UploadStatementImage stores a statement image from multipart field image.

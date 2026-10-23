@@ -40,6 +40,16 @@ func (h *taskHttpHandler) PutStatement(ctx context.Context, req PutStatementReq)
 	return nil
 }
 
+// GetTaskManifest returns hashes used to negotiate a sparse task update.
+func (h *taskHttpHandler) GetTaskManifest(ctx context.Context) (srvc.TaskManifest, jsonresp.HttpStatusCoder) {
+	taskId := chi.URLParamFromCtx(ctx, "taskId")
+	manifest, err := h.taskSrvc.GetTaskManifest(ctx, taskId)
+	if err != nil {
+		return srvc.TaskManifest{}, err
+	}
+	return manifest, nil
+}
+
 // DeleteStatementImage deletes the statement image named {filename} and invalidates cached views.
 func (h *taskHttpHandler) DeleteStatementImage(ctx context.Context) jsonresp.HttpStatusCoder {
 	taskId := chi.URLParamFromCtx(ctx, "taskId")

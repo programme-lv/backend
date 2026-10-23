@@ -51,6 +51,16 @@ func taskStatementImageStoredKey(objectKey string) string {
 	return strings.TrimPrefix(objectKey, taskStatementImageDir+"/")
 }
 
+// statementImageStoredKey includes the filename so identical image bytes can
+// be stored under different names without collapsing into one task_images row.
+func statementImageStoredKey(taskID, filename string, data []byte, ext string) string {
+	name := strings.ReplaceAll(path.Base(filename), "/", "_")
+	if name == "" || name == "." {
+		name = "image" + ext
+	}
+	return fmt.Sprintf("%s/%s-%s", taskID, sha2Hex(data)[:12], name)
+}
+
 // UploadIllustrationImg stores an illustration original and warms list, view, and full WebP variants.
 // It returns the stored key without the illustrations/ prefix.
 // The object key is illustrations/<sha256>.<ext>.
@@ -82,7 +92,7 @@ func (ts *taskSrvc) UploadIllustrationImg(ctx context.Context, mimeType string, 
 }
 
 // UploadStatementImage stores a statement image and records it on the task.
-// The object key is md-images/<taskId>/<sha256-prefix>.<ext>.
+// The object key is md-images/<taskId>/<sha256-prefix>-<filename>.
 func (ts *taskSrvc) UploadStatementImage(ctx context.Context, taskId string, imgFilename string, imageMimeType string, body []byte) (string, srvcerror.E) {
 	l := ts.logger(ctx)
 
@@ -111,7 +121,7 @@ func (ts *taskSrvc) UploadStatementImage(ctx context.Context, taskId string, img
 		}
 	}
 
-	storedKey := fmt.Sprintf("%s/%s%s", taskId, sha2Hex(body)[:12], ext)
+	storedKey := statementImageStoredKey(taskId, imgFilename, body, ext)
 	objectURI, err := ts.publicStore.Upload(body, taskStatementImageObjectKey(storedKey), imageMimeType)
 	if err != nil {
 		l.Error("upload statement image", "error", err)

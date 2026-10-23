@@ -2,6 +2,7 @@ package http
 
 import (
 	"github.com/go-chi/chi/v5"
+	hf "github.com/programme-lv/backend/common/httpfunc"
 	"github.com/programme-lv/backend/modules/user/auth"
 )
 
@@ -22,6 +23,11 @@ func (h *SubmHttpHandler) RegisterRoutes(r *chi.Mux, jwtKey, adminAPIKey []byte,
 		r.Group(func(r chi.Router) {
 			r.Use(auth.HttpAllowOnlyAdmins(adminAPIKey))
 			r.Post("/reeval", h.ReevalSubms)
+
+			r.Get("/tasks/{taskId}/solutions", hf.NoReqJsonResp(h.ListTaskSolutions))
+			r.Post("/tasks/{taskId}/solutions/{fname}/profile", hf.JsonReqJsonResp(h.StartSolutionProfile))
+			r.Get("/tasks/{taskId}/solutions/{fname}/profiles", hf.NoReqJsonResp(h.ListSolutionProfiles))
+			r.Get("/solution-profiles/{profileId}", hf.NoReqJsonResp(h.GetSolutionProfile))
 		})
 	})
 }

@@ -27,4 +27,14 @@ var ErrSubmissionNotFound = srvcerror.New(
 	"Atbilstošais iesūtījums netika atrasts",
 ).SetHttpStatusCode(http.StatusNotFound)
 
+var ErrSolutionNotFound = srvcerror.New(
+	"solution_not_found",
+	"Risinājums netika atrasts",
+).SetHttpStatusCode(http.StatusNotFound)
+
+var ErrProfileNotFound = srvcerror.New(
+	"solution_profile_not_found",
+	"Risinājuma profils netika atrasts",
+).SetHttpStatusCode(http.StatusNotFound)
+
 var ErrInternal = srvcerror.ErrInternal

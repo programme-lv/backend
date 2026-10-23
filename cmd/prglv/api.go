@@ -156,6 +156,120 @@ func uploadTask(ctx context.Context, base, apiKey string, zipBytes []byte, overr
 	return result.TaskID, nil
 }
 
+type updateResult struct {
+	TaskID       string `json:"task_id"`
+	TestsChanged bool   `json:"tests_changed"`
+	TestsVersion int    `json:"tests_version"`
+	Revision     int    `json:"revision"`
+}
+
+type taskManifest struct {
+	TaskID       string            `json:"task_id"`
+	TestsVersion int               `json:"tests_version"`
+	TestsSHA256  string            `json:"tests_sha256"`
+	TestsCount   int               `json:"tests_count"`
+	ContentETag  string            `json:"content_etag"`
+	Revision     int               `json:"revision"`
+	Sections     map[string]string `json:"sections"`
+	Files        map[string]string `json:"files"`
+}
+
+type taskPatchMeta struct {
+	BaseContentETag  string   `json:"base_content_etag,omitempty"`
+	BaseTestsVersion *int     `json:"base_tests_version,omitempty"`
+	BaseRevision     int      `json:"base_revision"`
+	Sections         []string `json:"sections"`
+	AllowTests       bool     `json:"allow_test_changes"`
+}
+
+// getTaskManifest fetches the remote hashes used to plan a sparse update.
+func getTaskManifest(ctx context.Context, base, apiKey, taskID string) (taskManifest, error) {
+	endpoint, err := apiEndpoint(base, "tasks", taskID, "manifest")
+	if err != nil {
+		return taskManifest{}, err
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
+	if err != nil {
+		return taskManifest{}, fmt.Errorf("build manifest request: %w", err)
+	}
+	req.Header.Set("Authorization", "Bearer "+apiKey)
+	resp, err := apiClient.Do(req)
+	if err != nil {
+		return taskManifest{}, fmt.Errorf("GET %s: %w", endpoint, err)
+	}
+	defer resp.Body.Close()
+	data, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
+	if err != nil {
+		return taskManifest{}, fmt.Errorf("read %s response: %w", endpoint, err)
+	}
+	payload, err := decodeAPIResponse(endpoint, resp.StatusCode, data)
+	if err != nil {
+		return taskManifest{}, err
+	}
+	var result taskManifest
+	if err := json.Unmarshal(payload, &result); err != nil {
+		return taskManifest{}, fmt.Errorf("%s: decode response: %w", endpoint, err)
+	}
+	return result, nil
+}
+
+// updateTask patches taskID from a sparse zipBytes and patch manifest.
+func updateTask(ctx context.Context, base, apiKey, taskID string, zipBytes []byte, meta taskPatchMeta) (updateResult, error) {
+	var body bytes.Buffer
+	mw := multipart.NewWriter(&body)
+	part, err := mw.CreateFormFile("task_zip", "task.zip")
+	if err != nil {
+		return updateResult{}, fmt.Errorf("build update body: %w", err)
+	}
+	if _, err := part.Write(zipBytes); err != nil {
+		return updateResult{}, fmt.Errorf("build update body: %w", err)
+	}
+	manifest, err := json.Marshal(meta)
+	if err != nil {
+		return updateResult{}, fmt.Errorf("build update manifest: %w", err)
+	}
+	if err := mw.WriteField("manifest", string(manifest)); err != nil {
+		return updateResult{}, fmt.Errorf("build update manifest: %w", err)
+	}
+	if err := mw.Close(); err != nil {
+		return updateResult{}, fmt.Errorf("build update body: %w", err)
+	}
+
+	endpoint, err := apiEndpoint(base, "tasks", taskID)
+	if err != nil {
+		return updateResult{}, err
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPatch, endpoint, &body)
+	if err != nil {
+		return updateResult{}, fmt.Errorf("build update request: %w", err)
+	}
+	req.Header.Set("Content-Type", mw.FormDataContentType())
+	req.Header.Set("Authorization", "Bearer "+apiKey)
+
+	resp, err := apiClient.Do(req)
+	if err != nil {
+		return updateResult{}, fmt.Errorf("PATCH %s: %w", endpoint, err)
+	}
+	defer resp.Body.Close()
+	data, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
+	if err != nil {
+		return updateResult{}, fmt.Errorf("read %s response: %w", endpoint, err)
+	}
+	payload, err := decodeAPIResponse(endpoint, resp.StatusCode, data)
+	if err != nil {
+		return updateResult{}, err
+	}
+	var result updateResult
+	if err := json.Unmarshal(payload, &result); err != nil {
+		return updateResult{}, fmt.Errorf("%s: decode response: %w", endpoint, err)
+	}
+	if result.TaskID == "" {
+		return updateResult{}, fmt.Errorf("%s: response is missing task_id", endpoint)
+	}
+	return result, nil
+}
+
 // exportTask downloads the TaskZip archive of taskID.
 func exportTask(ctx context.Context, base, apiKey, taskID string) ([]byte, error) {
 	endpoint, err := apiEndpoint(base, "tasks", taskID, "export")

@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-func consumeFiles(task *Task, files map[string][]byte) error {
+func consumeFiles(task *Task, files map[string][]byte, requireSolutionData bool) error {
 	tests := map[int]*Test{}
 	examples := map[int]*Example{}
 	solutions := map[string]*Solution{}
@@ -121,9 +121,11 @@ func consumeFiles(task *Task, files map[string][]byte) error {
 	}
 	task.Tests = orderedTests(tests)
 	task.Examples = orderedExamples(examples)
-	for _, s := range task.Solutions {
-		if s.Data == nil {
-			return fmt.Errorf("missing solutions/%s", s.Filename)
+	if requireSolutionData {
+		for _, s := range task.Solutions {
+			if s.Data == nil {
+				return fmt.Errorf("missing solutions/%s", s.Filename)
+			}
 		}
 	}
 	return nil
