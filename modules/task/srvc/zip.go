@@ -508,6 +508,7 @@ func visibleInput(id int, testIDs []int, tests []taskzipv1.Test) VisibleInputSub
 }
 
 func mapToTaskZip(t Task) (taskzipv1.Task, error) {
+	t = sortedTaskTestIDs(t)
 	if t.DifficultyRating < 0 || t.DifficultyRating > 5 {
 		return taskzipv1.Task{}, fmt.Errorf("difficulty out of range")
 	}
@@ -546,6 +547,27 @@ func mapToTaskZip(t Task) (taskzipv1.Task, error) {
 		return taskzipv1.Task{}, err
 	}
 	return res, nil
+}
+
+func sortedTaskTestIDs(t Task) Task {
+	groups := make([]TestGroup, len(t.TestGroups))
+	for i, group := range t.TestGroups {
+		ids := append([]int(nil), group.TestIDs...)
+		sort.Ints(ids)
+		group.TestIDs = ids
+		groups[i] = group
+	}
+	t.TestGroups = groups
+
+	subtasks := make([]Subtask, len(t.Subtasks))
+	for i, subtask := range t.Subtasks {
+		ids := append([]int(nil), subtask.TestIDs...)
+		sort.Ints(ids)
+		subtask.TestIDs = ids
+		subtasks[i] = subtask
+	}
+	t.Subtasks = subtasks
+	return t
 }
 
 func mapServiceOrigin(t Task, res *taskzipv1.Task) {

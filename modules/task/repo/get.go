@@ -357,6 +357,7 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 			SELECT test_id 
 			FROM task_subtask_test_ids 
 			WHERE subtask_id = $1
+			ORDER BY test_id
 		`, stID)
 		if err != nil {
 			subtaskRows.Close()
@@ -401,6 +402,7 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 			SELECT test_id 
 			FROM task_test_group_test_ids 
 			WHERE test_group_id = $1
+			ORDER BY test_id
 		`, tgID)
 		if err != nil {
 			tgRows.Close()
