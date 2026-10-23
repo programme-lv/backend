@@ -15,7 +15,8 @@ import (
 )
 
 // ServePublicAsset serves a file from the public asset store.
-// Allowlisted illustration variants are generated on first request and cached.
+// Allowlisted WebP variants (illustrations and statement images) are generated
+// on first request and cached.
 func publicAssetAllowed(key string) bool {
 	return strings.HasPrefix(key, "illustrations/") ||
 		strings.HasPrefix(key, "md-images/") ||
@@ -33,7 +34,7 @@ func (h *taskHttpHandler) ServePublicAsset(w http.ResponseWriter, r *http.Reques
 		serveKey, err := img.EnsureVariant(r.Context(), h.publicAssetStore, orig, variant)
 		if err != nil {
 			if !errors.Is(err, os.ErrNotExist) {
-				h.logger(r.Context()).Error("derive illustration variant", "key", key, "error", err)
+				h.logger(r.Context()).Error("derive asset variant", "key", key, "error", err)
 			}
 			writeAssetError(w, err)
 			return

@@ -22,3 +22,23 @@ func TestGetIllustrationAssetURLs(t *testing.T) {
 	require.Equal(t, "https://api.programme.lv/assets/illustrations/deadbeef.webp.view.webp", view)
 	require.Equal(t, "https://api.programme.lv/assets/illustrations/deadbeef.webp", full)
 }
+
+func TestGetHttpUrlForStatementImage(t *testing.T) {
+	ts := NewTaskSrvc(nil, nil, nil, WithPublicAPIBaseURL("https://api.programme.lv"))
+
+	url, err := ts.GetHttpUrlForStatementImage(context.Background(), "aplusb/abc.png")
+	require.NoError(t, err)
+	require.Equal(t, "https://api.programme.lv/assets/md-images/aplusb/abc.png.full.webp", url)
+
+	url, err = ts.GetHttpUrlForStatementImage(context.Background(), "task-md-images/abc.png")
+	require.NoError(t, err)
+	require.Equal(t, "https://api.programme.lv/assets/task-md-images/abc.png.full.webp", url)
+
+	url, err = ts.GetHttpUrlForStatementImage(context.Background(), "aplusb/abc.webp")
+	require.NoError(t, err)
+	require.Equal(t, "https://api.programme.lv/assets/md-images/aplusb/abc.webp", url)
+
+	url, err = ts.GetHttpUrlForStatementImage(context.Background(), "aplusb/abc.svg")
+	require.NoError(t, err)
+	require.Equal(t, "https://api.programme.lv/assets/md-images/aplusb/abc.svg", url)
+}

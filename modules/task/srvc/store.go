@@ -273,8 +273,14 @@ func (ts *taskSrvc) GetIllustrationAssetURLs(ctx context.Context, objectKey stri
 	return listURL, viewURL, fullURL, nil
 }
 
+// GetHttpUrlForStatementImage returns the public URL for a statement image.
+// Raster originals are served as full-resolution WebP; vectors stay original.
 func (ts *taskSrvc) GetHttpUrlForStatementImage(ctx context.Context, objectKey string) (string, srvcerror.E) {
-	url, err := filestore.AssetURL(ts.apiPublicBaseURL, taskStatementImageObjectKey(objectKey))
+	key := taskStatementImageObjectKey(objectKey)
+	if img.IsDerivable(key) {
+		key = img.ServeKey(key, img.VariantFull)
+	}
+	url, err := filestore.AssetURL(ts.apiPublicBaseURL, key)
 	if err != nil {
 		ts.logger(ctx).Error("build statement image URL", "error", err)
 		return "", srvcerror.InternalServerError()

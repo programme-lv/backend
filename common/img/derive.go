@@ -21,6 +21,19 @@ const (
 
 const illustrationDir = "illustrations"
 
+// derivableRoots are the public asset prefixes that may be served as derived
+// WebP variants. Illustrations are flat; statement images live under a task
+// directory, and older installs use the task-md-images/ and task/ prefixes.
+var derivableRoots = []struct {
+	prefix string
+	flat   bool
+}{
+	{illustrationDir + "/", true},
+	{"md-images/", false},
+	{"task-md-images/", false},
+	{"task/", false},
+}
+
 const derivedCacheControl = "public, max-age=31536000, immutable"
 
 var (
@@ -56,7 +69,7 @@ func (v Variant) valid() bool {
 	return v == VariantList || v == VariantView || v == VariantFull
 }
 
-// DerivedCacheControl is the Cache-Control value for derived illustration objects.
+// DerivedCacheControl is the Cache-Control value for derived image objects.
 func DerivedCacheControl() string {
 	return derivedCacheControl
 }
@@ -75,8 +88,33 @@ func ServeKey(originalKey string, v Variant) string {
 	return DerivedKey(originalKey, v)
 }
 
-// ParseDerivedKey reports the original illustration key and variant if key is
-// an allowlisted derivative. Unknown suffixes are not parsed (caller 404s).
+// IsDerivable reports whether originalKey can be transcoded to WebP. Vector and
+// unsupported formats must keep their original URL.
+func IsDerivable(originalKey string) bool {
+	switch strings.ToLower(path.Ext(originalKey)) {
+	case ".png", ".jpg", ".jpeg", ".webp":
+		return true
+	default:
+		return false
+	}
+}
+
+func derivableAsset(key string) bool {
+	for _, root := range derivableRoots {
+		rest, ok := strings.CutPrefix(key, root.prefix)
+		if !ok {
+			continue
+		}
+		if rest == "" {
+			return false
+		}
+		return !root.flat || !strings.Contains(rest, "/")
+	}
+	return false
+}
+
+// ParseDerivedKey reports the original asset key and variant if key is an
+// allowlisted derivative. Unknown suffixes are not parsed (caller 404s).
 func ParseDerivedKey(key string) (originalKey string, variant Variant, ok bool) {
 	for _, v := range Variants() {
 		suffix := "." + string(v) + ".webp"
@@ -84,11 +122,7 @@ func ParseDerivedKey(key string) (originalKey string, variant Variant, ok bool) 
 			continue
 		}
 		originalKey = strings.TrimSuffix(key, suffix)
-		if !strings.HasPrefix(originalKey, illustrationDir+"/") {
-			return "", "", false
-		}
-		rest := strings.TrimPrefix(originalKey, illustrationDir+"/")
-		if rest == "" || strings.Contains(rest, "/") {
+		if !derivableAsset(originalKey) || !IsDerivable(originalKey) {
 			return "", "", false
 		}
 		return originalKey, v, true
@@ -99,7 +133,7 @@ func ParseDerivedKey(key string) (originalKey string, variant Variant, ok bool) 
 // EnsureVariant writes the derived WebP if missing and returns the key to serve.
 func EnsureVariant(ctx context.Context, store ObjectStore, originalKey string, variant Variant) (string, error) {
 	if !variant.valid() {
-		return "", fmt.Errorf("unknown illustration variant %q", variant)
+		return "", fmt.Errorf("unknown image variant %q", variant)
 	}
 	serveKey := ServeKey(originalKey, variant)
 	if serveKey == originalKey {
