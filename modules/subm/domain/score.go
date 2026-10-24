@@ -45,6 +45,8 @@ func (e *Eval) CalculateScore() ScoreInfo {
 			switch {
 			case allUnreached(testGroup.TgTests, e.Tests):
 				gray += testGroup.Points
+			case anyPending(testGroup.TgTests, e.Tests):
+				yellow += testGroup.Points
 			case centi == testGroup.Points*100:
 				green += testGroup.Points
 			case centi == 0:
@@ -64,6 +66,8 @@ func (e *Eval) CalculateScore() ScoreInfo {
 			switch {
 			case allUnreached(subtask.StTests, e.Tests):
 				gray += subtask.Points
+			case anyPending(subtask.StTests, e.Tests):
+				yellow += subtask.Points
 			case centi == subtask.Points*100:
 				green += subtask.Points
 			case centi == 0:
@@ -188,6 +192,23 @@ func unitCenti(points int, testIDs []int, tests []Test, partial bool) int {
 		}
 	}
 	return (points*sum + len(testIDs)/2) / len(testIDs)
+}
+
+// anyPending reports whether a scoring unit is still being evaluated: one of
+// its tests has been reached by the tester but has not finished yet. Ignored
+// tests are final (the tester skips the rest of a unit that already failed),
+// so they never count as pending.
+func anyPending(testIDs []int, tests []Test) bool {
+	for _, id := range testIDs {
+		if id < 1 || id > len(tests) {
+			continue
+		}
+		test := tests[id-1]
+		if test.Reached && !test.Finished && !test.Ig {
+			return true
+		}
+	}
+	return false
 }
 
 func allUnreached(testIDs []int, tests []Test) bool {
