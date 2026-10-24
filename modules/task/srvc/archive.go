@@ -283,15 +283,16 @@ func (ts *taskSrvc) MigrateLegacyArchiveZips(ctx context.Context) {
 }
 
 func (ts *taskSrvc) migrateOneLegacyArchiveZip(ctx context.Context, z LegacyArchiveZip) error {
-	exists, err := ts.publicStore.Exists(z.ObjectKey)
+	sourceKey := path.Join("public", z.ObjectKey)
+	exists, err := ts.publicStore.Exists(sourceKey)
 	if err != nil {
 		return err
 	}
 	if !exists {
-		ts.logger(ctx).Warn("legacy archive zip missing", "task_id", z.TaskID, "object_key", z.ObjectKey)
+		ts.logger(ctx).Warn("legacy archive zip missing", "task_id", z.TaskID, "object_key", sourceKey)
 		return nil
 	}
-	data, err := ts.publicStore.Download(z.ObjectKey)
+	data, err := ts.publicStore.Download(sourceKey)
 	if err != nil {
 		return err
 	}
@@ -332,7 +333,7 @@ func (ts *taskSrvc) migrateOneLegacyArchiveZip(ctx context.Context, z LegacyArch
 	if err := ts.repo.ClearArchiveObjectKey(ctx, z.TaskID); err != nil {
 		return err
 	}
-	if err := ts.publicStore.Delete(z.ObjectKey); err != nil {
+	if err := ts.publicStore.Delete(sourceKey); err != nil {
 		ts.logger(ctx).Error("delete leftover archive zip", "task_id", z.TaskID, "error", err)
 	}
 	return nil

@@ -40,7 +40,7 @@ func taskStatementImageObjectKey(storedKey string) string {
 	if storedKey == "" {
 		return ""
 	}
-	if strings.HasPrefix(storedKey, "tasks/") || strings.HasPrefix(storedKey, taskStatementImageDir+"/") ||
+	if strings.HasPrefix(storedKey, "assets/") || strings.HasPrefix(storedKey, "tasks/") || strings.HasPrefix(storedKey, taskStatementImageDir+"/") ||
 		strings.HasPrefix(storedKey, "task/") ||
 		strings.HasPrefix(storedKey, "task-md-images/") {
 		return storedKey
@@ -93,7 +93,7 @@ func (ts *taskSrvc) UploadIllustrationImg(ctx context.Context, taskID, mimeType 
 }
 
 // UploadStatementImage stores a statement image and records it on the task.
-// The path is tasks/<taskId>/images/<sha256>/<filename>.
+// The path is assets/tasks/<taskId>/images/<sha256>/<filename>.
 func (ts *taskSrvc) UploadStatementImage(ctx context.Context, taskId string, imgFilename string, imageMimeType string, body []byte) (string, srvcerror.E) {
 	l := ts.logger(ctx)
 

@@ -50,7 +50,7 @@ func runMaintenance(name string, args []string) error {
 	if err := m.Prepare(ctx); err != nil {
 		return err
 	}
-	public := conf.MustGetFileStore(root, "public")
+	public := conf.MustGetFileStore(root, "")
 	tests := conf.MustGetFileStore(root, "testfiles")
 	tasksrvc.NewTaskSrvc(repo.NewTaskPgRepo(pool), public, tests).MigrateLegacyArchiveZips(ctx)
 	if name == "rename" {

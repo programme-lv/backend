@@ -40,7 +40,7 @@ check is enforced in the same transaction as the write. A solution score is
 never inferred from the archive: omitted scores remain unverified.
 
 `archive/` holds leftover files (original PDFs, pre-TaskZip trees).
-Each file is stored under `tasks/{taskId}/archive/{path}` and listed on the admin
+Each file is stored under `archive/tasks/{taskId}/{path}` and listed on the admin
 Arhīvs tab. Official files under `tests/` remain the source of truth; keep
 them out of `archive/`.
 A task may store at most 256 archive files, 64 MiB per file, and 128 MiB total.

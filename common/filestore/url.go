@@ -16,6 +16,8 @@ func AssetURL(baseURL string, key string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	// Public originals are stored under assets/ but served at /assets/<key>.
+	cleanKey = strings.TrimPrefix(cleanKey, "assets/")
 	return joinURL(baseURL, "assets", escapeKey(cleanKey)), nil
 }
 

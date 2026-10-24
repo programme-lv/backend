@@ -4,9 +4,10 @@ import "testing"
 
 func TestArchiveAndTraversalAreNotPublicImages(t *testing.T) {
 	for _, key := range []string{
-		"tasks/seifs/archive/solution.cpp", "tasks/seifs/archive/tests/1.in",
-		"tasks/seifs/images/../archive/solution.cpp", "tasks/../images/a.png",
-		"testfiles/hash.zst", "tasks/seifs/images",
+		"assets/tasks/seifs/archive/solution.cpp", "assets/tasks/seifs/archive/tests/1.in",
+		"assets/tasks/seifs/images/../archive/solution.cpp", "assets/tasks/../images/a.png",
+		"testfiles/hash.zst", "assets/tasks/seifs/images",
+		"archive/tasks/seifs/solution.cpp", "cache/images/hash/full.webp",
 	} {
 		if PublicImage(key) {
 			t.Errorf("private or malformed path allowed: %s", key)

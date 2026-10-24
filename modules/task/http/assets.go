@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 	"os"
+	"path"
 	"strconv"
 	"strings"
 	"time"
@@ -15,38 +16,43 @@ import (
 	"github.com/programme-lv/backend/modules/task/storage"
 )
 
-// ServePublicAsset serves a file from the public asset store.
-// Allowlisted WebP variants (illustrations and statement images) are generated
-// on first request and cached.
-func publicAssetAllowed(key string) bool {
-	return storage.PublicImage(key) || strings.HasPrefix(key, "illustrations/") ||
-		strings.HasPrefix(key, "md-images/") ||
-		strings.HasPrefix(key, "task-md-images/") ||
-		strings.HasPrefix(key, "task/")
-}
-
+// ServePublicAsset serves public task assets from assets/ and disposable WebP
+// derivatives from cache/. Legacy .full/.list/.view suffix URLs generate the
+// corresponding cache object on demand.
 func (h *taskHttpHandler) ServePublicAsset(w http.ResponseWriter, r *http.Request) {
 	key := chi.URLParam(r, "*")
-	if !publicAssetAllowed(key) {
+	if strings.HasPrefix(key, "cache/") {
+		if !img.ValidCacheKey(key) {
+			writeNotFound(w, "asset not found")
+			return
+		}
+		w.Header().Set("Cache-Control", img.DerivedCacheControl())
+		if err := h.publicAssetStore.ServeHTTP(w, r, key); err != nil {
+			w.Header().Del("Cache-Control")
+			writeAssetError(w, err)
+		}
+		return
+	}
+	publicKey := path.Join(storage.AssetsRoot, key)
+	if !storage.PublicImage(publicKey) {
 		writeNotFound(w, "asset not found")
 		return
 	}
-	if orig, variant, ok := img.ParseDerivedKey(key); ok {
+	if orig, variant, ok := img.ParseDerivedKey(publicKey); ok {
 		serveKey, err := img.EnsureVariant(r.Context(), h.publicAssetStore, orig, variant)
 		if err != nil {
 			if !errors.Is(err, os.ErrNotExist) {
-				h.logger(r.Context()).Error("derive asset variant", "key", key, "error", err)
+				h.logger(r.Context()).Error("derive asset variant", "key", publicKey, "error", err)
 			}
 			writeAssetError(w, err)
 			return
 		}
 		w.Header().Set("Cache-Control", img.DerivedCacheControl())
-		key = serveKey
+		publicKey = serveKey
 	}
-	if err := h.publicAssetStore.ServeHTTP(w, r, key); err != nil {
+	if err := h.publicAssetStore.ServeHTTP(w, r, publicKey); err != nil {
 		w.Header().Del("Cache-Control")
 		writeAssetError(w, err)
-		return
 	}
 }
 
