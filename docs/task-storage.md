@@ -16,8 +16,10 @@ recovery/<timestamp>/...
 Public originals live under `assets/`; admin-only archives under `archive/`.
 Derived WebP variants live under `cache/` and are disposable: they are never
 backed up, exported or considered source. Cache keys include a hash of the
-original key, so replacing an image selects a new object. Hashes in image URLs
-prevent stale immutable caches. Archives never pass the public asset allowlist.
+original key, so replacing an image selects a new object. Public URLs keep the
+stable `<original>.<variant>.webp` suffix; the handler derives the cache object
+on demand. Hashes in image URLs prevent stale immutable caches. Archives never
+pass the public asset allowlist.
 Tests stay in the private shared content-addressed store: executions and
 historical evaluations refer to their hashes independently of task identity.
 

@@ -28,7 +28,7 @@ func TestUploadIllustrationImgWarmsVariants(t *testing.T) {
 	require.True(t, exists)
 
 	for _, v := range img.Variants() {
-		serve := img.ServeKey(orig, v)
+		serve := img.DerivedKey(orig, v)
 		exists, err := store.Exists(serve)
 		require.NoError(t, err)
 		require.True(t, exists, string(v))
