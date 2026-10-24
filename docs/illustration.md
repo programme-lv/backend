@@ -8,14 +8,16 @@ The public URL in task JSON is not that file.
 DB stores the SHA-256 and extension separately. Paths are derived from task ID
 and metadata; see [task storage](task-storage.md).
 
-| Role | Filestore key |
-| --- | --- |
-| Original | `assets/tasks/{taskId}/illustration/{sha256}{ext}` |
-| List (fit 160×160) | `cache/images/{sha256(originalKey)}/list.webp` |
-| View (fit 256×256) | `cache/images/{sha256(originalKey)}/view.webp` |
-| Full (original pixels, WebP) | `cache/images/{sha256(originalKey)}/full.webp` |
+| Role | Filestore key | Public URL |
+| --- | --- | --- |
+| Original | `assets/tasks/{taskId}/illustration/{sha256}{ext}` | `.../assets/tasks/...` |
+| List (fit 160×160) | `cache/images/{sha256(originalKey)}/list.webp` | `<original>.list.webp` |
+| View (fit 256×256) | `cache/images/{sha256(originalKey)}/view.webp` | `<original>.view.webp` |
+| Full (original pixels, WebP) | `cache/images/{sha256(originalKey)}/full.webp` | `<original>.full.webp` |
 
-If the original is already `.webp`, `full` is the original object. List and view are still derived when the original is larger than the box.
+Public URLs keep the stable suffix form; the server derives the cache object on
+demand. If the original is already `.webp`, `full` is the original object.
+List and view are still derived when the original is larger than the box.
 
 JSON:
 
@@ -30,8 +32,9 @@ JSON:
 Statement images are stored at
 `assets/tasks/<taskId>/images/<sha256>/<filename>`. The DB stores filename,
 full SHA-256 and dimensions. They expose only the full variant: original pixels
-as WebP in `cache/`, with no resizing. The task JSON `http_url` points at the
-cache object (or the original for a `.webp` source).
+as WebP in `cache/`, with no resizing. The task JSON `http_url` uses the
+`<original>.full.webp` URL (or the original for a `.webp` source); the handler
+generates the cache object on first request.
 
 - PNG, JPEG, and WebP originals are transcoded.
 - SVG and other formats are not transcoded; `http_url` stays the original key.

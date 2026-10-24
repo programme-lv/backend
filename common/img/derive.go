@@ -102,13 +102,14 @@ func ValidCacheKey(key string) bool {
 	}
 }
 
-// ServeKey is the object that should be served for a variant.
+// ServeKey is the stable public URL key for a variant. It is deliberately
+// derived from the original key so clients never depend on cache internals.
 // A WebP original is the full variant; no extra file is written.
 func ServeKey(originalKey string, v Variant) string {
 	if v == VariantFull && isWebPKey(originalKey) {
 		return originalKey
 	}
-	return DerivedKey(originalKey, v)
+	return originalKey + "." + string(v) + ".webp"
 }
 
 // IsDerivable reports whether originalKey can be transcoded to WebP. Vector and
@@ -164,10 +165,10 @@ func EnsureVariant(ctx context.Context, store ObjectStore, originalKey string, v
 	if !variant.valid() {
 		return "", fmt.Errorf("unknown image variant %q", variant)
 	}
-	serveKey := ServeKey(originalKey, variant)
-	if serveKey == originalKey {
+	if variant == VariantFull && isWebPKey(originalKey) {
 		return originalKey, nil
 	}
+	serveKey := DerivedKey(originalKey, variant)
 
 	exists, err := store.Exists(serveKey)
 	if err != nil {

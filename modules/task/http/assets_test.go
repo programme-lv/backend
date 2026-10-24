@@ -57,7 +57,7 @@ func TestServeIllustrationVariants(t *testing.T) {
 		require.Equal(t, 80, cfg.Width)
 		require.Equal(t, 40, cfg.Height)
 
-		cacheKey := img.ServeKey(orig, img.VariantList)
+		cacheKey := img.DerivedKey(orig, img.VariantList)
 		info1, err := os.Stat(filepath.Join(store.Root(), filepath.FromSlash(cacheKey)))
 		require.NoError(t, err)
 
@@ -69,7 +69,7 @@ func TestServeIllustrationVariants(t *testing.T) {
 	})
 
 	t.Run("cache url serves the generated object", func(t *testing.T) {
-		rec := getAsset(h, "/assets/"+img.ServeKey(orig, img.VariantList))
+		rec := getAsset(h, "/assets/"+img.DerivedKey(orig, img.VariantList))
 		require.Equal(t, http.StatusOK, rec.Code)
 		require.Equal(t, "image/webp", rec.Header().Get("Content-Type"))
 	})

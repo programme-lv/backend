@@ -80,9 +80,9 @@ func TestIsDerivable(t *testing.T) {
 
 func TestServeKeyAliasesWebPOriginalForFull(t *testing.T) {
 	require.Equal(t, "illustrations/abc.webp", ServeKey("illustrations/abc.webp", VariantFull))
-	require.True(t, ValidCacheKey(ServeKey("illustrations/abc.webp", VariantList)))
-	require.True(t, ValidCacheKey(ServeKey("illustrations/abc.png", VariantFull)))
-	require.Equal(t, DerivedKey("illustrations/abc.png", VariantFull), ServeKey("illustrations/abc.png", VariantFull))
+	require.Equal(t, "illustrations/abc.webp.list.webp", ServeKey("illustrations/abc.webp", VariantList))
+	require.Equal(t, "illustrations/abc.png.full.webp", ServeKey("illustrations/abc.png", VariantFull))
+	require.True(t, ValidCacheKey(DerivedKey("illustrations/abc.png", VariantFull)))
 }
 
 func TestEnsureVariantWritesOnce(t *testing.T) {
@@ -91,7 +91,7 @@ func TestEnsureVariantWritesOnce(t *testing.T) {
 	_, err := store.Upload(encodePNG(solid(80, 40, color.RGBA{R: 30, G: 60, B: 90, A: 255})), orig, "image/png")
 	require.NoError(t, err)
 
-	want := ServeKey(orig, VariantList)
+	want := DerivedKey(orig, VariantList)
 	key, err := EnsureVariant(context.Background(), store, orig, VariantList)
 	require.NoError(t, err)
 	require.Equal(t, want, key)
