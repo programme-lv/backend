@@ -23,6 +23,7 @@ import (
 	taskhttp "github.com/programme-lv/backend/modules/task/http"
 	"github.com/programme-lv/backend/modules/task/repo"
 	tasksrvc "github.com/programme-lv/backend/modules/task/srvc"
+	"github.com/programme-lv/backend/modules/task/storage"
 	usersrvc "github.com/programme-lv/backend/modules/user"
 	userhttp "github.com/programme-lv/backend/modules/user/http"
 	"github.com/programme-lv/backend/modules/user/mail"
@@ -42,10 +43,25 @@ func main() {
 	cookieDomain := conf.MustGetCookieDomainFromEnv()
 	cookieSecure := conf.MustGetCookieSecureFromEnv()
 
-	pgPool := conf.MustGetPgxPoolFromEnv()
-	conf.MustRunPostgresMigrationsFromEnv()
-
 	storageRoot := conf.MustGetFileStorageRootFromEnv()
+	storageLock, lockErr := storage.Lock(storageRoot)
+	if lockErr != nil {
+		slog.Error("lock task storage", "error", lockErr)
+		os.Exit(1)
+	}
+	defer storageLock.Close()
+	pgPool := conf.MustGetPgxPoolFromEnv()
+	dbUnlock, dbLockErr := storage.LockDatabase(context.Background(), pgPool)
+	if dbLockErr != nil {
+		slog.Error("lock task database", "error", dbLockErr)
+		os.Exit(1)
+	}
+	defer dbUnlock()
+	conf.MustRunPostgresMigrationsFromEnv()
+	if err := (storage.Maintenance{DB: pgPool, Root: storageRoot}).Prepare(context.Background()); err != nil {
+		slog.Error("prepare task storage", "error", err)
+		os.Exit(1)
+	}
 	slog.Debug("file storage root", "path", storageRoot)
 	apiPublicBaseURL := conf.MustGetPublicAPIBaseURLFromEnv()
 	testfileSigningKey := conf.MustGetTestfileDownloadSigningKeyFromEnv()
@@ -121,6 +137,11 @@ func main() {
 		taskSrvc,
 		taskhttp.WithFileStores(publicStore, testfileStore, testfileSigningKey),
 	)
+	aliases, aliasErr := newTaskAliasResolver(context.Background(), pgPool)
+	if aliasErr != nil {
+		slog.Error("load task aliases", "error", aliasErr)
+		os.Exit(1)
+	}
 	userHttpHandler := userhttp.NewUserHttpHandler(
 		userSrvc,
 		jwtKey,
@@ -141,6 +162,7 @@ func main() {
 		adminAPIKey,
 		cookieSecure,
 		userSrvc.PasswordChangedAt,
+		taskAliases(aliases.Resolve),
 	)
 
 	slog.Info("starting server", "address", address)

@@ -44,6 +44,7 @@ func (ts *taskSrvc) PatchTaskFromZip(
 	if getErr != nil {
 		return UpdateResult{}, getErr
 	}
+	taskID = existing.ShortId
 	if meta.BaseRevision == nil {
 		return UpdateResult{}, ErrTaskConflict.WithMsg("base revision required")
 	}

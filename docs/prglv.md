@@ -1,7 +1,9 @@
 # prglv administration CLI
 
-`prglv` is the admin CLI for the programme.lv backend. It talks to a running
-server over the admin HTTP API.
+`prglv` is the admin CLI for the programme.lv backend. Most commands talk to a
+running server over the admin HTTP API. Local `rename` and `storage-cleanup`
+commands use the backend database/filestore environment with the server stopped;
+see [task storage](task-storage.md).
 
 ```text
 prglv package <task>     build a TaskZip .zip without uploading
@@ -9,6 +11,8 @@ prglv upload <task>      package a TaskZip directory or .zip and import it
 prglv update <task>      update statement, examples, images, solutions, or metadata in place
 prglv manifest <task-id> show the remote manifest used for sparse updates
 prglv export <task-id>   download a task as a TaskZip .zip archive
+prglv rename <old> <new> rename a task and directory, retaining an old-ID alias
+prglv storage-cleanup   list unreferenced public files (--apply moves to recovery/)
 prglv completions fish   print a shell completion script (fish, bash, zsh)
 prglv version
 prglv help

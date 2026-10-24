@@ -5,11 +5,12 @@ import (
 	"fmt"
 
 	"github.com/programme-lv/backend/modules/task/srvc"
+	"github.com/programme-lv/backend/modules/task/storage"
 )
 
 func (r *taskPgRepo) ListArchiveFiles(ctx context.Context, taskId string) ([]srvc.ArchiveFile, error) {
 	rows, err := r.pool.Query(ctx, `
-		SELECT path, object_key, filesize_bytes
+		SELECT path, filesize_bytes
 		FROM task_archive_files
 		WHERE task_short_id = $1
 		ORDER BY path
@@ -22,9 +23,10 @@ func (r *taskPgRepo) ListArchiveFiles(ctx context.Context, taskId string) ([]srv
 	var files []srvc.ArchiveFile
 	for rows.Next() {
 		var file srvc.ArchiveFile
-		if err := rows.Scan(&file.Path, &file.ObjectKey, &file.SzInBytes); err != nil {
+		if err := rows.Scan(&file.Path, &file.SzInBytes); err != nil {
 			return nil, fmt.Errorf("scan archive file: %w", err)
 		}
+		file.ObjectKey = storage.Archive(taskId, file.Path)
 		files = append(files, file)
 	}
 	return files, rows.Err()
@@ -37,9 +39,9 @@ func (r *taskPgRepo) AddArchiveFile(ctx context.Context, taskId string, file srv
 	}
 	defer tx.Rollback(ctx)
 	_, err = tx.Exec(ctx, `
-		INSERT INTO task_archive_files (task_short_id, path, object_key, filesize_bytes)
-		VALUES ($1, $2, $3, $4)
-	`, taskId, file.Path, file.ObjectKey, file.SzInBytes)
+		INSERT INTO task_archive_files (task_short_id, path, filesize_bytes)
+		VALUES ($1, $2, $3)
+	`, taskId, file.Path, file.SzInBytes)
 	if err != nil {
 		return fmt.Errorf("insert archive file: %w", err)
 	}
@@ -71,12 +73,11 @@ func (r *taskPgRepo) DeleteArchiveFile(ctx context.Context, taskId, relPath stri
 	return tx.Commit(ctx)
 }
 
+// ListLegacyArchiveZips returns leftover original archive zips waiting in the
+// one-time storage migration queue.
 func (r *taskPgRepo) ListLegacyArchiveZips(ctx context.Context) ([]srvc.LegacyArchiveZip, error) {
 	rows, err := r.pool.Query(ctx, `
-		SELECT short_id, archive_object_key
-		FROM tasks
-		WHERE archive_object_key <> ''
-		ORDER BY short_id
+		SELECT task_id, old_key FROM task_storage_migration WHERE kind = 'zip' ORDER BY task_id
 	`)
 	if err != nil {
 		return nil, fmt.Errorf("list legacy archive zips: %w", err)
@@ -96,9 +97,7 @@ func (r *taskPgRepo) ListLegacyArchiveZips(ctx context.Context) ([]srvc.LegacyAr
 
 func (r *taskPgRepo) ClearArchiveObjectKey(ctx context.Context, taskId string) error {
 	_, err := r.pool.Exec(ctx, `
-		UPDATE tasks
-		SET archive_object_key = '', revision = revision + 1
-		WHERE short_id = $1
+		DELETE FROM task_storage_migration WHERE kind = 'zip' AND task_id = $1
 	`, taskId)
 	if err != nil {
 		return fmt.Errorf("clear archive object key: %w", err)

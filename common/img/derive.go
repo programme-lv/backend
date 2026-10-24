@@ -100,6 +100,12 @@ func IsDerivable(originalKey string) bool {
 }
 
 func derivableAsset(key string) bool {
+	// Task archives share the task directory but must never be derivable/public.
+	parts := strings.Split(key, "/")
+	if len(parts) >= 4 && parts[0] == "tasks" && path.Clean(key) == key &&
+		(parts[2] == "images" || parts[2] == "illustration") {
+		return true
+	}
 	for _, root := range derivableRoots {
 		rest, ok := strings.CutPrefix(key, root.prefix)
 		if !ok {

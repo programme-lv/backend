@@ -30,7 +30,7 @@ type Pagination struct {
 const (
 	defaultSubmListLimit = 30
 	maxSubmListLimit     = 100
-	maxTaskIDQueryLen    = 50
+	maxTaskIDQueryLen    = 64
 )
 
 func (h *SubmHttpHandler) GetSubmList(w http.ResponseWriter, r *http.Request) {

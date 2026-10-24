@@ -40,16 +40,17 @@ check is enforced in the same transaction as the write. A solution score is
 never inferred from the archive: omitted scores remain unverified.
 
 `archive/` holds leftover files (original PDFs, pre-TaskZip trees).
-Each file is stored under `archive/{taskId}/{path}` and listed on the admin
+Each file is stored under `tasks/{taskId}/archive/{path}` and listed on the admin
 Arhīvs tab. Official files under `tests/` remain the source of truth; keep
 them out of `archive/`.
 A task may store at most 256 archive files, 64 MiB per file, and 128 MiB total.
-Admin upload, TaskZip import, and leftover-zip migration all reject the write
+Admin upload and TaskZip import reject the write
 when either cap would be exceeded.
 
-On startup, leftover `tasks.archive_object_key` zips (legacy
-`og-file-archives/*.zip`) are unpacked into `task_archive_files` and the
-key is cleared.
+Existing individually archived files are copied byte-for-byte. Any remaining
+legacy original ZIP is unpacked on startup into individual archive files by
+the same compatibility path as before. Asset paths are derived rather than
+stored in the database; see [task storage](task-storage.md).
 
 Export writes stored `archive/` files back into the zip. If the task has a
 list illustration, export also writes `archive/illustration{ext}` from the

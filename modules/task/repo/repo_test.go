@@ -12,6 +12,7 @@ import (
 	"github.com/programme-lv/backend/common/testutil"
 	"github.com/programme-lv/backend/modules/task/repo"
 	"github.com/programme-lv/backend/modules/task/srvc"
+	"github.com/programme-lv/backend/modules/task/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -54,7 +55,8 @@ func TestTaskPgRepo(t *testing.T) {
 	// Verify task fields
 	assert.Equal(t, "aplusbirc", retrievedTask.ShortId, "ShortId mismatch")
 	assert.Equal(t, "A+B=C", retrievedTask.DefaultFullName(), "FullName mismatch")
-	assert.Equal(t, "task-md-images/nekoks.png", retrievedTask.IllustrImg.ObjectKey, "IllustrImgObjectKey mismatch") // gitleaks:allow -- test storage path
+	require.NotNil(t, retrievedTask.IllustrImg)
+	assert.Equal(t, storage.Illustration(task.ShortId, task.IllustrImg.SHA256, task.IllustrImg.Ext), retrievedTask.IllustrImg.ObjectKey)
 	assert.Equal(t, 256, retrievedTask.MemLimMegabytes, "MemLimMegabytes mismatch")
 	assert.Equal(t, 0.6, retrievedTask.CpuTimeLimSecs, "CpuTimeLimSecs mismatch")
 	assert.Equal(t, "LIO", retrievedTask.OriginOlympiad, "OriginOlympiad mismatch")
@@ -63,7 +65,6 @@ func TestTaskPgRepo(t *testing.T) {
 	assert.Equal(t, []string{"junior"}, retrievedTask.OriginDivisions, "OriginDivisions mismatch")
 	assert.Contains(t, retrievedTask.ProblemTags, "two-sum", "ProblemTags missing two-sum")
 	assert.Equal(t, []string{"Kaspars", "Pēteris"}, retrievedTask.Authors, "Authors mismatch")
-	assert.Equal(t, "task-archives/aplusbirc.zip", retrievedTask.OgFilesZipObjectKey, "ArchiveObjectKey mismatch")
 	assert.Equal(t, 3, retrievedTask.DifficultyRating, "DifficultyRating mismatch")
 	assert.Contains(t, retrievedTask.Checker, "#include", "Checker mismatch")
 	assert.Equal(t, "", retrievedTask.Interactor, "Interactor mismatch")
@@ -140,7 +141,8 @@ func TestTaskPgRepo(t *testing.T) {
 		// Verify basic task preview fields
 		assert.Equal(t, "aplusbirc", taskPreview.ShortId, "Preview ShortId mismatch")
 		assert.Equal(t, "A+B=C", taskPreview.DefaultFullName(), "Preview FullName mismatch")
-		assert.Equal(t, "task-md-images/nekoks.png", taskPreview.IllustrImg.ObjectKey, "Preview IllustrImgObjectKey mismatch")
+		require.NotNil(t, taskPreview.IllustrImg)
+		assert.Equal(t, retrievedTask.IllustrImg.ObjectKey, taskPreview.IllustrImg.ObjectKey)
 		assert.Equal(t, "LIO", taskPreview.OriginOlympiad, "Preview OriginOlympiad mismatch")
 		assert.Equal(t, "PPS", taskPreview.OriginOrg, "Preview OriginOrg mismatch")
 		assert.Equal(t, "2024/2025", taskPreview.OriginYear, "Preview OriginYear mismatch")

@@ -80,9 +80,6 @@ type Task struct {
 	// metadata: problem tags (free-form short labels)
 	ProblemTags []string
 
-	// original full archive object key (optional, leftover zips)
-	OgFilesZipObjectKey string
-
 	// leftover files under TaskZip archive/
 	Archive []ArchiveFile
 
@@ -167,14 +164,17 @@ type MarkdownStatement struct {
 }
 
 type IllustrationImage struct {
-	ObjectKey string
+	ObjectKey string // Derived at runtime; never persisted.
+	SHA256    string
+	Ext       string
 	WidthPx   int
 	HeightPx  int
 	SzInBytes int
 }
 
 type StatementImage struct {
-	ObjectKey string // e.g. <task_id>/<sha256-prefix>.png; md-images/ is implicit
+	ObjectKey string // Derived at runtime; never persisted.
+	SHA256    string
 	Filename  string // filename of the image, e.g., nekoks.png
 	WidthPx   int    // original width in pixels
 	HeightPx  int    // original height in pixels

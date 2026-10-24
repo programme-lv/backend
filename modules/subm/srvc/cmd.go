@@ -122,7 +122,7 @@ func (h submitSolCmdHandler) Handle(ctx context.Context, p SubmitSolParams) srvc
 		UUID:         p.UUID,
 		Content:      p.Submission,
 		AuthorUUID:   p.AuthorUUID,
-		TaskShortID:  p.TaskShortID,
+		TaskShortID:  t.ShortId,
 		LangShortID:  l.ID,
 		CurrEvalUUID: evalUuid,
 		CreatedAt:    time.Now(),

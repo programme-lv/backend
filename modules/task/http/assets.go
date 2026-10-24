@@ -12,13 +12,14 @@ import (
 	"github.com/programme-lv/backend/common/filestore"
 	"github.com/programme-lv/backend/common/img"
 	"github.com/programme-lv/backend/common/jsonresp"
+	"github.com/programme-lv/backend/modules/task/storage"
 )
 
 // ServePublicAsset serves a file from the public asset store.
 // Allowlisted WebP variants (illustrations and statement images) are generated
 // on first request and cached.
 func publicAssetAllowed(key string) bool {
-	return strings.HasPrefix(key, "illustrations/") ||
+	return storage.PublicImage(key) || strings.HasPrefix(key, "illustrations/") ||
 		strings.HasPrefix(key, "md-images/") ||
 		strings.HasPrefix(key, "task-md-images/") ||
 		strings.HasPrefix(key, "task/")

@@ -5,14 +5,15 @@ The public URL in task JSON is not that file.
 
 ## Illustration keys
 
-DB stores `{sha256}{ext}` without a directory prefix.
+DB stores the SHA-256 and extension separately. Paths are derived from task ID
+and metadata; see [task storage](task-storage.md).
 
 | Role | Filestore key |
 | --- | --- |
-| Original | `illustrations/{sha256}{ext}` |
-| List (fit 160×160) | `illustrations/{sha256}{ext}.list.webp` |
-| View (fit 256×256) | `illustrations/{sha256}{ext}.view.webp` |
-| Full (original pixels, WebP) | `illustrations/{sha256}{ext}.full.webp` |
+| Original | `tasks/{taskId}/illustration/{sha256}{ext}` |
+| List (fit 160×160) | `<original>.list.webp` |
+| View (fit 256×256) | `<original>.view.webp` |
+| Full (original pixels, WebP) | `<original>.full.webp` |
 
 If the original is already `.webp`, `full` is the original object. List and view are still derived when the original is larger than the box.
 
@@ -26,8 +27,8 @@ JSON:
 
 ## Statement image keys
 
-Statement images are stored at `md-images/<taskId>/<sha256-prefix>-<filename>`
-(older installs use `task-md-images/` or `task/`). They expose only the full
+Statement images are stored at `tasks/<taskId>/images/<sha256>/<filename>`.
+The DB stores filename, full SHA-256 and dimensions. They expose only the full
 variant: original pixels as WebP, with no resizing. The task JSON `http_url`
 points at `<key>.full.webp`.
 
@@ -40,8 +41,10 @@ points at `<key>.full.webp`.
 ## Allowlist
 
 `GET /assets/*` is unauthenticated. Variants are a closed suffix set (`list`, `view`, `full`).
-Only asset roots `illustrations/` (flat), `md-images/`, `task-md-images/`, and `task/`
-are derivable, and only for PNG/JPEG/WebP originals. Unknown keys such as
+Task `images/` and `illustration/` directories are public and derivable;
+task `archive/` files are admin-only. Legacy roots `illustrations/` (flat),
+`md-images/`, `task-md-images/`, and `task/` remain readable until cleanup.
+Only PNG/JPEG/WebP originals are derivable. Unknown keys such as
 `.w999.webp` are 404 and never written. Query parameters are not a size API.
 
 ## Generation

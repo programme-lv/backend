@@ -32,8 +32,8 @@ func (r *taskPgRepo) AddStatementImg(ctx context.Context, taskId string, img srv
 	// Check if the image already exists for this task
 	var imageExists bool
 	err = tx.QueryRow(ctx, `
-		SELECT EXISTS(SELECT 1 FROM task_images WHERE task_short_id = $1 AND object_key = $2)
-	`, taskId, img.ObjectKey).Scan(&imageExists)
+		SELECT EXISTS(SELECT 1 FROM task_images WHERE task_short_id = $1 AND file_name = $2)
+	`, taskId, img.Filename).Scan(&imageExists)
 	if err != nil {
 		return fmt.Errorf("check if image exists: %w", err)
 	}
@@ -42,18 +42,18 @@ func (r *taskPgRepo) AddStatementImg(ctx context.Context, taskId string, img srv
 		// Update existing image
 		_, err = tx.Exec(ctx, `
 			UPDATE task_images
-			SET file_name = $3, width_px = $4, height_px = $5, filesize_bytes = $6
-			WHERE task_short_id = $1 AND object_key = $2
-		`, taskId, img.ObjectKey, img.Filename, img.WidthPx, img.HeightPx, img.SzInBytes)
+			SET sha256 = $3, width_px = $4, height_px = $5, filesize_bytes = $6
+			WHERE task_short_id = $1 AND file_name = $2
+		`, taskId, img.Filename, img.SHA256, img.WidthPx, img.HeightPx, img.SzInBytes)
 		if err != nil {
 			return fmt.Errorf("update statement image: %w", err)
 		}
 	} else {
 		// Insert new image
 		_, err = tx.Exec(ctx, `
-			INSERT INTO task_images (task_short_id, object_key, file_name, width_px, height_px, filesize_bytes)
+			INSERT INTO task_images (task_short_id, sha256, file_name, width_px, height_px, filesize_bytes)
 			VALUES ($1, $2, $3, $4, $5, $6)
-		`, taskId, img.ObjectKey, img.Filename, img.WidthPx, img.HeightPx, img.SzInBytes)
+		`, taskId, img.SHA256, img.Filename, img.WidthPx, img.HeightPx, img.SzInBytes)
 		if err != nil {
 			return fmt.Errorf("insert statement image: %w", err)
 		}
@@ -206,10 +206,10 @@ func (r *taskPgRepo) UpdateIllustrationImg(ctx context.Context, taskId string, i
 	// Update the illustration image fields
 	_, err = tx.Exec(ctx, `
 		UPDATE tasks 
-		SET illustr_img_object_key = $2, width_px = $3, height_px = $4, filesize_bytes = $5,
+		SET illustration_sha256 = $2, width_px = $3, height_px = $4, filesize_bytes = $5, illustration_ext = $6,
 			revision = revision + 1
 		WHERE short_id = $1
-	`, taskId, img.ObjectKey, img.WidthPx, img.HeightPx, img.SzInBytes)
+	`, taskId, img.SHA256, img.WidthPx, img.HeightPx, img.SzInBytes, img.Ext)
 	if err != nil {
 		return fmt.Errorf("update illustration image: %w", err)
 	}

@@ -1,8 +1,10 @@
 // Command prglv is the programme.lv administration CLI.
 //
-// It talks to a running backend over the admin HTTP API. It packages a
+// Most commands talk to a running backend over the admin HTTP API. It packages a
 // TaskZip directory or .zip and uploads it as a new task, and downloads
 // existing tasks as TaskZip archives.
+// Rename and storage-cleanup run locally with the backend stopped, using its
+// POSTGRES_* and FILE_STORAGE_ROOT environment.
 //
 // The backend base URL comes from --api-url, then PRGLV_API_URL, then
 // API_PUBLIC_BASE_URL, defaulting to http://localhost:8080. The admin key
@@ -47,6 +49,8 @@ type commandSpec struct {
 }
 
 var commandSpecs = []commandSpec{
+	{name: "rename", summary: "Rename a task and its directory (local maintenance; backend stopped)", args: "<old-id> <new-id>"},
+	{name: "storage-cleanup", summary: "List unreferenced public files (local maintenance; backend stopped)", flags: []flagSpec{{name: "apply", kind: "bool", desc: "Move unreferenced files into recovery/"}}},
 	{
 		name:    "package",
 		summary: "Build a TaskZip .zip without uploading",
@@ -137,6 +141,8 @@ func run(args []string) error {
 		return nil
 	}
 	switch args[0] {
+	case "rename", "storage-cleanup":
+		return runMaintenance(args[0], args[1:])
 	case "package":
 		return runPackage(args[1:])
 	case "upload":
@@ -177,12 +183,13 @@ func printUsage(w io.Writer) {
 	fmt.Fprintln(w)
 	fmt.Fprintln(w, "Commands:")
 	for _, c := range commandSpecs {
-		fmt.Fprintf(w, "  %-12s %s\n", c.name, c.summary)
+		fmt.Fprintf(w, "  %-18s %s\n", c.name, c.summary)
 	}
 	fmt.Fprintln(w)
 	fmt.Fprintln(w, "Environment:")
 	fmt.Fprintf(w, "  PRGLV_API_URL   Backend base URL (default %s)\n", defaultAPIURL)
 	fmt.Fprintln(w, "  PRGLV_API_KEY   Admin API key (fallback ADMIN_API_KEY)")
+	fmt.Fprintln(w, "  rename and storage-cleanup use the backend's POSTGRES_* and FILE_STORAGE_ROOT")
 	fmt.Fprintln(w)
 	fmt.Fprintln(w, "Run 'prglv <command> --help' for command flags.")
 }

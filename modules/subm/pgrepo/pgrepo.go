@@ -551,7 +551,7 @@ func (r *pgSubmRepo) ListSubms(ctx context.Context, limit int, offset int, searc
 		}
 
 		if taskShortID != "" {
-			conditions = append(conditions, fmt.Sprintf("s.task_shortid = $%d", argIndex))
+			conditions = append(conditions, fmt.Sprintf("s.task_shortid = COALESCE((SELECT task_id FROM task_aliases WHERE alias=$%d), $%d)", argIndex, argIndex))
 			args = append(args, taskShortID)
 			argIndex++
 		}
@@ -626,7 +626,7 @@ func (r *pgSubmRepo) CountSubms(ctx context.Context, authorUuid *uuid.UUID, task
 		}
 
 		if taskShortID != "" {
-			conditions = append(conditions, fmt.Sprintf("s.task_shortid = $%d", argIndex))
+			conditions = append(conditions, fmt.Sprintf("s.task_shortid = COALESCE((SELECT task_id FROM task_aliases WHERE alias=$%d), $%d)", argIndex, argIndex))
 			args = append(args, taskShortID)
 			argIndex++
 		}

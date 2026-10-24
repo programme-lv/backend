@@ -6,6 +6,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"path"
 	"strings"
 	"time"
 
@@ -15,6 +16,7 @@ import (
 	"github.com/programme-lv/backend/common/jsonresp"
 	"github.com/programme-lv/backend/common/mimetype"
 	"github.com/programme-lv/backend/modules/task/srvc"
+	"github.com/programme-lv/backend/modules/task/storage"
 )
 
 // UploadTaskResponse is the JSON body returned after importing a task ZIP.
@@ -230,7 +232,7 @@ func (h *taskHttpHandler) UploadIllustration(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	objectKey, uploadIllustrationErr := h.taskSrvc.UploadIllustrationImg(r.Context(), imageMimeType, imageBytes)
+	objectKey, uploadIllustrationErr := h.taskSrvc.UploadIllustrationImg(r.Context(), taskId, imageMimeType, imageBytes)
 	if uploadIllustrationErr != nil {
 		jsonresp.WriteError(w, uploadIllustrationErr)
 		return
@@ -239,6 +241,8 @@ func (h *taskHttpHandler) UploadIllustration(w http.ResponseWriter, r *http.Requ
 	sizeInBytes := len(imageBytes)
 	illustrationImg := srvc.IllustrationImage{
 		ObjectKey: objectKey,
+		SHA256:    storage.Digest(imageBytes),
+		Ext:       path.Ext(objectKey),
 		WidthPx:   width,
 		HeightPx:  height,
 		SzInBytes: sizeInBytes,

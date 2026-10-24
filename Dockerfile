@@ -7,6 +7,7 @@ RUN go mod download
 
 COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/programme-backend ./cmd/server
+RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/prglv ./cmd/prglv
 
 FROM debian:bookworm-slim
 
@@ -17,6 +18,7 @@ RUN apt-get update \
 WORKDIR /backend
 
 COPY --from=build /out/programme-backend /usr/local/bin/programme-backend
+COPY --from=build /out/prglv /usr/local/bin/prglv
 COPY --from=build /src/postgres/migrate ./postgres/migrate
 
 EXPOSE 8080

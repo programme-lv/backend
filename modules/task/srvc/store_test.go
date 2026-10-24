@@ -16,13 +16,13 @@ import (
 func TestUploadIllustrationImgWarmsVariants(t *testing.T) {
 	store, err := filestore.NewStore(t.TempDir())
 	require.NoError(t, err)
-	ts := NewTaskSrvc(nil, store, store)
+	ts := NewTaskSrvc(illustrationRepo{}, store, store)
 
 	body := solidPNG(t, 80, 40)
-	key, serr := ts.UploadIllustrationImg(context.Background(), "image/png", body)
+	key, serr := ts.UploadIllustrationImg(context.Background(), "example", "image/png", body)
 	require.Nil(t, serr)
 
-	orig := "illustrations/" + key
+	orig := key
 	exists, err := store.Exists(orig)
 	require.NoError(t, err)
 	require.True(t, exists)
@@ -33,6 +33,13 @@ func TestUploadIllustrationImgWarmsVariants(t *testing.T) {
 		require.NoError(t, err)
 		require.True(t, exists, string(v))
 	}
+}
+
+type illustrationRepo struct{ TaskPgRepo }
+
+func (illustrationRepo) Exists(context.Context, string) (bool, error) { return true, nil }
+func (illustrationRepo) GetTask(_ context.Context, id string) (Task, error) {
+	return Task{ShortId: id}, nil
 }
 
 func solidPNG(t *testing.T, w, h int) []byte {
