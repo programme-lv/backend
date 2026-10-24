@@ -3,19 +3,23 @@
 All paths below are relative to `FILE_STORAGE_ROOT`:
 
 ```text
-public/tasks/<task-id>/
+assets/tasks/<task-id>/
   images/<sha256>/<filename>
   illustration/<sha256>.<extension>
-  archive/<relative-filename>
+archive/tasks/<task-id>/<relative-filename>
+cache/images/<sha256(original-key)>/<variant>.webp
 testfiles/<sha256>.zst
 exec/...
-recovery/<timestamp>/public/...
+recovery/<timestamp>/...
 ```
 
-Image WebP derivatives live next to originals. Hashes in image URLs prevent
-stale immutable caches after replacement. Archives never pass the public asset
-allowlist. Tests stay in the private shared content-addressed store: executions
-and historical evaluations refer to their hashes independently of task identity.
+Public originals live under `assets/`; admin-only archives under `archive/`.
+Derived WebP variants live under `cache/` and are disposable: they are never
+backed up, exported or considered source. Cache keys include a hash of the
+original key, so replacing an image selects a new object. Hashes in image URLs
+prevent stale immutable caches. Archives never pass the public asset allowlist.
+Tests stay in the private shared content-addressed store: executions and
+historical evaluations refer to their hashes independently of task identity.
 
 Application tables store filenames, image SHA-256/extension/dimensions and archive
 sizes. `ObjectKey` fields in service DTOs are computed runtime paths, never saved.
@@ -29,6 +33,12 @@ requests or starting workers, `Maintenance.Prepare` copies original files into
 the new layout, fsyncs, reads back and verifies the bytes, and then commits the
 metadata and removes that work item. An interruption resumes at the remaining
 items. Missing files or conflicting destination bytes stop startup.
+
+Migration 078 moves `public/tasks/<id>/{images,illustration}` to
+`assets/tasks/<id>/...`, moves `public/tasks/<id>/archive` to
+`archive/tasks/<id>`, deletes old `.list/.view/.full.webp` derivatives, and
+records the layout transition in `task_storage_layout_pending` so an interrupted
+move resumes. The cache is regenerated on demand.
 
 Original legacy files remain until cleanup. Any remaining original archive ZIP
 is unpacked after conversion by the existing compatibility path. Conversion
@@ -47,7 +57,7 @@ and HTTP caches without a separate online maintenance mode.
 ```sh
 prglv rename seifs lio2025seifs
 prglv storage-cleanup          # inventory, after completing pending migrations
-prglv storage-cleanup --apply  # move unreferenced public files to recovery/
+prglv storage-cleanup --apply  # move unreferenced assets/archive/legacy files to recovery/
 ```
 
 These commands use `POSTGRES_*`, `POSTGRES_MIGRATIONS_PATH` and
@@ -58,12 +68,13 @@ mounted filesystem used by the backend. See the shared operational runbook
 
 ## Rename recovery
 
-After checking IDs and destination availability, rename creates the source
-directory if necessary and commits a `task_rename_pending` intent. It renames
-the directory on the same filesystem and fsyncs its parent. A DB transaction
-then updates the task PK (all child FKs cascade), historical submissions,
-revision and the readme normalization note, inserts the old-ID alias, and
-removes the intent. Tests, limits, profiles, timestamps and evaluations survive.
+After checking IDs and destination availability, rename commits a
+`task_rename_pending` intent. It moves `assets/tasks/<old>` and
+`archive/tasks/<old>` on the same filesystem and fsyncs their parents. A DB
+transaction then updates the task PK (all child FKs cascade), historical
+submissions, revision and the readme normalization note, inserts the old-ID
+alias, and removes the intent. Tests, limits, profiles, timestamps and
+evaluations survive. Old cache entries become unreferenced by construction.
 
 Startup rolls pending intents forward before serving traffic. Exactly one of
 the old/new directories must exist; ambiguous states stop recovery. A failure
@@ -79,11 +90,12 @@ directories and their `task.toml` IDs must be renamed separately or re-exported.
 
 ## Cleanup and verification
 
-Cleanup first checks all referenced originals exist and verifies image checksums.
-It retains referenced originals and their derivatives, moves other public files
-into a timestamped recovery directory, and removes empty directories. It never
-garbage-collects private tests or execution artifacts. Recovery is outside the
-served tree; retain it with the paired backup until migration is verified.
+Cleanup first checks all referenced originals exist and verifies image checksums
+and archive sizes. It retains referenced files under `assets/` and `archive/`,
+moves other files (including leftover legacy `public/`) into a timestamped
+recovery directory, and removes empty directories. It never garbage-collects
+private tests, execution artifacts or `cache/`. Recovery is outside the served
+tree; retain it with the paired backup until migration is verified.
 
 ```sh
 TEST_PG_HOST=postgres go test -tags=integration ./modules/task/... ./modules/subm/pgrepo/...

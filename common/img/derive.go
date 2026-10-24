@@ -2,6 +2,8 @@ package img
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"os"
 	"path"
@@ -74,9 +76,30 @@ func DerivedCacheControl() string {
 	return derivedCacheControl
 }
 
-// DerivedKey is the filestore key for a variant of originalKey.
+// DerivedKey is the disposable content-addressed cache key for a variant.
 func DerivedKey(originalKey string, v Variant) string {
-	return originalKey + "." + string(v) + ".webp"
+	sum := sha256.Sum256([]byte(originalKey))
+	return path.Join("cache", "images", hex.EncodeToString(sum[:]), string(v)+".webp")
+}
+
+// ValidCacheKey reports whether key is one of this package's cache objects.
+func ValidCacheKey(key string) bool {
+	parts := strings.Split(key, "/")
+	if len(parts) != 4 || parts[0] != "cache" || parts[1] != "images" || len(parts[2]) != 64 {
+		return false
+	}
+	if path.Clean(key) != key {
+		return false
+	}
+	if _, err := hex.DecodeString(parts[2]); err != nil {
+		return false
+	}
+	switch parts[3] {
+	case "list.webp", "view.webp", "full.webp":
+		return true
+	default:
+		return false
+	}
 }
 
 // ServeKey is the object that should be served for a variant.
@@ -100,10 +123,10 @@ func IsDerivable(originalKey string) bool {
 }
 
 func derivableAsset(key string) bool {
-	// Task archives share the task directory but must never be derivable/public.
+	// Public task assets live under assets/tasks/<id>/{images,illustration}.
 	parts := strings.Split(key, "/")
-	if len(parts) >= 4 && parts[0] == "tasks" && path.Clean(key) == key &&
-		(parts[2] == "images" || parts[2] == "illustration") {
+	if len(parts) >= 5 && parts[0] == "assets" && parts[1] == "tasks" &&
+		path.Clean(key) == key && (parts[3] == "images" || parts[3] == "illustration") {
 		return true
 	}
 	for _, root := range derivableRoots {

@@ -33,7 +33,7 @@ func setup(t *testing.T) (storage.Maintenance, *pgxpool.Pool, *filestore.Store) 
 	lock, err := storage.Lock(root)
 	require.NoError(t, err)
 	t.Cleanup(func() { lock.Close() })
-	store, err := filestore.NewStore(filepath.Join(root, "public"))
+	store, err := filestore.NewStore(root)
 	require.NoError(t, err)
 	return storage.Maintenance{DB: pool, Root: root}, pool, store
 }
@@ -79,7 +79,8 @@ func TestRenamePreservesHistoryAndAssets(t *testing.T) {
 	got, err := store.Download(after.Archive[0].ObjectKey)
 	require.NoError(t, err)
 	require.Equal(t, data, got)
-	require.NoDirExists(t, filepath.Join(m.Root, "public", "tasks", "seifs"))
+	require.NoDirExists(t, filepath.Join(m.Root, "assets", "tasks", "seifs"))
+	require.NoDirExists(t, filepath.Join(m.Root, "archive", "tasks", "seifs"))
 	saved, err := subms.GetSubm(ctx, subm.UUID)
 	require.NoError(t, err)
 	require.Equal(t, subm.ShortID, saved.ShortID)
@@ -105,7 +106,7 @@ func TestRenamePreservesHistoryAndAssets(t *testing.T) {
 	_, err = store.Upload([]byte("unrelated leftover"), storage.Archive("occupied", "x"), "text/plain")
 	require.NoError(t, err)
 	require.ErrorContains(t, m.Rename(ctx, "lio2025seifs-final", "occupied"), "destination directory is occupied")
-	require.DirExists(t, filepath.Join(m.Root, "public/tasks/lio2025seifs-final"))
+	require.DirExists(t, filepath.Join(m.Root, "archive/tasks/lio2025seifs-final"))
 	_, err = storage.Lock(m.Root)
 	require.Error(t, err, "maintenance must not overlap another storage owner")
 }
@@ -121,7 +122,7 @@ func TestRenameRecoversAcrossFilesystemBoundary(t *testing.T) {
 			_, err = pool.Exec(ctx, `INSERT INTO task_rename_pending(old_id,new_id) VALUES('old','new')`)
 			require.NoError(t, err)
 			if moved {
-				require.NoError(t, os.Rename(filepath.Join(m.Root, "public/tasks/old"), filepath.Join(m.Root, "public/tasks/new")))
+				require.NoError(t, os.Rename(filepath.Join(m.Root, "archive/tasks/old"), filepath.Join(m.Root, "archive/tasks/new")))
 			}
 			require.NoError(t, m.Prepare(ctx))
 			require.NoError(t, m.Prepare(ctx))
@@ -148,11 +149,11 @@ func TestMigrationVerifiesBytesAndCleanupPreservesSources(t *testing.T) {
 	require.NoError(t, err)
 	// Missing input stops startup; nothing is silently omitted.
 	require.Error(t, m.Prepare(ctx))
-	_, err = store.Upload(image, "md-images/seifs/old.png", "image/png")
+	_, err = store.Upload(image, "public/md-images/seifs/old.png", "image/png")
 	require.NoError(t, err)
-	_, err = store.Upload(archive, "archive/seifs/original.pdf", "application/pdf")
+	_, err = store.Upload(archive, "public/archive/seifs/original.pdf", "application/pdf")
 	require.NoError(t, err)
-	_, err = store.Upload([]byte("unknown"), "orphan.bin", "application/octet-stream")
+	_, err = store.Upload([]byte("unknown"), "public/orphan.bin", "application/octet-stream")
 	require.NoError(t, err)
 	require.NoError(t, m.Prepare(ctx))
 	require.NoError(t, m.Prepare(ctx))
@@ -180,6 +181,35 @@ func TestMigrationVerifiesBytesAndCleanupPreservesSources(t *testing.T) {
 	got, err = store.Download(task.Archive[0].ObjectKey)
 	require.NoError(t, err)
 	require.Equal(t, archive, got)
+}
+
+func TestLayoutMigrationMovesAssetsArchiveAndDropsCache(t *testing.T) {
+	m, pool, store := setup(t)
+	ctx := context.Background()
+	oldImages := filepath.Join(m.Root, "public", "tasks", "legacy", "images", "digest")
+	oldIllustration := filepath.Join(m.Root, "public", "tasks", "legacy", "illustration")
+	oldArchive := filepath.Join(m.Root, "public", "tasks", "legacy", "archive")
+	require.NoError(t, os.MkdirAll(oldImages, 0755))
+	require.NoError(t, os.MkdirAll(oldIllustration, 0755))
+	require.NoError(t, os.MkdirAll(oldArchive, 0755))
+	require.NoError(t, os.WriteFile(filepath.Join(oldImages, "1.png"), []byte("png"), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(oldImages, "1.png.full.webp"), []byte("cache"), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(oldIllustration, "ill.png"), []byte("ill"), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(oldArchive, "source.pdf"), []byte("pdf"), 0644))
+
+	require.NoError(t, m.Prepare(ctx))
+	require.NoError(t, m.Prepare(ctx))
+	require.NoFileExists(t, filepath.Join(oldImages, "1.png.full.webp"))
+	require.NoFileExists(t, filepath.Join(m.Root, "public", "tasks", "legacy", "images", "digest", "1.png"))
+	require.FileExists(t, filepath.Join(m.Root, "assets", "tasks", "legacy", "images", "digest", "1.png"))
+	require.FileExists(t, filepath.Join(m.Root, "assets", "tasks", "legacy", "illustration", "ill.png"))
+	require.FileExists(t, filepath.Join(m.Root, "archive", "tasks", "legacy", "source.pdf"))
+	got, err := store.Download(storage.Archive("legacy", "source.pdf"))
+	require.NoError(t, err)
+	require.Equal(t, "pdf", string(got))
+	var pending int
+	require.NoError(t, pool.QueryRow(ctx, `SELECT count(*) FROM task_storage_layout_pending`).Scan(&pending))
+	require.Zero(t, pending)
 }
 
 func TestWrongStorageAndConcurrentDatabaseOwnerAreRejected(t *testing.T) {
@@ -227,16 +257,18 @@ INSERT INTO task_images(task_short_id,object_key,file_name,width_px,height_px,fi
 INSERT INTO task_archive_files(task_short_id,path,object_key,filesize_bytes) VALUES('legacy','original.txt','archive/legacy/original.txt',8);`)
 	require.NoError(t, err)
 	root := t.TempDir()
-	store, err := filestore.NewStore(filepath.Join(root, "public"))
+	store, err := filestore.NewStore(root)
 	require.NoError(t, err)
 	for _, key := range []string{"illustrations/old.png", "md-images/legacy/old.png", "archive/legacy/original.txt"} {
-		_, err := store.Upload([]byte(key), key, "application/octet-stream")
+		_, err := store.Upload([]byte(key), "public/"+key, "application/octet-stream")
 		require.NoError(t, err)
 	}
-	sql, err := os.ReadFile(filepath.Join(source, "077_task_storage.up.sql"))
-	require.NoError(t, err)
-	_, err = pool.Exec(ctx, string(sql))
-	require.NoError(t, err)
+	for _, name := range []string{"077_task_storage.up.sql", "078_task_assets_layout.up.sql"} {
+		sql, err := os.ReadFile(filepath.Join(source, name))
+		require.NoError(t, err)
+		_, err = pool.Exec(ctx, string(sql))
+		require.NoError(t, err)
+	}
 	m := storage.Maintenance{DB: pool, Root: root}
 	require.NoError(t, m.Prepare(ctx))
 	task, err := repo.NewTaskPgRepo(pool).GetTask(ctx, "legacy")

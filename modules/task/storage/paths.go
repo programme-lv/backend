@@ -17,27 +17,36 @@ func ValidID(id string) bool { return taskIDPattern.MatchString(id) }
 // Digest returns the full SHA-256 of an asset's original bytes.
 func Digest(data []byte) string { return fmt.Sprintf("%x", sha256.Sum256(data)) }
 
-// Image derives a statement image path from task identity and content metadata.
+const (
+	AssetsRoot  = "assets"
+	ArchiveRoot = "archive"
+	CacheRoot   = "cache"
+)
+
+// Image derives a public statement image path from task identity and metadata.
 func Image(id, digest, filename string) string {
-	return path.Join("tasks", id, "images", digest, path.Base(filename))
+	return path.Join(AssetsRoot, "tasks", id, "images", digest, path.Base(filename))
 }
 
-// Illustration derives an illustration path. An empty digest means no illustration.
+// Illustration derives a public illustration path. An empty digest means none.
 func Illustration(id, digest, ext string) string {
 	if digest == "" {
 		return ""
 	}
-	return path.Join("tasks", id, "illustration", digest+ext)
+	return path.Join(AssetsRoot, "tasks", id, "illustration", digest+ext)
 }
 
-// Archive derives the path of a task's archived source artifact.
-func Archive(id, filename string) string { return path.Join("tasks", id, "archive", filename) }
+// Archive derives the path of a task's admin-only archived source artifact.
+func Archive(id, filename string) string {
+	return path.Join(ArchiveRoot, "tasks", id, filename)
+}
 
-// PublicImage allows only task image directories, never archived source files.
+// PublicImage allows only public task image directories, never archives/cache.
 func PublicImage(key string) bool {
 	parts := strings.Split(key, "/")
-	if len(parts) < 4 || parts[0] != "tasks" || !ValidID(parts[1]) || path.Clean(key) != key {
+	if len(parts) < 5 || parts[0] != AssetsRoot || parts[1] != "tasks" ||
+		!ValidID(parts[2]) || path.Clean(key) != key {
 		return false
 	}
-	return parts[2] == "images" || parts[2] == "illustration"
+	return parts[3] == "images" || parts[3] == "illustration"
 }

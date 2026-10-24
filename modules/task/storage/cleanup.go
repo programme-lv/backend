@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io/fs"
 	"os"
@@ -9,12 +10,12 @@ import (
 	"time"
 )
 
-// Cleanup lists unreferenced public files. With apply, it moves them into a
-// timestamped recovery directory outside public; it never destroys source bytes.
-// Private tests and execution artifacts have separate retention requirements.
+// Cleanup lists unreferenced task assets and archive files. With apply, it
+// moves them into a timestamped recovery directory; it never destroys source
+// bytes. Derived cache and private test/execution stores are separate.
 func (m Maintenance) Cleanup(ctx context.Context, apply bool) ([]string, error) {
 	var pending int
-	if err := m.DB.QueryRow(ctx, `SELECT count(*) FROM task_storage_migration`).Scan(&pending); err != nil {
+	if err := m.DB.QueryRow(ctx, `SELECT (SELECT count(*) FROM task_storage_migration) + (SELECT count(*) FROM task_storage_layout_pending)`).Scan(&pending); err != nil {
 		return nil, err
 	}
 	if pending > 0 {
@@ -57,16 +58,6 @@ func (m Maintenance) Cleanup(ctx context.Context, apply bool) ([]string, error) 
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
-	// Keep derivatives only when the corresponding original is still referenced.
-	var originals []string
-	for key := range live {
-		originals = append(originals, key)
-	}
-	for _, key := range originals {
-		for _, variant := range []string{"list", "view", "full"} {
-			live[key+"."+variant+".webp"] = false
-		}
-	}
 	rows, err = m.DB.Query(ctx, `SELECT task_short_id, path, filesize_bytes FROM task_archive_files`)
 	if err != nil {
 		return nil, err
@@ -85,12 +76,8 @@ func (m Maintenance) Cleanup(ctx context.Context, apply bool) ([]string, error) 
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
-	root := filepath.Join(m.Root, "public")
-	for key, required := range live {
-		if !required {
-			continue
-		}
-		info, err := os.Lstat(filepath.Join(root, filepath.FromSlash(key)))
+	for key := range live {
+		info, err := os.Lstat(filepath.Join(m.Root, filepath.FromSlash(key)))
 		if err != nil {
 			return nil, fmt.Errorf("referenced file %s: %w", key, err)
 		}
@@ -101,7 +88,7 @@ func (m Maintenance) Cleanup(ctx context.Context, apply bool) ([]string, error) 
 			return nil, fmt.Errorf("referenced asset size mismatch: %s", key)
 		}
 		if digest, ok := digests[key]; ok {
-			data, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(key)))
+			data, err := os.ReadFile(filepath.Join(m.Root, filepath.FromSlash(key)))
 			if err != nil {
 				return nil, err
 			}
@@ -110,30 +97,38 @@ func (m Maintenance) Cleanup(ctx context.Context, apply bool) ([]string, error) 
 			}
 		}
 	}
-	var stale, dirs []string
-	err = filepath.WalkDir(root, func(name string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		if d.IsDir() {
-			dirs = append(dirs, name)
+	var stale []string
+	dirs := map[string][]string{}
+	for _, root := range []string{AssetsRoot, ArchiveRoot, "public"} {
+		rootPath := filepath.Join(m.Root, root)
+		rootErr := filepath.WalkDir(rootPath, func(name string, d fs.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
+			if d.IsDir() {
+				dirs[root] = append(dirs[root], name)
+				return nil
+			}
+			rel, err := filepath.Rel(rootPath, name)
+			if err != nil {
+				return err
+			}
+			key := filepath.ToSlash(filepath.Join(root, rel))
+			if !live[key] {
+				stale = append(stale, key)
+			}
 			return nil
+		})
+		if rootErr != nil && !errors.Is(rootErr, fs.ErrNotExist) {
+			return stale, rootErr
 		}
-		rel, err := filepath.Rel(root, name)
-		if err != nil {
-			return err
-		}
-		if _, ok := live[filepath.ToSlash(rel)]; !ok {
-			stale = append(stale, rel)
-		}
-		return nil
-	})
-	if err != nil || !apply {
-		return stale, err
 	}
-	recovery := filepath.Join(m.Root, "recovery", time.Now().UTC().Format("20060102T150405.000000000Z"), "public")
-	for _, rel := range stale {
-		src, dst := filepath.Join(root, rel), filepath.Join(recovery, rel)
+	if !apply {
+		return stale, nil
+	}
+	recovery := filepath.Join(m.Root, "recovery", time.Now().UTC().Format("20060102T150405.000000000Z"))
+	for _, key := range stale {
+		src, dst := filepath.Join(m.Root, filepath.FromSlash(key)), filepath.Join(recovery, filepath.FromSlash(key))
 		if err := mkdirDurable(filepath.Dir(dst)); err != nil {
 			return stale, err
 		}
@@ -147,14 +142,20 @@ func (m Maintenance) Cleanup(ctx context.Context, apply bool) ([]string, error) 
 			return stale, err
 		}
 	}
-	for i := len(dirs) - 1; i > 0; i-- {
-		entries, err := os.ReadDir(dirs[i])
-		if err != nil {
-			return stale, err
-		}
-		if len(entries) == 0 {
-			if err := os.Remove(dirs[i]); err != nil {
+	for _, root := range []string{AssetsRoot, ArchiveRoot, "public"} {
+		rootDirs := dirs[root]
+		for i := len(rootDirs) - 1; i >= 0; i-- {
+			entries, err := os.ReadDir(rootDirs[i])
+			if errors.Is(err, fs.ErrNotExist) {
+				continue
+			}
+			if err != nil {
 				return stale, err
+			}
+			if len(entries) == 0 {
+				if err := os.Remove(rootDirs[i]); err != nil {
+					return stale, err
+				}
 			}
 		}
 	}

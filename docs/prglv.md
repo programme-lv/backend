@@ -12,7 +12,7 @@ prglv update <task>      update statement, examples, images, solutions, or metad
 prglv manifest <task-id> show the remote manifest used for sparse updates
 prglv export <task-id>   download a task as a TaskZip .zip archive
 prglv rename <old> <new> rename a task and directory, retaining an old-ID alias
-prglv storage-cleanup   list unreferenced public files (--apply moves to recovery/)
+prglv storage-cleanup   list unreferenced task assets/archives (--apply moves to recovery/)
 prglv completions fish   print a shell completion script (fish, bash, zsh)
 prglv version
 prglv help

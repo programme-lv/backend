@@ -65,7 +65,9 @@ func main() {
 	slog.Debug("file storage root", "path", storageRoot)
 	apiPublicBaseURL := conf.MustGetPublicAPIBaseURLFromEnv()
 	testfileSigningKey := conf.MustGetTestfileDownloadSigningKeyFromEnv()
-	publicStore := conf.MustGetFileStore(storageRoot, "public")
+	// Task assets, admin archives and derived cache share the root store but
+	// live under separate top-level prefixes (assets/, archive/, cache/).
+	publicStore := conf.MustGetFileStore(storageRoot, "")
 	testfileStore := conf.MustGetFileStore(storageRoot, "testfiles")
 	execStore := conf.MustGetFileStore(storageRoot, "exec")
 

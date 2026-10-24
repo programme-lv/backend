@@ -33,6 +33,9 @@ func (m Maintenance) Prepare(ctx context.Context) error {
 	if err := m.migrate(ctx); err != nil {
 		return err
 	}
+	if err := m.migrateLayout(ctx); err != nil {
+		return err
+	}
 	if err := m.Recover(ctx); err != nil {
 		return err
 	}
@@ -82,7 +85,7 @@ func LockDatabase(ctx context.Context, pool *pgxpool.Pool) (func(), error) {
 }
 
 func (m Maintenance) migrate(ctx context.Context) error {
-	store, err := filestore.NewStore(filepath.Join(m.Root, "public"))
+	store, err := filestore.NewStore(m.Root)
 	if err != nil {
 		return err
 	}
@@ -127,7 +130,8 @@ func (m Maintenance) migrate(ctx context.Context) error {
 				key = "md-images/" + key
 			}
 		}
-		data, err := store.Download(key)
+		// 077 sources are the legacy public tree; destinations use the new layout.
+		data, err := store.Download(path.Join("public", key))
 		if err != nil {
 			return fmt.Errorf("migrate %s %s: %w", e.id, key, err)
 		}
@@ -172,6 +176,135 @@ func (m Maintenance) migrate(ctx context.Context) error {
 		}
 	}
 	return nil
+}
+
+// migrateLayout moves 077's public/tasks tree into the assets/archive/cache
+// layout. Cache derivatives are deleted and regenerated lazily.
+func (m Maintenance) migrateLayout(ctx context.Context) error {
+	var layout string
+	err := m.DB.QueryRow(ctx, `SELECT layout FROM task_storage_layout_pending`).Scan(&layout)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	if layout != "assets-v1" {
+		return fmt.Errorf("unknown storage layout migration %q", layout)
+	}
+	srcRoot := filepath.Join(m.Root, "public", "tasks")
+	entries, readErr := os.ReadDir(srcRoot)
+	if readErr != nil && !errors.Is(readErr, fs.ErrNotExist) {
+		return readErr
+	}
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+		id := entry.Name()
+		if !ValidID(id) {
+			return fmt.Errorf("invalid task directory %q", id)
+		}
+		src := filepath.Join(srcRoot, id)
+		if err := moveDir(filepath.Join(src, "images"), filepath.Join(m.Root, AssetsRoot, "tasks", id, "images")); err != nil {
+			return err
+		}
+		if err := moveDir(filepath.Join(src, "illustration"), filepath.Join(m.Root, AssetsRoot, "tasks", id, "illustration")); err != nil {
+			return err
+		}
+		if err := moveDir(filepath.Join(src, "archive"), filepath.Join(m.Root, ArchiveRoot, "tasks", id)); err != nil {
+			return err
+		}
+		if err := removeDerived(filepath.Join(m.Root, AssetsRoot, "tasks", id)); err != nil {
+			return err
+		}
+		remaining, err := os.ReadDir(src)
+		if err != nil {
+			return err
+		}
+		if len(remaining) != 0 {
+			return fmt.Errorf("unexpected entries left in %s", src)
+		}
+		if err := os.Remove(src); err != nil {
+			return err
+		}
+	}
+	remaining, readErr := os.ReadDir(srcRoot)
+	if readErr == nil {
+		if len(remaining) != 0 {
+			return fmt.Errorf("public/tasks still contains non-directory entries")
+		}
+		if err := os.Remove(srcRoot); err != nil {
+			return err
+		}
+	} else if !errors.Is(readErr, fs.ErrNotExist) {
+		return readErr
+	}
+	// Remove empty legacy parents; ignore non-empty public/ because cleanup owns it.
+	_ = os.Remove(filepath.Join(m.Root, "public"))
+	if _, err := m.DB.Exec(ctx, `DELETE FROM task_storage_layout_pending`); err != nil {
+		return err
+	}
+	return nil
+}
+
+func moveTaskDir(oldDir, newDir string) error {
+	_, oldErr := os.Lstat(oldDir)
+	_, newErr := os.Lstat(newDir)
+	switch {
+	case oldErr == nil && errors.Is(newErr, fs.ErrNotExist):
+		return os.Rename(oldDir, newDir)
+	case errors.Is(oldErr, fs.ErrNotExist) && newErr == nil:
+		return nil // moved by an earlier attempt
+	case errors.Is(oldErr, fs.ErrNotExist) && errors.Is(newErr, fs.ErrNotExist):
+		return nil // task has no files in this root
+	default:
+		return fmt.Errorf("expected at most one of %s and %s", oldDir, newDir)
+	}
+}
+
+func moveDir(src, dst string) error {
+	if _, err := os.Lstat(src); errors.Is(err, fs.ErrNotExist) {
+		return nil
+	} else if err != nil {
+		return err
+	}
+	if _, err := os.Lstat(dst); err == nil {
+		return fmt.Errorf("layout destination already exists: %s", dst)
+	} else if !errors.Is(err, fs.ErrNotExist) {
+		return err
+	}
+	if err := mkdirDurable(filepath.Dir(dst)); err != nil {
+		return err
+	}
+	if err := os.Rename(src, dst); err != nil {
+		return err
+	}
+	if err := syncDir(filepath.Dir(dst)); err != nil {
+		return err
+	}
+	return syncDir(filepath.Dir(src))
+}
+
+func removeDerived(root string) error {
+	err := filepath.WalkDir(root, func(name string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			return nil
+		}
+		for _, suffix := range []string{".list.webp", ".view.webp", ".full.webp"} {
+			if strings.HasSuffix(name, suffix) {
+				return os.Remove(name)
+			}
+		}
+		return nil
+	})
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil
+	}
+	return err
 }
 
 func copyVerified(filename string, data []byte) error {
@@ -267,12 +400,11 @@ func (m Maintenance) Rename(ctx context.Context, oldID, newID string) error {
 	if reserved {
 		return fmt.Errorf("task ID %s is already in use or reserved", newID)
 	}
-	newDir := filepath.Join(m.Root, "public", "tasks", newID)
-	if _, err := os.Lstat(newDir); !errors.Is(err, fs.ErrNotExist) {
-		return fmt.Errorf("destination directory is occupied or inaccessible: %s", newDir)
-	}
-	if err := mkdirDurable(filepath.Join(m.Root, "public", "tasks", oldID)); err != nil {
-		return err
+	for _, root := range []string{AssetsRoot, ArchiveRoot} {
+		newDir := filepath.Join(m.Root, root, "tasks", newID)
+		if _, err := os.Lstat(newDir); !errors.Is(err, fs.ErrNotExist) {
+			return fmt.Errorf("destination directory is occupied or inaccessible: %s", newDir)
+		}
 	}
 	if _, err := m.DB.Exec(ctx, `INSERT INTO task_rename_pending(old_id,new_id) VALUES($1,$2)`, oldID, newID); err != nil {
 		return err
@@ -294,22 +426,14 @@ func (m Maintenance) Recover(ctx context.Context) error {
 	if !ValidID(oldID) || !ValidID(newID) {
 		return fmt.Errorf("invalid pending rename")
 	}
-	parent := filepath.Join(m.Root, "public", "tasks")
-	oldDir, newDir := filepath.Join(parent, oldID), filepath.Join(parent, newID)
-	_, oldErr := os.Lstat(oldDir)
-	_, newErr := os.Lstat(newDir)
-	switch {
-	case oldErr == nil && errors.Is(newErr, fs.ErrNotExist):
-		if err := os.Rename(oldDir, newDir); err != nil {
+	for _, root := range []string{AssetsRoot, ArchiveRoot} {
+		parent := filepath.Join(m.Root, root, "tasks")
+		if err := moveTaskDir(filepath.Join(parent, oldID), filepath.Join(parent, newID)); err != nil {
+			return fmt.Errorf("recover rename %s -> %s: %w", oldID, newID, err)
+		}
+		if err := syncDir(parent); err != nil && !errors.Is(err, fs.ErrNotExist) {
 			return err
 		}
-	case errors.Is(oldErr, fs.ErrNotExist) && newErr == nil:
-		// A prior attempt moved the directory but did not commit the DB change.
-	default:
-		return fmt.Errorf("cannot recover rename %s -> %s: expected exactly one task directory", oldID, newID)
-	}
-	if err := syncDir(parent); err != nil {
-		return err
 	}
 	tx, err := m.DB.Begin(ctx)
 	if err != nil {
