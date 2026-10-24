@@ -15,6 +15,7 @@ import (
 	"github.com/programme-lv/backend/common/filestore"
 	"github.com/programme-lv/backend/common/img"
 	"github.com/programme-lv/backend/common/srvcerror"
+	"github.com/programme-lv/backend/modules/task/storage"
 )
 
 const taskIllustrationDir = "illustrations"
@@ -39,16 +40,12 @@ func taskStatementImageObjectKey(storedKey string) string {
 	if storedKey == "" {
 		return ""
 	}
-	if strings.HasPrefix(storedKey, taskStatementImageDir+"/") ||
+	if strings.HasPrefix(storedKey, "tasks/") || strings.HasPrefix(storedKey, taskStatementImageDir+"/") ||
 		strings.HasPrefix(storedKey, "task/") ||
 		strings.HasPrefix(storedKey, "task-md-images/") {
 		return storedKey
 	}
 	return path.Join(taskStatementImageDir, storedKey)
-}
-
-func taskStatementImageStoredKey(objectKey string) string {
-	return strings.TrimPrefix(objectKey, taskStatementImageDir+"/")
 }
 
 // statementImageStoredKey includes the filename so identical image bytes can
@@ -58,28 +55,32 @@ func statementImageStoredKey(taskID, filename string, data []byte, ext string) s
 	if name == "" || name == "." {
 		name = "image" + ext
 	}
-	return fmt.Sprintf("%s/%s-%s", taskID, sha2Hex(data)[:12], name)
+	return storage.Image(taskID, storage.Digest(data), name)
 }
 
-// UploadIllustrationImg stores an illustration original and warms list, view, and full WebP variants.
-// It returns the stored key without the illustrations/ prefix.
-// The object key is illustrations/<sha256>.<ext>.
-func (ts *taskSrvc) UploadIllustrationImg(ctx context.Context, mimeType string, body []byte) (string, srvcerror.E) {
+// UploadIllustrationImg stores a task-owned illustration and warms its WebPs.
+// The returned path is derived from task identity, SHA-256 and image extension.
+func (ts *taskSrvc) UploadIllustrationImg(ctx context.Context, taskID, mimeType string, body []byte) (string, srvcerror.E) {
+	task, taskErr := ts.GetTask(ctx, taskID)
+	if taskErr != nil {
+		return "", taskErr
+	}
+	taskID = task.ShortId
 	l := ts.logger(ctx)
 	sha2 := sha2Hex(body)
-	exts, err := mime.ExtensionsByType(mimeType)
-	if err != nil {
+	exts, mimeErr := mime.ExtensionsByType(mimeType)
+	if mimeErr != nil {
 		return "", errUnknownImageExt(mimeType)
 	}
 	if len(exts) == 0 {
 		return "", errUnknownImageExt(mimeType)
 	}
 	ext := exts[0]
-	storedKey := fmt.Sprintf("%s%s", sha2, ext)
+	storedKey := storage.Illustration(taskID, sha2, ext)
 	origKey := taskIllustrationObjectKey(storedKey)
-	_, err = ts.publicStore.Upload(body, origKey, mimeType)
-	if err != nil {
-		l.Error("upload illustration", "error", err)
+	_, uploadErr := ts.publicStore.Upload(body, origKey, mimeType)
+	if uploadErr != nil {
+		l.Error("upload illustration", "error", uploadErr)
 		return "", srvcerror.InternalServerError()
 	}
 	for _, variant := range img.Variants() {
@@ -92,7 +93,7 @@ func (ts *taskSrvc) UploadIllustrationImg(ctx context.Context, mimeType string, 
 }
 
 // UploadStatementImage stores a statement image and records it on the task.
-// The object key is md-images/<taskId>/<sha256-prefix>-<filename>.
+// The path is tasks/<taskId>/images/<sha256>/<filename>.
 func (ts *taskSrvc) UploadStatementImage(ctx context.Context, taskId string, imgFilename string, imageMimeType string, body []byte) (string, srvcerror.E) {
 	l := ts.logger(ctx)
 
@@ -115,6 +116,7 @@ func (ts *taskSrvc) UploadStatementImage(ctx context.Context, taskId string, img
 		l.Error("get corresponding task", "error", err)
 		return "", srvcerror.InternalServerError()
 	}
+	taskId = t.ShortId
 	for _, img := range t.MdImages {
 		if img.Filename == imgFilename {
 			return "", errImageAlreadyExists(imgFilename)
@@ -130,6 +132,7 @@ func (ts *taskSrvc) UploadStatementImage(ctx context.Context, taskId string, img
 
 	err = ts.repo.AddStatementImg(ctx, taskId, StatementImage{
 		ObjectKey: storedKey,
+		SHA256:    storage.Digest(body),
 		Filename:  imgFilename,
 		WidthPx:   width,
 		HeightPx:  height,
@@ -150,6 +153,7 @@ func (ts *taskSrvc) DeleteStatementImage(ctx context.Context, taskId string, fil
 		l.Error("get task", "error", err)
 		return srvcerror.InternalServerError()
 	}
+	taskId = t.ShortId
 
 	var targetImage *StatementImage
 	for _, img := range t.MdImages {
@@ -198,8 +202,9 @@ func (ts *taskSrvc) DeleteIllustrationImg(ctx context.Context, taskId string) sr
 		l.Error("get task", "error", err)
 		return srvcerror.InternalServerError()
 	}
+	taskId = t.ShortId
 
-	if t.IllustrImg.ObjectKey == "" {
+	if t.IllustrImg == nil || t.IllustrImg.ObjectKey == "" {
 		return ErrIllustrationNotFound
 	}
 
@@ -236,10 +241,14 @@ func (ts *taskSrvc) DeleteIllustrationImg(ctx context.Context, taskId string) sr
 	return nil
 }
 
-// UpdateIllustrationImg writes illustration metadata to the database.
-// The stored object key is saved without the illustrations/ prefix.
+// UpdateIllustrationImg writes the checksum, extension and image dimensions.
 func (ts *taskSrvc) UpdateIllustrationImg(ctx context.Context, taskId string, img IllustrationImage) srvcerror.E {
 	l := ts.logger(ctx)
+	task, getErr := ts.GetTask(ctx, taskId)
+	if getErr != nil {
+		return getErr
+	}
+	taskId = task.ShortId
 	img.ObjectKey = taskIllustrationStoredKey(img.ObjectKey)
 
 	err := ts.repo.UpdateIllustrationImg(ctx, taskId, img)
@@ -252,7 +261,7 @@ func (ts *taskSrvc) UpdateIllustrationImg(ctx context.Context, taskId string, im
 }
 
 // GetIllustrationAssetURLs returns public URLs for the list, view, and full WebP variants.
-// objectKey is the stored key without the illustrations/ prefix.
+// objectKey is the derived runtime path, not a database field.
 func (ts *taskSrvc) GetIllustrationAssetURLs(ctx context.Context, objectKey string) (listURL, viewURL, fullURL string, err srvcerror.E) {
 	orig := taskIllustrationObjectKey(objectKey)
 	listURL, e := filestore.AssetURL(ts.apiPublicBaseURL, img.ServeKey(orig, img.VariantList))

@@ -11,11 +11,11 @@ import (
 	"strings"
 
 	"github.com/programme-lv/backend/common/srvcerror"
+	"github.com/programme-lv/backend/modules/task/storage"
 	taskzipv1 "github.com/programme-lv/backend/modules/task/taskzip"
 )
 
 const (
-	taskArchiveDir       = "archive"
 	maxArchiveFiles      = 256
 	maxArchiveFileBytes  = 64 << 20
 	maxArchiveTotalBytes = 128 << 20
@@ -42,7 +42,7 @@ func archiveAddsExceedQuota(existing []ArchiveFile, addCount, addBytes int) srvc
 }
 
 func taskArchiveObjectKey(taskID, relPath string) string {
-	return path.Join(taskArchiveDir, taskID, relPath)
+	return storage.Archive(taskID, relPath)
 }
 
 func cleanArchiveRelPath(raw string) (string, error) {
@@ -262,8 +262,9 @@ func (ts *taskSrvc) exportIllustrationToArchive(ctx context.Context, task Task, 
 	return nil
 }
 
-// MigrateLegacyArchiveZips unpacks leftover tasks.archive_object_key zips
-// into task_archive_files. Missing zips are left for a later start.
+// MigrateLegacyArchiveZips unpacks leftover original archive zips from the
+// storage migration queue into task_archive_files. Missing zips are left for a
+// later start.
 func (ts *taskSrvc) MigrateLegacyArchiveZips(ctx context.Context) {
 	zips, err := ts.repo.ListLegacyArchiveZips(ctx)
 	if err != nil {

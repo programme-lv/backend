@@ -185,9 +185,9 @@ func insertImages(ctx context.Context, tx pgx.Tx, t srvc.Task) error {
 	for _, img := range t.MdImages {
 		_, err := tx.Exec(ctx, `
 			INSERT INTO task_images
-				(task_short_id, object_key, file_name, width_px, height_px, filesize_bytes)
+				(task_short_id, sha256, file_name, width_px, height_px, filesize_bytes)
 			VALUES ($1, $2, $3, $4, $5, $6)
-		`, t.ShortId, img.ObjectKey, img.Filename, img.WidthPx, img.HeightPx, img.SzInBytes)
+		`, t.ShortId, img.SHA256, img.Filename, img.WidthPx, img.HeightPx, img.SzInBytes)
 		if err != nil {
 			return fmt.Errorf("insert image: %w", err)
 		}

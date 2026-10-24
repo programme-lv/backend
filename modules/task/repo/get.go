@@ -6,9 +6,15 @@ import (
 	"fmt"
 
 	"github.com/programme-lv/backend/modules/task/srvc"
+	"github.com/programme-lv/backend/modules/task/storage"
 )
 
 func (r *taskPgRepo) GetTaskPreview(ctx context.Context, shortId string) (srvc.TaskPreview, error) {
+	canonical, resolveErr := r.ResolveID(ctx, shortId)
+	if resolveErr != nil {
+		return srvc.TaskPreview{}, resolveErr
+	}
+	shortId = canonical
 	var t srvc.TaskPreview
 
 	// Initialize illustration image struct
@@ -20,7 +26,7 @@ func (r *taskPgRepo) GetTaskPreview(ctx context.Context, shortId string) (srvc.T
 	// Load main task row.
 	var fullNameBytes, divisionsBytes []byte
 	err := r.pool.QueryRow(ctx, `
-		SELECT short_id, full_name_dict, orig_lang, illustr_img_object_key, width_px, height_px, filesize_bytes,
+		SELECT short_id, full_name_dict, orig_lang, illustration_sha256, illustration_ext, width_px, height_px, filesize_bytes,
 		       origin_olympiad, COALESCE(origin_org,''), COALESCE(origin_year,''),
 		       COALESCE(olymp_stage,''), COALESCE(origin_divisions,'[]'::jsonb), difficulty_rating
 		FROM tasks
@@ -29,7 +35,7 @@ func (r *taskPgRepo) GetTaskPreview(ctx context.Context, shortId string) (srvc.T
 		&t.ShortId,
 		&fullNameBytes,
 		&t.OrigLang,
-		&illustrImg.ObjectKey,
+		&illustrImg.SHA256, &illustrImg.Ext,
 		&widthPx,
 		&heightPx,
 		&szInBytes,
@@ -54,6 +60,7 @@ func (r *taskPgRepo) GetTaskPreview(ctx context.Context, shortId string) (srvc.T
 	}
 
 	// Set illustration image only if it has valid data
+	illustrImg.ObjectKey = storage.Illustration(t.ShortId, illustrImg.SHA256, illustrImg.Ext)
 	if illustrImg.ObjectKey != "" &&
 		widthPx != nil && heightPx != nil && szInBytes != nil &&
 		*widthPx > 0 && *heightPx > 0 && *szInBytes > 0 {
@@ -76,6 +83,11 @@ func (r *taskPgRepo) GetTaskPreview(ctx context.Context, shortId string) (srvc.T
 }
 
 func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, error) {
+	canonical, resolveErr := r.ResolveID(ctx, shortId)
+	if resolveErr != nil {
+		return srvc.Task{}, resolveErr
+	}
+	shortId = canonical
 	var t srvc.Task
 
 	illustrImg := srvc.IllustrationImage{}
@@ -88,7 +100,7 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 	var divisionsBytes []byte
 	var problemTagsBytes []byte
 	err := r.pool.QueryRow(ctx, `
-		SELECT short_id, full_name_dict, orig_lang, readme, illustr_img_object_key, width_px, height_px, filesize_bytes, mem_lim_megabytes, cpu_time_lim_secs, origin_olympiad, COALESCE(origin_org,''), COALESCE(origin_year,''), COALESCE(olymp_stage,''), COALESCE(origin_divisions,'[]'::jsonb), COALESCE(authors,'[]'::jsonb), COALESCE(problem_tags,'[]'::jsonb), COALESCE(archive_object_key,''), difficulty_rating, checker, interactor, tests_version, revision, created_at
+		SELECT short_id, full_name_dict, orig_lang, readme, illustration_sha256, illustration_ext, width_px, height_px, filesize_bytes, mem_lim_megabytes, cpu_time_lim_secs, origin_olympiad, COALESCE(origin_org,''), COALESCE(origin_year,''), COALESCE(olymp_stage,''), COALESCE(origin_divisions,'[]'::jsonb), COALESCE(authors,'[]'::jsonb), COALESCE(problem_tags,'[]'::jsonb), difficulty_rating, checker, interactor, tests_version, revision, created_at
 		FROM tasks
 		WHERE short_id = $1
 	`, shortId).Scan(
@@ -96,7 +108,7 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 		&fullNameBytes,
 		&t.OrigLang,
 		&t.Readme,
-		&illustrImg.ObjectKey,
+		&illustrImg.SHA256, &illustrImg.Ext,
 		&widthPx,
 		&heightPx,
 		&szInBytes,
@@ -109,7 +121,6 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 		&divisionsBytes,
 		&authorsBytes,
 		&problemTagsBytes,
-		&t.OgFilesZipObjectKey,
 		&t.DifficultyRating,
 		&t.Checker,
 		&t.Interactor,
@@ -142,6 +153,7 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 		return t, fmt.Errorf("load task: %w", err)
 	}
 
+	illustrImg.ObjectKey = storage.Illustration(t.ShortId, illustrImg.SHA256, illustrImg.Ext)
 	if illustrImg.ObjectKey != "" &&
 		widthPx != nil && heightPx != nil && szInBytes != nil &&
 		*widthPx > 0 && *heightPx > 0 && *szInBytes > 0 {
@@ -192,7 +204,7 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 	mdStmtRows.Close()
 	t.MdStatements = mdStatements
 	taskImgsRows, err := r.pool.Query(ctx, `
-		SELECT object_key, file_name, width_px, height_px, filesize_bytes 
+		SELECT sha256, file_name, width_px, height_px, filesize_bytes
 		FROM task_images 
 		WHERE task_short_id = $1
 	`, shortId)
@@ -202,17 +214,18 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 	var taskImgs []srvc.StatementImage
 	for taskImgsRows.Next() {
 		var img srvc.StatementImage
-		if err := taskImgsRows.Scan(&img.ObjectKey, &img.Filename, &img.WidthPx, &img.HeightPx, &img.SzInBytes); err != nil {
+		if err := taskImgsRows.Scan(&img.SHA256, &img.Filename, &img.WidthPx, &img.HeightPx, &img.SzInBytes); err != nil {
 			taskImgsRows.Close()
 			return t, fmt.Errorf("load task image: %w", err)
 		}
+		img.ObjectKey = storage.Image(t.ShortId, img.SHA256, img.Filename)
 		taskImgs = append(taskImgs, img)
 	}
 	taskImgsRows.Close()
 	t.MdImages = taskImgs
 
 	archiveRows, err := r.pool.Query(ctx, `
-		SELECT path, object_key, filesize_bytes
+		SELECT path, filesize_bytes
 		FROM task_archive_files
 		WHERE task_short_id = $1
 		ORDER BY path
@@ -222,10 +235,11 @@ func (r *taskPgRepo) GetTask(ctx context.Context, shortId string) (srvc.Task, er
 	}
 	for archiveRows.Next() {
 		var file srvc.ArchiveFile
-		if err := archiveRows.Scan(&file.Path, &file.ObjectKey, &file.SzInBytes); err != nil {
+		if err := archiveRows.Scan(&file.Path, &file.SzInBytes); err != nil {
 			archiveRows.Close()
 			return t, fmt.Errorf("scan archive file: %w", err)
 		}
+		file.ObjectKey = storage.Archive(t.ShortId, file.Path)
 		t.Archive = append(t.Archive, file)
 	}
 	archiveRows.Close()

@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/programme-lv/backend/modules/task/srvc"
+	"github.com/programme-lv/backend/modules/task/storage"
 )
 
 func (r *taskPgRepo) SearchTasksByName(ctx context.Context, name string) ([]string, error) {
@@ -48,7 +49,7 @@ func (r *taskPgRepo) ListTaskPreviews(ctx context.Context, limit int, offset int
 		SELECT t.short_id,
 		       t.full_name_dict,
 		       t.orig_lang,
-		       t.illustr_img_object_key, t.width_px, t.height_px, t.filesize_bytes, 
+		       t.illustration_sha256, t.illustration_ext, t.width_px, t.height_px, t.filesize_bytes,
 		       t.origin_olympiad, COALESCE(t.origin_org,''), COALESCE(t.origin_year,''), COALESCE(t.olymp_stage,''), COALESCE(t.origin_divisions,'[]'::jsonb), t.difficulty_rating,
 		       COALESCE(
 			       (SELECT ton.info 
@@ -95,7 +96,7 @@ func (r *taskPgRepo) ListTaskPreviews(ctx context.Context, limit int, offset int
 			&p.ShortId,
 			&fullNameBytes,
 			&p.OrigLang,
-			&illustrImg.ObjectKey,
+			&illustrImg.SHA256, &illustrImg.Ext,
 			&widthPx,
 			&heightPx,
 			&szInBytes,
@@ -130,6 +131,7 @@ func (r *taskPgRepo) ListTaskPreviews(ctx context.Context, limit int, offset int
 			p.OriginNoteShort = *originNoteShort
 		}
 
+		illustrImg.ObjectKey = storage.Illustration(p.ShortId, illustrImg.SHA256, illustrImg.Ext)
 		if illustrImg.ObjectKey != "" &&
 			widthPx != nil && heightPx != nil && szInBytes != nil &&
 			*widthPx > 0 && *heightPx > 0 && *szInBytes > 0 {
@@ -246,9 +248,16 @@ func (r *taskPgRepo) ResolveNames(ctx context.Context, shortIds []string) ([]str
 
 func (r *taskPgRepo) Exists(ctx context.Context, shortId string) (bool, error) {
 	var exists bool
-	err := r.pool.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM tasks WHERE short_id = $1)", shortId).Scan(&exists)
+	err := r.pool.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM tasks WHERE short_id = $1 UNION ALL SELECT 1 FROM task_aliases WHERE alias = $1)", shortId).Scan(&exists)
 	if err != nil {
 		return false, fmt.Errorf("check if task exists: %w", err)
 	}
 	return exists, nil
+}
+
+// ResolveID resolves a reserved alias, leaving a canonical or unknown ID as-is.
+func (r *taskPgRepo) ResolveID(ctx context.Context, id string) (string, error) {
+	var canonical string
+	err := r.pool.QueryRow(ctx, `SELECT COALESCE((SELECT task_id FROM task_aliases WHERE alias=$1), $1)`, id).Scan(&canonical)
+	return canonical, err
 }

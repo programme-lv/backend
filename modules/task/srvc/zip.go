@@ -88,19 +88,19 @@ func (ts *taskSrvc) UpdateTaskFromZip(
 	if err != nil {
 		return UpdateResult{}, taskZipReadError(err)
 	}
-	if archive.ID != taskID {
-		return UpdateResult{}, errInvalidTaskZip("archive ID does not match task ID")
-	}
 	existing, getErr := ts.GetTask(ctx, taskID)
 	if getErr != nil {
 		return UpdateResult{}, getErr
+	}
+	taskID = existing.ShortId
+	if archive.ID != taskID {
+		return UpdateResult{}, errInvalidTaskZip("archive ID does not match task ID")
 	}
 	task, err := mapFromTaskZip(archive, taskID)
 	if err != nil {
 		return UpdateResult{}, errInvalidTaskZip(err.Error())
 	}
 	task.IllustrImg = existing.IllustrImg
-	task.OgFilesZipObjectKey = existing.OgFilesZipObjectKey
 	task.Archive = existing.Archive
 	task.OriginNotes = existing.OriginNotes
 	task.TestsVersion = existing.TestsVersion
@@ -198,6 +198,7 @@ func prepareTaskZipImages(archive taskzipv1.Task, task *Task) error {
 		}
 		task.MdImages = append(task.MdImages, StatementImage{
 			ObjectKey: statementImageStoredKey(task.ShortId, name, data, filepath.Ext(name)),
+			SHA256:    sha2Hex(data),
 			Filename:  name, WidthPx: width, HeightPx: height, SzInBytes: len(data),
 		})
 	}

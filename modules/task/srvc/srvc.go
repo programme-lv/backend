@@ -26,7 +26,7 @@ type TaskService interface {
 	DownloadTestFile(ctx context.Context, testFileSha256 string) ([]byte, srvcerror.E)
 
 	// illustration image
-	UploadIllustrationImg(ctx context.Context, mimeType string, body []byte) (string, srvcerror.E)
+	UploadIllustrationImg(ctx context.Context, taskID, mimeType string, body []byte) (string, srvcerror.E)
 	DeleteIllustrationImg(ctx context.Context, taskId string) srvcerror.E
 	UpdateIllustrationImg(ctx context.Context, taskId string, img IllustrationImage) srvcerror.E
 	GetIllustrationAssetURLs(ctx context.Context, illustrImgObjectKey string) (listURL, viewURL, fullURL string, err srvcerror.E)

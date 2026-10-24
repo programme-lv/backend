@@ -6,11 +6,8 @@ import (
 	"github.com/programme-lv/backend/common/srvcerror"
 )
 
-// CreateTask stores statement-image keys without the md-images/ prefix.
+// CreateTask stores task content and asset metadata.
 func (ts *taskSrvc) CreateTask(ctx context.Context, task Task) srvcerror.E {
-	for i := range task.MdImages {
-		task.MdImages[i].ObjectKey = taskStatementImageStoredKey(task.MdImages[i].ObjectKey)
-	}
 	err := ts.repo.CreateTask(ctx, task)
 	if err != nil {
 		l := ts.logger(ctx)

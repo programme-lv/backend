@@ -26,10 +26,10 @@ func (r *taskPgRepo) CreateTask(ctx context.Context, t srvc.Task) error {
 	defer tx.Rollback(ctx)
 
 	// Insert main task.
-	var illustrObjectKey string
+	var illustrSHA256, illustrExt string
 	var illustrWidthPx, illustrHeightPx, illustrSzInBytes int
 	if t.IllustrImg != nil {
-		illustrObjectKey = t.IllustrImg.ObjectKey // gitleaks:allow -- storage path, not a credential
+		illustrSHA256, illustrExt = t.IllustrImg.SHA256, t.IllustrImg.Ext
 		illustrWidthPx = t.IllustrImg.WidthPx
 		illustrHeightPx = t.IllustrImg.HeightPx
 		illustrSzInBytes = t.IllustrImg.SzInBytes
@@ -53,9 +53,9 @@ func (r *taskPgRepo) CreateTask(ctx context.Context, t srvc.Task) error {
 	}
 
 	_, err = tx.Exec(ctx, `
-		INSERT INTO tasks (short_id, full_name_dict, orig_lang, readme, illustr_img_object_key, width_px, height_px, filesize_bytes, mem_lim_megabytes, cpu_time_lim_secs, origin_olympiad, origin_org, origin_year, olymp_stage, origin_divisions, authors, problem_tags, archive_object_key, difficulty_rating, checker, interactor)
+		INSERT INTO tasks (short_id, full_name_dict, orig_lang, readme, illustration_sha256, width_px, height_px, filesize_bytes, mem_lim_megabytes, cpu_time_lim_secs, origin_olympiad, origin_org, origin_year, olymp_stage, origin_divisions, authors, problem_tags, illustration_ext, difficulty_rating, checker, interactor)
 		VALUES ($1, $2::jsonb, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15::jsonb, $16::jsonb, $17::jsonb, $18, $19, $20, $21)
-	`, t.ShortId, fullNameJSON, t.OrigLang, t.Readme, illustrObjectKey, illustrWidthPx, illustrHeightPx, illustrSzInBytes, t.MemLimMegabytes, t.CpuTimeLimSecs, t.OriginOlympiad, t.OriginOrg, t.OriginYear, t.OlympStage, divisionsJSON, authorsJSON, tagsJSON, t.OgFilesZipObjectKey, t.DifficultyRating, t.Checker, t.Interactor)
+	`, t.ShortId, fullNameJSON, t.OrigLang, t.Readme, illustrSHA256, illustrWidthPx, illustrHeightPx, illustrSzInBytes, t.MemLimMegabytes, t.CpuTimeLimSecs, t.OriginOlympiad, t.OriginOrg, t.OriginYear, t.OlympStage, divisionsJSON, authorsJSON, tagsJSON, illustrExt, t.DifficultyRating, t.Checker, t.Interactor)
 	if err != nil {
 		return fmt.Errorf("insert main task: %w", err)
 	}
@@ -85,9 +85,9 @@ func (r *taskPgRepo) CreateTask(ctx context.Context, t srvc.Task) error {
 	}
 	for _, img := range t.MdImages {
 		_, err = tx.Exec(ctx, `
-			INSERT INTO task_images (task_short_id, object_key, file_name, width_px, height_px, filesize_bytes)
+			INSERT INTO task_images (task_short_id, sha256, file_name, width_px, height_px, filesize_bytes)
 			VALUES ($1, $2, $3, $4, $5, $6)
-		`, t.ShortId, img.ObjectKey, img.Filename, img.WidthPx, img.HeightPx, img.SzInBytes)
+		`, t.ShortId, img.SHA256, img.Filename, img.WidthPx, img.HeightPx, img.SzInBytes)
 		if err != nil {
 			return fmt.Errorf("insert markdown image: %w", err)
 		}
@@ -191,9 +191,9 @@ func (r *taskPgRepo) CreateTask(ctx context.Context, t srvc.Task) error {
 
 	for _, file := range t.Archive {
 		_, err = tx.Exec(ctx, `
-			INSERT INTO task_archive_files (task_short_id, path, object_key, filesize_bytes)
-			VALUES ($1, $2, $3, $4)
-		`, t.ShortId, file.Path, file.ObjectKey, file.SzInBytes)
+			INSERT INTO task_archive_files (task_short_id, path, filesize_bytes)
+			VALUES ($1, $2, $3)
+		`, t.ShortId, file.Path, file.SzInBytes)
 		if err != nil {
 			return fmt.Errorf("insert archive file: %w", err)
 		}

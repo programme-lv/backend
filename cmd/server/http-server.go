@@ -40,11 +40,15 @@ func newHTTPServer(
 	adminAPIKey []byte,
 	cookieSecure bool,
 	pwdChangedAt auth.PasswordChangedAtLookup,
+	extraMiddleware ...func(http.Handler) http.Handler,
 ) *httpServer {
 	router := chi.NewRouter()
 
 	router.Use(requestLoggerMiddleware)
 	router.Use(corsHandler())
+	for _, mw := range extraMiddleware {
+		router.Use(mw)
+	}
 
 	router.Use(auth.HttpJwtAuthentication(
 		jwtKey,
