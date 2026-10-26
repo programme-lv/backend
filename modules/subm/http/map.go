@@ -188,7 +188,11 @@ func mapSubmEval(eval domain.Eval) Eval {
 
 	verdicts := ""
 	testScores := make([]int, 0, len(eval.Tests))
-	for _, test := range eval.Tests {
+	exampleTestIDs := make([]int, 0)
+	for i, test := range eval.Tests {
+		if test.Example {
+			exampleTestIDs = append(exampleTestIDs, i+1)
+		}
 		testScores = append(testScores, test.Percent())
 		if test.Ig {
 			verdicts += "I" // ignored
@@ -218,15 +222,16 @@ func mapSubmEval(eval domain.Eval) Eval {
 	scoreInfo := eval.CalculateScore()
 
 	return Eval{
-		EvalUUID:   eval.UUID.String(),
-		SubmUUID:   eval.SubmUUID.String(),
-		EvalStage:  string(eval.Stage),
-		ScoreUnit:  string(eval.ScoreUnit),
-		EvalError:  errType,
-		Subtasks:   subtasks,
-		TestGroups: testGroups,
-		Verdicts:   verdicts,
-		TestScores: testScores,
+		EvalUUID:       eval.UUID.String(),
+		SubmUUID:       eval.SubmUUID.String(),
+		EvalStage:      string(eval.Stage),
+		ScoreUnit:      string(eval.ScoreUnit),
+		EvalError:      errType,
+		Subtasks:       subtasks,
+		TestGroups:     testGroups,
+		Verdicts:       verdicts,
+		TestScores:     testScores,
+		ExampleTestIDs: exampleTestIDs,
 		ScoreInfo: ScoreInfo{
 			ScoreBar: struct {
 				Green  int `json:"green"`

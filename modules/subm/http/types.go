@@ -42,11 +42,12 @@ type Eval struct {
 	ScoreUnit string `json:"score_unit"`
 	EvalError string `json:"eval_error"`
 	// ErrorMsg   string      `json:"error_msg"`
-	Subtasks   []Subtask   `json:"subtasks"`
-	TestGroups []TestGroup `json:"test_groups"`
-	Verdicts   string      `json:"verdicts"`              // q,ac,wa,tle,mle,re,ig,p -> "QAWTMRI"
-	TestScores []int       `json:"test_scores,omitempty"` // percentage per test
-	ScoreInfo  ScoreInfo   `json:"score_info"`
+	Subtasks       []Subtask   `json:"subtasks"`
+	TestGroups     []TestGroup `json:"test_groups"`
+	Verdicts       string      `json:"verdicts"`              // q,ac,wa,tle,mle,re,ig,p -> "QAWTMRI"
+	TestScores     []int       `json:"test_scores,omitempty"` // percentage per test
+	ExampleTestIDs []int       `json:"example_test_ids,omitempty"`
+	ScoreInfo      ScoreInfo   `json:"score_info"`
 }
 
 type ScoreInfo struct {

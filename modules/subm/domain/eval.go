@@ -72,11 +72,36 @@ type Test struct {
 	Reached  bool // reached by tester
 	Finished bool // has finished
 
+	// Example marks an unscored statement example. Examples use inline content
+	// instead of stored test hashes and never contribute to the score.
+	Example bool
+	Input   string
+	Answer  string
+
 	InpSha256 string
 	AnsSha256 string
 
 	CpuMs  *int // cpu exec 'user' time in milliseconds (nullable)
 	MemKiB *int // rss memory in kibibytes (nullable)
+}
+
+// AddExamples appends the statement examples to the execution as unscored
+// tests. Interactive examples are communication traces and cannot be run
+// through the normal input/output test path, so they are ignored.
+func (e *Eval) AddExamples(task srvc.Task) {
+	if task.Interactor != "" {
+		return
+	}
+	for _, example := range task.Examples {
+		if example.Trace != "" {
+			continue
+		}
+		e.Tests = append(e.Tests, Test{
+			Example: true,
+			Input:   example.Input,
+			Answer:  example.Output,
+		})
+	}
 }
 
 type Subtask struct {

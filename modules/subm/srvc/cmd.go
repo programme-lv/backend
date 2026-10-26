@@ -128,6 +128,7 @@ func (h submitSolCmdHandler) Handle(ctx context.Context, p SubmitSolParams) srvc
 		CreatedAt:    time.Now(),
 	}
 	eval := domain.NewEval(evalUuid, submEntity.UUID, t)
+	eval.AddExamples(t)
 
 	storeEvalErr := h.StoreEval(ctx, eval)
 	if storeEvalErr != nil {
@@ -207,6 +208,7 @@ func (h reEvalSubmHandler) Handle(ctx context.Context, submUuid uuid.UUID) srvce
 
 	evalUuid := uuid.New()
 	eval := domain.NewEval(evalUuid, subm.UUID, t)
+	eval.AddExamples(t)
 
 	storeEvalErr := h.StoreEval(ctx, eval)
 	if storeEvalErr != nil {
@@ -302,6 +304,15 @@ func constructExecEnqueueTests(
 
 	evalReqTests := make([]exec.TestFile, len(eval.Tests))
 	for i, test := range eval.Tests {
+		if test.Example {
+			input := test.Input
+			answer := test.Answer
+			evalReqTests[i] = exec.TestFile{
+				InContent:  &input,
+				AnsContent: &answer,
+			}
+			continue
+		}
 		inputS3Url, err := getTestDownlUrl(ctx, test.InpSha256)
 		if err != nil {
 			action := "get download URL for input"

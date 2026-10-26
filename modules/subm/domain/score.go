@@ -77,9 +77,16 @@ func (e *Eval) CalculateScore() ScoreInfo {
 			}
 		}
 	case ScoreUnitTest:
-		maxScore = len(e.Tests)
+		for _, test := range e.Tests {
+			if !test.Example {
+				maxScore++
+			}
+		}
 		if e.Error == nil {
 			for _, test := range e.Tests {
+				if test.Example {
+					continue
+				}
 				centi := testPercent(test)
 				gotCenti += centi
 				switch {
@@ -106,11 +113,17 @@ func (e *Eval) CalculateScore() ScoreInfo {
 	maxCpuMs := 0
 	maxMemKiB := 0
 	for _, test := range e.Tests {
+		if test.Example {
+			continue
+		}
 		if test.CpuMs != nil && *test.CpuMs > maxCpuMs {
 			maxCpuMs = *test.CpuMs
 		}
 	}
 	for _, test := range e.Tests {
+		if test.Example {
+			continue
+		}
 		if test.MemKiB != nil && *test.MemKiB > maxMemKiB {
 			maxMemKiB = *test.MemKiB
 		}
