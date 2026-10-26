@@ -105,7 +105,13 @@ const (
 // BuildViableBounds computes the range of limits where the solution fully
 // solves every declared subtask and does not fully solve any undeclared one.
 func BuildViableBounds(task tasksrvc.Task, runs []ProfileRun, resource Resource, declared []int) ViableBounds {
-	if len(task.Subtasks) == 0 || len(declared) == 0 || len(runs) == 0 {
+	if len(runs) == 0 {
+		return ViableBounds{LowerKind: BoundNone, UpperKind: BoundNone}
+	}
+	if len(task.Subtasks) == 0 {
+		return buildBinaryBounds(task, runs, resource)
+	}
+	if len(declared) == 0 {
 		return ViableBounds{LowerKind: BoundNone, UpperKind: BoundNone}
 	}
 
@@ -193,6 +199,91 @@ func BuildViableBounds(task tasksrvc.Task, runs []ProfileRun, resource Resource,
 	return bounds
 }
 
+// buildBinaryBounds handles a task without subtasks. Its only scoring unit is
+// "all tests pass", so the viable lower bound is the first limit where every
+// run gets the full score. There is no undeclared unit, so the upper bound is
+// open.
+func buildBinaryBounds(task tasksrvc.Task, runs []ProfileRun, resource Resource) ViableBounds {
+	maxLimit := ProfileCpuMs
+	if resource == ResourceMemory {
+		maxLimit = ProfileMemKiB
+	}
+
+	limits := []int{0, maxLimit}
+	for _, run := range runs {
+		for _, test := range run.Tests {
+			if test.Percent != 100 {
+				continue
+			}
+			value := test.CpuMs
+			if resource == ResourceMemory {
+				value = test.MemKiB
+			}
+			if value < maxLimit {
+				limits = append(limits, value, value+1)
+			}
+		}
+	}
+	sort.Ints(limits)
+	limits = slices.Compact(limits)
+
+	expected := ProfilePossiblePoints(task)
+	var lower *int
+	for _, limit := range limits {
+		cpuMs, memKiB := ProfileCpuMs, ProfileMemKiB
+		if resource == ResourceCPU {
+			cpuMs = limit
+		} else {
+			memKiB = limit
+		}
+
+		allFull := true
+		for _, run := range runs {
+			if profileScoreAt(task, run, cpuMs, memKiB) != expected {
+				allFull = false
+				break
+			}
+		}
+		if allFull {
+			value := limit
+			lower = &value
+			break
+		}
+	}
+
+	bounds := ViableBounds{LowerKind: BoundUnknown, UpperKind: BoundOpen}
+	if lower != nil {
+		bounds.Lower = lower
+		bounds.LowerKind = BoundFinite
+	}
+	return bounds
+}
+
+func buildBinaryVerdict(
+	task tasksrvc.Task, runs []ProfileRun, verdict Verdict, cpuMs, memKiB int,
+) Verdict {
+	verdict.Applicable = true
+	scores := make([]int, len(runs))
+	for i, run := range runs {
+		scores[i] = profileScoreAt(task, run, cpuMs, memKiB)
+	}
+	sort.Ints(scores)
+	verdict.Score = ProfileScoreDistribution{
+		Min:    scores[0],
+		Median: scores[len(scores)/2],
+		Max:    scores[len(scores)-1],
+	}
+	verdict.Delta = verdict.Score.Median - verdict.ExpectedPoints
+	verdict.Matches = true
+	for _, score := range scores {
+		if score != verdict.ExpectedPoints {
+			verdict.Matches = false
+			break
+		}
+	}
+	return verdict
+}
+
 // BuildVerdict evaluates the solution at the given limits. Declared subtasks
 // must be solved in every repetition; an undeclared subtask is a risk if it is
 // solved in any repetition.
@@ -202,7 +293,13 @@ func BuildVerdict(task tasksrvc.Task, runs []ProfileRun, declared []int, cpuMs, 
 		PossiblePoints: ProfilePossiblePoints(task),
 		Subtasks:       []SubtaskOutcome{},
 	}
-	if len(task.Subtasks) == 0 || len(declared) == 0 || len(runs) == 0 {
+	if len(runs) == 0 {
+		return verdict
+	}
+	if len(task.Subtasks) == 0 {
+		return buildBinaryVerdict(task, runs, verdict, cpuMs, memKiB)
+	}
+	if len(declared) == 0 {
 		return verdict
 	}
 	verdict.Applicable = true
@@ -320,7 +417,10 @@ func buildAxis(current int, solutions []SolutionCalibration, resource Resource) 
 	var finiteLowers, finiteUppers []int
 	unknownLower, unknownUpper, anyOpen := false, false, false
 	for _, solution := range solutions {
-		if solution.ProfileID == nil || solution.Stale || len(solution.ExpectedSubtasks) == 0 {
+		if solution.ProfileID == nil || solution.Stale {
+			continue
+		}
+		if len(solution.ExpectedSubtasks) == 0 && solution.ExpectedPoints == 0 {
 			continue
 		}
 		bounds := solution.CPU

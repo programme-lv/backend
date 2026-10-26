@@ -327,6 +327,7 @@ func (s *profileSrvc) GetTaskCalibration(ctx context.Context, taskID string) (do
 	solutions := make([]domain.SolutionCalibration, 0, len(task.Solutions))
 	var unclassified, missingProfiles, staleProfiles []string
 
+	noSubtasks := len(task.Subtasks) == 0
 	for _, solution := range task.Solutions {
 		entry := domain.SolutionCalibration{
 			Fname:            solution.Fname,
@@ -337,7 +338,7 @@ func (s *profileSrvc) GetTaskCalibration(ctx context.Context, taskID string) (do
 			Mem:              domain.ViableBounds{LowerKind: domain.BoundNone, UpperKind: domain.BoundNone},
 			Verdict:          domain.Verdict{Subtasks: []domain.SubtaskOutcome{}},
 		}
-		if len(solution.Subtasks) == 0 {
+		if !noSubtasks && len(solution.Subtasks) == 0 {
 			unclassified = append(unclassified, solution.Fname)
 			solutions = append(solutions, entry)
 			continue

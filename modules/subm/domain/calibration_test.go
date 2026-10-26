@@ -128,6 +128,64 @@ func TestViableBoundsGroupScoring(t *testing.T) {
 	}
 }
 
+func binaryProfileTask() tasksrvc.Task {
+	return tasksrvc.Task{
+		ShortId: "binary-profile-test",
+		Tests:   []tasksrvc.Test{{}, {}, {}, {}},
+	}
+}
+
+func TestBinaryBoundsAndVerdict(t *testing.T) {
+	task := binaryProfileTask()
+	run := fullRun([]int{100, 200, 300, 400}, []int{1000, 2000, 3000, 4000})
+
+	bounds := BuildViableBounds(task, []ProfileRun{run}, ResourceCPU, nil)
+	if bounds.Lower == nil || *bounds.Lower != 401 {
+		t.Fatalf("expected lower 401, got %+v", bounds)
+	}
+	if bounds.LowerKind != BoundFinite || bounds.UpperKind != BoundOpen {
+		t.Fatalf("unexpected bound kinds: %+v", bounds)
+	}
+
+	verdict := BuildVerdict(task, []ProfileRun{run}, nil, 401, 100_000)
+	if !verdict.Applicable || !verdict.Matches {
+		t.Fatalf("expected a matching AC verdict, got %+v", verdict)
+	}
+	if verdict.ExpectedPoints != 4 || verdict.Score.Median != 4 {
+		t.Fatalf("expected 4/4, got %+v", verdict)
+	}
+
+	partial := fullRun([]int{100, 200, 300, 400}, []int{1000, 2000, 3000, 4000})
+	partial.Tests[3].Percent = 0
+	bad := BuildVerdict(task, []ProfileRun{partial}, nil, 401, 100_000)
+	if bad.Matches || bad.Score.Median != 3 {
+		t.Fatalf("expected a mismatching 3/4 verdict, got %+v", bad)
+	}
+}
+
+func TestBuildCalibrationIncludesBinarySolution(t *testing.T) {
+	task := binaryProfileTask()
+	id := uuid.New()
+	cpuLower, memLower := 100, 1_000
+
+	calibration := BuildCalibration(task, 500, 100_000, []SolutionCalibration{{
+		Fname:          "full",
+		ProfileID:      &id,
+		ExpectedPoints: 4,
+		PossiblePoints: 4,
+		CPU:            ViableBounds{Lower: &cpuLower, LowerKind: BoundFinite, UpperKind: BoundOpen},
+		Mem:            ViableBounds{Lower: &memLower, LowerKind: BoundFinite, UpperKind: BoundOpen},
+		Verdict:        Verdict{Applicable: true, Matches: true},
+	}}, nil, nil, nil)
+
+	if calibration.CurrentMatches != 1 || calibration.CurrentMismatches != 0 {
+		t.Fatalf("expected one classified match, got %+v", calibration)
+	}
+	if calibration.CPU.LowerKind != BoundFinite {
+		t.Fatalf("expected a classified CPU interval, got %+v", calibration.CPU)
+	}
+}
+
 func TestBuildCalibrationPaddedIntersection(t *testing.T) {
 	task := profileTask()
 	acID := uuid.New()
