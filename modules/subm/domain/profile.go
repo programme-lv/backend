@@ -112,7 +112,14 @@ func ProfilePossiblePoints(task tasksrvc.Task) int {
 // ProfileExpectedPoints returns the score a solution should receive when it
 // passes exactly the tests of its declared subtasks. Scoring goes through the
 // real scorer so test-group tasks are handled correctly.
+//
+// A task without subtasks has no partial scoring units, so every registered
+// solution is expected to pass all tests. This makes the profile verdict
+// binary: full score (AC) or not.
 func ProfileExpectedPoints(task tasksrvc.Task, sol tasksrvc.Solution) int {
+	if len(task.Subtasks) == 0 {
+		return ProfilePossiblePoints(task)
+	}
 	wanted := make(map[int]struct{})
 	for _, subtaskID := range sol.Subtasks {
 		if subtaskID < 1 || subtaskID > len(task.Subtasks) {

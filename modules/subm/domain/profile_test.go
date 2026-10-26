@@ -31,6 +31,15 @@ func TestProfileExpectedPoints(t *testing.T) {
 	}
 }
 
+func TestProfileExpectedPointsWithoutSubtasks(t *testing.T) {
+	task := tasksrvc.Task{Tests: []tasksrvc.Test{{}, {}, {}, {}}}
+
+	got := ProfileExpectedPoints(task, tasksrvc.Solution{})
+	if got != 4 {
+		t.Fatalf("expected full score 4, got %d", got)
+	}
+}
+
 func TestProfileExpectedPointsUsesTestGroups(t *testing.T) {
 	task := profileTask()
 	task.TestGroups = []tasksrvc.TestGroup{

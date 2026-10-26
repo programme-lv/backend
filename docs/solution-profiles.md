@@ -75,12 +75,20 @@ are safe. `?` means the boundary is outside the 10 s / 1 GiB profiling range;
 raising the tester cap is required to resolve it. A task-level lower bound is
 also `?` when a declared subtask is not solved at the profiling maximum.
 
+A task without subtasks has no subtask units. Every registered solution is
+expected to pass all tests, so `expected_points` equals the task total and the
+verdict is binary: full score matches, any lower score does not. The lower
+bound is the first limit where every repetition gets the full score; the upper
+bound is open.
+
 ## Task-level interval and padding
 
 For each represented solution with a fresh profile, the task-level CPU interval
 is `[max(lower_i), min(upper_i))`; the memory interval is built the same way.
-Solutions without declared subtasks, without a finished profile, or with a stale
-profile are excluded from the intersection and reported separately.
+Solutions without declared subtasks in a subtask-scored task, without a
+finished profile, or with a stale profile are excluded from the intersection
+and reported separately. Solutions in tasks without subtasks are included when
+they have a fresh profile.
 
 The padded interval uses both a relative and an absolute margin:
 
@@ -138,8 +146,10 @@ For repeated runs:
   is unreachable within 10 s / 1 GiB; a missing upper bound means no run
   over-scores in range.
 
-If the solution declares no subtasks, `expected_points` is `0` and both bounds
-are left unset. The UI omits the expected line.
+If a subtask-scored task has a solution with no declared subtasks,
+`expected_points` is `0` and both bounds are left unset. The UI omits the
+expected line. For a task without subtasks, `expected_points` is the full test
+total and the expected line is shown.
 
 ## Assumptions and limits
 
