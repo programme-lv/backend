@@ -164,8 +164,8 @@ func (r *pgEvalRepo) StoreEval(ctx context.Context, eval domain.Eval) error {
 		testInsertQuery := `
 			INSERT INTO eval_test_results (
 				evaluation_uuid, test_id, ac, wa, tle, mle, re, ig, reached, finished,
-				inp_sha256, ans_sha256, cpu_ms, mem_kib, score
-			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+				inp_sha256, ans_sha256, cpu_ms, mem_kib, score, example
+			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
 		`
 		_, err = tx.Exec(ctx, testInsertQuery,
 			eval.UUID,
@@ -183,6 +183,7 @@ func (r *pgEvalRepo) StoreEval(ctx context.Context, eval domain.Eval) error {
 			test.CpuMs,
 			test.MemKiB,
 			test.Score,
+			test.Example,
 		)
 		if err != nil {
 			return fmt.Errorf("insert test: %w", err)
@@ -289,7 +290,7 @@ func (r *pgEvalRepo) GetEval(ctx context.Context, evalUUID uuid.UUID) (domain.Ev
 
 	// Fetch Tests
 	testsQuery := `
-		SELECT ac, wa, tle, mle, re, ig, reached, finished, inp_sha256, ans_sha256, cpu_ms, mem_kib, score
+		SELECT ac, wa, tle, mle, re, ig, reached, finished, inp_sha256, ans_sha256, cpu_ms, mem_kib, score, example
 		FROM eval_test_results
 		WHERE evaluation_uuid = $1
 		ORDER BY id ASC
@@ -317,6 +318,7 @@ func (r *pgEvalRepo) GetEval(ctx context.Context, evalUUID uuid.UUID) (domain.Ev
 			&test.CpuMs,
 			&test.MemKiB,
 			&test.Score,
+			&test.Example,
 		)
 		if err != nil {
 			return domain.Eval{}, fmt.Errorf("scan test: %w", err)

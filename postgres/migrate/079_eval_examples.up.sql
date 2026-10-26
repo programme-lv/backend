@@ -1,0 +1,2 @@
+ALTER TABLE eval_test_results
+    ADD COLUMN example BOOLEAN NOT NULL DEFAULT FALSE;

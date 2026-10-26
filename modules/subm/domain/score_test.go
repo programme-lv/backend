@@ -6,6 +6,24 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestCalculateScoreSkipsExamples(t *testing.T) {
+	cpu, mem := 10, 1024
+	eval := Eval{
+		ScoreUnit: ScoreUnitTest,
+		Tests: []Test{
+			{Ac: true, Reached: true, Finished: true, CpuMs: &cpu, MemKiB: &mem},
+			{Example: true, Wa: true, Reached: true, Finished: true, CpuMs: &cpu, MemKiB: &mem},
+		},
+	}
+
+	score := eval.CalculateScore()
+
+	assert.Equal(t, 1, score.PossibleScore)
+	assert.Equal(t, 1, score.ReceivedScore)
+	assert.Equal(t, 100, score.ScoreBar.Green)
+	assert.Equal(t, 0, score.ScoreBar.Red)
+}
+
 func TestCalculateScorePartialTestGroup(t *testing.T) {
 	interactor := "interactor.cpp"
 	eval := Eval{

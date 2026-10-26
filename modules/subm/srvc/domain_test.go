@@ -1,13 +1,34 @@
 package srvc
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/programme-lv/backend/common/srvcerror"
 	"github.com/programme-lv/backend/modules/exec"
 	"github.com/programme-lv/backend/modules/subm/domain"
 )
+
+func TestConstructExecEnqueueTestsUsesExampleContent(t *testing.T) {
+	eval := domain.Eval{Tests: []domain.Test{
+		{InpSha256: "input-hash", AnsSha256: "answer-hash"},
+		{Example: true, Input: "1 2\n", Answer: "3\n"},
+	}}
+	getURL := func(_ context.Context, sha string) (string, srvcerror.E) {
+		return "https://files/" + sha, nil
+	}
+
+	tests := constructExecEnqueueTests(context.Background(), eval, getURL)
+
+	assert.Len(t, tests, 2)
+	assert.Equal(t, "input-hash", *tests[0].InSha256)
+	assert.Nil(t, tests[0].InContent)
+	assert.Equal(t, "1 2\n", *tests[1].InContent)
+	assert.Equal(t, "3\n", *tests[1].AnsContent)
+	assert.Nil(t, tests[1].InSha256)
+}
 
 func TestApplyTestResultInteractivePartial(t *testing.T) {
 	interactor := "interactor.cpp"
