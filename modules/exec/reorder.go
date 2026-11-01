@@ -135,6 +135,9 @@ func (o *ExecResStreamOrganizer) Add(
 	case InternalServerError:
 		o.returnedISE = true
 		return []Event{event}, nil
+	case TesterUnavailable:
+		o.returnedISE = true
+		return []Event{event}, nil
 	default:
 		return nil, fmt.Errorf(
 			"unknown event type: %s",

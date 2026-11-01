@@ -93,6 +93,7 @@ func TestNoRespondersEndsExecutionAfterAttempts(t *testing.T) {
 	srvc, rec := newWatchdogTestSrvc(t)
 	srvc.maxPublishAttempts = 2
 	execUUID := enqueueWatchdogTestJob(t, srvc, rec)
+	events := listenEvents(t, srvc, execUUID)
 	rec.waitForPublish(t)
 
 	srvc.handleResultMessage(t.Context(), noRespondersMsg(srvc, execUUID))
@@ -104,6 +105,7 @@ func TestNoRespondersEndsExecutionAfterAttempts(t *testing.T) {
 	require.Equal(t, StageInternalError, execution.Stage)
 	require.NotNil(t, execution.ErrorMsg)
 	require.Equal(t, testerUnavailableMsg, *execution.ErrorMsg)
+	require.IsType(t, TesterUnavailable{}, lastEvent(t, events))
 }
 
 func TestWatchdogRepublishesJobWithoutEvents(t *testing.T) {
@@ -123,12 +125,13 @@ func TestWatchdogRepublishesJobWithoutEvents(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, StageInternalError, execution.Stage)
 	require.NotNil(t, execution.ErrorMsg)
-	require.Equal(t, testerTimeoutMsg, *execution.ErrorMsg)
+	require.Equal(t, testerUnavailableMsg, *execution.ErrorMsg)
 }
 
 func TestWatchdogEndsStalledExecution(t *testing.T) {
 	srvc, rec := newWatchdogTestSrvc(t)
 	execUUID := enqueueWatchdogTestJob(t, srvc, rec)
+	events := listenEvents(t, srvc, execUUID)
 	rec.waitForPublish(t)
 
 	start := testerapi.NewStartJob(execUUID.String(), "test machine")
@@ -146,6 +149,24 @@ func TestWatchdogEndsStalledExecution(t *testing.T) {
 	require.Equal(t, StageInternalError, execution.Stage)
 	require.NotNil(t, execution.ErrorMsg)
 	require.Equal(t, testerTimeoutMsg, *execution.ErrorMsg)
+	require.IsType(t, InternalServerError{}, lastEvent(t, events))
+}
+
+func listenEvents(t *testing.T, srvc *execSrvc, execUUID uuid.UUID) <-chan Event {
+	t.Helper()
+	events, err := srvc.Listen(t.Context(), execUUID)
+	require.NoError(t, err)
+	return events
+}
+
+func lastEvent(t *testing.T, events <-chan Event) Event {
+	t.Helper()
+	var all []Event
+	for event := range events {
+		all = append(all, event)
+	}
+	require.NotEmpty(t, all)
+	return all[len(all)-1]
 }
 
 func TestEvalUUIDFromSubject(t *testing.T) {

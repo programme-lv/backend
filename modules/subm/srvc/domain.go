@@ -21,6 +21,12 @@ func applyExecEventToEval(eval domain.Eval, event exec.Event) domain.Eval {
 			Type:    domain.ErrorTypeInternal,
 			Message: u.ErrorMsg,
 		}
+	case exec.TesterUnavailable:
+		eval.Stage = domain.EvalStageFinished
+		eval.Error = &domain.EvalError{
+			Type:    domain.ErrorTypeTesterUnavailable,
+			Message: u.ErrorMsg,
+		}
 	case exec.CompilationError:
 		eval.Stage = domain.EvalStageFinished
 		eval.Error = &domain.EvalError{

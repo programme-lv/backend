@@ -28,9 +28,15 @@ The backend handles that in two ways:
 - a `503` response republishes the same job with exponential backoff (1, 2, 4, 8, 16, 32 seconds);
 - a watchdog republishes a job that produced no event after 10 minutes, which covers a lost message without a `503`.
 
-After the attempts are exhausted, the backend emits a synthetic `internal_error` event.
-The submission is then stored as finished with a tester-unavailable error instead of waiting forever.
-Once an execution has started streaming, five minutes without an event also ends it with an internal error.
+After the attempts are exhausted, the backend emits a synthetic `tester_unavailable` event.
+The submission is then stored as finished with `error_type = tester_unavailable` instead of waiting forever.
+
+The backend keeps the failure source separate:
+
+- `tester_unavailable`: no tester accepted the job, either through repeated `503` responses or because no event ever arrived;
+- `internal`: a tester started the job and either reported an internal error or stopped streaming events.
+
+Tester-reported errors are never retried automatically. Once an execution has started streaming, five minutes without an event ends it with an `internal` error.
 
 Backend restarts clear in-memory execution state and replace the result inbox.
 On startup the backend lists submissions whose current evaluation is not finished and enqueues them again (`recoverPendingEvals`).

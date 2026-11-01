@@ -8,6 +8,50 @@ import (
 	"github.com/programme-lv/backend/modules/subm/domain"
 )
 
+func TestEvalStatus(t *testing.T) {
+	tests := []struct {
+		name string
+		eval domain.Eval
+		want string
+	}{
+		{
+			name: "stage without error",
+			eval: domain.Eval{Stage: domain.EvalStageTesting},
+			want: "testing",
+		},
+		{
+			name: "compilation error",
+			eval: domain.Eval{
+				Stage: domain.EvalStageFinished,
+				Error: &domain.EvalError{Type: domain.ErrorTypeCompilation},
+			},
+			want: "compile_error",
+		},
+		{
+			name: "tester internal error",
+			eval: domain.Eval{
+				Stage: domain.EvalStageFinished,
+				Error: &domain.EvalError{Type: domain.ErrorTypeInternal},
+			},
+			want: "internal_error",
+		},
+		{
+			name: "tester unavailable",
+			eval: domain.Eval{
+				Stage: domain.EvalStageFinished,
+				Error: &domain.EvalError{Type: domain.ErrorTypeTesterUnavailable},
+			},
+			want: "tester_unavailable",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, evalStatus(tt.eval))
+		})
+	}
+}
+
 func TestMapSubmEvalExposesExampleTestIDs(t *testing.T) {
 	eval := domain.Eval{
 		ScoreUnit: domain.ScoreUnitTest,

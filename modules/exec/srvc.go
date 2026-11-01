@@ -149,6 +149,12 @@ func (e *execSrvc) handleResultMessage(ctx context.Context, msg *nats.Msg) {
 		return
 	}
 
+	e.dispatchEvent(ctx, execUUID, event)
+}
+
+// dispatchEvent applies an event to an execution and streams the ordered
+// result to the submission or profile listener.
+func (e *execSrvc) dispatchEvent(ctx context.Context, execUUID uuid.UUID, event Event) {
 	e.mu.Lock()
 	org, exists := e.organizers[execUUID]
 	if !exists || org == nil || org.HasFinished() {
@@ -236,7 +242,7 @@ func (e *execSrvc) republishOrFail(ctx context.Context, execUUID uuid.UUID, reas
 	}
 	if tries >= e.maxPublishAttempts {
 		e.mu.Unlock()
-		e.failExecution(ctx, execUUID, reason)
+		e.failExecutionUnavailable(ctx, execUUID, reason)
 		return
 	}
 	e.publishTries[execUUID] = tries + 1
@@ -263,22 +269,19 @@ func (e *execSrvc) republishOrFail(ctx context.Context, execUUID uuid.UUID, reas
 	})
 }
 
-// failExecution sends a synthetic internal-error event through the normal
-// result path so the submission is stored as finished instead of waiting
-// forever.
-func (e *execSrvc) failExecution(ctx context.Context, execUUID uuid.UUID, reason string) {
-	e.logger.Error("end execution without tester result", "exec_uuid", execUUID, "reason", reason)
+// failExecutionUnavailable ends an execution that no tester accepted. The
+// submission keeps a distinct tester_unavailable error so it can be told
+// apart from a tester that ran the job and failed.
+func (e *execSrvc) failExecutionUnavailable(ctx context.Context, execUUID uuid.UUID, reason string) {
+	e.logger.Error("end execution without a tester", "exec_uuid", execUUID, "reason", reason)
+	e.dispatchEvent(ctx, execUUID, TesterUnavailable{ErrorMsg: &reason})
+}
 
-	msg := testerapi.NewFinishJob(execUUID.String(), &reason, false, true)
-	data, err := json.Marshal(msg)
-	if err != nil {
-		e.logger.Error("marshal internal error event", "error", err)
-		return
-	}
-	e.handleResultMessage(ctx, &nats.Msg{
-		Subject: e.resultSubject(execUUID),
-		Data:    data,
-	})
+// failExecutionInternal ends an execution that a tester started but did not
+// finish, for example after it stopped streaming events.
+func (e *execSrvc) failExecutionInternal(ctx context.Context, execUUID uuid.UUID, reason string) {
+	e.logger.Error("end stalled execution", "exec_uuid", execUUID, "reason", reason)
+	e.dispatchEvent(ctx, execUUID, InternalServerError{ErrorMsg: &reason})
 }
 
 // watchExecutions detects jobs that were published but never produced an
@@ -299,33 +302,42 @@ func (e *execSrvc) watchExecutions(ctx context.Context) {
 
 func (e *execSrvc) sweepExecutions(ctx context.Context, now time.Time) {
 	var retry []uuid.UUID
-	var fail []uuid.UUID
+	type stalledExecution struct {
+		uuid    uuid.UUID
+		started bool
+	}
+	var fail []stalledExecution
 
 	e.mu.Lock()
 	for execUUID, lastEventAt := range e.lastEventAt {
 		if _, active := e.jobMsgs[execUUID]; !active {
 			continue
 		}
+		started := e.eventsSeen[execUUID]
 		timeout := e.firstEventTimeout
-		if e.eventsSeen[execUUID] {
+		if started {
 			timeout = e.inactivityTimeout
 		}
 		if now.Sub(lastEventAt) < timeout {
 			continue
 		}
-		if !e.eventsSeen[execUUID] && e.publishTries[execUUID] < e.maxPublishAttempts {
+		if !started && e.publishTries[execUUID] < e.maxPublishAttempts {
 			retry = append(retry, execUUID)
 			continue
 		}
-		fail = append(fail, execUUID)
+		fail = append(fail, stalledExecution{uuid: execUUID, started: started})
 	}
 	e.mu.Unlock()
 
 	for _, execUUID := range retry {
 		e.republishOrFail(ctx, execUUID, testerUnavailableMsg)
 	}
-	for _, execUUID := range fail {
-		e.failExecution(ctx, execUUID, testerTimeoutMsg)
+	for _, execution := range fail {
+		if execution.started {
+			e.failExecutionInternal(ctx, execution.uuid, testerTimeoutMsg)
+			continue
+		}
+		e.failExecutionUnavailable(ctx, execution.uuid, testerUnavailableMsg)
 	}
 }
 
@@ -703,6 +715,9 @@ func applyEventToExec(
 	case FinishedTesting:
 		exec.Stage = StageFinished
 	case InternalServerError:
+		exec.Stage = StageInternalError
+		exec.ErrorMsg = e.ErrorMsg
+	case TesterUnavailable:
 		exec.Stage = StageInternalError
 		exec.ErrorMsg = e.ErrorMsg
 	case CompilationError:

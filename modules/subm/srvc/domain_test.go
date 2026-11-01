@@ -30,6 +30,18 @@ func TestConstructExecEnqueueTestsUsesExampleContent(t *testing.T) {
 	assert.Nil(t, tests[1].InSha256)
 }
 
+func TestApplyExecEventTesterUnavailable(t *testing.T) {
+	msg := "testētājs nav pieejams"
+
+	eval := applyExecEventToEval(domain.Eval{}, exec.TesterUnavailable{ErrorMsg: &msg})
+
+	assert.Equal(t, domain.EvalStageFinished, eval.Stage)
+	if assert.NotNil(t, eval.Error) {
+		assert.Equal(t, domain.ErrorTypeTesterUnavailable, eval.Error.Type)
+		assert.Equal(t, msg, *eval.Error.Message)
+	}
+}
+
 func TestApplyTestResultInteractivePartial(t *testing.T) {
 	interactor := "interactor.cpp"
 	eval := domain.Eval{
