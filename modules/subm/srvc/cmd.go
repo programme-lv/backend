@@ -238,7 +238,7 @@ func (s *submSrvc) enqueueExecAndListen(ctx context.Context, eval domain.Eval, s
 	log := ctxlog.FromContext(ctx)
 
 	// Add eval to in-progress map before enqueueing
-	s.inProgrEval[eval.UUID] = eval
+	s.inProgrEval.set(eval)
 
 	err := s.execSrvc.Enqueue(
 		ctx,
@@ -255,7 +255,7 @@ func (s *submSrvc) enqueueExecAndListen(ctx context.Context, eval domain.Eval, s
 		},
 	)
 	if err != nil {
-		delete(s.inProgrEval, eval.UUID) // remove from map if enqueue fails
+		s.inProgrEval.delete(eval.UUID) // remove from map if enqueue fails
 
 		action := "enqueue execution"
 		log.Error(action, "eval_uuid", eval.UUID, "error", err)
@@ -264,7 +264,7 @@ func (s *submSrvc) enqueueExecAndListen(ctx context.Context, eval domain.Eval, s
 
 	ch, listenErr := s.execSrvc.Listen(ctx, eval.UUID)
 	if listenErr != nil {
-		delete(s.inProgrEval, eval.UUID) // remove from map if listen fails
+		s.inProgrEval.delete(eval.UUID) // remove from map if listen fails
 
 		action := "subscribe to execution"
 		log.Error(action, "eval_uuid", eval.UUID, "error", listenErr)
@@ -361,13 +361,13 @@ type procExecEvCmdHandler struct {
 	StoreEval     func(ctx context.Context, eval domain.Eval) error
 	BcastEvalUpd  func(eval domain.Eval)
 	GetEvalByUuid func(ctx context.Context, uuid uuid.UUID) (domain.Eval, error)
-	InProgrEval   map[uuid.UUID]domain.Eval
+	InProgrEval   *evalCache
 }
 
 func (h procExecEvCmdHandler) Handle(ctx context.Context, p procExecEvParams) error {
 	log := ctxlog.FromContext(ctx)
 
-	latestEval, ok := h.InProgrEval[p.Eval.UUID]
+	latestEval, ok := h.InProgrEval.get(p.Eval.UUID)
 	if !ok {
 		action := "eval not found in in-memory cache"
 		log.Error(action, "eval_uuid", p.Eval.UUID)
@@ -388,7 +388,7 @@ func (h procExecEvCmdHandler) Handle(ctx context.Context, p procExecEvParams) er
 			log.Error("store evaluation", "error", err)
 			return srvcerror.InternalServerError()
 		}
-		delete(h.InProgrEval, p.Eval.UUID)
+		h.InProgrEval.delete(p.Eval.UUID)
 	} else {
 		finishedTests := 0
 		for _, test := range eval.Tests {
@@ -397,7 +397,7 @@ func (h procExecEvCmdHandler) Handle(ctx context.Context, p procExecEvParams) er
 			}
 		}
 		log.Debug("test progress", "finished", finishedTests, "total", len(eval.Tests))
-		h.InProgrEval[p.Eval.UUID] = eval
+		h.InProgrEval.set(eval)
 	}
 
 	h.BcastEvalUpd(eval)

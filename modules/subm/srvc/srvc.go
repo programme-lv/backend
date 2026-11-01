@@ -45,7 +45,7 @@ type submSrvc struct {
 	newEvalUpdListenerLock sync.Mutex
 	newEvalUpdListeners    map[chan domain.Eval]struct{}
 
-	inProgrEval map[uuid.UUID]domain.Eval
+	inProgrEval *evalCache
 
 	notifier       notify.SubmissionNotifier
 	quietPeriod    time.Duration
@@ -111,7 +111,7 @@ func NewSubmSrvc(
 		newSubmListeners:    make(map[chan domain.Subm]struct{}),
 		newEvalUpdListeners: make(map[chan domain.Eval]struct{}),
 
-		inProgrEval: make(map[uuid.UUID]domain.Eval),
+		inProgrEval: newEvalCache(),
 	}
 	for _, opt := range opts {
 		opt(s)

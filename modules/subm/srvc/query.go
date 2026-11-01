@@ -238,7 +238,7 @@ func (s *submSrvc) ListSubms(ctx context.Context, filter ListSubmsParams) ([]dom
 }
 
 func (s *submSrvc) GetEval(ctx context.Context, uuid uuid.UUID) (domain.Eval, srvcerror.E) {
-	if eval, ok := s.inProgrEval[uuid]; ok {
+	if eval, ok := s.inProgrEval.get(uuid); ok {
 		return eval, nil
 	}
 	eval, err := s.evalRepo.GetEval(ctx, uuid)
