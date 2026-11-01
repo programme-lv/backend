@@ -15,8 +15,32 @@ Each backend process owns two random inbox subjects:
 - the result inbox receives all execution events for that backend process;
 - the file-service subject receives test-file requests for jobs created by that process.
 
-The backend puts the result inbox in the job's NATS reply field and the file-service subject in the `Proglv-File-Subject` header.
-Execution UUIDs correlate messages that share a process inbox.
+The backend puts a per-execution subject, `<result-inbox>.<exec-uuid>`, in the job's NATS reply field and the file-service subject in the `Proglv-File-Subject` header.
+The result subscription uses `<result-inbox>.>`, so a no-responders status message can be attributed to the execution whose job no tester received.
+Execution UUIDs also appear in the payload header and correlate events within an execution.
+
+## Lost jobs
+
+Core NATS is at-most-once. A job published while no tester is subscribed is dropped by the server; the backend receives a `503` status message on the execution's reply subject instead.
+
+The backend handles that in two ways:
+
+- a `503` response republishes the same job with exponential backoff (1, 2, 4, 8, 16, 32 seconds);
+- a watchdog republishes a job that produced no event after 10 minutes, which covers a lost message without a `503`.
+
+After the attempts are exhausted, the backend emits a synthetic `tester_unavailable` event.
+The submission is then stored as finished with `error_type = tester_unavailable` instead of waiting forever.
+
+The backend keeps the failure source separate:
+
+- `tester_unavailable`: no tester accepted the job, either through repeated `503` responses or because no event ever arrived;
+- `internal`: a tester started the job and either reported an internal error or stopped streaming events.
+
+Tester-reported errors are never retried automatically. Once an execution has started streaming, five minutes without an event ends it with an `internal` error.
+
+Backend restarts clear in-memory execution state and replace the result inbox.
+On startup the backend lists submissions whose current evaluation is not finished and enqueues them again (`recoverPendingEvals`).
+Retries reuse the execution UUID; the stream organizer deduplicates repeated events if more than one tester runs the same job.
 
 The job JSON is `tester/api.ExecReq`. Optional `groups` is a list of scoring units (each a list of 1-based test IDs).
 When present, the tester skips later tests in a unit after a failure and emits `test_ignore`.

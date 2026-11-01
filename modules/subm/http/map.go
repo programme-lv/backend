@@ -43,17 +43,6 @@ func mapSubmListEntry(
 	}
 
 	scoreInfo := eval.CalculateScore()
-	status := string(eval.Stage)
-	if eval.Error != nil {
-		switch eval.Error.Type {
-		case domain.ErrorTypeCompilation:
-			status = "compile_error"
-		case domain.ErrorTypeInternal:
-			status = "internal_error"
-		default:
-			status = string(eval.Error.Type)
-		}
-	}
 
 	return SubmListEntry{
 		ID:         s.ShortID,
@@ -86,9 +75,26 @@ func mapSubmListEntry(
 			ExceededCpu:         scoreInfo.ExceededCpu,
 			ExceededMem:         scoreInfo.ExceededMem,
 		},
-		Status:    status,
+		Status:    evalStatus(eval),
 		CreatedAt: s.CreatedAt.Format(time.RFC3339),
 	}, nil
+}
+
+// evalStatus maps an evaluation to the status string exposed by the API.
+func evalStatus(eval domain.Eval) string {
+	if eval.Error == nil {
+		return string(eval.Stage)
+	}
+	switch eval.Error.Type {
+	case domain.ErrorTypeCompilation:
+		return "compile_error"
+	case domain.ErrorTypeInternal:
+		return "internal_error"
+	case domain.ErrorTypeTesterUnavailable:
+		return "tester_unavailable"
+	default:
+		return string(eval.Error.Type)
+	}
 }
 
 func mapSubm(

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -34,6 +35,17 @@ type ExecRepo interface {
 
 const NatsSubject = "tester.jobs"
 
+// noRespondersStatus is the NATS status header value sent to the job's reply
+// subject when no tester is subscribed to NatsSubject. Core NATS does not keep
+// the job, so it must be published again.
+const noRespondersStatus = "503"
+
+// User-facing reasons for ending an execution without a tester result.
+const (
+	testerUnavailableMsg = "testētājs nav pieejams"
+	testerTimeoutMsg     = "testēšanas laiks pārsniegts"
+)
+
 // execSrvc handles communication with testers
 // for code execution and result streaming
 type execSrvc struct {
@@ -59,6 +71,24 @@ type execSrvc struct {
 	organizers map[uuid.UUID]*ExecResStreamOrganizer
 	executions map[uuid.UUID]*Execution
 	fileHashes map[uuid.UUID]map[string]struct{}
+
+	// jobMsgs keeps the published job so it can be published again when no
+	// tester was subscribed at publish time.
+	jobMsgs map[uuid.UUID]*nats.Msg
+	// lastEventAt is the last publish attempt or received event. It drives the
+	// watchdog that detects jobs lost after a successful publish.
+	lastEventAt map[uuid.UUID]time.Time
+	// publishTries counts the publish attempts for the current execution.
+	publishTries map[uuid.UUID]int
+	// eventsSeen tells whether the tester has started sending results.
+	eventsSeen map[uuid.UUID]bool
+
+	// Timeouts and retry policy, configurable in tests.
+	firstEventTimeout  time.Duration
+	inactivityTimeout  time.Duration
+	publishRetryDelay  time.Duration
+	maxPublishAttempts int
+	watchdogInterval   time.Duration
 }
 
 func (e *execSrvc) StartPollingResultQueue(ctx context.Context) error {
@@ -75,7 +105,10 @@ func (e *execSrvc) StartPollingResultQueue(ctx context.Context) error {
 		return fmt.Errorf("subscribe to test file subject: %w", err)
 	}
 
-	resultSub, err := e.natsConn.Subscribe(e.natsInbox, func(msg *nats.Msg) {
+	// Every execution has its own reply subject below this prefix. That lets
+	// the no-responders status message be attributed to the execution whose
+	// job no tester received.
+	resultSub, err := e.natsConn.Subscribe(e.natsInbox+".>", func(msg *nats.Msg) {
 		e.handleResultMessage(ctx, msg)
 	})
 	if err != nil {
@@ -89,11 +122,17 @@ func (e *execSrvc) StartPollingResultQueue(ctx context.Context) error {
 		_ = fileSub.Unsubscribe()
 		e.isPolling.Store(false)
 	}()
+	go e.watchExecutions(ctx)
 
 	return nil
 }
 
 func (e *execSrvc) handleResultMessage(ctx context.Context, msg *nats.Msg) {
+	if msg.Header.Get("Status") == noRespondersStatus {
+		e.handleNoResponders(ctx, msg.Subject)
+		return
+	}
+
 	var header testerapi.Header
 	if err := json.Unmarshal(msg.Data, &header); err != nil {
 		e.logger.Error("unsmarshall NATS msg header", "error", err)
@@ -110,6 +149,12 @@ func (e *execSrvc) handleResultMessage(ctx context.Context, msg *nats.Msg) {
 		return
 	}
 
+	e.dispatchEvent(ctx, execUUID, event)
+}
+
+// dispatchEvent applies an event to an execution and streams the ordered
+// result to the submission or profile listener.
+func (e *execSrvc) dispatchEvent(ctx context.Context, execUUID uuid.UUID, event Event) {
 	e.mu.Lock()
 	org, exists := e.organizers[execUUID]
 	if !exists || org == nil || org.HasFinished() {
@@ -123,6 +168,8 @@ func (e *execSrvc) handleResultMessage(ctx context.Context, msg *nats.Msg) {
 		e.logger.Error("add event to stream organizer", "error", err)
 		return
 	}
+	e.lastEventAt[execUUID] = time.Now()
+	e.eventsSeen[execUUID] = true
 	execution := e.executions[execUUID]
 	notifier := e.notifiers[execUUID]
 	if execution == nil || notifier == nil {
@@ -141,6 +188,10 @@ func (e *execSrvc) handleResultMessage(ctx context.Context, msg *nats.Msg) {
 		delete(e.organizers, execUUID)
 		delete(e.executions, execUUID)
 		delete(e.fileHashes, execUUID)
+		delete(e.jobMsgs, execUUID)
+		delete(e.lastEventAt, execUUID)
+		delete(e.publishTries, execUUID)
+		delete(e.eventsSeen, execUUID)
 	}
 	e.mu.Unlock()
 
@@ -161,6 +212,149 @@ func (e *execSrvc) handleResultMessage(ctx context.Context, msg *nats.Msg) {
 		return
 	}
 	wgVal.(*sync.WaitGroup).Done()
+}
+
+// handleNoResponders handles the NATS status message sent when a job was
+// published while no tester was subscribed. The job is gone; publish it again
+// or end the execution with an error.
+func (e *execSrvc) handleNoResponders(ctx context.Context, subject string) {
+	execUUID, ok := evalUUIDFromSubject(subject)
+	if !ok {
+		e.logger.Error("no responders for unknown reply subject", "subject", subject)
+		return
+	}
+	e.logger.Warn("no tester received execution job", "exec_uuid", execUUID)
+	e.republishOrFail(ctx, execUUID, testerUnavailableMsg)
+}
+
+// republishOrFail publishes the job again after a backoff, or ends the
+// execution with an internal error once the attempts are exhausted.
+func (e *execSrvc) republishOrFail(ctx context.Context, execUUID uuid.UUID, reason string) {
+	e.mu.Lock()
+	msg, active := e.jobMsgs[execUUID]
+	if !active {
+		e.mu.Unlock()
+		return
+	}
+	tries := e.publishTries[execUUID]
+	if tries < 1 {
+		tries = 1
+	}
+	if tries >= e.maxPublishAttempts {
+		e.mu.Unlock()
+		e.failExecutionUnavailable(ctx, execUUID, reason)
+		return
+	}
+	e.publishTries[execUUID] = tries + 1
+	e.lastEventAt[execUUID] = time.Now()
+	e.mu.Unlock()
+
+	delay := e.publishRetryDelay * time.Duration(1<<(tries-1))
+	e.logger.Warn("republish execution job",
+		"exec_uuid", execUUID,
+		"attempt", tries+1,
+		"delay", delay,
+		"reason", reason,
+	)
+	time.AfterFunc(delay, func() {
+		e.mu.Lock()
+		_, active := e.jobMsgs[execUUID]
+		e.mu.Unlock()
+		if !active {
+			return
+		}
+		if err := e.publishJob(msg); err != nil {
+			e.logger.Error("republish execution job", "exec_uuid", execUUID, "error", err)
+		}
+	})
+}
+
+// failExecutionUnavailable ends an execution that no tester accepted. The
+// submission keeps a distinct tester_unavailable error so it can be told
+// apart from a tester that ran the job and failed.
+func (e *execSrvc) failExecutionUnavailable(ctx context.Context, execUUID uuid.UUID, reason string) {
+	e.logger.Error("end execution without a tester", "exec_uuid", execUUID, "reason", reason)
+	e.dispatchEvent(ctx, execUUID, TesterUnavailable{ErrorMsg: &reason})
+}
+
+// failExecutionInternal ends an execution that a tester started but did not
+// finish, for example after it stopped streaming events.
+func (e *execSrvc) failExecutionInternal(ctx context.Context, execUUID uuid.UUID, reason string) {
+	e.logger.Error("end stalled execution", "exec_uuid", execUUID, "reason", reason)
+	e.dispatchEvent(ctx, execUUID, InternalServerError{ErrorMsg: &reason})
+}
+
+// watchExecutions detects jobs that were published but never produced an
+// event, and executions that stopped streaming events mid-run.
+func (e *execSrvc) watchExecutions(ctx context.Context) {
+	ticker := time.NewTicker(e.watchdogInterval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case now := <-ticker.C:
+			e.sweepExecutions(ctx, now)
+		}
+	}
+}
+
+func (e *execSrvc) sweepExecutions(ctx context.Context, now time.Time) {
+	var retry []uuid.UUID
+	type stalledExecution struct {
+		uuid    uuid.UUID
+		started bool
+	}
+	var fail []stalledExecution
+
+	e.mu.Lock()
+	for execUUID, lastEventAt := range e.lastEventAt {
+		if _, active := e.jobMsgs[execUUID]; !active {
+			continue
+		}
+		started := e.eventsSeen[execUUID]
+		timeout := e.firstEventTimeout
+		if started {
+			timeout = e.inactivityTimeout
+		}
+		if now.Sub(lastEventAt) < timeout {
+			continue
+		}
+		if !started && e.publishTries[execUUID] < e.maxPublishAttempts {
+			retry = append(retry, execUUID)
+			continue
+		}
+		fail = append(fail, stalledExecution{uuid: execUUID, started: started})
+	}
+	e.mu.Unlock()
+
+	for _, execUUID := range retry {
+		e.republishOrFail(ctx, execUUID, testerUnavailableMsg)
+	}
+	for _, execution := range fail {
+		if execution.started {
+			e.failExecutionInternal(ctx, execution.uuid, testerTimeoutMsg)
+			continue
+		}
+		e.failExecutionUnavailable(ctx, execution.uuid, testerUnavailableMsg)
+	}
+}
+
+func (e *execSrvc) resultSubject(execUUID uuid.UUID) string {
+	return e.natsInbox + "." + execUUID.String()
+}
+
+func evalUUIDFromSubject(subject string) (uuid.UUID, bool) {
+	idx := strings.LastIndexByte(subject, '.')
+	if idx < 0 || idx == len(subject)-1 {
+		return uuid.Nil, false
+	}
+	execUUID, err := uuid.Parse(subject[idx+1:])
+	if err != nil {
+		return uuid.Nil, false
+	}
+	return execUUID, true
 }
 
 func mapTesterMsgJsonToEvent(msgJson []byte, msgType testerapi.MsgType) (Event, error) {
@@ -278,6 +472,20 @@ func NewExecSrvc(ctx context.Context, repo ExecRepo, natsConn *nats.Conn, testfi
 		organizers:    make(map[uuid.UUID]*ExecResStreamOrganizer),
 		executions:    make(map[uuid.UUID]*Execution),
 		fileHashes:    make(map[uuid.UUID]map[string]struct{}),
+		jobMsgs:       make(map[uuid.UUID]*nats.Msg),
+		lastEventAt:   make(map[uuid.UUID]time.Time),
+		publishTries:  make(map[uuid.UUID]int),
+		eventsSeen:    make(map[uuid.UUID]bool),
+
+		// A tester processes one job at a time, so a job may legitimately wait
+		// in its client queue for several minutes before the first event.
+		firstEventTimeout: 10 * time.Minute,
+		// Once an execution has started it should keep streaming events.
+		inactivityTimeout: 5 * time.Minute,
+		// No-responders retries cover a short tester restart: 1+2+4+8+16+32s.
+		publishRetryDelay:  time.Second,
+		maxPublishAttempts: 7,
+		watchdogInterval:   time.Second,
 	}
 
 	return esrvc
@@ -385,15 +593,23 @@ func (e *execSrvc) Enqueue(
 
 	// 7. send encoded message to job queue
 	msg := nats.NewMsg(NatsSubject)
-	msg.Reply = e.natsInbox
+	msg.Reply = e.resultSubject(execUuid)
 	msg.Header.Set(fileSubjectHeader, e.fileSubject)
 	msg.Data = encodedBytes
+	e.jobMsgs[execUuid] = msg
+	e.lastEventAt[execUuid] = time.Now()
+	e.publishTries[execUuid] = 1
+	e.eventsSeen[execUuid] = false
 	pubErr := e.publishJob(msg)
 	if pubErr != nil {
 		delete(e.notifiers, execUuid)
 		delete(e.organizers, execUuid)
 		delete(e.executions, execUuid)
 		delete(e.fileHashes, execUuid)
+		delete(e.jobMsgs, execUuid)
+		delete(e.lastEventAt, execUuid)
+		delete(e.publishTries, execUuid)
+		delete(e.eventsSeen, execUuid)
 		e.execWg.Delete(execUuid)
 		e.mu.Unlock()
 		l.Error("publish eval req to nats", "error", pubErr)
@@ -499,6 +715,9 @@ func applyEventToExec(
 	case FinishedTesting:
 		exec.Stage = StageFinished
 	case InternalServerError:
+		exec.Stage = StageInternalError
+		exec.ErrorMsg = e.ErrorMsg
+	case TesterUnavailable:
 		exec.Stage = StageInternalError
 		exec.ErrorMsg = e.ErrorMsg
 	case CompilationError:

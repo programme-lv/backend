@@ -70,6 +70,10 @@ func assertExecutionStateAbsent(t *testing.T, srvc *execSrvc, id uuid.UUID) {
 	require.NotContains(t, srvc.organizers, id)
 	require.NotContains(t, srvc.executions, id)
 	require.NotContains(t, srvc.fileHashes, id)
+	require.NotContains(t, srvc.jobMsgs, id)
+	require.NotContains(t, srvc.lastEventAt, id)
+	require.NotContains(t, srvc.publishTries, id)
+	require.NotContains(t, srvc.eventsSeen, id)
 	_, exists := srvc.execWg.Load(id)
 	require.False(t, exists)
 }

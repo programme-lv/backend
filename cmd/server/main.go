@@ -212,6 +212,10 @@ func newSubmHttpHandler(
 	// Check if migration is needed and run it
 	runScoreMigrationIfNeeded(pgPool, submSrvc, evalPgRepo)
 
+	// In-flight evaluations live in backend memory. After a restart nothing
+	// will ever finish them, so enqueue them again before serving requests.
+	recoverPendingEvals(context.Background(), pgPool, submSrvc)
+
 	return submhttp.NewSubmHttpHandler(submSrvc, profileSrvc, taskSrvc, userSrvc)
 }
 
@@ -313,4 +317,47 @@ func runScoreMigrationIfNeeded(pgPool *pgxpool.Pool, submSrvc srvc.SubmissionSer
 		return
 	}
 	slog.Info("score migration completed")
+}
+
+// recoverPendingEvals re-enqueues submissions whose current evaluation never
+// finished. Result inboxes and execution state are process-local, so a
+// backend restart orphans everything that was in flight.
+func recoverPendingEvals(ctx context.Context, pgPool *pgxpool.Pool, submSrvc srvc.SubmissionService) {
+	rows, err := pgPool.Query(ctx, `
+		SELECT s.uuid
+		FROM submissions s
+		INNER JOIN evaluations e ON s.curr_eval_uuid = e.uuid
+		WHERE e.stage <> 'finished'
+		ORDER BY s.created_at
+		LIMIT 1000
+	`)
+	if err != nil {
+		slog.Error("list unfinished evaluations", "error", err)
+		return
+	}
+	defer rows.Close()
+
+	var submUUIDs []uuid.UUID
+	for rows.Next() {
+		var submUUID uuid.UUID
+		if err := rows.Scan(&submUUID); err != nil {
+			slog.Error("scan unfinished evaluation", "error", err)
+			return
+		}
+		submUUIDs = append(submUUIDs, submUUID)
+	}
+	if err := rows.Err(); err != nil {
+		slog.Error("iterate unfinished evaluations", "error", err)
+		return
+	}
+	if len(submUUIDs) == 0 {
+		return
+	}
+
+	slog.Warn("re-enqueueing unfinished evaluations", "count", len(submUUIDs))
+	for _, submUUID := range submUUIDs {
+		if err := submSrvc.ReEvalSubm(ctx, submUUID); err != nil {
+			slog.Error("re-enqueue unfinished evaluation", "subm_uuid", submUUID, "error", err)
+		}
+	}
 }

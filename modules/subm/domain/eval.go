@@ -53,8 +53,9 @@ type EvalError struct {
 type EvalErrorType string
 
 const (
-	ErrorTypeCompilation EvalErrorType = "compilation"
-	ErrorTypeInternal    EvalErrorType = "internal"
+	ErrorTypeCompilation       EvalErrorType = "compilation"
+	ErrorTypeInternal          EvalErrorType = "internal"
+	ErrorTypeTesterUnavailable EvalErrorType = "tester_unavailable"
 )
 
 type Test struct {
