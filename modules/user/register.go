@@ -205,6 +205,9 @@ func validateUsername(username string) srvcerror.E {
 		"system": {},
 		"test":   {},
 	}
+	if strings.Contains(username, "@") {
+		return ErrUsernameContainsAt
+	}
 	if len(username) < minUsernameLength {
 		return errUsernameTooShort(minUsernameLength)
 	}

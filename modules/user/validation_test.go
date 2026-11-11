@@ -25,3 +25,29 @@ func TestValidateUsernameAllowsReservedWordsWithinUsername(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateUsernameRejectsAtSign(t *testing.T) {
+	for _, username := range []string{"user@example.com", "@user", "user@", "a@b", "@"} {
+		t.Run(username, func(t *testing.T) {
+			err := validateUsername(username)
+
+			require.Error(t, err)
+			assert.Equal(t, ErrUsernameContainsAt.ErrorCode(), err.ErrorCode())
+		})
+	}
+}
+
+func TestValidateUsernameAllowsExistingSyntax(t *testing.T) {
+	for _, username := range []string{
+		"ab",
+		"user-name",
+		"user_name",
+		"user.name",
+		"user123",
+		"User.Name-123_ok",
+	} {
+		t.Run(username, func(t *testing.T) {
+			assert.NoError(t, validateUsername(username))
+		})
+	}
+}
