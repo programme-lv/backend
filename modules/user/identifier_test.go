@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -193,6 +194,7 @@ func TestLoginAmbiguousIdentifierSharedPassword(t *testing.T) {
 
 func TestLoginDuplicateEmailCaseDistinctPasswords(t *testing.T) {
 	userHandler := newUserHttpHandler(t)
+	passwordOne, passwordTwo := uuid.NewString(), uuid.NewString()
 
 	for _, userData := range []map[string]interface{}{
 		{
@@ -200,14 +202,14 @@ func TestLoginDuplicateEmailCaseDistinctPasswords(t *testing.T) {
 			"email":     "dup@example.com",
 			"firstname": "Test",
 			"lastname":  "User",
-			"password":  "dup-one-pass",
+			"password":  passwordOne,
 		},
 		{
 			"username":  "duptwo",
 			"email":     "DUP@example.com",
 			"firstname": "Test",
 			"lastname":  "User",
-			"password":  "dup-two-pass",
+			"password":  passwordTwo,
 		},
 	} {
 		w := register(t, userHandler, userData)
@@ -216,13 +218,13 @@ func TestLoginDuplicateEmailCaseDistinctPasswords(t *testing.T) {
 
 	w := login(t, userHandler, map[string]interface{}{
 		"username": "Dup@Example.com",
-		"password": "dup-one-pass",
+		"password": passwordOne,
 	})
 	assert.Equal(t, "dupone", loginResponseUsername(t, w))
 
 	w = login(t, userHandler, map[string]interface{}{
 		"username": "Dup@Example.com",
-		"password": "dup-two-pass",
+		"password": passwordTwo,
 	})
 	assert.Equal(t, "duptwo", loginResponseUsername(t, w))
 }
