@@ -26,6 +26,11 @@ var ErrUsernameReserved = srvcerror.New(
 	"lietotājvārds ir rezervēts",
 ).SetHttpStatusCode(http.StatusBadRequest)
 
+var ErrUsernameContainsAt = srvcerror.New(
+	"username_contains_at",
+	"lietotājvārds nedrīkst saturēt simbolu @",
+).SetHttpStatusCode(http.StatusBadRequest)
+
 var ErrUsernameExists = srvcerror.New(
 	"username_exists",
 	"lietotājvārds jau eksistē",
