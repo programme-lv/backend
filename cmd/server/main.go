@@ -20,6 +20,7 @@ import (
 	"github.com/programme-lv/backend/modules/subm/notify"
 	submpgrepo "github.com/programme-lv/backend/modules/subm/pgrepo"
 	"github.com/programme-lv/backend/modules/subm/srvc"
+	"github.com/programme-lv/backend/modules/task/highlight"
 	taskhttp "github.com/programme-lv/backend/modules/task/http"
 	"github.com/programme-lv/backend/modules/task/repo"
 	tasksrvc "github.com/programme-lv/backend/modules/task/srvc"
@@ -135,9 +136,12 @@ func main() {
 	}
 
 	submHttpHandler := newSubmHttpHandler(userSrvc, taskSrvc, execSrvc, submNotifier, ntfyCfg.QuietPeriod)
+	communityStatsSrvc := srvc.NewCommunityStatsService(submpgrepo.NewPgCommunityStatsRepo(pgPool))
 	taskHttpHandler := taskhttp.NewTaskHttpHandler(
 		taskSrvc,
 		taskhttp.WithFileStores(publicStore, testfileStore, testfileSigningKey),
+		taskhttp.WithCommunityStats(communityStatsSrvc),
+		taskhttp.WithHighlightStore(highlight.NewStore(pgPool)),
 	)
 	aliases, aliasErr := newTaskAliasResolver(context.Background(), pgPool)
 	if aliasErr != nil {

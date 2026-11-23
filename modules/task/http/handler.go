@@ -16,6 +16,7 @@ import (
 	"github.com/programme-lv/backend/common/ctxlog"
 	"github.com/programme-lv/backend/common/filestore"
 	hf "github.com/programme-lv/backend/common/httpfunc"
+	submsrvc "github.com/programme-lv/backend/modules/subm/srvc"
 	"github.com/programme-lv/backend/modules/task/srvc"
 	"github.com/programme-lv/backend/modules/user/auth"
 )
@@ -27,6 +28,11 @@ type taskHttpHandler struct {
 	getTaskViewCache    *cache.LruCache[string, Task]
 	getTaskListCache    *cache.LruCache[string, []TaskPreview]
 	getTaskFiltersCache *cache.LruCache[string, TaskFilterTree]
+
+	// communityStats is optional. When nil or when its query fails, the task
+	// list is still served without the community_stats field.
+	communityStats submsrvc.CommunityStatsService
+	highlights     highlightStore
 
 	publicAssetStore           *filestore.Store
 	testfileStore              *filestore.Store
@@ -43,6 +49,15 @@ func WithFileStores(publicAssetStore, testfileStore *filestore.Store, testfileDo
 		h.publicAssetStore = publicAssetStore
 		h.testfileStore = testfileStore
 		h.testfileDownloadSigningKey = testfileDownloadSigningKey
+	}
+}
+
+// WithCommunityStats adds aggregate community statistics to GET /tasks
+// previews. It is optional; the field is omitted when the reader is absent or
+// when a stats query fails.
+func WithCommunityStats(stats submsrvc.CommunityStatsService) HandlerOption {
+	return func(h *taskHttpHandler) {
+		h.communityStats = stats
 	}
 }
 
@@ -96,6 +111,12 @@ func (h *taskHttpHandler) RegisterRoutes(r *chi.Mux, jwtKey, adminAPIKey []byte,
 				r.Post("/tasks/upload", h.UploadTask)
 				r.Patch("/tasks/{taskId}", h.UpdateTask)
 			})
+
+			r.Get("/task-highlight-tags", hf.NoReqJsonResp(h.listHighlights))
+			r.Post("/task-highlight-tags", hf.JsonReqJsonResp(h.createHighlight))
+			r.Patch("/task-highlight-tags/{tagId}", hf.JsonReqJsonResp(h.editHighlight))
+			r.Get("/tasks/{taskId}/highlighted-tags", hf.NoReqJsonResp(h.getHighlights))
+			r.Patch("/tasks/{taskId}/highlighted-tags", hf.JsonReqJsonResp(h.replaceHighlights))
 
 			r.Delete("/tasks/{taskId}", hf.NoReqNoResp(h.DeleteTask))
 			r.Get("/tasks/{taskId}/manifest", hf.NoReqJsonResp(h.GetTaskManifest))
