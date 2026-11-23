@@ -18,18 +18,25 @@ import (
 )
 
 type fakeHighlightStore struct {
-	tags  map[string][]highlight.Label
-	err   error
-	calls int
+	tags    map[string][]highlight.Label
+	err     error
+	calls   int
+	aliases highlight.Aliases
 }
 
 func (f *fakeHighlightStore) List(context.Context) ([]highlight.Tag, error) {
 	return []highlight.Tag{}, f.err
 }
-func (f *fakeHighlightStore) Create(context.Context, string, string) (highlight.Tag, error) {
+func (f *fakeHighlightStore) Create(_ context.Context, _, _ string, aliases ...highlight.Aliases) (highlight.Tag, error) {
+	if len(aliases) > 0 {
+		f.aliases = aliases[0]
+	}
 	return highlight.Tag{ID: "a", Revision: 1}, f.err
 }
-func (f *fakeHighlightStore) Edit(context.Context, string, string, bool, int64) (highlight.Tag, error) {
+func (f *fakeHighlightStore) Edit(_ context.Context, _, _ string, _ bool, _ int64, aliases ...highlight.Aliases) (highlight.Tag, error) {
+	if len(aliases) > 0 {
+		f.aliases = aliases[0]
+	}
 	return highlight.Tag{}, f.err
 }
 func (f *fakeHighlightStore) Get(context.Context, string) (highlight.Assignment, error) {
@@ -121,4 +128,36 @@ func TestHighlightReadFailure(t *testing.T) {
 	h := NewTaskHttpHandler(&fakeTaskPreviewService{previews: taskListWithTwoPreviews()}, WithHighlightStore(&fakeHighlightStore{err: errors.New("db unavailable")}))
 	_, e := h.GetTaskList(context.Background())
 	require.Equal(t, 500, e.HttpStatusCode())
+}
+
+func TestHighlightAliasRequestsAndPublicJSON(t *testing.T) {
+	f := &fakeHighlightStore{}
+	h := NewTaskHttpHandler(nil, WithHighlightStore(f))
+	r := chi.NewRouter()
+	h.RegisterRoutes(r, []byte("secret"), []byte("admin-key"), false, nil)
+	call := func(method, path, body string) *httptest.ResponseRecorder {
+		req := httptest.NewRequest(method, path, bytes.NewBufferString(body))
+		req.Header.Set("Authorization", "Bearer admin-key")
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+		return w
+	}
+	w := call("POST", "/task-highlight-tags", `{"id":"a","label":"A","abbreviation":"DP","english_label":"dynamic programming"}`)
+	require.Equal(t, 200, w.Code, w.Body.String())
+	require.Equal(t, "DP", *f.aliases.Abbreviation)
+	require.Equal(t, "dynamic programming", *f.aliases.EnglishLabel)
+	w = call("PATCH", "/task-highlight-tags/a", `{"label":"A","archived":false,"expected_revision":1,"abbreviation":""}`)
+	require.Equal(t, 200, w.Code, w.Body.String())
+	require.Equal(t, "", *f.aliases.Abbreviation)
+	require.Nil(t, f.aliases.EnglishLabel)
+	for _, value := range []string{`null`, `123`, `true`} {
+		w = call("POST", "/task-highlight-tags", `{"id":"a","label":"A","abbreviation":`+value+`}`)
+		require.Equal(t, 400, w.Code, w.Body.String())
+	}
+	raw, err := json.Marshal(highlight.Label{ID: "a", Label: "A", Abbreviation: "DP", EnglishLabel: "dynamic programming"})
+	require.NoError(t, err)
+	require.JSONEq(t, `{"id":"a","label":"A","abbreviation":"DP","english_label":"dynamic programming"}`, string(raw))
+	raw, err = json.Marshal(highlight.Label{ID: "a", Label: "A"})
+	require.NoError(t, err)
+	require.JSONEq(t, `{"id":"a","label":"A"}`, string(raw))
 }

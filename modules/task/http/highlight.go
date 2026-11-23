@@ -2,7 +2,9 @@ package http
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -12,8 +14,8 @@ import (
 
 type highlightStore interface {
 	List(context.Context) ([]highlight.Tag, error)
-	Create(context.Context, string, string) (highlight.Tag, error)
-	Edit(context.Context, string, string, bool, int64) (highlight.Tag, error)
+	Create(context.Context, string, string, ...highlight.Aliases) (highlight.Tag, error)
+	Edit(context.Context, string, string, bool, int64, ...highlight.Aliases) (highlight.Tag, error)
 	Get(context.Context, string) (highlight.Assignment, error)
 	Replace(context.Context, string, []string, int64) (highlight.Assignment, error)
 	Batch(context.Context, []string) (map[string][]highlight.Label, error)
@@ -24,14 +26,33 @@ func WithHighlightStore(s highlightStore) HandlerOption {
 	return func(h *taskHttpHandler) { h.highlights = s }
 }
 
+// optionalHighlightString distinguishes omission from an explicit empty value.
+type optionalHighlightString struct{ value *string }
+
+func (o *optionalHighlightString) UnmarshalJSON(data []byte) error {
+	if string(data) == "null" {
+		return fmt.Errorf("highlight alias must be a string")
+	}
+	var value string
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	o.value = &value
+	return nil
+}
+
 type createHighlightRequest struct {
-	ID    *string `json:"id"`
-	Label *string `json:"label"`
+	Abbreviation optionalHighlightString `json:"abbreviation"`
+	EnglishLabel optionalHighlightString `json:"english_label"`
+	ID           *string                 `json:"id"`
+	Label        *string                 `json:"label"`
 }
 type editHighlightRequest struct {
-	Label            *string `json:"label"`
-	Archived         *bool   `json:"archived"`
-	ExpectedRevision *int64  `json:"expected_revision"`
+	Abbreviation     optionalHighlightString `json:"abbreviation"`
+	EnglishLabel     optionalHighlightString `json:"english_label"`
+	Label            *string                 `json:"label"`
+	Archived         *bool                   `json:"archived"`
+	ExpectedRevision *int64                  `json:"expected_revision"`
 }
 type replaceHighlightsRequest struct {
 	HighlightedTags  []string `json:"highlighted_tags"`
@@ -68,7 +89,7 @@ func (h *taskHttpHandler) createHighlight(ctx context.Context, r createHighlight
 	if r.ID == nil || r.Label == nil {
 		return highlight.Tag{}, jsonresp.ErrHttpBadRequest
 	}
-	v, e := h.highlights.Create(ctx, *r.ID, *r.Label)
+	v, e := h.highlights.Create(ctx, *r.ID, *r.Label, highlight.Aliases{Abbreviation: r.Abbreviation.value, EnglishLabel: r.EnglishLabel.value})
 	return v, h.highlightError(ctx, e)
 }
 func (h *taskHttpHandler) editHighlight(ctx context.Context, r editHighlightRequest) (highlight.Tag, jsonresp.HttpStatusCoder) {
@@ -78,7 +99,7 @@ func (h *taskHttpHandler) editHighlight(ctx context.Context, r editHighlightRequ
 	if r.Label == nil || r.Archived == nil || r.ExpectedRevision == nil {
 		return highlight.Tag{}, jsonresp.ErrHttpBadRequest
 	}
-	v, e := h.highlights.Edit(ctx, chi.URLParamFromCtx(ctx, "tagId"), *r.Label, *r.Archived, *r.ExpectedRevision)
+	v, e := h.highlights.Edit(ctx, chi.URLParamFromCtx(ctx, "tagId"), *r.Label, *r.Archived, *r.ExpectedRevision, highlight.Aliases{Abbreviation: r.Abbreviation.value, EnglishLabel: r.EnglishLabel.value})
 	return v, h.highlightError(ctx, e)
 }
 func (h *taskHttpHandler) getHighlights(ctx context.Context) (highlight.Assignment, jsonresp.HttpStatusCoder) {

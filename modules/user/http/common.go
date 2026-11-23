@@ -16,6 +16,7 @@ type User struct {
 	Firstname     *string `json:"firstname"`
 	Lastname      *string `json:"lastname"`
 	EmailVerified bool    `json:"email_verified"`
+	HideTaskTags  *bool   `json:"hide_task_tags,omitempty"`
 }
 
 func toHTTPUser(u *user.User) User {
@@ -26,6 +27,7 @@ func toHTTPUser(u *user.User) User {
 		Firstname:     u.Firstname,
 		Lastname:      u.Lastname,
 		EmailVerified: u.EmailVerified,
+		HideTaskTags:  &u.HideTaskTags,
 	}
 }
 

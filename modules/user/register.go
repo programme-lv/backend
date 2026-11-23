@@ -141,11 +141,12 @@ type dbUser struct {
 	BcryptPwd     string
 	CreatedAt     time.Time
 	EmailVerified bool
+	HideTaskTags  bool
 }
 
 func selectAllUsers(pg *pgxpool.Pool) ([]dbUser, error) {
 	rows, err := pg.Query(context.Background(), `
-		SELECT uuid, firstname, lastname, username, email, bcrypt_pwd, created_at, email_verified
+		SELECT uuid, firstname, lastname, username, email, bcrypt_pwd, created_at, email_verified, hide_task_tags
 		FROM users
 	`)
 	if err != nil {
@@ -165,6 +166,7 @@ func selectAllUsers(pg *pgxpool.Pool) ([]dbUser, error) {
 			&user.BcryptPwd,
 			&user.CreatedAt,
 			&user.EmailVerified,
+			&user.HideTaskTags,
 		)
 		if err != nil {
 			return nil, err

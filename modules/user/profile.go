@@ -23,7 +23,7 @@ func (s *userSrvc) UpdateProfile(ctx context.Context, userUUID uuid.UUID, firstn
 	var row dbUser
 	scanErr := s.postgres.QueryRow(ctx, `
 		UPDATE users SET firstname = $1, lastname = $2 WHERE uuid = $3
-		RETURNING uuid, firstname, lastname, username, email, bcrypt_pwd, created_at, email_verified
+		RETURNING uuid, firstname, lastname, username, email, bcrypt_pwd, created_at, email_verified, hide_task_tags
 	`, firstname, lastname, userUUID).Scan(
 		&row.UUID,
 		&row.Firstname,
@@ -33,6 +33,7 @@ func (s *userSrvc) UpdateProfile(ctx context.Context, userUUID uuid.UUID, firstn
 		&row.BcryptPwd,
 		&row.CreatedAt,
 		&row.EmailVerified,
+		&row.HideTaskTags,
 	)
 	if scanErr != nil {
 		if errors.Is(scanErr, pgx.ErrNoRows) {
@@ -49,5 +50,6 @@ func (s *userSrvc) UpdateProfile(ctx context.Context, userUUID uuid.UUID, firstn
 		Firstname:     &row.Firstname,
 		Lastname:      &row.Lastname,
 		EmailVerified: row.EmailVerified,
+		HideTaskTags:  row.HideTaskTags,
 	}, nil
 }

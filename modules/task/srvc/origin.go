@@ -90,6 +90,17 @@ func NormalizeOlympiad(raw string) string {
 	return raw
 }
 
+// SourceID selects the task-list source without changing its stored origin.
+func SourceID(olympiad, org string) string {
+	if strings.TrimSpace(olympiad) != "" {
+		return NormalizeOlympiad(olympiad)
+	}
+	if strings.EqualFold(strings.TrimSpace(org), "PPS") {
+		return "PPS"
+	}
+	return "other"
+}
+
 // NormalizeYear maps a stored origin_year to a filter id ("2024/2025" → "2025").
 // Unparseable non-empty values are returned trimmed; empty is "".
 func NormalizeYear(raw string) string {

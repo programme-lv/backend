@@ -16,6 +16,7 @@ type TaskPreview struct {
 	IllustrImg       *IllustrationImage `json:"illustr_img"`
 	DifficultyRating int                `json:"difficulty_rating"`
 	OriginOlympiad   string             `json:"origin_olympiad"`
+	SourceID         string             `json:"source_id"`
 	OriginYear       string             `json:"origin_year"`
 	OlympStage       string             `json:"olymp_stage"`
 	OriginDivisions  []string           `json:"origin_divisions"`
@@ -37,6 +38,15 @@ type CommunityStats struct {
 // TaskFilterTree is the JSON body of GET /task-filters.
 type TaskFilterTree struct {
 	Olympiads []TaskFilterOlympiad `json:"olympiads"`
+	Sources   []TaskFilterSource   `json:"sources"`
+}
+
+// TaskFilterSource is one source in the filter catalog.
+type TaskFilterSource struct {
+	ID    string           `json:"id"`
+	Kind  string           `json:"kind"`
+	Count int              `json:"count"`
+	Years []TaskFilterYear `json:"years"`
 }
 
 // TaskFilterOlympiad is one origin olympiad in the filter catalog.
@@ -128,6 +138,7 @@ type Task struct {
 	MemoryLimitMegabytes int                `json:"memory_limit_megabytes"`
 	CPUTimeLimitSeconds  float64            `json:"cpu_time_limit_seconds"`
 	OriginOlympiad       string             `json:"origin_olympiad"`
+	SourceID             string             `json:"source_id"`
 	IllustrationImg      *IllustrationImage `json:"illustration_img"`
 	DifficultyRating     *int               `json:"difficulty_rating"`
 	DefaultMDStatement   MdStatement        `json:"default_md_statement"`
@@ -264,6 +275,7 @@ func (h *taskHttpHandler) mapTaskResponse(task srvc.Task) Task {
 		MemoryLimitMegabytes: task.MemLimMegabytes,
 		CPUTimeLimitSeconds:  task.CpuTimeLimSecs,
 		OriginOlympiad:       task.OriginOlympiad,
+		SourceID:             srvc.SourceID(task.OriginOlympiad, task.OriginOrg),
 		IllustrationImg:      h.mapTaskIllustrImg(task.IllustrImg),
 		DifficultyRating:     difficultyRating,
 		DefaultMDStatement:   defaultMdStatement,
@@ -311,6 +323,7 @@ func (h *taskHttpHandler) mapTaskPreview(preview srvc.TaskPreview) TaskPreview {
 		IllustrImg:       h.mapTaskIllustrImg(preview.IllustrImg),
 		DifficultyRating: preview.DifficultyRating,
 		OriginOlympiad:   srvc.NormalizeOlympiad(preview.OriginOlympiad),
+		SourceID:         srvc.SourceID(preview.OriginOlympiad, preview.OriginOrg),
 		OriginYear:       srvc.NormalizeYear(preview.OriginYear),
 		OlympStage:       preview.OlympStage,
 		OriginDivisions:  divisions,
@@ -320,38 +333,45 @@ func (h *taskHttpHandler) mapTaskPreview(preview srvc.TaskPreview) TaskPreview {
 }
 
 func mapFilterTree(tree srvc.FilterTree) TaskFilterTree {
-	olympiads := make([]TaskFilterOlympiad, 0, len(tree.Olympiads))
-	for _, olympiad := range tree.Olympiads {
-		years := make([]TaskFilterYear, 0, len(olympiad.Years))
-		for _, year := range olympiad.Years {
-			stages := make([]TaskFilterStage, 0, len(year.Stages))
-			for _, stage := range year.Stages {
-				divisions := make([]TaskFilterDivision, 0, len(stage.Divisions))
-				for _, division := range stage.Divisions {
-					divisions = append(divisions, TaskFilterDivision{
-						ID:    division.ID,
-						Count: division.Count,
-					})
-				}
-				stages = append(stages, TaskFilterStage{
-					ID:        stage.ID,
-					Count:     stage.Count,
-					Divisions: divisions,
-				})
-			}
-			years = append(years, TaskFilterYear{
-				ID:     year.ID,
-				Count:  year.Count,
-				Stages: stages,
-			})
-		}
+	olympiads := mapFilterOlympiads(tree.Olympiads)
+	sources := make([]TaskFilterSource, 0, len(tree.Sources))
+	for _, source := range tree.Sources {
+		sources = append(sources, TaskFilterSource{
+			ID:    source.ID,
+			Kind:  source.Kind,
+			Count: source.Count,
+			Years: mapFilterYears(source.Years),
+		})
+	}
+	return TaskFilterTree{Olympiads: olympiads, Sources: sources}
+}
+
+func mapFilterOlympiads(input []srvc.FilterOlympiad) []TaskFilterOlympiad {
+	olympiads := make([]TaskFilterOlympiad, 0, len(input))
+	for _, olympiad := range input {
 		olympiads = append(olympiads, TaskFilterOlympiad{
 			ID:    olympiad.ID,
 			Count: olympiad.Count,
-			Years: years,
+			Years: mapFilterYears(olympiad.Years),
 		})
 	}
-	return TaskFilterTree{Olympiads: olympiads}
+	return olympiads
+}
+
+func mapFilterYears(input []srvc.FilterYear) []TaskFilterYear {
+	years := make([]TaskFilterYear, 0, len(input))
+	for _, year := range input {
+		stages := make([]TaskFilterStage, 0, len(year.Stages))
+		for _, stage := range year.Stages {
+			divisions := make([]TaskFilterDivision, 0, len(stage.Divisions))
+			for _, division := range stage.Divisions {
+				divisions = append(divisions, TaskFilterDivision{ID: division.ID, Count: division.Count})
+			}
+			stages = append(stages, TaskFilterStage{ID: stage.ID, Count: stage.Count, Divisions: divisions})
+		}
+		years = append(years, TaskFilterYear{ID: year.ID, Count: year.Count, Stages: stages})
+	}
+	return years
 }
 
 func (h *taskHttpHandler) mapTaskStatementImages(images []srvc.StatementImage) []StatementImage {

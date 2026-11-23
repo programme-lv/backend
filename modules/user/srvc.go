@@ -36,6 +36,7 @@ type UserService interface {
 	ConfirmEmailVerification(ctx context.Context, token string) srvcerror.E
 	ChangePassword(ctx context.Context, userUUID uuid.UUID, current, newPassword string) srvcerror.E
 	UpdateProfile(ctx context.Context, userUUID uuid.UUID, firstname, lastname string) (*User, srvcerror.E)
+	UpdatePreferences(ctx context.Context, userUUID uuid.UUID, hideTaskTags bool) srvcerror.E
 	PasswordChangedAt(ctx context.Context, userUUID uuid.UUID) (time.Time, error)
 }
 
@@ -85,6 +86,7 @@ func (s *userSrvc) GetUserByUsername(ctx context.Context, username string) (res 
 				Firstname:     &user.Firstname,
 				Lastname:      &user.Lastname,
 				EmailVerified: user.EmailVerified,
+				HideTaskTags:  user.HideTaskTags,
 			}
 			resSlice = append(resSlice, genUser)
 		}
@@ -120,6 +122,7 @@ func (s *userSrvc) GetUserByUUID(ctx context.Context, uuid uuid.UUID) (res User,
 				Firstname:     &user.Firstname,
 				Lastname:      &user.Lastname,
 				EmailVerified: user.EmailVerified,
+				HideTaskTags:  user.HideTaskTags,
 			}
 			resSlice = append(resSlice, genUser)
 		}
