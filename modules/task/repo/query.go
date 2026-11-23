@@ -155,12 +155,13 @@ func (r *taskPgRepo) ListTaskPreviews(ctx context.Context, limit int, offset int
 func (r *taskPgRepo) ListOriginCounts(ctx context.Context) ([]srvc.OriginCount, error) {
 	rows, err := r.pool.Query(ctx, `
 		SELECT COALESCE(origin_olympiad, ''),
+		       COALESCE(origin_org, ''),
 		       COALESCE(origin_year, ''),
 		       COALESCE(olymp_stage, ''),
 		       COALESCE(origin_divisions, '[]'::jsonb),
 		       COUNT(*)
 		FROM tasks
-		GROUP BY 1, 2, 3, 4
+		GROUP BY 1, 2, 3, 4, 5
 	`)
 	if err != nil {
 		return nil, fmt.Errorf("list origin counts: %w", err)
@@ -173,6 +174,7 @@ func (r *taskPgRepo) ListOriginCounts(ctx context.Context) ([]srvc.OriginCount, 
 		var divisionsBytes []byte
 		if err := rows.Scan(
 			&row.Olympiad,
+			&row.Org,
 			&row.Year,
 			&row.Stage,
 			&divisionsBytes,

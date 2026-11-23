@@ -9,6 +9,7 @@ import (
 // OriginCount is one distinct stored origin tuple plus how many tasks share it.
 type OriginCount struct {
 	Olympiad  string
+	Org       string
 	Year      string
 	Stage     string
 	Divisions []string
@@ -18,6 +19,15 @@ type OriginCount struct {
 // FilterTree is the olympiad → year → stage → division catalog for the task list.
 type FilterTree struct {
 	Olympiads []FilterOlympiad
+	Sources   []FilterSource
+}
+
+// FilterSource is a source and its optional olympiad hierarchy.
+type FilterSource struct {
+	ID    string
+	Kind  string
+	Count int
+	Years []FilterYear
 }
 
 // FilterOlympiad is one origin olympiad (or the "other" bucket).
@@ -68,6 +78,36 @@ var divisionOrder = []string{"junior", "senior", "both"}
 
 // BuildFilterTree nests origin counts after normalizing olympiad, year, and division.
 func BuildFilterTree(rows []OriginCount) FilterTree {
+	legacy := buildOlympiads(rows)
+	sourceRows := make([]OriginCount, 0, len(rows))
+	kinds := make(map[string]string)
+	for _, row := range rows {
+		if row.Count <= 0 {
+			continue
+		}
+		id := SourceID(row.Olympiad, row.Org)
+		kind := "olympiad"
+		if strings.TrimSpace(row.Olympiad) == "" {
+			kind = "other"
+			if id == "PPS" {
+				kind = "institution"
+			}
+			row.Year = ""
+		}
+		if _, exists := kinds[id]; !exists || kind == "olympiad" {
+			kinds[id] = kind
+		}
+		row.Olympiad = id
+		sourceRows = append(sourceRows, row)
+	}
+	sources := make([]FilterSource, 0)
+	for _, source := range buildOlympiads(sourceRows) {
+		sources = append(sources, FilterSource{ID: source.ID, Kind: kinds[source.ID], Count: source.Count, Years: source.Years})
+	}
+	return FilterTree{Olympiads: legacy, Sources: sources}
+}
+
+func buildOlympiads(rows []OriginCount) []FilterOlympiad {
 	olympiads := make(map[string]*accOlympiad)
 	for _, row := range rows {
 		if row.Count <= 0 {
@@ -116,11 +156,11 @@ func BuildFilterTree(rows []OriginCount) FilterTree {
 		return olympiadLess(ids[i], ids[j])
 	})
 
-	tree := FilterTree{Olympiads: make([]FilterOlympiad, 0, len(ids))}
+	result := make([]FilterOlympiad, 0, len(ids))
 	for _, id := range ids {
-		tree.Olympiads = append(tree.Olympiads, flattenOlympiad(id, olympiads[id]))
+		result = append(result, flattenOlympiad(id, olympiads[id]))
 	}
-	return tree
+	return result
 }
 
 func flattenOlympiad(id string, o *accOlympiad) FilterOlympiad {

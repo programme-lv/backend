@@ -40,6 +40,7 @@ func (s *userSrvc) Login(ctx context.Context, login string, password string) (re
 		Firstname:     &matched.Firstname,
 		Lastname:      &matched.Lastname,
 		EmailVerified: matched.EmailVerified,
+		HideTaskTags:  matched.HideTaskTags,
 	}, nil
 }
 
@@ -50,7 +51,7 @@ func (s *userSrvc) Login(ctx context.Context, login string, password string) (re
 // candidate and succeeds only when exactly one matches.
 func selectLoginCandidates(ctx context.Context, pg *pgxpool.Pool, login string) ([]dbUser, error) {
 	rows, err := pg.Query(ctx, `
-		SELECT uuid, firstname, lastname, username, email, bcrypt_pwd, created_at, email_verified
+		SELECT uuid, firstname, lastname, username, email, bcrypt_pwd, created_at, email_verified, hide_task_tags
 		FROM users
 		WHERE username = $1 OR LOWER(email) = LOWER($1)
 		ORDER BY uuid
@@ -73,6 +74,7 @@ func selectLoginCandidates(ctx context.Context, pg *pgxpool.Pool, login string) 
 			&user.BcryptPwd,
 			&user.CreatedAt,
 			&user.EmailVerified,
+			&user.HideTaskTags,
 		); err != nil {
 			return nil, err
 		}

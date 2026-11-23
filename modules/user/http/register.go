@@ -38,5 +38,7 @@ func (httpserver *UserHttpHandler) Register(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	jsonresp.Success(w, toHTTPUser(user))
+	response := toHTTPUser(user)
+	response.HideTaskTags = nil
+	jsonresp.Success(w, response)
 }

@@ -61,3 +61,32 @@ func stageIDs(stages []FilterStage) []string {
 	}
 	return ids
 }
+
+func TestSourceFiltersAndLegacyCompatibility(t *testing.T) {
+	rows := []OriginCount{
+		{Olympiad: "LIO", Org: "PPS", Year: "2024/2025", Stage: "national", Divisions: []string{"junior"}, Count: 2},
+		{Org: " pPs ", Year: "2025", Stage: "national", Count: 3},
+		{Org: "other", Year: "2024", Count: 4},
+		{Olympiad: "BOI", Org: "PPS", Year: "2023", Count: 1},
+	}
+	tree := BuildFilterTree(rows)
+	require.Equal(t, []FilterSource{
+		{ID: "LIO", Kind: "olympiad", Count: 2, Years: tree.Olympiads[0].Years},
+		{ID: "BOI", Kind: "olympiad", Count: 1, Years: tree.Olympiads[1].Years},
+		{ID: "PPS", Kind: "institution", Count: 3, Years: []FilterYear{}},
+		{ID: "other", Kind: "other", Count: 4, Years: []FilterYear{}},
+	}, tree.Sources)
+	require.Equal(t, 7, tree.Olympiads[2].Count)
+	require.Len(t, tree.Olympiads[2].Years, 2) // legacy includes years on blank olympiads
+	require.Equal(t, 10, tree.Sources[0].Count+tree.Sources[1].Count+tree.Sources[2].Count+tree.Sources[3].Count)
+	require.Empty(t, BuildFilterTree(nil).Sources)
+}
+
+func TestSourceID(t *testing.T) {
+	for _, tc := range []struct{ olympiad, org, want string }{
+		{"LIO", "PPS", "LIO"}, {"BOI", "pps", "BOI"}, {"", " pPs ", "PPS"},
+		{"  ", "PPS", "PPS"}, {"", "unknown", "other"}, {"", "", "other"},
+	} {
+		require.Equal(t, tc.want, SourceID(tc.olympiad, tc.org))
+	}
+}

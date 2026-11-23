@@ -215,3 +215,26 @@ func TestTaskPgRepo(t *testing.T) {
 	})
 
 }
+
+func TestListOriginCountsGroupsByOrganization(t *testing.T) {
+	pool := testutil.MustGetMigratedTestPostgresDb(t)
+	repo := repo.NewTaskPgRepo(pool)
+	data, err := os.ReadFile("testdata/aplusbirc.json")
+	require.NoError(t, err)
+	var task srvc.Task
+	require.NoError(t, json.Unmarshal(data, &task))
+	ctx := context.Background()
+	for _, tc := range []struct{ id, olympiad, org string }{
+		{"source-lio", "LIO", "PPS"}, {"source-pps", "", "PPS"}, {"source-other", "", ""},
+	} {
+		task.ShortId, task.OriginOlympiad, task.OriginOrg = tc.id, tc.olympiad, tc.org
+		require.NoError(t, repo.CreateTask(ctx, task))
+	}
+	rows, err := repo.ListOriginCounts(ctx)
+	require.NoError(t, err)
+	tree := srvc.BuildFilterTree(rows)
+	require.Len(t, tree.Sources, 3)
+	require.Equal(t, []string{"LIO", "PPS", "other"}, []string{tree.Sources[0].ID, tree.Sources[1].ID, tree.Sources[2].ID})
+	require.Equal(t, []int{1, 1, 1}, []int{tree.Sources[0].Count, tree.Sources[1].Count, tree.Sources[2].Count})
+	require.Equal(t, 2, tree.Olympiads[1].Count)
+}
