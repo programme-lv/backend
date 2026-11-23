@@ -4,11 +4,13 @@ import (
 	"context"
 	"time"
 
+	"github.com/programme-lv/backend/modules/task/highlight"
 	"github.com/programme-lv/backend/modules/task/srvc"
 )
 
 // TaskPreview is the JSON element of GET /tasks.
 type TaskPreview struct {
+	HighlightedTags  []highlight.Label  `json:"highlighted_tags,omitempty"`
 	ShortId          string             `json:"short_id"`
 	FullName         string             `json:"full_name"`
 	IllustrImg       *IllustrationImage `json:"illustr_img"`
@@ -19,6 +21,17 @@ type TaskPreview struct {
 	OriginDivisions  []string           `json:"origin_divisions"`
 	OriginNote       string             `json:"origin_note"`
 	OriginNoteShort  string             `json:"origin_note_short"`
+	// CommunityStats is omitted when the task has no completed attempts or
+	// when optional stats are unavailable.
+	CommunityStats *CommunityStats `json:"community_stats,omitempty"`
+}
+
+// CommunityStats is aggregate, non-attributable community activity for a task.
+// Only positive verdict counts are present and their sum equals UniqueAttempted.
+type CommunityStats struct {
+	UniqueSolvers   int            `json:"unique_solvers"`
+	UniqueAttempted int            `json:"unique_attempted"`
+	Verdicts        map[string]int `json:"verdicts"`
 }
 
 // TaskFilterTree is the JSON body of GET /task-filters.
@@ -109,6 +122,7 @@ type IllustrationImage struct {
 // OriginNotes maps language code to origin text.
 // TestingType is "checker" or "interactor".
 type Task struct {
+	HighlightedTags      []highlight.Label  `json:"highlighted_tags,omitempty"`
 	ShortTaskID          string             `json:"short_task_id"`
 	TaskFullName         string             `json:"task_full_name"`
 	MemoryLimitMegabytes int                `json:"memory_limit_megabytes"`
