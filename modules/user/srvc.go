@@ -37,6 +37,7 @@ type UserService interface {
 	ChangePassword(ctx context.Context, userUUID uuid.UUID, current, newPassword string) srvcerror.E
 	UpdateProfile(ctx context.Context, userUUID uuid.UUID, firstname, lastname string) (*User, srvcerror.E)
 	UpdatePreferences(ctx context.Context, userUUID uuid.UUID, hideTaskTags bool) srvcerror.E
+	ChangeUsername(ctx context.Context, userUUID uuid.UUID, username, currentPassword string) (string, srvcerror.E)
 	PasswordChangedAt(ctx context.Context, userUUID uuid.UUID) (time.Time, error)
 }
 

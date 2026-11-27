@@ -25,7 +25,7 @@ type SubmHttpHandler struct {
 	userSrvc    usersrvc.UserService
 
 	// solution submission rate limit
-	lastSubmTime map[string]time.Time // username -> last submission time
+	lastSubmTime map[uuid.UUID]time.Time // author UUID -> last submission time
 	rateLock     sync.Mutex
 
 	// submCache and singleflight for preventing submCache stampedes
@@ -44,7 +44,7 @@ func NewSubmHttpHandler(
 		profileSrvc:  profileSrvc,
 		taskSrvc:     taskSrvc,
 		userSrvc:     userSrvc,
-		lastSubmTime: make(map[string]time.Time),
+		lastSubmTime: make(map[uuid.UUID]time.Time),
 		submCache:    cache.New(1*time.Second, 1*time.Minute),
 	}
 }

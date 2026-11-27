@@ -30,10 +30,6 @@ var ErrUnauthorized = srvcerror.New(
 	"nav autorizācijas",
 ).SetHttpStatusCode(http.StatusUnauthorized)
 
-var ErrUnauthorizedUsernameMismatch = ErrUnauthorized.WithMsg(
-	"JWT norādītais lietotājvārds nesakrīt ar pieprasīto lietotājvārdu",
-)
-
 var ErrJwtTokenMissing = ErrUnauthorized.WithMsg("JWT netika atrasts")
 
 func (h *SubmHttpHandler) PostSubm(w http.ResponseWriter, r *http.Request) {
@@ -41,14 +37,13 @@ func (h *SubmHttpHandler) PostSubm(w http.ResponseWriter, r *http.Request) {
 
 	type createSubmissionRequest struct {
 		Submission        string `json:"submission"`
-		Username          string `json:"username"`
 		ProgrammingLangID string `json:"programming_lang_id"`
 		TaskCodeID        string `json:"task_code_id"`
 	}
 
-	claims := r.Context().Value(auth.CtxJwtClaimsKey).(*auth.JwtClaims)
-	if claims == nil {
-		log.Warn("JWT token missing")
+	authorUUID, err := auth.GetUserUuidFromCtx(r.Context())
+	if err != nil {
+		log.Warn("JWT user UUID missing or invalid")
 		jsonresp.HandleErrorWithContext(r.Context(), w, ErrJwtTokenMissing)
 		return
 	}
@@ -60,36 +55,24 @@ func (h *SubmHttpHandler) PostSubm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if claims.Username != request.Username {
-		log.Warn("unauthorized username mismatch", "jwt_username", claims.Username, "request_username", request.Username)
-		jsonresp.HandleErrorWithContext(r.Context(), w, ErrUnauthorizedUsernameMismatch)
-		return
-	}
-
 	h.rateLock.Lock()
-	lastTime, exists := h.lastSubmTime[request.Username]
+	lastTime, exists := h.lastSubmTime[authorUUID]
 	now := time.Now()
 	if exists && now.Sub(lastTime) < 10*time.Second {
 		h.rateLock.Unlock()
-		log.Warn("submission too frequent", "username", request.Username, "last_time", lastTime)
+		log.Warn("submission too frequent", "author_uuid", authorUUID, "last_time", lastTime)
 		jsonresp.HandleErrorWithContext(r.Context(), w, errSubmissionTooFrequent(10))
 		return
 	}
-	h.lastSubmTime[request.Username] = now
+	h.lastSubmTime[authorUUID] = now
 	h.rateLock.Unlock()
-
-	author, err := h.userSrvc.GetUserByUsername(r.Context(), request.Username)
-	if err != nil {
-		jsonresp.HandleErrorWithContext(r.Context(), w, err)
-		return
-	}
 
 	submUUID := uuid.New()
 
 	submitErr := h.submSrvc.SubmitSol(r.Context(), srvc.SubmitSolParams{
 		UUID:        submUUID,
 		Submission:  request.Submission,
-		AuthorUUID:  author.UUID,
+		AuthorUUID:  authorUUID,
 		ProgrLangID: request.ProgrammingLangID,
 		TaskShortID: request.TaskCodeID,
 	})
@@ -115,7 +98,7 @@ func (h *SubmHttpHandler) PostSubm(w http.ResponseWriter, r *http.Request) {
 	log.Debug(
 		"submission created",
 		"subm_uuid", submUUID,
-		"username", request.Username,
+		"author_uuid", authorUUID,
 		"programming_lang_id", request.ProgrammingLangID,
 		"task_code_id", request.TaskCodeID,
 	)

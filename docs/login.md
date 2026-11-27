@@ -17,3 +17,12 @@ field matched.
 
 Keep username matching case-sensitive and email registration uniqueness unchanged unless
 this ambiguity rule is revisited.
+
+## Mutable usernames
+
+Rename by the authenticated account UUID. The update also checks that the
+password hash verified by the service is still current. A rename does not
+reissue tokens or change `pwd_changed_at`; the username in existing JWTs can
+therefore be stale. Use UUID for ownership and rate limiting, and look up the
+current username for display. The `admin` account cannot rename because admin
+authorization still uses the username claim.

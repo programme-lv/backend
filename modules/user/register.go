@@ -201,11 +201,14 @@ func insertUser(pg *pgxpool.Pool, user *dbUser) error {
 // Validation functions
 func validateUsername(username string) srvcerror.E {
 	const minUsernameLength = 2
-	const maxUsernameLength = 32
+	const maxUsernameLength = 24
 	reservedUsernames := map[string]struct{}{
 		"admin":  {},
 		"system": {},
 		"test":   {},
+	}
+	if username == ".." || strings.ContainsRune(username, '\x00') {
+		return ErrUsernameInvalid
 	}
 	if strings.Contains(username, "@") {
 		return ErrUsernameContainsAt
