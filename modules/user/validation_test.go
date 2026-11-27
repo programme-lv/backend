@@ -1,6 +1,7 @@
 package user
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -37,6 +38,15 @@ func TestValidateUsernameRejectsAtSign(t *testing.T) {
 	}
 }
 
+func TestValidateUsernameLengthBounds(t *testing.T) {
+	assert.NoError(t, validateUsername(strings.Repeat("a", 24)))
+
+	err := validateUsername(strings.Repeat("a", 25))
+
+	require.Error(t, err)
+	assert.Equal(t, ErrUsernameTooLong.ErrorCode(), err.ErrorCode())
+}
+
 func TestValidateUsernameAllowsExistingSyntax(t *testing.T) {
 	for _, username := range []string{
 		"ab",
@@ -50,4 +60,18 @@ func TestValidateUsernameAllowsExistingSyntax(t *testing.T) {
 			assert.NoError(t, validateUsername(username))
 		})
 	}
+}
+
+func TestValidateUsernameAddressabilityAndByteLength(t *testing.T) {
+	for _, name := range []string{"..", "ab\x00cd"} {
+		err := validateUsername(name)
+		require.Error(t, err)
+		assert.Equal(t, ErrUsernameInvalid.ErrorCode(), err.ErrorCode())
+	}
+	for _, name := range []string{"a..b", "..a", " a ", strings.Repeat("ā", 12)} {
+		assert.NoError(t, validateUsername(name))
+	}
+	err := validateUsername(strings.Repeat("ā", 13))
+	require.Error(t, err)
+	assert.Equal(t, ErrUsernameTooLong.ErrorCode(), err.ErrorCode())
 }

@@ -26,6 +26,16 @@ var ErrUsernameReserved = srvcerror.New(
 	"lietotājvārds ir rezervēts",
 ).SetHttpStatusCode(http.StatusBadRequest)
 
+var ErrUsernameInvalid = srvcerror.New(
+	"username_invalid",
+	"lietotājvārds nav derīgs",
+).SetHttpStatusCode(http.StatusBadRequest)
+
+var ErrUsernameChangeForbidden = srvcerror.New(
+	"username_change_forbidden",
+	"administratora lietotājvārdu nevar mainīt",
+).SetHttpStatusCode(http.StatusForbidden)
+
 var ErrUsernameContainsAt = srvcerror.New(
 	"username_contains_at",
 	"lietotājvārds nedrīkst saturēt simbolu @",
